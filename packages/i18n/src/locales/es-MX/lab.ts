@@ -40,7 +40,7 @@ export const lab = {
   "lab.history.voided": "Anulado",
   "lab.history.recorded": "Registrado",
   "lab.history.retained":
-    "El conteo original se conserva. La API todavía no expone el motivo ni el autor de la anulación en este historial.",
+    "El conteo original se conserva. Esta información todavía no está disponible.",
   "lab.correction.title": "Corregir conteo",
   "lab.correction.hint":
     "Se anula el conteo original y se registra uno nuevo en la misma operación. Ambos quedan en el historial.",

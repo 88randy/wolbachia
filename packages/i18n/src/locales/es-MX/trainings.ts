@@ -13,18 +13,18 @@ export const trainings = {
   "trainings.field.effective": "Vigente desde",
   "trainings.field.instantHint":
     "Fecha y hora con zona explícita, por ejemplo 2026-11-09T12:00:00-06:00.",
-  "trainings.field.center": "UUID del centro",
-  "trainings.field.quadrant": "UUID del cuadrante (opcional si el alcance lo permite)",
-  "trainings.field.subject": "UUID de la persona",
+  "trainings.field.center": "Centro",
+  "trainings.field.quadrant": "Cuadrante (opcional)",
+  "trainings.field.subject": "Persona",
   "trainings.field.action": "Clave de la acción",
   "trainings.field.at": "Instante de consulta (opcional)",
-  "trainings.field.trainingVersion": "Versión del curso (UUID)",
+  "trainings.field.trainingVersion": "Versión del curso",
   "trainings.field.requirementVersion": "Versión del requisito",
   "trainings.field.validFrom": "Inicio incluido",
   "trainings.field.validTo": "Fin excluido",
   "trainings.field.expiryHint":
     "La certificación vence exactamente en este instante; incluye la zona horaria.",
-  "trainings.field.evidence": "UUID de evidencias verificadas",
+  "trainings.field.evidence": "Evidencias verificadas",
   "trainings.field.evidenceHint":
     "Solo cargas propias verificadas y sin vincular, separadas por comas. Puedes subir y verificar una imagen arriba.",
   "trainings.evidence.file": "Imagen de la certificación",
@@ -34,16 +34,15 @@ export const trainings = {
   "trainings.evidence.invalid": "Elige una imagen PNG o JPEG válida de hasta 10 MB.",
   "trainings.evidence.failed":
     "No se confirmó la imagen. Conservamos el archivo; vuelve a cargarlo para renovar o verificar su recepción.",
-  "trainings.evidence.verified":
-    "Imagen verificada por el servidor. Se vinculará al registrar la certificación.",
+  "trainings.evidence.verified": "Imagen verificada. Se vinculará al registrar la certificación.",
   "trainings.field.issuer": "Referencia de quien expide",
   "trainings.field.attestation": "Constancia de certificación",
   "trainings.field.status": "Estado",
-  "trainings.field.certificate": "Certificación (UUID)",
+  "trainings.field.certificate": "Certificación",
   "trainings.field.revoked": "Revocada desde",
   "trainings.field.nextChange": "Próximo cambio de elegibilidad",
-  "trainings.field.training": "Curso (UUID)",
-  "trainings.field.acceptableVersions": "Versiones aceptables (UUID separados por comas)",
+  "trainings.field.training": "Curso",
+  "trainings.field.acceptableVersions": "Versiones aceptables",
   "trainings.requirement.title": "Requisitos por acción y contexto",
   "trainings.requirement.inspect": "Consultar requisitos del contexto",
   "trainings.requirement.publish": "Publicar requisito de acción",
@@ -71,14 +70,14 @@ export const trainings = {
   "trainings.person.certificates": "Historial de certificaciones",
   "trainings.person.create": "Registrar certificación",
   "trainings.person.createHint":
-    "Registra evidencia verificada y un intervalo de vigencia explícito para esta persona y contexto. El servidor valida las referencias y la vigencia máxima del curso.",
+    "Registra evidencia verificada y un intervalo de vigencia explícito para esta persona y contexto. Se validan las referencias y la vigencia máxima del curso.",
   "trainings.person.uploadPermission":
     "Para registrar la certificación también necesitas permiso para vincular evidencia. Administración puede habilitarlo.",
   "trainings.eligibility.title": "Elegibilidad por capacitación",
   "trainings.eligibility.eligible": "Capacitación vigente",
   "trainings.eligibility.blocked": "Acción bloqueada por capacitación",
   "trainings.eligibility.factual":
-    "Resultado factual del servidor para la acción, el contexto y el instante consultados. No concede permiso para ejecutar la acción.",
+    "Resultado factual para la acción, el contexto y el instante consultados. No concede permiso para ejecutar la acción.",
   "trainings.eligibility.unblocker":
     "Administración debe revisar los requisitos, la configuración y la certificación antes de habilitar la acción.",
   "trainings.eligibility.requirementsMissing":
@@ -92,10 +91,10 @@ export const trainings = {
   "trainings.form.invalidField": "Completa este campo con una referencia o valor válido.",
   "trainings.form.invalid": "Revisa los campos indicados.",
   "trainings.form.invalidHint":
-    "Se conservaron tus datos. Las fechas necesitan zona horaria y las referencias deben ser UUID válidos.",
+    "Se conservaron tus datos. Las fechas necesitan zona horaria y las referencias deben ser válidos.",
   "trainings.form.failed":
     "No pudimos confirmar el registro. Conservamos tus datos; revisa el historial antes de intentar de nuevo.",
-  "trainings.form.saved": "Registro confirmado por el servidor.",
+  "trainings.form.saved": "Registro guardado.",
   "trainings.form.review": "Revisé el historial; permitir otro intento",
   "trainings.form.reviewHint":
     "No se enviará otro registro automáticamente. Revisa el historial y confirma antes de volver a guardar.",
@@ -139,7 +138,7 @@ export const trainings = {
   "trainings.mobile.trainingDenied":
     "Las constancias requieren autorización. Solicita a tu supervisor que revise tu acceso.",
   "trainings.mobile.partial":
-    "Se muestran los primeros registros autorizados. Puede haber más historial en el servidor; consulta a tu supervisor.",
+    "Se muestran los primeros registros autorizados. Puede haber más historial ; consulta a tu supervisor.",
   "trainings.mobile.downloadedAt": "Descarga de constancias y cédulas",
   "trainings.mobile.author": "Autor",
   "trainings.mobile.reason": "Motivo u observación",

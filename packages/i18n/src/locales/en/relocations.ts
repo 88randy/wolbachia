@@ -17,7 +17,7 @@ export const relocations: Record<keyof typeof source, string> = {
   "relocations.workspace.author": "Author (ID)",
   "relocations.workspace.createdAt": "Proposed at",
   "relocations.workspace.deviceTime": "Device time",
-  "relocations.workspace.receivedAt": "Received by server",
+  "relocations.workspace.receivedAt": "Received",
   "relocations.workspace.unavailable": "Unavailable",
   "relocations.workspace.oldLocation": "Previous location (longitude, latitude)",
   "relocations.workspace.newLocation": "Proposed location (longitude, latitude)",
@@ -25,13 +25,13 @@ export const relocations: Record<keyof typeof source, string> = {
   "relocations.workspace.evidence": "Original evidence references",
   "relocations.workspace.capturedRules": "Rules and versions evaluated at capture",
   "relocations.workspace.voided": "Voided capture",
-  "relocations.workspace.saved": "Decision recorded by the server.",
+  "relocations.workspace.saved": "Decision recorded.",
   "relocations.workspace.decisionReason": "Decision reason",
   "relocations.workspace.decidedAt": "Decided at",
   "relocations.workspace.publishedVersion": "Published version of the same point (ID):",
   "relocations.workspace.task": "Next-day task:",
   "relocations.workspace.noTask": "This response does not include a next-day task.",
-  "relocations.workspace.advisory": "Server advisory:",
+  "relocations.workspace.advisory": "Notice:",
   "relocations.workspace.historyPolicy":
     "The original capture is retained. A decision does not reopen a closed quadrant; late records follow the server's historical policy.",
   "relocations.workspace.refresh": "Refresh evidence and state",
@@ -41,7 +41,7 @@ export const relocations: Record<keyof typeof source, string> = {
   "relocations.workspace.blocked":
     "The proposal already has a decision or its capture was voided. An authorized reviewer must inspect the source; this screen cannot replace a decision.",
   "relocations.workspace.reasonHint":
-    "A reason is required for approval and rejection. The server validates its length. After rejection, only the task confirmed by the server is shown.",
+    "A reason is required for approval and rejection. After rejection, only the task confirmed by the server is shown.",
   "relocations.workspace.reject": "Reject relocation",
   "relocations.workspace.approve": "Approve relocation",
   "relocations.workspace.defaultView":

@@ -48,11 +48,11 @@ export const transfers: Record<keyof typeof spanish, string> = {
     "Verify the signature before dispatch. The server checks stock, expiry and destination; an administrator or warehouse must resolve blockers.",
   "transfers.write.receiveRule":
     "Each missing line needs a verified photo separate from the signature. Signing commits actual quantities and discrepancies; resolution releases only their own holds.",
-  "transfers.write.committed": "Saved on the server · revision {revision}",
+  "transfers.write.committed": "Saved",
   "transfers.write.retry": "Retry the same submission",
   "transfers.write.retained":
     "The original submission was retained. Retrying uses the same identity and quantities without a second movement. Review the current state and blockers before another operation.",
   "transfers.write.failed":
     "The submission was not confirmed. Retry the same submission or review history and blockers with the warehouse.",
-  "transfers.write.wait": "The server is busy. Wait for the indicated retry interval.",
+  "transfers.write.wait": "The system is busy. Wait a moment before trying again.",
 };

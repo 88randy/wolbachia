@@ -47,14 +47,14 @@ export const transfers = {
   "transfers.line.count": "Esperado: {expected} · escaneado: {received}",
   "transfers.line.photo": "Foto del faltante: {id}",
   "transfers.write.dispatchRule":
-    "Verifica la firma antes de despachar. El servidor revisa existencias, caducidad y destino; administración o almacén debe resolver cualquier bloqueo.",
+    "Verifica la firma antes de despachar. Se revisan existencias, caducidad y destino; administración o almacén debe resolver cualquier bloqueo.",
   "transfers.write.receiveRule":
     "Cada faltante necesita una foto verificada, separada de la firma. Al firmar se guardan las cantidades reales y las discrepancias; solo su resolución libera los bloqueos propios.",
-  "transfers.write.committed": "Guardado en el servidor · revisión {revision}",
+  "transfers.write.committed": "Guardado",
   "transfers.write.retry": "Reintentar el mismo envío",
   "transfers.write.retained":
     "Se conservó el envío original. Reintentar usa la misma identidad y cantidades; no genera un segundo movimiento. Revisa el estado y los bloqueos antes de iniciar otra operación.",
   "transfers.write.failed":
     "No se confirmó el envío. Reintenta el mismo envío o revisa el historial y los bloqueos con almacén.",
-  "transfers.write.wait": "El servidor está ocupado. Espera el plazo indicado antes de reintentar.",
+  "transfers.write.wait": "Hay mucha actividad. Espera un momento antes de reintentar.",
 } as const satisfies AreaCatalog<"transfers">;

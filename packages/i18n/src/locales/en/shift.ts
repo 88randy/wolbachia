@@ -62,7 +62,7 @@ export const shift: Record<keyof typeof source, string> = {
   "shift.error.tooShort": "Enter a reason meeting the indicated minimum length.",
   "shift.error.tooLong": "The reason exceeds the indicated maximum length.",
   "shift.error.invalidCharacters": "Remove control characters from the reason and try again.",
-  "shift.error.invalid": "The server did not accept the reason. Review it and try again.",
+  "shift.error.invalid": "The reason was not accepted. Check it and try again.",
   "shift.error.conflict":
     "The shift changed. Your reason is preserved. Close this dialog, refresh and review history before opening the action again.",
   "shift.error.uncertain":
