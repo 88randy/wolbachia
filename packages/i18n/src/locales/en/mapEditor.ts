@@ -142,9 +142,8 @@ export const mapEditor: Record<keyof typeof source, string> = {
   "mapEditor.save.reason": "Write the reason for the change.",
   "mapEditor.save.retry": "Could not save. Try again.",
   "mapEditor.save.skipped": "Not saved because its quadrant could not be saved.",
-  "mapEditor.save.partial":
-    "{saved} changes saved; {failed} could not be saved. Check the marked ones.",
-  "mapEditor.saved.all": "{count} changes saved.",
+  "mapEditor.save.partial": "Changes saved: {saved}. Not saved: {failed}. Check the marked ones.",
+  "mapEditor.saved.all": "Changes saved: {count}.",
   "mapEditor.delete.done": "Removed from the map. It was not saved yet.",
   "mapEditor.delete.saved":
     "Saved items are never deleted. To retire it, open its record and give a reason.",

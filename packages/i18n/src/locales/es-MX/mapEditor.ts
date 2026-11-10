@@ -148,8 +148,8 @@ export const mapEditor = {
   "mapEditor.save.retry": "No se pudo guardar. Inténtalo otra vez.",
   "mapEditor.save.skipped": "No se guardó porque su cuadrante no se pudo guardar.",
   "mapEditor.save.partial":
-    "Se guardaron {saved} cambios; {failed} no se pudieron guardar. Revisa los marcados.",
-  "mapEditor.saved.all": "Se guardaron {count} cambios.",
+    "Cambios guardados: {saved}. Sin guardar: {failed}. Revisa los marcados.",
+  "mapEditor.saved.all": "Cambios guardados: {count}.",
   "mapEditor.delete.done": "Se quitó del mapa. Aún no estaba guardado.",
   "mapEditor.delete.saved":
     "Lo guardado no se borra. Para retirarlo, abre su ficha y escribe el motivo.",
@@ -157,7 +157,7 @@ export const mapEditor = {
   "mapEditor.selected.retire": "Lo guardado no se borra: se retira desde su ficha, con un motivo.",
   "mapEditor.selected.title": "Elegido: {code}",
   "mapEditor.leave.title": "¿Salir sin guardar?",
-  "mapEditor.leave.body": "Tienes {count} cambios sin guardar. Si sales, se pierden.",
+  "mapEditor.leave.body": "Tienes cambios sin guardar ({count}). Si sales, se pierden.",
   "mapEditor.leave.stay": "Seguir editando",
   "mapEditor.leave.go": "Salir sin guardar",
   "mapEditor.keys.title": "Atajos del teclado",

@@ -23,7 +23,7 @@ export function EditorStatusLine({ editor }: { editor: MapEditor }) {
   return (
     <p
       role="status"
-      className="m-0 flex items-start gap-2 rounded-xl bg-tint px-3.5 py-2.5 text-[13px] leading-5 text-action-strong"
+      className="m-0 flex min-h-[3.75rem] items-start gap-2 rounded-xl bg-tint px-3.5 py-2.5 text-[13px] leading-5 text-action-strong"
     >
       <Info aria-hidden="true" className="mt-0.5 size-4 flex-none" />
       {message}

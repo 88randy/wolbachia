@@ -61,8 +61,12 @@ export function useEditorShortcuts(options: Options) {
         return;
       }
       if (key === "f") editor.fit();
-      else if (event.key === "?") onHelp();
-      else if (key === "delete" || key === "backspace") {
+      else if (event.key === "?") {
+        // The page help replaces the global one while the editor is open.
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        onHelp();
+      } else if (key === "delete" || key === "backspace") {
         if (editor.selectedKey) {
           event.preventDefault();
           editor.removeShape(editor.selectedKey);
@@ -74,9 +78,9 @@ export function useEditorShortcuts(options: Options) {
         if (document.activeElement !== editor.mapRef.current?.getCanvas()) editor.finishDrawing();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
     };
   }, []);
 }

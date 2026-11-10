@@ -88,6 +88,7 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
         icon={Trash2}
         label={t("mapEditor.action.delete")}
         shortcut={KEY_DELETE}
+        isIconOnly
         isDisabled={!canRemove}
         onClick={() => {
           if (editor.selectedKey) editor.removeShape(editor.selectedKey);
@@ -98,6 +99,7 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
         icon={Scan}
         label={t("mapEditor.action.fit")}
         shortcut={KEY_FIT}
+        isIconOnly
         onClick={() => {
           editor.fit();
         }}
