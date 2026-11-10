@@ -23,500 +23,134 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="MaterialRequest",
+            name='MaterialRequest',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("code", models.CharField(max_length=50)),
-                ("recipient_institution", models.CharField(max_length=200)),
-                ("quantity", models.DecimalField(decimal_places=6, max_digits=18)),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "location",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="inventory.location",
-                    ),
-                ),
-                (
-                    "lot",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT, to="inventory.lot"
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "piece",
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="inventory.piece",
-                    ),
-                ),
-                (
-                    "unit_version",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="inventory.supplytypeversion",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('code', models.CharField(max_length=50)),
+                ('recipient_institution', models.CharField(max_length=200)),
+                ('quantity', models.DecimalField(decimal_places=6, max_digits=18)),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('location', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='inventory.location')),
+                ('lot', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='inventory.lot')),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('piece', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='inventory.piece')),
+                ('unit_version', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='inventory.supplytypeversion')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_materialrequest_author'), models.UniqueConstraint(fields=('organization', 'code'), name='material_request_org_code'), models.CheckConstraint(condition=models.Q(('quantity__gt', 0)), name='material_request_positive')],
             },
         ),
         migrations.CreateModel(
-            name="DeliveryReceipt",
+            name='DeliveryReceipt',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("command_id", models.UUIDField()),
-                ("expected_revision", models.PositiveIntegerField()),
-                ("input_hash", models.CharField(max_length=64)),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "signature",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.PROTECT, to="uploads.upload"
-                    ),
-                ),
-                (
-                    "request",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="delivery",
-                        to="lab.materialrequest",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('command_id', models.UUIDField()),
+                ('expected_revision', models.PositiveIntegerField()),
+                ('input_hash', models.CharField(max_length=64)),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('signature', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, to='uploads.upload')),
+                ('request', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='delivery', to='lab.materialrequest')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_deliveryreceipt_author'), models.UniqueConstraint(fields=('organization', 'command_id'), name='material_delivery_command_once')],
             },
         ),
         migrations.CreateModel(
-            name="MaterialRequestVoid",
+            name='MaterialRequestVoid',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("reason", models.TextField()),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "request",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="void",
-                        to="lab.materialrequest",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('reason', models.TextField()),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('request', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='void', to='lab.materialrequest')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_materialrequestvoid_author')],
             },
         ),
         migrations.CreateModel(
-            name="NotificationEvidence",
+            name='NotificationEvidence',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("reference", models.CharField(max_length=200)),
-                ("date", models.DateField()),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "request",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="notifications",
-                        to="lab.materialrequest",
-                    ),
-                ),
-                (
-                    "upload",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.PROTECT, to="uploads.upload"
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('reference', models.CharField(max_length=200)),
+                ('date', models.DateField()),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('request', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='notifications', to='lab.materialrequest')),
+                ('upload', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, to='uploads.upload')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_notificationevidence_author')],
             },
         ),
         migrations.CreateModel(
-            name="UiebShipment",
+            name='UiebShipment',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("code", models.CharField(max_length=50)),
-                ("cutoff", models.DateTimeField()),
-                (
-                    "template_version",
-                    models.CharField(default="source-projection-v1", max_length=64),
-                ),
-                ("recipient_institution", models.CharField(max_length=200)),
-                ("source_snapshot", models.JSONField()),
-                ("content_hash", models.CharField(max_length=64)),
-                ("reason", models.TextField(blank=True)),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "supersedes",
-                    models.OneToOneField(
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="revision",
-                        to="lab.uiebshipment",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('code', models.CharField(max_length=50)),
+                ('cutoff', models.DateTimeField()),
+                ('template_version', models.CharField(default='source-projection-v1', max_length=64)),
+                ('recipient_institution', models.CharField(max_length=200)),
+                ('source_snapshot', models.JSONField()),
+                ('content_hash', models.CharField(max_length=64)),
+                ('reason', models.TextField(blank=True)),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('supersedes', models.OneToOneField(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='revision', to='lab.uiebshipment')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_uiebshipment_author'), models.UniqueConstraint(fields=('organization', 'code'), name='shipment_org_code')],
             },
         ),
         migrations.CreateModel(
-            name="ShipmentVoid",
+            name='ShipmentVoid',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("reason", models.TextField()),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "shipment",
-                    models.OneToOneField(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="void",
-                        to="lab.uiebshipment",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('reason', models.TextField()),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('shipment', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='void', to='lab.uiebshipment')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_shipmentvoid_author')],
             },
         ),
         migrations.CreateModel(
-            name="ShipmentSource",
+            name='ShipmentSource',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                (
-                    "bag",
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="ovitraps.bag",
-                    ),
-                ),
-                (
-                    "center",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="organizations.center",
-                    ),
-                ),
-                (
-                    "created_by",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                (
-                    "lot",
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="inventory.lot",
-                    ),
-                ),
-                (
-                    "organization",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="+",
-                        to="organizations.organization",
-                    ),
-                ),
-                (
-                    "quadrant",
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        to="geography.quadrant",
-                    ),
-                ),
-                (
-                    "shipment",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="sources",
-                        to="lab.uiebshipment",
-                    ),
-                ),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('bag', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='ovitraps.bag')),
+                ('center', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='organizations.center')),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('lot', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='inventory.lot')),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('quadrant', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='geography.quadrant')),
+                ('shipment', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='sources', to='lab.uiebshipment')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_shipmentsource_author'), models.CheckConstraint(condition=models.Q(models.Q(('bag__isnull', False), ('lot__isnull', True)), models.Q(('bag__isnull', True), ('lot__isnull', False)), _connector='OR'), name='shipment_exact_source'), models.UniqueConstraint(fields=('shipment', 'bag'), name='shipment_bag_once'), models.UniqueConstraint(fields=('shipment', 'lot'), name='shipment_lot_once')],
             },
-        ),
-        migrations.AddConstraint(
-            model_name="materialrequest",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_materialrequest_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="materialrequest",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "code"), name="material_request_org_code"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="materialrequest",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("quantity__gt", 0)),
-                name="material_request_positive",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="deliveryreceipt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_deliveryreceipt_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="deliveryreceipt",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "command_id"),
-                name="material_delivery_command_once",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="materialrequestvoid",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_materialrequestvoid_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="notificationevidence",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_notificationevidence_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="uiebshipment",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_uiebshipment_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="uiebshipment",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "code"), name="shipment_org_code"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="shipmentvoid",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_shipmentvoid_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_shipmentsource_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    models.Q(("bag__isnull", False), ("lot__isnull", True)),
-                    models.Q(("bag__isnull", True), ("lot__isnull", False)),
-                    _connector="OR",
-                ),
-                name="shipment_exact_source",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.UniqueConstraint(
-                fields=("shipment", "bag"), name="shipment_bag_once"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.UniqueConstraint(
-                fields=("shipment", "lot"), name="shipment_lot_once"
-            ),
         ),
     ]

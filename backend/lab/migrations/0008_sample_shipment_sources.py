@@ -24,175 +24,42 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="WolbachiaSample",
+            name='WolbachiaSample',
             fields=[
-                (
-                    "id",
-                    models.UUIDField(
-                        default=uuid.uuid4,
-                        editable=False,
-                        primary_key=True,
-                        serialize=False,
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("code", models.CharField(max_length=50)),
+                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('code', models.CharField(max_length=50)),
+                ('collector', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('event', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='wolbachia_sample', to='field_sync.fieldevent')),
+                ('location', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='inventory.location')),
+                ('lot', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='inventory.lot')),
+                ('method_version', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='lab.labmethodversion')),
+                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='organizations.organization')),
+                ('origin', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='+', to='catalogs.catalogitem')),
+                ('reading', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, related_name='+', to='ovitraps.ovitrapreading')),
             ],
             options={
-                "abstract": False,
-                "base_manager_name": "objects",
+                'abstract': False,
+                'base_manager_name': 'objects',
+                'constraints': [models.CheckConstraint(condition=models.Q(('created_by__isnull', False)), name='lab_wolbachiasample_author'), models.UniqueConstraint(fields=('organization', 'code'), name='lab_sample_org_code'), models.CheckConstraint(condition=models.Q(models.Q(('lot__isnull', True), ('reading__isnull', False)), models.Q(('lot__isnull', False), ('reading__isnull', True)), _connector='OR'), name='lab_sample_exact_source')],
             },
         ),
         migrations.RemoveConstraint(
-            model_name="shipmentsource",
-            name="shipment_exact_source",
+            model_name='shipmentsource',
+            name='shipment_exact_source',
         ),
         migrations.AddField(
-            model_name="wolbachiasample",
-            name="collector",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to=settings.AUTH_USER_MODEL,
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="created_by",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to=settings.AUTH_USER_MODEL,
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="event",
-            field=models.OneToOneField(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="wolbachia_sample",
-                to="field_sync.fieldevent",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="location",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="inventory.location",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="lot",
-            field=models.ForeignKey(
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="inventory.lot",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="method_version",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="lab.labmethodversion",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="organization",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="organizations.organization",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="origin",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="catalogs.catalogitem",
-            ),
-        ),
-        migrations.AddField(
-            model_name="wolbachiasample",
-            name="reading",
-            field=models.ForeignKey(
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="ovitraps.ovitrapreading",
-            ),
-        ),
-        migrations.AddField(
-            model_name="shipmentsource",
-            name="sample",
-            field=models.ForeignKey(
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                to="lab.wolbachiasample",
-            ),
+            model_name='shipmentsource',
+            name='sample',
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='lab.wolbachiasample'),
         ),
         migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    models.Q(
-                        ("bag__isnull", False),
-                        ("lot__isnull", True),
-                        ("sample__isnull", True),
-                    ),
-                    models.Q(
-                        ("bag__isnull", True),
-                        ("lot__isnull", False),
-                        ("sample__isnull", True),
-                    ),
-                    models.Q(
-                        ("bag__isnull", True),
-                        ("lot__isnull", True),
-                        ("sample__isnull", False),
-                    ),
-                    _connector="OR",
-                ),
-                name="shipment_exact_source",
-            ),
+            model_name='shipmentsource',
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('bag__isnull', False), ('lot__isnull', True), ('sample__isnull', True)), models.Q(('bag__isnull', True), ('lot__isnull', False), ('sample__isnull', True)), models.Q(('bag__isnull', True), ('lot__isnull', True), ('sample__isnull', False)), _connector='OR'), name='shipment_exact_source'),
         ),
         migrations.AddConstraint(
-            model_name="shipmentsource",
-            constraint=models.UniqueConstraint(
-                fields=("shipment", "sample"), name="shipment_sample_once"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiasample",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_wolbachiasample_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiasample",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "code"), name="lab_sample_org_code"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiasample",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    models.Q(("lot__isnull", True), ("reading__isnull", False)),
-                    models.Q(("lot__isnull", False), ("reading__isnull", True)),
-                    _connector="OR",
-                ),
-                name="lab_sample_exact_source",
-            ),
+            model_name='shipmentsource',
+            constraint=models.UniqueConstraint(fields=('shipment', 'sample'), name='shipment_sample_once'),
         ),
     ]

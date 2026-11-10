@@ -161,6 +161,14 @@ RELEASE_ADDITIVE_TRIGGERS = {
     ("inventory_stockmovement", "inventory_release_movement_complete"),
 }
 
+# Explicit #118 additions outside the Lab tables excluded by the legacy query.
+SHIPMENT_ADDITIVE_TRIGGERS = {
+    ("inventory_stockoperation", "inventory_material_delivery_operation_guard"),
+    ("inventory_stockoperation", "inventory_material_delivery_operation_complete"),
+    ("inventory_stockmovement", "inventory_material_delivery_movement_complete"),
+    ("uploads_attachmentlink", "uploads_material_request_parent_guard"),
+}
+
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
@@ -345,6 +353,7 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             | QA_ADDITIVE_TRIGGERS
             | PEOPLE_ADDITIVE_TRIGGERS
             | RELEASE_ADDITIVE_TRIGGERS
+            | SHIPMENT_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
