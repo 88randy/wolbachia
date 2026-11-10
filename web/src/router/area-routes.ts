@@ -14,6 +14,7 @@ import { operationRoutes } from "../operations/routes";
 import { peopleRoutes } from "../people/routes";
 import { quadrantRoutes } from "../quadrants/routes";
 import { releaseRoutes } from "../releases/routes";
+import { schedulingRoutes } from "../scheduling/routes";
 import { settingsRoutes } from "../settings/routes";
 import { placeholderRoutes } from "../states/placeholder-routes";
 
@@ -22,6 +23,7 @@ export const areaRouteModules = [
   ...notificationRoutes,
   ...incidentRoutes,
   ...operationRoutes,
+  ...schedulingRoutes,
   ...quadrantRoutes,
   ...releaseRoutes,
   ...inventoryAreaRoutes,
