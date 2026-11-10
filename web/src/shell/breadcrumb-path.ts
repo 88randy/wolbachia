@@ -2,6 +2,8 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { AREAS } from "../router/areas";
 const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   shifts: "shift.page.title",
+  editor: "mapEditor.title",
+  users: "users.page.title",
   phones: "phones.page.title",
   "rule-parameters": "rules.page.title",
   catalogs: "catalogs.page.title",
@@ -43,9 +45,11 @@ function lotResourceKey(parts: string[], index: number): MessageKey | undefined 
   if (index === 3 && parts[index] === "conditions") return "conditions.page.title";
   return undefined;
 }
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Only known routes become ancestor links; human codes remain plain text. */
 export function breadcrumbsOf(pathname: string) {
-  const parts = pathname.split("/").filter(Boolean);
+  // Records without a human code (UUID routes) end the trail at their list.
+  const parts = pathname.split("/").filter((part) => part && !UUID_PATTERN.test(part));
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;

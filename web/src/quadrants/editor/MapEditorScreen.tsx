@@ -56,7 +56,7 @@ export function MapEditorScreen({ scope }: { scope: GeographyScope }) {
           </Link>
         }
       />
-      <div className="grid min-h-[640px] flex-1 grid-cols-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid flex-1 grid-cols-1 items-start gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside
           aria-label={t("mapEditor.panel")}
           className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-card"
@@ -89,16 +89,16 @@ export function MapEditorScreen({ scope }: { scope: GeographyScope }) {
           {saves.failedKey && <InlineNotice tone="critical">{t(saves.failedKey)}</InlineNotice>}
           <EditorLegend quadrants={data.quadrants} centers={data.centers} />
         </aside>
-        <div className="min-h-[640px]">
+        <div className="h-[min(76vh,860px)] min-h-[520px] lg:sticky lg:top-4">
           {data.isError ? (
             <ErrorState onRetry={data.refetch} />
           ) : data.isLoading ? (
-            <Skeleton className="h-full min-h-[640px] w-full rounded-2xl" />
+            <Skeleton className="h-full w-full rounded-2xl" />
           ) : display.hasFailed || !display.source ? (
             <InlineNotice tone="warning">{t("mapEditor.map.unavailable")}</InlineNotice>
           ) : (
             <MapBoundary>
-              <Suspense fallback={<Skeleton className="h-full min-h-[640px] w-full rounded-2xl" />}>
+              <Suspense fallback={<Skeleton className="h-full w-full rounded-2xl" />}>
                 <EditorMap
                   data={data}
                   editor={editor}

@@ -1,7 +1,7 @@
 /* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
-import { centerPattern } from "../geography/map-features";
+import { centerPatterns } from "./editor-model";
 
 interface Props {
   quadrants: readonly Schemas["Quadrant"][];
@@ -27,7 +27,8 @@ function LineSwatch({ dashed, muted }: { dashed: boolean; muted?: boolean }) {
 /** Color always comes with a pattern or a shape and a name. */
 export function EditorLegend({ quadrants, centers }: Props) {
   const { t } = useTranslation();
-  const used = [...new Set(quadrants.map((item) => item.center))];
+  const used = [...new Set(quadrants.map((item) => item.center))].sort();
+  const centerPattern = centerPatterns(quadrants);
   const nameOf = new Map(centers.map((item) => [item.id, item.name]));
   return (
     <section

@@ -58,7 +58,7 @@ export const mapEditor = {
 
   "mapEditor.move.pick": "Elige en el mapa o en la lista el cuadrante que quieres corregir.",
   "mapEditor.move.help":
-    "Arrastra una esquina o un punto. Haz clic en el punto medio de una línea para agregar una esquina.",
+    "Arrastra una esquina para cambiar la forma. Para mover un punto, haz clic en él y luego arrástralo. Haz clic en el punto medio de una línea para agregar una esquina.",
   "mapEditor.move.changes": "Cambios sin guardar: {count}",
   "mapEditor.move.noChanges": "Todavía no hay cambios.",
   "mapEditor.move.outside":

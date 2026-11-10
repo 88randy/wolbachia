@@ -19,22 +19,23 @@ interface Props {
   kind: PointKind;
 }
 
-function suggestedCode(data: EditorData, kind: PointKind) {
-  return kind === "sampling"
-    ? nextCode(
-        data.points.map((item) => item.code),
-        "OV-",
-      )
-    : nextCode(
-        data.releasePoints.map((item) => item.code),
-        "PL-",
-      );
+function suggestedCode(data: EditorData, kind: PointKind, location: number[]) {
+  const quadrant = quadrantAt(data.quadrants, location);
+  if (kind === "release") {
+    const codes = data.releasePoints
+      .filter((item) => item.quadrant === quadrant?.id)
+      .map((item) => item.code);
+    return nextCode(codes, `${quadrant?.code ?? "PL"}-REL-P`);
+  }
+  const block = blockAt(data.blocks, location);
+  const codes = data.points.filter((item) => item.block === block?.id).map((item) => item.code);
+  return nextCode(codes, `${block?.code ?? "P"}-P`);
 }
 
 /** Click the map to place the point (click again to change it), then name it and save. */
 export function PointDraftForm({ data, editor, saves, kind }: Props) {
   const { t } = useTranslation();
-  const [code, setCode] = useState(() => suggestedCode(data, kind));
+  const [edited, setCode] = useState<string | null>(null);
   const draft = editor.pointDraft;
   const hint = kind === "sampling" ? "mapEditor.point.samplingStep" : "mapEditor.point.releaseStep";
   if (!draft)
@@ -43,6 +44,7 @@ export function PointDraftForm({ data, editor, saves, kind }: Props) {
         {t(hint)}
       </p>
     );
+  const code = edited ?? suggestedCode(data, kind, draft.location);
   const quadrant = quadrantAt(data.quadrants, draft.location);
   const block = blockAt(data.blocks, draft.location);
   const placeOk = kind === "sampling" ? Boolean(block && quadrant) : Boolean(quadrant);

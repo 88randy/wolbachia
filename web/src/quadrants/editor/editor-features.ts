@@ -1,7 +1,6 @@
 /* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import type { Schemas } from "@wolbachia/api-client";
-import { centerPattern } from "../geography/map-features";
-import { geometryOf } from "./editor-model";
+import { centerPatterns, geometryOf } from "./editor-model";
 
 interface Hidden {
   quadrant: string | null;
@@ -20,6 +19,7 @@ export function editorFeatures(
   hidden: Hidden,
 ) {
   const centerOf = new Map(data.quadrants.map((item) => [item.id, item.center]));
+  const centerPattern = centerPatterns(data.quadrants);
   const polygons = [
     ...data.quadrants.flatMap((item) => {
       const geometry = geometryOf(item);

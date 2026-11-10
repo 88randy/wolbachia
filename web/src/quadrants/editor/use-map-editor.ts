@@ -110,6 +110,8 @@ export function useMapEditor(data: EditorData) {
           );
       draw.addFeatures(features);
       draw.setMode(DRAW_MODES.select);
+      // The quadrant starts selected so its corners can be dragged right away.
+      if (features[0]) draw.selectFeature(features[0].id ?? "");
       setEditPolygon(polygon);
     },
     [draw, data.quadrants, data.blocks, data.points, data.releasePoints],

@@ -52,7 +52,8 @@ export const mapEditor: Record<keyof typeof source, string> = {
   "mapEditor.point.again": "If you made a mistake, click somewhere else on the map.",
 
   "mapEditor.move.pick": "Choose the quadrant to correct on the map or in the list.",
-  "mapEditor.move.help": "Drag a corner or a point. Click the middle of a line to add a corner.",
+  "mapEditor.move.help":
+    "Drag a corner to change the shape. To move a point, click it and then drag it. Click the middle of a line to add a corner.",
   "mapEditor.move.changes": "Unsaved changes: {count}",
   "mapEditor.move.noChanges": "No changes yet.",
   "mapEditor.move.outside":

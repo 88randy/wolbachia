@@ -60,7 +60,7 @@ export function nextCode(existing: readonly string[], fallbackPrefix: string): s
   }
   const [prefix, group] = [...groups.entries()].sort((a, b) => b[1].count - a[1].count)[0] ?? [
     fallbackPrefix,
-    { count: 0, max: 0, width: 3 },
+    { count: 0, max: 0, width: 1 },
   ];
   const taken = new Set(existing);
   let next = group.max + 1;
@@ -79,4 +79,15 @@ export function pointsInside(
   return points.filter(
     (item) => item.current_version && containsLocation(polygon, item.current_version.location),
   ).length;
+}
+
+export type LinePattern = "solid" | "dashed";
+
+/** Centers alternate solid and dashed outlines (color is never the only cue). */
+export function centerPatterns(quadrants: readonly Schemas["Quadrant"][]) {
+  const centers = [...new Set(quadrants.map((item) => item.center))].sort();
+  const patterns = new Map(
+    centers.map((center, index) => [center, index % 2 ? "dashed" : "solid"] as const),
+  );
+  return (center: string): LinePattern => patterns.get(center) ?? "solid";
 }

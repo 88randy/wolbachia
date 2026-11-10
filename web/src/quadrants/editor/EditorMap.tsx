@@ -66,7 +66,7 @@ export default function EditorMap({ data, editor, source, onFailure }: Props) {
   };
   const isDrawing = tool === "quadrant" || tool === "sampling" || tool === "release";
   return (
-    <div className="relative h-full min-h-[480px] w-full overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-line bg-surface">
       <Map
         initialViewState={initialView(data.quadrants)}
         mapStyle={mapStyle}
