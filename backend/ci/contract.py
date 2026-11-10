@@ -20,6 +20,9 @@ MODULE_PARTITIONS = {
     INTEGRATION_PARTITION: frozenset(
         {
             "tests/test_inventory_allocations_b_10.py",
+            "tests/test_lab_concurrency_114.py",
+            "tests/test_lab_recounts_b_19.py",
+            "tests/test_ovitraps_lifecycle_b_15.py",
             "tests/test_uploads_b_04.py",
             "tests/test_permit_api_116.py",
             "tests/test_release_guards_116.py",
@@ -27,6 +30,10 @@ MODULE_PARTITIONS = {
             "tests/test_release_uuid_116.py",
             "tests/test_releases_b_20.py",
             "tests/test_releases_concurrency_116.py",
+            "tests/test_reviews_b_17.py",
+            "tests/test_seed_defaults.py",
+            "tests/test_shift_concurrency.py",
+            "tests/test_sync_locks.py",
         }
     ),
 }

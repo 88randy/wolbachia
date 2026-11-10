@@ -18,13 +18,13 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
 - `regular-integration`: complete B10 supplies, B04 private uploads and all six #116
-  permit/release test modules.
+  permit/release test modules, plus the seven measured ordinary modules listed below.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration` cohort is excluded from that
 derived migration-only subset. No second module registry exists. Every migration
-cohort contains exactly one whole module; the ordinary cohort retains all eight whole
+cohort contains exactly one whole module; the ordinary cohort retains all fifteen whole
 modules. No module can belong to two cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
@@ -191,3 +191,30 @@ remain intact, following the existing review113 pattern. Whole-module ownership,
 all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
 PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
 improvement is predicted.
+
+## Personnel integration capacity and measurement (#100)
+
+Run 42761104367 cancelled residual `regular` at the unchanged 15-minute limit after
+94% of its selection. Run 42756081997's successful regular session recorded 2307
+nodes and 702.92s of setup/call/teardown phases; its integration session recorded 111
+nodes and 391.58s. These are measured phase totals, not a promise about later wall
+times. The first database-setup owner of each partition stays in place.
+
+Move 203 existing cases across these seven complete modules into the existing
+ordinary integration cohort: `test_lab_recounts_b_19.py`,
+`test_lab_concurrency_114.py`, `test_ovitraps_lifecycle_b_15.py`,
+`test_shift_concurrency.py`, `test_seed_defaults.py`, `test_sync_locks.py` and
+`test_reviews_b_17.py`. Their prior phase total was 187.38s. The residual remains
+the exact ordered complement. All twelve fresh fragments, migration-owner
+boundaries, cases, assertions, 900s budgets and the 85% combined gate are retained.
+
+CI selects Coverage 7.17.1's documented `sysmon` core on Python 3.13 for the existing
+statement-only/threaded configuration. Sources, omissions and aggregation remain
+unchanged. Pytest treats `CoverageWarning` as an error, including startup core
+fallback, so unsupported measurement cannot silently pass. Harness qualification
+compares nonempty threaded executed-line sets against `ctrace` and verifies
+startup and later warning failures with durable child-exit receipts. Fresh full
+CI is still required to qualify wall time and the complete coverage union.
+
+References: [Coverage core configuration](https://coverage.readthedocs.io/en/7.17.1/config.html#run-core),
+[pytest warning filters](https://docs.pytest.org/en/stable/how-to/capture-warnings.html).

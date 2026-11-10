@@ -130,8 +130,8 @@ Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache
 
 CI runs every test once across twelve internally serial PostgreSQL partitions:
 residual `regular`, one explicit `regular-integration` cohort containing the complete
-B10/B04 and six permit/release modules, and ten singleton complete migration-module
-cohorts. The
+B10/B04, six permit/release modules and seven measured integration modules, and
+ten singleton complete migration-module cohorts. The
 original `checks` job validates all twelve
 current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
