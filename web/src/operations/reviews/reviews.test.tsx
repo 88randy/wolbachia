@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import type { Schemas } from "@wolbachia/api-client";
@@ -238,7 +238,9 @@ test.each([503, 403, 404])(
 );
 
 test("a nonempty scope change purges a denied private reason and old cached evidence", async () => {
-  const { api, app } = await open();
+  const { api, app } = await open({
+    [LIST]: () => Response.json({ count: 1, next: null, previous: null, results: [review()] }),
+  });
   await userEvent.type(
     await screen.findByLabelText("Motivo de la decisión"),
     "Private original reason",
@@ -259,10 +261,18 @@ test("a nonempty scope change purges a denied private reason and old cached evid
   await act(async () => {
     await app.queryClient.invalidateQueries({ queryKey: ["me"] });
   });
-  await screen.findByRole("alert");
+  await waitFor(() => {
+    const record = within(screen.getByRole("region", { name: "Registro original y decisiones" }));
+    expect(record.getByRole("alert")).toBeDefined();
+  });
   expect(screen.queryByLabelText("Motivo de la decisión")).toBeNull();
   api.setRoute(DETAIL, Response.json(review()));
-  await userEvent.click(screen.getByRole("button", { name: "Actualizar evidencia vigente" }));
+  const currentRecord = within(
+    screen.getByRole("region", { name: "Registro original y decisiones" }),
+  );
+  await userEvent.click(
+    currentRecord.getByRole("button", { name: "Actualizar evidencia vigente" }),
+  );
   const input = await screen.findByLabelText<HTMLInputElement>("Motivo de la decisión");
   expect(input.value).toBe("");
 });
