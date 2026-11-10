@@ -4,6 +4,8 @@ export interface LocationFix {
   readonly lng: number;
   readonly accuracy_m: number | null;
   readonly fixedAt: number;
+  /** Platform speed in m/s for the speed lock; absent when the source cannot report it. */
+  readonly speed_mps?: number | null;
 }
 export type LocationState =
   | { readonly kind: "granted" | "stale"; readonly fix: LocationFix }
