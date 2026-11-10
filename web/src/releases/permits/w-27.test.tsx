@@ -5,13 +5,17 @@ import { describe, expect, test } from "vitest";
 import { createFakeApi, makeMe } from "../../test/fake-api";
 import type { RecordedRequest } from "../../test/fake-api";
 import { renderApp } from "../../test/render-app";
+import type { Me } from "../../session/me";
 import type { Permit, PermitType } from "./permits-query";
 
 const ME = "GET /api/v1/me/";
 const TYPES = "/api/v1/permit-types/";
 const PERMITS = "/api/v1/permits/";
 const ID = "6b1f0d5e-0a43-4c19-8c0e-3d0f7f0a0001";
-const WHOLE = { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } } as const;
+const WHOLE: Me["scope"] = {
+  centers: { mode: "all", ids: [] },
+  quadrants: { mode: "all", ids: [] },
+};
 const MANAGER = makeMe({ permissions: ["permit.manage", "permit.suspend"], scope: WHOLE });
 
 const POLYGON = {
