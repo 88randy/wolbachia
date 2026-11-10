@@ -1,18 +1,23 @@
-import { Link } from "@tanstack/react-router";
+import { Bike } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { AreaPlaceholder } from "../states/AreaPlaceholder";
-import { Card } from "../ui/Card";
-import page from "../styles/page.module.css";
+import { HubPage } from "../components/templates/HubPage";
+
+/** Fleet home. The area guard already requires motorcycle.read. */
 export function FleetHome() {
   const { t } = useTranslation();
   return (
-    <>
-      <AreaPlaceholder areaId="fleet" />
-      <div className={page.page}>
-        <Card title={t("fleet.page.title")}>
-          <Link to="/fleet/motorcycles">{t("fleet.page.title")}</Link>
-        </Card>
-      </div>
-    </>
+    <HubPage
+      title={t("shell.nav.fleet")}
+      description={t("hub.fleet.description")}
+      items={[
+        {
+          id: "motorcycles",
+          icon: Bike,
+          link: { to: "/fleet/motorcycles" },
+          title: t("fleet.page.title"),
+          description: t("hub.fleet.motorcycles"),
+        },
+      ]}
+    />
   );
 }

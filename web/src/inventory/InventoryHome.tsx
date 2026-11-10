@@ -1,34 +1,93 @@
-import { Link } from "@tanstack/react-router";
+import {
+  ArrowLeftRight,
+  Boxes,
+  ClipboardCheck,
+  FileWarning,
+  MapPin,
+  PackageMinus,
+  PackageOpen,
+  Truck,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Card } from "../ui/Card";
+import { HubPage } from "../components/templates/HubPage";
+import type { HubCardItem } from "../components/templates/HubCard";
 import { useCan } from "../session/use-can";
-import { useDocumentTitle } from "../shell/use-document-title";
-import { AllocationLinks } from "./allocation/AllocationLinks";
-import page from "../styles/page.module.css";
+
+/** Inventory home: one card per screen the user may open. */
 export function InventoryHome() {
   const { t } = useTranslation();
   const can = useCan();
-  useDocumentTitle(t("inventory.page.home"));
+  const items: (HubCardItem & { permission: string })[] = [
+    {
+      id: "transfers",
+      permission: "transfer.read",
+      icon: Truck,
+      link: { to: "/inventory/transfers" },
+      title: t("transfers.page.title"),
+      description: t("hub.inventory.transfers"),
+    },
+    {
+      id: "discrepancies",
+      permission: "discrepancy.read",
+      icon: FileWarning,
+      link: { to: "/inventory/discrepancies" },
+      title: t("discrepancies.page.title"),
+      description: t("hub.inventory.discrepancies"),
+    },
+    {
+      id: "assignments",
+      permission: "inventory.allocate",
+      icon: ArrowLeftRight,
+      link: { to: "/inventory/assignments" },
+      title: t("allocation.assignment.title"),
+      description: t("hub.inventory.assignments"),
+    },
+    {
+      id: "reconciliations",
+      permission: "inventory.reconcile",
+      icon: ClipboardCheck,
+      link: { to: "/inventory/reconciliations" },
+      title: t("allocation.reconciliation.title"),
+      description: t("hub.inventory.reconciliations"),
+    },
+    {
+      id: "write-offs",
+      permission: "inventory.write_off",
+      icon: PackageMinus,
+      link: { to: "/inventory/write-offs" },
+      title: t("allocation.writeOff.title"),
+      description: t("hub.inventory.writeOffs"),
+    },
+    {
+      id: "supplies",
+      permission: "supply_type.read",
+      icon: PackageOpen,
+      link: { to: "/inventory/supplies" },
+      title: t("inventory.page.supplies"),
+      description: t("hub.inventory.supplies"),
+    },
+    {
+      id: "lots",
+      permission: "lot.read",
+      icon: Boxes,
+      link: { to: "/inventory/lots" },
+      title: t("inventory.page.lots"),
+      description: t("hub.inventory.lots"),
+    },
+    {
+      id: "locations",
+      permission: "location.read",
+      icon: MapPin,
+      link: { to: "/inventory/locations" },
+      title: t("inventory.page.locations"),
+      description: t("hub.inventory.locations"),
+    },
+  ];
   return (
-    <section className={page.page}>
-      <Card title={t("inventory.page.home")} headingLevel={1}>
-        <nav aria-label={t("inventory.page.home")} className={page.actions}>
-          {can("transfer.read") && (
-            <Link to="/inventory/transfers">{t("transfers.page.title")}</Link>
-          )}
-          {can("discrepancy.read") && (
-            <Link to="/inventory/discrepancies">{t("discrepancies.page.title")}</Link>
-          )}
-          <AllocationLinks />
-          {can("supply_type.read") && (
-            <Link to="/inventory/supplies">{t("inventory.page.supplies")}</Link>
-          )}
-          {can("lot.read") && <Link to="/inventory/lots">{t("inventory.page.lots")}</Link>}
-          {can("location.read") && (
-            <Link to="/inventory/locations">{t("inventory.page.locations")}</Link>
-          )}
-        </nav>
-      </Card>
-    </section>
+    <HubPage
+      title={t("inventory.page.home")}
+      description={t("hub.inventory.description")}
+      items={items.filter((item) => can(item.permission))}
+    />
   );
 }

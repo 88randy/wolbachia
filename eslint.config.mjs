@@ -220,6 +220,17 @@ export default defineConfig([
     },
   },
 
+  // Page templates, hub pages (declarative card lists) and area route modules read as data.
+  {
+    files: [
+      "web/src/components/templates/**",
+      "web/src/**/*Home.tsx",
+      "web/src/settings/SettingsPage.tsx",
+      "web/src/**/routes.tsx",
+    ],
+    rules: { "max-lines-per-function": "off" },
+  },
+
   // shadcn/ui components are vendored from the registry (CLI 4.23.0): keep them close to upstream.
   // They are presentational only; user copy still comes in through props from packages/i18n.
   {

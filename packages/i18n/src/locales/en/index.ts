@@ -26,6 +26,7 @@ import { catalogs } from "./catalogs.ts";
 /** English catalog: exactly the keys of `../es-MX`, composed from one file per area. */
 import type { MessageKey } from "../es-MX/index.ts";
 import { fleet } from "./fleet.ts";
+import { hub } from "./hub.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -67,6 +68,7 @@ export const en: Record<MessageKey, string> = {
   ...geography,
   ...catalogs,
   ...fleet,
+  ...hub,
   ...common,
   ...errors,
   ...mobile,
