@@ -179,7 +179,7 @@ def _validate_type(  # noqa: PLR0913 -- current identity, stable item and propos
             continue
         if not Membership.objects.filter(organization=actor.organization, pk=values[name]).exists():
             raise Http404
-        if eligible_owner(values[name], actor.organization, None) is None:
+        if name in data and eligible_owner(values[name], actor.organization, None) is None:
             raise IncidentConfigurationUnavailableError
     if item.is_other and (not values.get("is_active", True) or "label" in data or "icon" in data):
         raise IncidentConflictError("protected_other")

@@ -26,6 +26,9 @@ clamps and paired effective scope apply. Read and close must share some possible
 center, matching the configuration writer. Terminal eligibility also requires
 the existing administrative permissions. These are current options, and writes
 revalidate the actual selected names under the existing Organization arbiter.
+An unchanged retired intermediate remains a retained reference when editing other
+configuration; operational escalation still skips it. An explicitly selected
+intermediate must be currently eligible, and the terminal is always revalidated.
 
 `GET /incident-types/{id}/versions/` identifies the stable CatalogItem, requires
 `incident.manage_type` and pages the retained versions newest first. Unknown,

@@ -151,12 +151,39 @@ def test_configuration_roster_filters_complete_eligibility_before_search_and_pag
         "/api/v1/incident-types/owner-options/", {"membership_id": str(disjoint.pk)}
     )
     assert denied.data["count"] == 0
-    invalid = case.client.patch(
-        f"/api/v1/incident-types/{case.version.item_id}/",
-        {"expected_revision": 1, "supervisor_id": str(disjoint.pk)},
-        format="json",
+    for identifier in (disjoint.pk, inactive.pk):
+        invalid = case.client.patch(
+            f"/api/v1/incident-types/{case.version.item_id}/",
+            {"expected_revision": 1, "supervisor_id": str(identifier)},
+            format="json",
+        )
+        assert invalid.status_code == 409
+
+
+@pytest.mark.django_db
+def test_terminal_change_retains_omitted_retired_intermediate_but_rejects_explicit_selection(
+    configuration_case, make_member
+):
+    case = configuration_case
+    _user, successor = scoped_member(
+        make_member,
+        case.actor.organization,
+        ["incident.read", "incident.close", "organization.update", "role.update"],
     )
-    assert invalid.status_code == 409
+    case.owner.is_active = False
+    case.owner.save(update_fields=["is_active"])
+    endpoint = f"/api/v1/incident-types/{case.version.item_id}/"
+    omitted = case.client.patch(
+        endpoint, {"expected_revision": 1, "terminal_id": str(successor.pk)}, format="json"
+    )
+    assert omitted.status_code == 200
+    assert omitted.json()["supervisor"] == str(case.owner.pk)
+    assert omitted.json()["terminal"] == str(successor.pk)
+    explicit = case.client.patch(
+        endpoint, {"expected_revision": 2, "supervisor_id": str(case.owner.pk)}, format="json"
+    )
+    assert explicit.status_code == 409
+    assert IncidentTypeVersion.objects.filter(item=case.version.item).count() == 2
 
 
 @pytest.mark.django_db

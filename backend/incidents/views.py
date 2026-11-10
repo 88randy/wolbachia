@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, PolymorphicProxySerializer, extend_schema
 from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,7 +21,6 @@ from fleet.serializers import FleetIncidentFilterSerializer
 from fleet.serializers import IncidentSerializer as FleetIncidentSerializer
 from fleet.views import IncidentViewSet as FleetIncidentViewSet
 from incidents.configuration import write_type
-from incidents.configuration_permissions import IncidentTypePermission
 from incidents.models import Incident, IncidentTypeVersion
 from incidents.option_selectors import configuration_owner_options, context_options, owner_options
 from incidents.payloads import IncidentReportPayload
@@ -66,6 +64,7 @@ from incidents.serializers import (
 )
 from incidents.services import Decision, decide, report
 from incidents.workspace_queries import IncidentOrderingFilter, reported_workspace
+from organizations.services import effective_scope
 from uploads.access import actor_from_request
 
 
@@ -277,7 +276,6 @@ class IncidentTypeOrderingFilter(filters.OrderingFilter):
 class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = IncidentTypeVersion.objects.all()
     serializer_class = IncidentTypeSerializer
-    permission_classes = [IsAuthenticated, IncidentTypePermission]
     required_permissions = {
         "list": INCIDENT_READ,
         "create": INCIDENT_MANAGE_TYPE,
@@ -291,6 +289,18 @@ class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets
     ordering_fields = ["code", "created_at"]
     ordering = ["code", "id"]
     http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_permissions(self) -> list[Any]:
+        """Choose the list action code while retaining the shared fail-closed permission class."""
+        membership = getattr(getattr(self, "request", None), "membership", None)
+        if self.action == "list" and membership is not None:
+            permission = (
+                INCIDENT_MANAGE_TYPE
+                if effective_scope(membership).allows(INCIDENT_MANAGE_TYPE)
+                else INCIDENT_READ
+            )
+            self.required_permissions = {**self.required_permissions, "list": permission}
+        return list(super().get_permissions())
 
     def get_queryset(self) -> QuerySet[IncidentTypeVersion]:
         if getattr(self, "swagger_fake_view", False):
