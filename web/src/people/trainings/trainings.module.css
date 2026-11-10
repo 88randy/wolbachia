@@ -15,7 +15,12 @@
 }
 .fields {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: var(--space-2);
+}
+.stack > button,
+.stack > a {
+  justify-self: start;
 }
 .facts {
   display: grid;

@@ -3,7 +3,7 @@ import type { InventoryRecord } from "./inventory-links";
 import { inventoryValuesOf } from "./inventory-form-values";
 import { fieldKeys } from "./inventory-fields";
 import { ProtocolFacts } from "./ProtocolFacts";
-import { DescriptionGrid } from "../components/templates/DescriptionGrid";
+import styles from "./inventory.module.css";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useInventoryContext } from "./use-inventory-context";
 const enumKeys: Record<string, MessageKey> = {
@@ -23,42 +23,51 @@ const identities = new Set([
   "initial_location_id",
   "incident_type_id",
 ]);
-function useFactValue() {
+function ScalarFact({ name, value }: { name: string; value: string }) {
   const { t } = useTranslation();
-  return (name: string, value: string) => {
-    if (value === "true" || value === "false")
-      return t(value === "true" ? "inventory.option.yes" : "inventory.option.no");
-    const option = ["kind", "identity_kind", "expiry_basis"].includes(name)
-      ? enumKeys[value]
-      : undefined;
-    return option ? t(option) : value;
-  };
+  const flag = value === "true" || value === "false";
+  const option = ["kind", "identity_kind", "expiry_basis"].includes(name)
+    ? enumKeys[value]
+    : undefined;
+  return (
+    <div>
+      <dt>{t(fieldKeys[name] ?? "inventory.field.name")}</dt>
+      <dd>
+        {flag
+          ? t(value === "true" ? "inventory.option.yes" : "inventory.option.no")
+          : option
+            ? t(option)
+            : value || t("inventory.state.unconfigured")}
+      </dd>
+    </div>
+  );
 }
 /** Read access exposes returned facts even when configuration controls are unavailable. */
 export function InventoryFacts({ record }: { record: InventoryRecord }) {
   const { t } = useTranslation();
   const custody =
     useInventoryContext().readContext.mode === "custody" && "supply_version" in record;
-  const factValue = useFactValue();
   const values = Object.entries(inventoryValuesOf(record)).filter(
     ([key]) => fieldKeys[key] && !identities.has(key),
   );
-  const items = [
-    ...values.map(([name, value]) => ({
-      label: t(fieldKeys[name] ?? "inventory.field.name"),
-      value: factValue(name, value),
-    })),
-    ...("owner_label" in record
-      ? [{ label: t("inventory.field.owner"), value: record.owner_label }]
-      : []),
-    ...("location_version" in record && record.location_version
-      ? [{ label: t("inventory.field.location"), value: record.location_version.name }]
-      : []),
-  ];
   return (
     <>
       {custody && <p>{t("inventory.context.admissionPins")}</p>}
-      <DescriptionGrid items={items} />
+      <dl className={styles.summary}>
+        {values.map(([name, value]) => (
+          <ScalarFact key={name} name={name} value={value} />
+        ))}
+      </dl>
+      {"owner_label" in record && (
+        <p>
+          {t("inventory.field.owner")}: {record.owner_label}
+        </p>
+      )}
+      {"location_version" in record && record.location_version && (
+        <p>
+          {record.location_version.code}: {record.location_version.name}
+        </p>
+      )}
       {"protocol" in record && <ProtocolFacts protocol={record.protocol} />}
     </>
   );

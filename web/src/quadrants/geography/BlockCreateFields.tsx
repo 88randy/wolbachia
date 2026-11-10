@@ -1,7 +1,8 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { TextField } from "../../forms/TextField";
-import { PolygonField } from "./PolygonField";
+import { MapPolygonPicker } from "../../map-picker/MapPolygonPicker";
+import { parsePolygon, polygonText } from "./geometry";
 import type { CreateBlock } from "./use-create-block";
 import styles from "./geography.module.css";
 export function BlockCreateFields({ form }: { form: CreateBlock }) {
@@ -18,7 +19,13 @@ export function BlockCreateFields({ form }: { form: CreateBlock }) {
           form.setCode(event.target.value);
         }}
       />
-      <PolygonField value={form.text} onChange={form.setText} />
+      <MapPolygonPicker
+        label={t("geography.field.polygon")}
+        value={parsePolygon(form.text)}
+        onChange={(polygon) => {
+          form.setText(polygonText(polygon));
+        }}
+      />
     </fieldset>
   );
 }

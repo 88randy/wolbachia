@@ -16,6 +16,8 @@ import { ORGANIZATION_READ, ROLE_READ } from "./organization/permissions";
 import { W65Page } from "./organization/W65Page";
 import { W68Page } from "./organization/W68Page";
 import { SettingsPage } from "./SettingsPage";
+import { W48UsersPage } from "../people-admin/W48UsersPage";
+import { W49PersonPage } from "../people-admin/W49PersonPage";
 
 /** A Settings screen at `/settings/<resource>` that needs one permission code. */
 function settingsListRoute<const Path extends string>(
@@ -44,7 +46,20 @@ const organizationRoute = createRoute({
   errorComponent: AreaErrorState,
 });
 
-/** Settings area: home, W62 rules, W63 catalogs, W64 incident types, W65 roles, W67 phones, W68. */
+const personRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/users/$id",
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "user.read");
+  },
+  component: function PersonRoute() {
+    const { id } = personRoute.useParams();
+    return <W49PersonPage key={id} id={id} />;
+  },
+  errorComponent: AreaErrorState,
+});
+
+/** Settings area: home, W62 rules, W63 catalogs, W64 incident types, W65 roles, W67 phones, W68, W48 users, W49 person. */
 export const settingsRoutes = [
   areaHomeRoute("settings", SettingsPage),
   settingsListRoute("/settings/phones", PHONES_PERMISSION, PhonesPage),
@@ -52,6 +67,8 @@ export const settingsRoutes = [
   settingsListRoute("/settings/rule-parameters", RULE_PARAMETER_READ, RuleParametersPage),
   settingsListRoute("/settings/rule-parameters/$key", RULE_PARAMETER_READ, RuleParameterPage),
   organizationRoute,
+  settingsListRoute("/settings/users", "user.read", W48UsersPage),
+  personRoute,
   settingsListRoute("/settings/roles", ROLE_READ, W65Page),
   settingsListRoute("/settings/catalogs", "catalog.read", CatalogsPage),
   settingsListRoute("/settings/catalogs/$slug", "catalog.read", CatalogsPage),

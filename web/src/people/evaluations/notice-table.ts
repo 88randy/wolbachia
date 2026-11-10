@@ -1,3 +1,4 @@
+import { CENTER_LOOKUP, QUADRANT_LOOKUP } from "../../lookups/lookup-sources";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
 import type { NoticeQuery } from "./notice-query";
 import { PAGE_SIZE } from "./evaluation-query";
@@ -12,14 +13,16 @@ export const NOTICE_TABLE: TableQueryConfig = {
       key: "center",
       labelKey: "evaluations.field.center",
       maxLength: 36,
-      input: "hidden",
+      input: "lookup",
+      lookup: CENTER_LOOKUP,
     },
     {
       kind: "text",
       key: "quadrant",
       labelKey: "evaluations.field.quadrant",
       maxLength: 36,
-      input: "hidden",
+      input: "lookup",
+      lookup: QUADRANT_LOOKUP,
     },
   ],
 };

@@ -1,12 +1,13 @@
 import { MotorcycleActionButton } from "./MotorcycleActionButton";
 import type { useMotorcycleActions } from "./use-motorcycle-actions";
+import styles from "./fleet.module.css";
 export function MotorcycleActionControls({
   actions,
 }: {
   actions: ReturnType<typeof useMotorcycleActions>;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={styles.actions}>
       {actions.canUnblock && (
         <MotorcycleActionButton
           label="fleet.unblock.confirm"

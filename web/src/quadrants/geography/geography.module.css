@@ -39,6 +39,8 @@
 }
 .page button:where(:not(.createPrimary, .createSecondary)),
 .dialog button:where(:not(.createPrimary, .createSecondary)) {
+  /* Never a full-width bar inside the column layouts of the record. */
+  align-self: flex-start;
   min-height: var(--web-control-lg);
   height: auto;
   white-space: normal;

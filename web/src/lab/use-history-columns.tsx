@@ -1,4 +1,3 @@
-import { EntityName } from "../lookups/EntityName";
 import styles from "./lab.module.css";
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
@@ -7,13 +6,15 @@ import { useCan } from "../session/use-can";
 import { StatusPill } from "../ui/StatusPill";
 import type { DataTableColumn } from "../data-table/table-types";
 import type { Count, LabScope } from "./lab-query";
+import { LabName } from "./LabName";
 import { CorrectCountDialog } from "./CorrectCountDialog";
-function observationColumns(
-  format: ReturnType<typeof useFormatDateTime>,
-  language: string,
-): DataTableColumn<Count>[] {
+function observationColumns(language: string): DataTableColumn<Count>[] {
   return [
-    { id: "bag_id", headerKey: "lab.history.bag", cell: (count) => count.bag_id },
+    {
+      id: "bag_id",
+      headerKey: "lab.history.bag",
+      cell: (count) => <LabName kind="bag" id={count.bag_id} />,
+    },
     {
       id: "value",
       headerKey: "lab.count.value",
@@ -24,10 +25,14 @@ function observationColumns(
         </span>
       ),
     },
+  ];
+}
+function whoWhenColumns(format: ReturnType<typeof useFormatDateTime>): DataTableColumn<Count>[] {
+  return [
     {
       id: "created_by",
       headerKey: "lab.history.author",
-      cell: (count) => <EntityName kind="user" id={count.created_by} />,
+      cell: (count) => <LabName kind="user" id={count.created_by} />,
     },
     {
       id: "created_at",
@@ -48,7 +53,8 @@ export function useHistoryColumns(scope: LabScope, draftKey: string): DataTableC
   const { language } = useLanguage();
   const canCorrect = useCan()("egg_count.void");
   return [
-    ...observationColumns(format, language),
+    ...observationColumns(language),
+    ...whoWhenColumns(format),
     {
       id: "status",
       headerKey: "lab.queue.status",

@@ -1,9 +1,10 @@
-import { EntityName } from "../../lookups/EntityName";
 import type { Schemas } from "@wolbachia/api-client";
+import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { polygonText } from "./geometry";
 export function useBlockHistoryColumns(): DataTableColumn<Schemas["BlockVersion"]>[] {
+  const { t } = useTranslation();
   const format = useFormatDateTime();
   return [
     {
@@ -20,7 +21,7 @@ export function useBlockHistoryColumns(): DataTableColumn<Schemas["BlockVersion"
     {
       id: "created_by",
       headerKey: "geography.field.author",
-      cell: (row) => <EntityName kind="user" id={row.created_by} />,
+      cell: (row) => row.created_by_name ?? t("geography.status.unknown"),
     },
     {
       id: "geometry",

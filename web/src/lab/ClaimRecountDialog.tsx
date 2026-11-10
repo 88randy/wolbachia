@@ -1,8 +1,8 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
-import { UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LabChoiceDialog } from "./LabChoiceDialog";
+import type { DialogControl } from "./dialog-control";
 import type { RecountRow } from "./lab-lists";
 import { useLabAction } from "./use-lab-action";
 import { useLabScope } from "./use-lab-scope";
@@ -30,7 +30,7 @@ function useClaim(recount: RecountRow) {
 }
 
 /** The person who makes the second or third count takes the recount; the server checks independence. */
-export function ClaimRecountDialog({ recount }: { recount: RecountRow }) {
+export function ClaimRecountDialog({ recount, ...props }: { recount: RecountRow } & DialogControl) {
   const { t } = useTranslation();
   const action = useClaim(recount);
   return (
@@ -38,8 +38,8 @@ export function ClaimRecountDialog({ recount }: { recount: RecountRow }) {
       id={"role-" + recount.id}
       title={t("lab.recounts.claimTitle")}
       description={t("lab.recounts.claimHint")}
-      triggerLabel={t("lab.recounts.claim")}
-      icon={UserCheck}
+      open={props.open}
+      onOpenChange={props.onOpenChange}
       fieldLabel={t("lab.recounts.role")}
       submitLabel={t("lab.recounts.save")}
       options={ROLES.map((value) => ({ value, label: t(`lab.recounts.role.${value}`) }))}

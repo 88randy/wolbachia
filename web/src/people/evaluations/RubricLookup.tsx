@@ -15,7 +15,7 @@ export function RubricLookup({ scope, onSelect }: Props) {
   const rubric = model.rubric;
   return (
     <Card title={t("evaluations.rubric.title")}>
-      <RubricLookupForm model={model} />
+      <RubricLookupForm scope={scope} model={model} />
       <RubricLookupStatus model={model} />
       {rubric && (
         <>

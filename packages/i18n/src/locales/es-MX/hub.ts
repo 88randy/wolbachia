@@ -37,6 +37,9 @@ export const hub = {
   "hub.fleet.motorcycles": "Estado de cada moto, revisiones y servicios.",
 
   "hub.releases.description": "Permisos de liberación y sus tipos.",
+  "hub.releases.records": "Liberaciones registradas, con su permiso, lote y punto en el mapa.",
+  "hub.releases.devices": "Dispositivos de liberación, su lote de origen y su estado.",
+  "hub.community.description": "Actividades con la comunidad: avisos, pláticas y reuniones.",
   "hub.releases.permits": "Permisos vigentes, por vencer y suspendidos.",
   "hub.releases.permitTypes": "Tipos de permiso y sus requisitos.",
 

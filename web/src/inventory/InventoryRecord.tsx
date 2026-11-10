@@ -1,12 +1,14 @@
-import { RefreshCw } from "lucide-react";
-import { DetailPage } from "../components/templates/DetailPage";
-import { DetailSection } from "../components/templates/DetailSection";
-import { useSearch } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { ApiError } from "@wolbachia/api-client";
+import { Card } from "../ui/Card";
+import { DetailPage } from "../components/templates/DetailPage";
+import { InlineNotice } from "../ui/InlineNotice";
+import { StatusPill } from "../ui/StatusPill";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { ErrorState } from "../ui/ErrorState";
 import { Button } from "../ui/Button";
@@ -23,6 +25,7 @@ import { useInventoryWrite } from "./use-inventory-write";
 import { LotSafetySummary } from "./lots/LotSafetySummary";
 import { LocationStock } from "./locations/LocationStock";
 import type { InventoryKind, InventoryRecord as RecordValue } from "./inventory-links";
+import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
 import { InventoryContextNotice } from "./InventoryContextNotice";
@@ -118,6 +121,24 @@ interface ContentProps {
   model: ReturnType<typeof useRecord>;
   record: RecordValue;
 }
+function RecordBack({ kind }: { kind: InventoryKind }) {
+  const { t } = useTranslation();
+  const search = Object.fromEntries(
+    Object.entries(useSearch({ strict: false })).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+  return (
+    <Link
+      to={lists[kind]}
+      search={search}
+      className="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-action"
+    >
+      <ArrowLeft aria-hidden="true" className="size-4" />
+      {t("inventory.action.back")}
+    </Link>
+  );
+}
 function RecordEditor({ kind, model, record, onSaved }: ContentProps & { onSaved: () => void }) {
   if (!model.editable) return <InventoryFacts record={record} />;
   return (
@@ -129,62 +150,80 @@ function RecordEditor({ kind, model, record, onSaved }: ContentProps & { onSaved
     />
   );
 }
+function recordTitle(record: RecordValue): string {
+  if ("label" in record) return record.label;
+  if ("name" in record) return record.name;
+  return record.code;
+}
+function RecordStatus({ record }: { record: RecordValue }) {
+  const { t } = useTranslation();
+  if ("status" in record)
+    return (
+      <StatusPill tone={record.status === "available" ? "success" : "warning"}>
+        {t(`inventory.status.${record.status}`)}
+      </StatusPill>
+    );
+  if ("is_active" in record)
+    return (
+      <StatusPill tone={record.is_active ? "success" : "neutral"}>
+        {t(record.is_active ? "inventory.status.active" : "inventory.status.inactive")}
+      </StatusPill>
+    );
+  return null;
+}
+function RecordCard(props: ContentProps & { refresh: () => void; onSaved: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Card title={t("inventory.section.currentRecord")}>
+      <div className={styles.content}>
+        <RecordFacts record={props.record} />
+        <RecordEditor {...props} />
+        {!props.model.readonly && (
+          <RetireSupply
+            record={props.record}
+            verifying={props.model.query.isFetching}
+            refresh={props.refresh}
+          />
+        )}
+      </div>
+    </Card>
+  );
+}
 function RecordContent(props: ContentProps) {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const refresh = () => {
     void props.model.query.refetch();
   };
-  const listSearch = Object.fromEntries(
-    Object.entries(useSearch({ strict: false })).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
   const accepted = () => {
     setSaved(true);
   };
   return (
     <DetailPage
-      title={props.record.code}
-      subtitle={subtitleOf(props.record)}
-      back={{
-        label: t("inventory.action.back"),
-        link: { to: lists[props.kind], search: listSearch },
-      }}
+      code={props.record.code}
+      title={recordTitle(props.record)}
+      status={<RecordStatus record={props.record} />}
       actions={
-        !props.model.readonly && (
-          <RetireSupply
-            record={props.record}
-            verifying={props.model.query.isFetching}
-            refresh={refresh}
-          />
-        )
+        <>
+          <RecordBack kind={props.kind} />
+          <RefreshAction refresh={refresh} />
+        </>
       }
-      moreActions={[
-        {
-          id: "refresh",
-          label: t("inventory.action.refresh"),
-          icon: <RefreshCw aria-hidden="true" className="size-4" />,
-          onSelect: refresh,
-        },
-      ]}
+      notices={
+        saved ? <InlineNotice tone="success">{t("inventory.state.saved")}</InlineNotice> : null
+      }
     >
-      <p role="status" className="sr-only">
-        {saved ? t("inventory.state.saved") : ""}
-      </p>
-      <RecordFacts record={props.record} />
-      <DetailSection
-        title={t(props.model.editable ? "inventory.section.edit" : "inventory.section.details")}
-      >
-        <RecordEditor {...props} onSaved={accepted} />
-      </DetailSection>
+      <RecordCard {...props} refresh={refresh} onSaved={accepted} />
     </DetailPage>
   );
 }
-function subtitleOf(record: RecordValue): string | undefined {
-  if ("label" in record && record.label) return record.label;
-  if ("name" in record && record.name) return record.name;
-  return undefined;
+function RefreshAction({ refresh }: { refresh: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Button variant="secondary" onClick={refresh}>
+      {t("inventory.action.refresh")}
+    </Button>
+  );
 }
 function RecordFacts({ record }: { record: RecordValue }) {
   return (

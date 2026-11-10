@@ -1,5 +1,6 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
+import { CENTER_LOOKUP } from "../lookups/lookup-sources";
 import { toFilterParams } from "../data-table/table-state";
 import type { TableQueryConfig, TableState } from "../data-table/table-types";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
@@ -12,6 +13,14 @@ export type SampleRow = Schemas["SampleSnapshot"];
 export type MaterialRow = Schemas["MaterialRequestProjection"];
 
 const LIST_PAGE_SIZE = 25;
+const CENTER_FILTER = {
+  kind: "text",
+  key: "center",
+  labelKey: "lab.col.center",
+  maxLength: 36,
+  input: "lookup",
+  lookup: CENTER_LOOKUP,
+} as const;
 
 function config(
   filters: TableQueryConfig["filters"],
@@ -28,6 +37,7 @@ function config(
 }
 
 export const RECOUNT_TABLE = config([
+  CENTER_FILTER,
   { kind: "text", key: "code", labelKey: "lab.recounts.filter", maxLength: 50 },
 ]);
 export const PADDLE_TABLE = config(
@@ -35,11 +45,12 @@ export const PADDLE_TABLE = config(
   { sortableIds: ["code", "created_at"] },
 );
 export const SHIPMENT_TABLE = config(
-  [{ kind: "text", key: "code", labelKey: "lab.shipments.filter", maxLength: 50 }],
+  [CENTER_FILTER, { kind: "text", key: "code", labelKey: "lab.shipments.filter", maxLength: 50 }],
   { supportsVoided: true },
 );
 export const SAMPLE_TABLE = config(
   [
+    CENTER_FILTER,
     { kind: "text", key: "code", labelKey: "lab.results.filter", maxLength: 50 },
     {
       kind: "select",
@@ -51,7 +62,7 @@ export const SAMPLE_TABLE = config(
   { supportsVoided: true },
 );
 export const MATERIAL_TABLE = config(
-  [{ kind: "text", key: "code", labelKey: "lab.materials.filter", maxLength: 50 }],
+  [CENTER_FILTER, { kind: "text", key: "code", labelKey: "lab.materials.filter", maxLength: 50 }],
   { supportsVoided: true },
 );
 

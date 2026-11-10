@@ -1,5 +1,3 @@
-import { RefreshCw } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { DetailPage } from "../components/templates/DetailPage";
 import type { MotorcycleDetail } from "./fleet-query";
 import type { FleetRecordScope } from "./use-fleet-scope";
@@ -8,12 +6,12 @@ import { FleetHistory } from "./FleetHistory";
 import { canFleetAction } from "./use-fleet-scope";
 import type { useFleetOperations } from "./use-fleet-operations";
 import { FleetRecordOperations } from "./FleetRecordOperations";
-import { FleetRecordFeedback } from "./FleetRecordFeedback";
-import { MotorcycleActions } from "./MotorcycleActions";
-import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
 import { MotorcycleSummary } from "./MotorcycleSummary";
-import { blockedReasonKey } from "./motorcycle-status";
+import { MotorcycleHeaderActions, MotorcycleNotices } from "./MotorcycleRecordHeader";
+import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
 import { useFleetTabs } from "./use-fleet-tabs";
+import type { FleetTab } from "./use-fleet-tabs";
+
 interface Props {
   motorcycle: MotorcycleDetail;
   scope: FleetRecordScope;
@@ -33,62 +31,44 @@ function historyActions(props: Props) {
     onClear: props.operations.openClear,
   };
 }
-/** W21: header with status and actions, tabs, then card sections. */
+function MotorcycleBody({ screen, tab }: { screen: Props; tab: FleetTab }) {
+  if (tab === "summary") return <MotorcycleSummary motorcycle={screen.motorcycle} />;
+  return (
+    <FleetHistory
+      key={`${screen.scope.context}|${screen.motorcycle.id}|${tab}`}
+      motorcycle={screen.motorcycle.id}
+      tab={tab}
+      actions={historyActions(screen)}
+    />
+  );
+}
+/** W21: the motorcycle detail page. Tabs live in the URL; every history tab is a server table. */
 export function MotorcycleScreen(props: Props) {
-  const { t } = useTranslation();
   const tabs = useFleetTabs();
-  const { motorcycle } = props;
-  const isVerified = props.error === null && !props.isRefreshing;
-  const subtitle = [motorcycle.plate, motorcycle.is_blocked ? t(blockedReasonKey(motorcycle)) : ""]
-    .filter(Boolean)
-    .join(" · ");
+  const { motorcycle, error, isRefreshing } = props;
   return (
     <DetailPage
+      code={motorcycle.plate || undefined}
       title={motorcycle.code}
-      status={isVerified ? <MotorcycleStatusBadge motorcycle={motorcycle} compact /> : undefined}
-      subtitle={subtitle || undefined}
-      back={{
-        label: t("fleet.record.back"),
-        link: { to: "/fleet/motorcycles", search: tabs.listSearch },
-      }}
+      status={
+        error === null && !isRefreshing ? (
+          <MotorcycleStatusBadge motorcycle={motorcycle} compact />
+        ) : undefined
+      }
       actions={
         <>
+          <MotorcycleHeaderActions {...props} listSearch={tabs.listSearch} />
           <FleetRecordOperations
             motorcycle={motorcycle}
             scope={props.scope}
             operations={props.operations}
           />
-          <MotorcycleActions motorcycle={motorcycle} isUnverified={!isVerified} />
         </>
       }
-      moreActions={[
-        {
-          id: "refresh",
-          label: t("fleet.action.refresh"),
-          icon: <RefreshCw aria-hidden="true" className="size-4" />,
-          onSelect: props.onRetry,
-          disabled: props.isRefreshing,
-        },
-      ]}
-      notices={
-        <FleetRecordFeedback
-          error={props.error}
-          onRetry={props.onRetry}
-          isRefreshing={props.isRefreshing}
-        />
-      }
+      notices={<MotorcycleNotices {...props} />}
     >
       <FleetTabs code={motorcycle.code} />
-      {tabs.tab === "summary" ? (
-        <MotorcycleSummary motorcycle={motorcycle} />
-      ) : (
-        <FleetHistory
-          key={`${props.scope.context}|${motorcycle.id}|${tabs.tab}`}
-          motorcycle={motorcycle.id}
-          tab={tabs.tab}
-          actions={historyActions(props)}
-        />
-      )}
+      <MotorcycleBody screen={props} tab={tabs.tab} />
     </DetailPage>
   );
 }

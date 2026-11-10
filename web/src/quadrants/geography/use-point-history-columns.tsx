@@ -1,4 +1,3 @@
-import { EntityName } from "../../lookups/EntityName";
 import type { Schemas } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../../format/use-format-date-time";
@@ -14,9 +13,11 @@ export function usePointHistoryColumns() {
     },
     column("location", "geography.field.location", (row) => row.location.join(",")),
     column("effective_from", "geography.field.effective", (row) => format(row.effective_from)),
-    column("created_by", "geography.field.author", (row) => (
-      <EntityName kind="user" id={row.created_by} />
-    )),
+    column(
+      "created_by",
+      "geography.field.author",
+      (row) => row.created_by_name ?? t("geography.status.unknown"),
+    ),
     column("is_retired", "geography.field.status", (row) =>
       t(row.is_retired ? "geography.status.retired" : "geography.status.active"),
     ),
