@@ -7,7 +7,7 @@ import type { Theme } from "@wolbachia/tokens";
 import { AppText } from "./AppText.tsx";
 import { KIT_ICON_SIZE, KIT_ICON_STROKE } from "./kit-styles.ts";
 
-export type KitButtonVariant = "primary" | "secondary" | "danger";
+export type KitButtonVariant = "primary" | "secondary" | "danger" | "dangerOutline";
 
 export interface KitButtonProps {
   /** A verb: "Escanear", "Tomar foto", "Listo". */
@@ -24,12 +24,14 @@ const FRAME: Readonly<Record<KitButtonVariant, string>> = {
   primary: "bg-action border-action",
   secondary: "bg-surface border-action",
   danger: "bg-danger border-danger",
+  dangerOutline: "bg-surface border-danger",
 };
 const BASE =
   "min-h-14 w-full flex-row items-center justify-center gap-2 rounded-2xl border-2 px-5 py-3 active:opacity-80";
 
 function contentColor(theme: Theme, variant: KitButtonVariant, isInactive: boolean): string {
   if (isInactive) return theme.color.text.tertiary;
+  if (variant === "dangerOutline") return theme.color.status.critical.fg;
   return variant === "secondary" ? theme.color.action : theme.color.onAction;
 }
 

@@ -56,14 +56,14 @@ export const mobile = {
   "mobile.sample.inReview":
     "El registro está en revisión. Esto no confirma una muestra operativa ni recepción en laboratorio.",
   "mobile.sample.rejected":
-    "La oficina rechazó el registro. Tus datos y fotos se conservan; revisa la bandeja y consulta a tu supervisor.",
+    "La oficina rechazó el registro. Tus datos y fotos se conservan; revisa Envíos y consulta a tu supervisor.",
   "mobile.sample.evidencePending": "La evidencia privada sigue pendiente de verificación.",
   "mobile.sample.reviewApplied":
     "Se observó una revisión aplicada. El estado original del envío se conserva.",
   "mobile.sample.reviewDiscarded":
     "Se observó el descarte en revisión. La captura original se conserva.",
-  "mobile.sample.reviewObserved": "Hay una decisión posterior de revisión. Consulta la bandeja.",
-  "mobile.sample.inbox": "Ver bandeja",
+  "mobile.sample.reviewObserved": "Hay una decisión posterior de revisión. Consulta Envíos.",
+  "mobile.sample.inbox": "Ver envíos",
   "mobile.sample.backToDay": "Volver al día",
   "mobile.sample.deliver": "Entrega el recipiente al laboratorio al cerrar jornada.",
   "mobile.sample.receiptUnknown":
@@ -121,7 +121,7 @@ export const mobile = {
   "mobile.release.reviewDiscarded":
     "La revisión descartó esta declaración. La evidencia y la respuesta original se conservan.",
   "mobile.release.reviewObserved":
-    "Hay una revisión vinculada con esta declaración. Consulta su resultado en la bandeja.",
+    "Hay una revisión vinculada con esta declaración. Consulta su resultado en Envíos.",
   "mobile.release.prerequisites": "Requisitos para liberar",
   "mobile.release.gatePermit": "Permiso vigente",
   "mobile.release.gateZone": "Zona oficial autorizada",
@@ -217,7 +217,7 @@ export const mobile = {
     "La oficina rechazó la liberación por seguridad. La evidencia se conserva; avisa a tu supervisor. No hay opción de aprobarla desde aquí.",
   "mobile.release.evidencePending":
     "Las fotos siguen pendientes de envío o verificación. El registro permanece guardado en el teléfono.",
-  "mobile.release.openInbox": "Ver recepción y resultado en la bandeja",
+  "mobile.release.openInbox": "Ver en Envíos",
   "mobile.release.saveHint":
     "Guardar conserva el registro en el teléfono; no confirma autorización de la oficina.",
   "mobile.release.working": "Procesando en el teléfono…",
@@ -264,13 +264,13 @@ export const mobile = {
   "mobile.scanner.unit": "Identificador de la versión de unidad",
   "mobile.scanner.assignment": "Asignación de origen",
   "mobile.scanner.date": "Fecha de la asignación",
-  "mobile.scanner.revision": "Revisión del plan descargado",
-  "mobile.scanner.sourceLine": "Renglón de origen",
+  "mobile.scanner.revision": "Versión de tu plan",
+  "mobile.scanner.sourceLine": "Línea del plan",
   "mobile.scanner.missingMetadata":
     "La copia descargada no incluye nombres de insumo o unidad, código impreso del lote ni caducidad. Esta cantidad es del plan; no confirma recepción ni existencias. Consulta la etiqueta o a tu supervisor.",
   "mobile.shiftClose.refreshSupplies": "Actualizar recepciones descargadas",
   "mobile.shiftClose.sourceFrame":
-    "Saldo confirmado descargado; las declaraciones adicionales se muestran debajo.",
+    "Esto es lo que la oficina confirmó. Lo que declaraste va abajo.",
 
   "mobile.shiftClose.title": "Cerrar jornada",
   "mobile.shiftClose.closedTitle": "Jornada cerrada",
@@ -278,7 +278,7 @@ export const mobile = {
   "mobile.shiftClose.serverReceived": "La oficina recibió los registros de cierre",
   "mobile.shiftClose.inReview": "La oficina recibió un registro para revisión",
   "mobile.shiftClose.rejected":
-    "Un registro fue rechazado. Revisa la bandeja; la jornada sigue cerrada en el teléfono.",
+    "Un registro fue rechazado. Revisa Envíos; la jornada sigue cerrada en el teléfono.",
   "mobile.shiftClose.pending": "Puntos pendientes",
   "mobile.shiftClose.noPending": "No hay puntos pendientes en la copia descargada.",
   "mobile.shiftClose.goNow": "Ir al día",
@@ -305,7 +305,7 @@ export const mobile = {
   "mobile.shiftClose.close": "Cerrar jornada en el teléfono",
   "mobile.shiftClose.continue": "Revisar y confirmar cierre",
   "mobile.shiftClose.retryHint":
-    "Lo pendiente se reintentará al recuperar la sesión y la conexión. No desinstales la app. Los adjuntos pendientes y los rechazos se consultan en la bandeja.",
+    "Lo pendiente se reintentará al recuperar la sesión y la conexión. No desinstales la app. Los adjuntos pendientes y los rechazos se consultan en Envíos.",
   "mobile.shiftClose.reviewHistory": "Historial de revisión",
   "mobile.shiftClose.notReviewed": "Sin decisión de supervisor descargada.",
   "mobile.shiftClose.observed": "Observada por supervisor",
@@ -324,8 +324,8 @@ export const mobile = {
   "mobile.unlock.greetingNeutral": "Hola",
   "mobile.shiftOpen.severeSaved":
     "No puedes salir con esta moto por una falla grave. Avisa a tu supervisor para que gestione la liberación de flota.",
-  "mobile.shiftOpen.receivedRejected": "Recibido en la oficina · Apertura rechazada",
-  "mobile.shiftOpen.receivedInReview": "Recibido en la oficina · En revisión",
+  "mobile.shiftOpen.receivedRejected": "La oficina no aceptó tu apertura. Avisa a tu supervisor.",
+  "mobile.shiftOpen.receivedInReview": "La oficina está revisando tu apertura.",
   "mobile.preview.title": "Vista de estilos",
   "mobile.preview.sample": "Ejemplo",
   "mobile.preview.intro":
@@ -466,7 +466,7 @@ export const mobile = {
   "mobile.ovitrap.reuse": "Papeleta reutilizada autorizada",
   "mobile.ovitrap.reuseUnavailable":
     "Solo se ofrece reutilización con elegibilidad descargada. Nunca una tercera reutilización.",
-  "mobile.ovitrap.supplies": "Referencias UUID de insumos, separadas por coma",
+  "mobile.ovitrap.supplies": "Insumos usados (opcional)",
   "mobile.ovitrap.photo": "Agregar evidencia fotográfica",
   "mobile.camera.undo": "Quitar esta foto del borrador",
   "mobile.ovitrap.concurrentEdit":
@@ -510,7 +510,7 @@ export const mobile = {
   "mobile.ovitrap.scan": "Escanear ovitrampa",
   "mobile.ovitrap.manual": "Escribir código manualmente",
   "mobile.ovitrap.manualHint":
-    "La captura manual queda marcada. Usa el UUID físico de la ovitrampa o el código humano de la bolsa.",
+    "Escríbelo solo si no puedes escanear el código. Quedará marcado como escrito a mano.",
   "mobile.ovitrap.code": "Código",
   "mobile.ovitrap.lookup": "Usar código",
   "mobile.ovitrap.invalid": "Este código no es válido para esta operación",
@@ -606,7 +606,7 @@ export const mobile = {
   "mobile.day.phoneSaved": "Guardado en el teléfono",
   "mobile.day.serverReceived": "Recibido en la oficina · revisión aparte",
   "mobile.day.receiptRejected":
-    "Captura rechazada. Consulta el detalle en la bandeja de pendientes.",
+    "Captura rechazada. Consulta el detalle en Envíos.",
   "mobile.day.captureInReview": "Captura en revisión de la oficina",
   "mobile.day.reviewUnconfirmed": "Revisión de la oficina sin confirmar",
   "mobile.day.place": "Colocar",
@@ -721,8 +721,8 @@ export const mobile = {
     "La salida requiere un mapa con archivos verificados y cobertura completa. Vuelve a intentar la preparación.",
   "mobile.shiftOpen.rejected":
     "La oficina rechazó la apertura. Revisa el resultado en Envíos y consulta a tu supervisor antes de salir.",
-  "mobile.shiftOpen.phoneSaved": "Guardado en el teléfono · Recepción en la oficina pendiente",
-  "mobile.shiftOpen.serverReceived": "Recibido en la oficina · Consulta el resultado",
+  "mobile.shiftOpen.phoneSaved": "Tu jornada está abierta. La oficina la recibirá cuando haya internet.",
+  "mobile.shiftOpen.serverReceived": "La oficina ya recibió tu jornada.",
   "mobile.shiftOpen.reviewPending":
     "Revisión posterior: sin confirmación de resolución en esta versión.",
   "mobile.shiftOpen.correctAndRetry": "Corregir e intentar de nuevo",
@@ -751,11 +751,11 @@ export const mobile = {
 
   // Top-bar sync chip
   "mobile.chip.allSent": "Todo enviado",
-  "mobile.chip.toUpload": "{count} por subir",
-  "mobile.chip.noSignal": "Sin señal · {count} por subir",
-  "mobile.chip.noSignalEmpty": "Sin señal",
+  "mobile.chip.toUpload": "{count} por enviar",
+  "mobile.chip.noSignal": "Sin internet · {count} por enviar",
+  "mobile.chip.noSignalEmpty": "Sin internet",
   "mobile.chip.error": "Error: revisar",
-  "mobile.chip.hint": "Abre la bandeja de envíos",
+  "mobile.chip.hint": "Abre Envíos",
 
   // Sync inbox (P28)
   "mobile.inbox.title": "Envíos",
@@ -967,15 +967,15 @@ export const mobile = {
   "mobile.supplyReceipt.review":
     "Acuse inicial: la oficina recibió el recibo para revisión. Se conserva lo que firmaste; este acuse por sí solo no confirma inventario acreditado.",
   "mobile.supplyReceipt.rejected":
-    "La oficina no aplicó el recibo. La captura y tu firma se conservan; revisa la bandeja o pide ayuda a tu supervisor.",
+    "La oficina no aplicó el recibo. La captura y tu firma se conservan; revisa Envíos o pide ayuda a tu supervisor.",
   "mobile.supplyReceipt.pendingSignature":
-    "La firma está guardada en el teléfono y su archivo sigue pendiente de carga. Puedes consultar o reintentar en la bandeja.",
-  "mobile.supplyReceipt.inbox": "Abrir bandeja de envíos",
+    "La firma está guardada en el teléfono y su archivo sigue pendiente de carga. Puedes consultar o reintentar en Envíos.",
+  "mobile.supplyReceipt.inbox": "Abrir Envíos",
   "mobile.supplyReceipt.scanLabel": "Código QR del lote",
   "mobile.supplyReceipt.scanHint":
-    "También puedes pegar el contenido completo del QR o capturar el UUID del lote. Un código de etiqueta sin identificación confirmada no se agrega.",
+    "Apunta la cámara al código QR del lote. Si no se puede leer, pide ayuda a tu supervisor.",
   "mobile.supplyReceipt.scan": "Validar QR del lote",
-  "mobile.supplyReceipt.manual": "Validar UUID del lote manualmente",
+  "mobile.supplyReceipt.manual": "Escribir el código del lote",
   "mobile.supplyReceipt.duplicate": "Este código ya fue registrado. No se agregó otra pieza.",
   "mobile.supplyReceipt.added":
     "Código reconocido. Revisa la cantidad en la unidad declarada antes de firmar.",
@@ -1070,7 +1070,7 @@ export const mobile = {
   "mobile.fuel.reviewPending":
     "Carga recibida en la oficina · pendiente de revisión. Las cantidades se conservan.",
   "mobile.fuel.rejected":
-    "La oficina rechazó esta carga. La captura se conserva; revisa el motivo en la bandeja y avisa a tu supervisor.",
+    "La oficina rechazó esta carga. La captura se conserva; revisa el motivo en Envíos y avisa a tu supervisor.",
   "mobile.fuel.receiptPending":
     "Ticket pendiente de envío o verificación; no es una revisión de la carga.",
   "mobile.fuel.receiptVerified":
@@ -1104,7 +1104,7 @@ export const mobile = {
   "mobile.fuel.working": "Guardando en el teléfono…",
   "mobile.fuel.saveHint":
     "Guardar conserva la carga en este teléfono. El envío y la revisión ocurren después.",
-  "mobile.fuel.inbox": "Ver envío y revisión en la bandeja",
+  "mobile.fuel.inbox": "Ver en Envíos",
   "mobile.incidents.title": "Reportar incidente",
   "mobile.incidents.subtitle": "Captura local y conversación con tu equipo",
   "mobile.incidents.emergency": "Emergencia",
@@ -1130,9 +1130,9 @@ export const mobile = {
   "mobile.incidents.reviewPending":
     "Recibido en la oficina: requiere revisión. La captura original se conserva.",
   "mobile.incidents.rejected":
-    "La oficina no aceptó el reporte. Se conserva en el teléfono; revisa el motivo en la bandeja.",
+    "La oficina no aceptó el reporte. Se conserva en el teléfono; revisa el motivo en Envíos.",
   "mobile.incidents.evidencePending":
-    "Hay fotos pendientes de verificación. La captura sigue guardada; revisa la bandeja para reintentar el envío.",
+    "Hay fotos pendientes de verificación. La captura sigue guardada; revisa Envíos para reintentar el envío.",
   "mobile.incidents.noDeliveryPromise":
     "Recibir el reporte no confirma que tu supervisor lo leyó ni que la ayuda va en camino.",
   "mobile.incidents.description": "Descripción de lo ocurrido",
@@ -1187,7 +1187,7 @@ export const mobile = {
   "mobile.incidents.begin": "Iniciar reporte",
   "mobile.incidents.beginAccident": "Capturar accidente",
   "mobile.incidents.safeClose": "Continuar al cierre de jornada",
-  "mobile.incidents.callWorkContact": "Llamar al contacto laboral configurado",
+  "mobile.incidents.callWorkContact": "Llamar a mi supervisor",
   "mobile.incidents.dialerOpened":
     "Se abrió el teléfono. Esto no confirma una llamada ni que alguien recibió el aviso; depende del dispositivo y la red.",
   "mobile.incidents.dialerUnavailable":
@@ -1195,7 +1195,7 @@ export const mobile = {
   "mobile.incidents.contactMissing":
     "No hay un teléfono laboral validado disponible. No se configuró un número de emergencias para esta app.",
   "mobile.incidents.callFallback":
-    "Si necesitas ayuda inmediata, usa la app Teléfono del dispositivo y el contacto de emergencia que conozcas. La llamada depende del dispositivo y la red.",
+    "En una emergencia, llama también al 911.",
   "mobile.history.title": "Mi historial",
   "mobile.history.search": "Buscar código o referencia",
   "mobile.history.partial":
