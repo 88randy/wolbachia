@@ -140,14 +140,21 @@ def test_device_and_lot_changes_force_full_bootstrap_without_creating_an_overrid
         },
     )
     invalid = context.phone.sync([], cursor=first.data["cursor"])
-    assert invalid.status_code == 409
+    assert invalid.status_code == 400
     assert invalid.data["code"] == "invalid_cursor"
     second, inactive = downloaded(context)
     assert inactive["version"] != original["version"]
     assert inactive["devices"][0]["status"] == "inactive"
     context.clock["now"] = context.stock.version.expires_at
+    refreshed = context.phone.client.post(
+        "/api/v1/auth/refresh/",
+        {"refresh": context.phone.issued.refresh, "device_id": str(context.phone.device_id)},
+        format="json",
+    )
+    assert refreshed.status_code == 200
+    context.phone.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refreshed.data['access']}")
     expired = context.phone.sync([], cursor=second.data["cursor"])
-    assert expired.status_code == 409
+    assert expired.status_code == 400
     assert expired.data["code"] == "invalid_cursor"
     _third, blocked = downloaded(context)
     assert "lot_expired" in blocked["devices"][0]["custody"][0]["blocked_by"]
@@ -160,7 +167,7 @@ def test_single_ledger_consumption_changes_exact_downloaded_stock_and_task_compl
     first, original = downloaded(context)
     accept_release(context)
     invalid = context.phone.sync([], cursor=first.data["cursor"])
-    assert invalid.status_code == 409
+    assert invalid.status_code == 400
     assert invalid.data["code"] == "invalid_cursor"
     _second, consumed = downloaded(context)
     assert consumed["version"] != original["version"]
