@@ -1,6 +1,5 @@
 import { CircleCheck, TriangleAlert, CircleAlert, Info, CircleMinus } from "lucide-react";
 import type { Tone } from "./tone";
-import styles from "./ui.module.css";
 const ICONS = {
   success: CircleCheck,
   warning: TriangleAlert,
@@ -10,5 +9,5 @@ const ICONS = {
 };
 export function ToneIcon({ tone }: { tone: Tone }) {
   const Icon = ICONS[tone];
-  return <Icon aria-hidden="true" strokeWidth={1.5} className={styles.icon} />;
+  return <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 flex-none" />;
 }

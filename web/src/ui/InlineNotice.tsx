@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { classNames } from "../styles/class-names";
+import { cn } from "@/lib/utils";
 import { ToneIcon } from "./ToneIcon";
 import type { Tone } from "./tone";
-import styles from "./ui.module.css";
+import { TONE_BORDER, TONE_CLASSES } from "./tone-classes";
 export function InlineNotice({
   tone = "info",
   children,
@@ -13,9 +13,15 @@ export function InlineNotice({
   action?: ReactNode;
 }) {
   return (
-    <div className={classNames(styles.notice, styles[tone])}>
+    <div
+      className={cn(
+        "flex flex-wrap items-start gap-2.5 rounded-xl border px-4 py-3 text-[13px] leading-5 [&>svg]:mt-0.5",
+        TONE_CLASSES[tone],
+        TONE_BORDER[tone],
+      )}
+    >
       <ToneIcon tone={tone} />
-      <div>{children}</div>
+      <div className="min-w-0 flex-1 [&_p]:m-0">{children}</div>
       {action}
     </div>
   );

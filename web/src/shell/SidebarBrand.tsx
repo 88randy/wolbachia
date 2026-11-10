@@ -1,17 +1,13 @@
-import { useTranslation } from "react-i18next";
-import { classNames } from "../styles/class-names";
-import utilities from "../styles/utilities.module.css";
 import styles from "./Sidebar.module.css";
+import { useOrganizationLogo } from "./use-organization-logo";
+import { Wordmark } from "./Wordmark";
 
-/** Logo tile and product name. The mark is a placeholder until the client supplies the logo. */
+/** Product wordmark, with the organization's own logo when it has one. */
 export function SidebarBrand({ collapsed }: { collapsed: boolean }) {
-  const { t } = useTranslation();
+  const logo = useOrganizationLogo();
   return (
     <div className={styles.brand}>
-      <span className={styles.mark} aria-hidden="true">
-        {t("shell.brand.mark")}
-      </span>
-      <span className={classNames(collapsed && utilities.srOnly)}>{t("shell.brand.name")}</span>
+      <Wordmark compact={collapsed} logo={logo} />
     </div>
   );
 }

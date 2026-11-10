@@ -4,8 +4,8 @@ import type { shell as source } from "../es-MX/shell.ts";
 export const shell: Record<keyof typeof source, string> = {
   "shell.nav.notifications": "Notifications",
   // Web shell: brand, skip link, sidebar, top bar
-  "shell.brand.name": "Wolbachia",
-  "shell.brand.mark": "CQ",
+  "shell.brand.name": "AedesVision",
+  "shell.brand.mark": "AV",
   "shell.a11y.skipToContent": "Skip to content",
   "shell.nav.label": "Main navigation",
   "shell.sidebar.collapse": "Collapse menu",

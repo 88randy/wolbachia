@@ -1,8 +1,7 @@
 import { useId } from "react";
 import type { ReactNode } from "react";
-import { classNames } from "../styles/class-names";
+import { cn } from "@/lib/utils";
 import { CardHeader } from "./CardHeader";
-import styles from "./ui.module.css";
 export interface CardProps {
   title: ReactNode;
   titleId?: string;
@@ -19,10 +18,14 @@ export function Card(props: CardProps) {
   return (
     <section
       aria-labelledby={id}
-      className={classNames(styles.card, props.muted && styles.mutedCard, props.className)}
+      className={cn(
+        "max-w-full min-w-0 rounded-2xl border border-line bg-surface text-ink shadow-card",
+        props.muted && "bg-surface-muted",
+        props.className,
+      )}
     >
       <CardHeader {...props} id={id} headingLevel={props.headingLevel ?? 2} />
-      <div className={styles.cardBody}>{props.children}</div>
+      <div className="min-w-0 px-6 pt-3 pb-6">{props.children}</div>
     </section>
   );
 }

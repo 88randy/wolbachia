@@ -9,7 +9,8 @@
   min-height: var(--web-control-md);
   padding: var(--space-0-5) var(--space-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-level-1);
   font: inherit;
   font-size: var(--web-type-label-font-size);
   font-weight: 600;
