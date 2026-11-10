@@ -26,6 +26,7 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
   notifications: "Notificaciones",
   incidents: "Incidentes",
   operations: "Supervisión",
+  scheduling: "Programación",
   quadrants: "Cuadrantes y muestreo",
   releases: "Liberaciones",
   community: "Comunidad",

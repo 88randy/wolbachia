@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import type { Schemas } from "@wolbachia/api-client";
-import { Card } from "../ui/Card";
 import { CountFormFields } from "./CountFormFields";
-import { CountHistoryLink } from "./CountHistoryLink";
 import { useCountForm } from "./use-count-form";
 import type { Candidate, LabScope } from "./lab-query";
 import styles from "./lab.module.css";
@@ -21,23 +19,20 @@ export function CountForm(props: CountFormProps) {
     onLockChange(form.write.isBusy || form.write.failure?.kind === "uncertain");
   }, [onLockChange, form.write.isBusy, form.write.failure]);
   return (
-    <Card title={props.bag.code}>
-      <form
-        className={styles.form}
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.submit();
-        }}
-      >
-        <CountFormFields
-          form={form}
-          scope={props.scope}
-          code={props.bag.code}
-          isLocked={form.isLocked}
-        />
-      </form>
-      <CountHistoryLink code={props.bag.code} />
-    </Card>
+    <form
+      className={styles.form}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
+      <CountFormFields
+        form={form}
+        scope={props.scope}
+        code={props.bag.code}
+        isLocked={form.isLocked}
+      />
+    </form>
   );
 }

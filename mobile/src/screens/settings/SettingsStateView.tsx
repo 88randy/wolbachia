@@ -1,14 +1,13 @@
-import { spacing } from "@wolbachia/tokens";
-import { StyleSheet, View } from "react-native";
+import { Lock, RotateCw } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { Skeleton } from "../../ui/Skeleton.tsx";
+import { PendingWorkCard } from "./PendingWorkCard.tsx";
 import type { SettingsState } from "./settings-service.ts";
 import { UpdateSupportCard } from "./UpdateSupportCard.tsx";
-import { PendingWorkCard } from "./PendingWorkCard.tsx";
 
-const styles = StyleSheet.create({ section: { gap: spacing[1.5] } });
 interface Props {
   readonly state: SettingsState | null;
   readonly hasError: boolean;
@@ -19,20 +18,22 @@ interface Props {
 export function SettingsStateView({ state, hasError, onLock, onInbox, onRetry }: Props) {
   const t = useT();
   return (
-    <View style={styles.section}>
+    <>
       {hasError ? (
-        <Notice tone="warning" icon="alert" message={t("mobile.settings.readFailed")} />
+        <>
+          <InfoNotice tone="warning" message={t("mobile.settings.readFailed")} />
+          <SecondaryButton icon={RotateCw} label={t("common.actions.retry")} onPress={onRetry} />
+        </>
       ) : null}
       {state === null ? (
         <Skeleton />
       ) : (
         <>
-          <UpdateSupportCard state={state} />
           <PendingWorkCard state={state} onInbox={onInbox} />
+          <UpdateSupportCard state={state} />
         </>
       )}
-      <Button variant="outline" label={t("common.actions.retry")} onPress={onRetry} />
-      <Button label={t("mobile.settings.lockAccess")} onPress={onLock} />
-    </View>
+      <PrimaryButton icon={Lock} label={t("mobile.settings.lockAccess")} onPress={onLock} />
+    </>
   );
 }

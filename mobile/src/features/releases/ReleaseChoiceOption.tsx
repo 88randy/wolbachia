@@ -1,24 +1,10 @@
-import { radius, spacing } from "@wolbachia/tokens";
-import type { Theme } from "@wolbachia/tokens";
-import { Pressable, StyleSheet } from "react-native";
+import { Check, Circle } from "lucide-react-native";
+import { Pressable } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
+import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Badge } from "../../ui/Badge.tsx";
+import { KIT_ICON_STROKE } from "../../ui/kit-styles.ts";
 
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    choice: {
-      minHeight: spacing[6],
-      justifyContent: "center",
-      padding: spacing[1.5],
-      gap: spacing[1],
-      borderWidth: 2,
-      borderRadius: radius.inner,
-      borderColor: theme.color.border.default,
-    },
-    selected: { borderColor: theme.color.actionStrong, backgroundColor: theme.color.tint },
-  });
 interface Props {
   readonly option: { readonly id: string; readonly code: string };
   readonly isSelected: boolean;
@@ -27,7 +13,10 @@ interface Props {
 }
 export function ReleaseChoiceOption(props: Props) {
   const t = useT();
-  const styles = useStyles(createStyles);
+  const { theme } = useTheme();
+  const Icon = props.isSelected ? Check : Circle;
+  const frame = props.isSelected ? "border-action bg-action" : "border-line bg-surface";
+  const color = props.isSelected ? theme.color.onAction : theme.color.text.tertiary;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -37,11 +26,16 @@ export function ReleaseChoiceOption(props: Props) {
       onPress={() => {
         props.onSelect(props.option.id);
       }}
-      style={[styles.choice, props.isSelected ? styles.selected : null]}
+      className={`min-h-14 flex-row items-center gap-3 rounded-2xl border-2 px-4 py-3 ${frame}`}
     >
-      <AppText variant="bodyStrong">{props.option.code}</AppText>
+      <Icon color={color} size={24} strokeWidth={KIT_ICON_STROKE} />
+      <AppText variant="bodyStrong" style={{ color }}>
+        {props.option.code}
+      </AppText>
       {props.isSelected ? (
-        <Badge tone="info" icon="check" label={t("mobile.release.selectedChoice")} />
+        <AppText variant="caption" style={{ color }}>
+          {t("courier.choice.selected")}
+        </AppText>
       ) : null}
     </Pressable>
   );

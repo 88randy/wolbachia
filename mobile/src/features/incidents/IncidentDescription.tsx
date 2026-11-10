@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { TextField } from "../../ui/TextField.tsx";
 import { MAX_INCIDENT_DESCRIPTION } from "./domain.ts";
 
@@ -21,8 +22,8 @@ export function IncidentDescription(props: Props) {
     props.isRequired ? "mobile.incidents.description" : "mobile.incidents.optionalDescription",
   );
   return (
-    <View>
-      <AppText>{label}</AppText>
+    <View className="gap-2">
+      <AppText variant="bodyStrong">{label}</AppText>
       <TextField
         label={label}
         value={props.value}
@@ -36,9 +37,7 @@ export function IncidentDescription(props: Props) {
         }}
       />
       {hasError ? (
-        <AppText accessibilityLiveRegion="polite">
-          {t("mobile.incidents.descriptionRequired")}
-        </AppText>
+        <InfoNotice tone="danger" message={t("mobile.incidents.descriptionRequired")} />
       ) : null}
     </View>
   );

@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): one declarative record page. */
+/* eslint-disable max-lines-per-function, complexity -- fast mode (demo 2026-11-20): one declarative record page. */
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";

@@ -1,7 +1,19 @@
-import { Bug, DoorClosed, Fuel, Package, QrCode, Siren, TriangleAlert } from "lucide-react-native";
+import {
+  Bug,
+  DoorClosed,
+  Fuel,
+  Package,
+  QrCode,
+  Siren,
+  TriangleAlert,
+  Users,
+} from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import type { MessageKey } from "@wolbachia/i18n";
+import { useSyncExternalStore } from "react";
 import { View } from "react-native";
+
+import { useServices } from "../../app/services-context.ts";
 
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
@@ -65,16 +77,30 @@ const TILES: readonly TileSpec[] = [
   },
 ];
 
+const COMMUNITY_PERMISSION = "community_activity.read";
+
+/** "Actividad comunitaria": only for users who hold the community permission (promoter, courier). */
+const COMMUNITY_TILE: TileSpec = {
+  icon: Users,
+  labelKey: "courier.flow.community.tile",
+  route: { name: "communityActivity" },
+  gate: "always",
+};
+
 /** "Otras acciones" grid of Mi día: two tiles per row, emergency always available. */
 export function HomeTiles({ canCapture, hasShift }: HomeTilesProps) {
   const t = useT();
   const { push } = useNavigation();
+  const { auth } = useServices();
+  const { profile } = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
+  const canSeeCommunity = profile?.permissions.includes(COMMUNITY_PERMISSION) ?? false;
   const isOpen: Readonly<Record<Gate, boolean>> = {
     capture: canCapture,
     shift: hasShift,
     always: true,
   };
-  const items = TILES.map((spec) => ({
+  const specs = canSeeCommunity ? [...TILES, COMMUNITY_TILE] : TILES;
+  const items = specs.map((spec) => ({
     key: spec.labelKey,
     icon: spec.icon,
     label: t(spec.labelKey),

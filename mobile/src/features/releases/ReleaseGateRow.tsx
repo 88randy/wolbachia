@@ -1,9 +1,6 @@
-import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Badge } from "../../ui/Badge.tsx";
-import { createReleaseStyles } from "./styles.ts";
+import { GateRow } from "../../ui/GateRow.tsx";
+import type { GateState } from "../../ui/GateRow.tsx";
 import type { ReleaseGateView } from "./view-model.ts";
 
 const GATE_KEYS = {
@@ -21,25 +18,25 @@ const CONTACT_KEYS = {
   admin: "mobile.release.contactAdmin",
   courier: "mobile.release.contactCourier",
 } as const;
+const STATE = {
+  pass: { state: "pass", key: "courier.flow.release.gateOk" },
+  fail: { state: "fail", key: "courier.flow.release.gateFail" },
+  unavailable: { state: "warn", key: "courier.flow.release.gateUnknown" },
+} as const satisfies Record<ReleaseGateView["state"], { state: GateState; key: string }>;
 
-const STATUS = {
-  pass: { tone: "success", icon: "check", key: "mobile.release.pass" },
-  fail: { tone: "critical", icon: "ban", key: "mobile.release.fail" },
-  unavailable: { tone: "warning", icon: "alert", key: "mobile.release.unavailable" },
-} as const;
-
+/** One green row per check the app already made; a failed one says why and who can unblock it. */
 export function ReleaseGateRow({ gate }: { readonly gate: ReleaseGateView }) {
   const t = useT();
-  const styles = useStyles(createReleaseStyles);
-  const status = STATUS[gate.state];
+  const view = STATE[gate.state];
+  const detail = [gate.detailKey ? t(gate.detailKey) : null, t(CONTACT_KEYS[gate.contact])]
+    .filter((line): line is string => line !== null)
+    .join(" ");
   return (
-    <View style={styles.group}>
-      <AppText variant="button">{t(GATE_KEYS[gate.name])}</AppText>
-      <Badge tone={status.tone} icon={status.icon} label={t(status.key)} />
-      {gate.detailKey ? <AppText>{t(gate.detailKey)}</AppText> : null}
-      {gate.state === "pass" ? null : (
-        <AppText variant="caption">{t(CONTACT_KEYS[gate.contact])}</AppText>
-      )}
-    </View>
+    <GateRow
+      label={t(GATE_KEYS[gate.name])}
+      state={view.state}
+      stateLabel={t(view.key)}
+      detail={detail}
+    />
   );
 }
