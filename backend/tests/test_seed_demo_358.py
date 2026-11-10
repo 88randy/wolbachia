@@ -13,6 +13,7 @@ from inventory.models import Lot
 from organizations.demo_seed.people import DEMO_USERS
 from organizations.models import Membership, Organization
 from ovitraps.models import Bag, Ovitrap
+from people.models import Certification
 from releases.models import Permit, ReleaseDevice
 from scheduling.models import AssignmentVersion, ScheduledTask
 from shifts.models import Motorcycle
@@ -32,6 +33,7 @@ COUNTED = (
     SupplyAssignment,
     Permit,
     ReleaseDevice,
+    Certification,
 )
 
 

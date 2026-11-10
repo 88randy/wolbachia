@@ -6,7 +6,15 @@ from django.conf import settings
 from django.core.management.base import CommandError
 
 from geography.models import Quadrant
-from organizations.demo_seed import field, geography, inventory, operations, people, releases
+from organizations.demo_seed import (
+    field,
+    geography,
+    inventory,
+    operations,
+    people,
+    releases,
+    training,
+)
 from organizations.models import Center, Membership, Organization
 from uploads.access import UploadActor
 
@@ -63,5 +71,8 @@ def _seed_stock_and_releases(
     stock = inventory.ensure_stock(actor, home, members["demo-warehouse"])
     inventory.ensure_transit_policies(actor)
     inventory.ensure_courier_plan(actor, members["demo-courier-1"], stock)
-    releases.ensure_permit(organization, actor, home)
+    permit = releases.ensure_permit(organization, actor, home)
     releases.ensure_release_device(organization, actor, stock.lots["S-DEMO-WOLB"])
+    couriers = [members["demo-courier-1"], members["demo-courier-2"]]
+    training.ensure_certifications(actor, home, couriers)
+    training.ensure_release_task(actor, permit, couriers[0])
