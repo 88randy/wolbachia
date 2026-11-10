@@ -3,7 +3,7 @@
   flex-direction: column;
   min-width: 0;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: var(--space-2-5) var(--space-3) var(--space-5);
 }
 .page h1 {
   margin: 0;
@@ -21,28 +21,53 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   min-width: 0;
 }
-.form,
-.fields {
+.form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
   min-width: 0;
   border: 0;
   padding: 0;
   margin: 0;
 }
-.fields label {
+/* Organization fields: a 2-column form grid; languages and notes span the row. */
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--space-6) * 5)), 1fr));
+  gap: var(--space-2) var(--space-2-5);
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.fields > label {
   display: flex;
-  flex-wrap: wrap;
   flex-direction: column;
   gap: var(--space-0-5);
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+.fields > label > input,
+.fields > label > select {
+  font-weight: 400;
+}
+.fields > p,
+.fields > fieldset {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.fields > p {
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
 }
 .row {
   display: flex;
@@ -65,32 +90,26 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.page input:not([type="checkbox"]),
-.page select,
-.form input:not([type="checkbox"]),
-.form select {
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+/* Raw buttons of these screens take the shared tertiary look (fields use the global style). */
+.page button:not([class]),
+.form button:not([class]) {
+  align-self: flex-start;
   min-height: var(--web-control-md);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  padding: var(--space-0-5) var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
   color: var(--color-text-primary);
   background: var(--color-surface);
+  box-shadow: var(--shadow-level-1);
   font: inherit;
-}
-.page button,
-.form button {
-  min-height: var(--web-control-md);
-  padding: var(--space-0-5) var(--space-1);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--color-action-strong);
-  background: var(--color-surface);
-  font: inherit;
+  font-size: var(--web-type-label-font-size);
+  font-weight: 600;
   cursor: pointer;
   white-space: normal;
+}
+.page button:not([class]):hover:not(:disabled),
+.form button:not([class]):hover:not(:disabled) {
+  background: var(--web-button-tertiary-hover);
 }
 .page button:disabled,
 .form button:disabled {
