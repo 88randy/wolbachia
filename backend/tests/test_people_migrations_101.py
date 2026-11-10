@@ -130,6 +130,16 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
             }
             | {"uploads_certification_parent_guard"}
             | RELEASE_ADDITIVE_TRIGGERS
+            # #117 follows canonical Release and is restored with its People dependency.
+            | {
+                "lab_sample_lock",
+                "lab_wolbachiasample_guard",
+                "lab_samplereceipt_guard",
+                "lab_wolbachiaresultattempt_guard",
+                "lab_samplecommandreceipt_guard",
+                "lab_sample_complete",
+                "lab_sample_source_void_guard",
+            }
         )
         assert set(upgraded) - set(baseline) == additions
         assert Training.objects.count() == Certification.objects.count() == 0

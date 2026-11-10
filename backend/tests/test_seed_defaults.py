@@ -272,6 +272,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "center.read",
     }
     assert by_slug["courier"] == {
+        "sample.collect",
+        "sample.void",
         "community_activity.read",
         "community_activity.create",
         "supply_assignment.receive",
@@ -327,6 +329,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "sample.read",
+        "sample.receive",
+        "sample.result_create",
         "recount.create",
         "bag.dispose",
         "bag.receive",
@@ -393,6 +398,11 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["regulatory"] == reader | {"permit.manage", "permit.suspend", "release.read"}
     assert by_slug["admin"] == {
+        "sample.collect",
+        "sample.void",
+        "sample.read",
+        "sample.receive",
+        "sample.result_create",
         "permit.manage",
         "permit.suspend",
         "release.read",
@@ -521,6 +531,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
+        "sample.collect",
+        "sample.void",
         "supply_assignment.receive",
         "supply_assignment.reconcile",
     ]
@@ -549,6 +561,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
+        "sample.collect",
+        "sample.void",
         "supply_assignment.receive",
         "supply_assignment.reconcile",
         "widget.read",
@@ -582,6 +596,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     assert plan.grants == {
         "courier": (
+            "sample.collect",
+            "sample.void",
             "community_activity.read",
             "community_activity.create",
             "supply_assignment.receive",

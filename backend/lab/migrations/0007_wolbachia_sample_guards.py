@@ -153,7 +153,7 @@ FORWARD = FUNCTIONS + "\n".join(
     f"""
 CREATE TRIGGER lab_sample_lock BEFORE INSERT ON lab_{table}
  FOR EACH ROW EXECUTE FUNCTION lab_sample_lock();
-CREATE TRIGGER lab_sample_immutable BEFORE UPDATE OR DELETE ON lab_{table}
+CREATE TRIGGER lab_{table}_guard BEFORE UPDATE OR DELETE ON lab_{table}
  FOR EACH ROW EXECUTE FUNCTION lab_insert_only_guard();
 CREATE CONSTRAINT TRIGGER lab_sample_complete AFTER INSERT ON lab_{table}
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION lab_sample_complete();
@@ -162,7 +162,7 @@ CREATE CONSTRAINT TRIGGER lab_sample_complete AFTER INSERT ON lab_{table}
 )
 REVERSE = "\n".join(
     f"DROP TRIGGER lab_sample_complete ON lab_{table};"
-    f"DROP TRIGGER lab_sample_immutable ON lab_{table};"
+    f"DROP TRIGGER lab_{table}_guard ON lab_{table};"
     f"DROP TRIGGER lab_sample_lock ON lab_{table};"
     for table in TABLES
 ) + """

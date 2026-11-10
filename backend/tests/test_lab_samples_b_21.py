@@ -364,7 +364,7 @@ def test_in_review_collection_has_no_effect_and_authorized_acceptance_keeps_inge
     assert WolbachiaSample.objects.count() == 1
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_foreign_reading_lot_and_canonical_release_are_opaque(
     samples_context, org_b, make_member, monkeypatch, settings, tmp_path
 ):

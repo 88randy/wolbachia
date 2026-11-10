@@ -119,7 +119,12 @@ def protect_sample_dependents(ctx: EventContext, target: FieldEvent) -> None:
             organization=ctx.organization,
             event__voided_at__isnull=True,
         )
-        .filter(Q(reading__event=target) | Q(release__declared_event_id=target.pk))
+        .filter(
+            Q(reading__event=target)
+            | Q(release__declared_event_id=target.pk)
+            | Q(event=target, receipt__isnull=False)
+            | Q(event=target, attempts__isnull=False)
+        )
         .exists()
     ):
         raise EventRejected("sample_void_blocked")
