@@ -70,8 +70,7 @@ export const trainings = {
   "trainings.course.unavailable":
     "El registro no está disponible en tu alcance. Revisa la referencia o solicita acceso a Administración.",
   "trainings.person.title": "Certificaciones por persona",
-  "trainings.person.lookupHint":
-    "Elige a la persona y el centro para ver sus capacitaciones.",
+  "trainings.person.lookupHint": "Elige a la persona y el centro para ver sus capacitaciones.",
   "trainings.person.inspect": "Consultar certificaciones y elegibilidad",
   "trainings.person.certificates": "Historial de certificaciones",
   "trainings.person.create": "Registrar certificación",

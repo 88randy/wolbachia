@@ -71,8 +71,7 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.course.unavailable":
     "The record is unavailable in your scope. Check the reference or request access from Administration.",
   "trainings.person.title": "Certifications by person",
-  "trainings.person.lookupHint":
-    "Choose the person and the center to see their trainings.",
+  "trainings.person.lookupHint": "Choose the person and the center to see their trainings.",
   "trainings.person.inspect": "Inspect certifications and eligibility",
   "trainings.person.certificates": "Certification history",
   "trainings.person.create": "Record certification",

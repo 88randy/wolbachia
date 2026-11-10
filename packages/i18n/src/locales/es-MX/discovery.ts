@@ -26,7 +26,8 @@ export const discovery = {
   "discovery.card.couriers_in_field.title": "Repartidores en campo",
   "discovery.card.couriers_in_field.description": "Jornadas abiertas en este momento.",
   "discovery.search.title": "Buscar registros",
-  "discovery.search.description": "Busca por código: incidentes, motos, cuadrantes, puntos de muestreo y envíos.",
+  "discovery.search.description":
+    "Busca por código: incidentes, motos, cuadrantes, puntos de muestreo y envíos.",
   "discovery.search.label": "Código",
   "discovery.search.placeholder": "Escribe o escanea un código",
   "discovery.search.includeVoided": "Incluir anulados",
