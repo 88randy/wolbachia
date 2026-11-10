@@ -1,0 +1,30 @@
+.region {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 0;
+}
+.bar {
+  display: block;
+  height: var(--space-0-5);
+  background: var(--color-action);
+  opacity: 0.8;
+}
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bar {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
