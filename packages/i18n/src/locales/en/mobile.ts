@@ -1248,4 +1248,11 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.speedLock.speed": "Current speed: {speed} km/h",
   "mobile.speedLock.limit": "Configured limit: {limit} km/h",
   "mobile.speedLock.emergencyOnly": "Only the emergency call is available while you are moving.",
+  "mobile.map.label": "Map of your points and zones",
+  "mobile.map.loading": "Getting the map ready...",
+  "mobile.map.unavailable": "The map is not available right now",
+  "mobile.map.unavailableHint": "Connect once to save it on the phone.",
+  "mobile.map.retry": "Try again",
+  "mobile.map.attribution": "© OpenStreetMap contributors",
+  "mobile.map.zone": "Zone {name}",
 };

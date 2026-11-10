@@ -189,4 +189,5 @@ export const refresh = {
   "refresh.preview.cardMenuAction": "Revisar historial",
   "refresh.preview.help": "Ver atajos (?)",
   "refresh.preview.palette": "Buscar áreas (Ctrl / ⌘ K)",
+  "refresh.background.label": "Actualizando…",
 } as const satisfies AreaCatalog<"refresh">;

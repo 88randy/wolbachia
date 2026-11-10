@@ -30,6 +30,137 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/entomology/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["analytics_entomology_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/operations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["analytics_operations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/wolbachia-prevalence/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["analytics_wolbachia_prevalence_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/arco-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W58: register, track and resolve ARCO requests. */
+        get: operations["arco_requests_list"];
+        put?: never;
+        /** @description W58: register, track and resolve ARCO requests. */
+        post: operations["arco_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/arco-requests/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W58: register, track and resolve ARCO requests. */
+        get: operations["arco_requests_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description W58: register, track and resolve ARCO requests. */
+        patch: operations["arco_requests_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/arco-requests/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description W58: register, track and resolve ARCO requests. */
+        post: operations["arco_requests_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attachments/{id}/download/": {
         parameters: {
             query?: never;
@@ -846,6 +977,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/data-transfers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W59: authorizations for personal data leaving the platform; revoke, never edit. */
+        get: operations["data_transfers_list"];
+        put?: never;
+        /** @description W59: authorizations for personal data leaving the platform; revoke, never edit. */
+        post: operations["data_transfers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-transfers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W59: authorizations for personal data leaving the platform; revoke, never edit. */
+        get: operations["data_transfers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/data-transfers/{id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description W59: authorizations for personal data leaving the platform; revoke, never edit. */
+        post: operations["data_transfers_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/devices/": {
         parameters: {
             query?: never;
@@ -1439,6 +1622,23 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["evaluations_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W57: official export; personal columns come out empty without an authorization. */
+        get: operations["export_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3892,6 +4092,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portal-settings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Admin switch of the public portal: enabled or not, and which indicators. */
+        get: operations["portal_settings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal-settings/update/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Admin switch of the public portal: enabled or not, and which indicators. */
+        put: operations["portal_settings_update_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/{org_slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public, read-only, aggregates only. 404 when the organization has the portal off. */
+        get: operations["portal_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/{org_slug}/coverage/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public, read-only, aggregates only. 404 when the organization has the portal off. */
+        get: operations["portal_coverage_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portal/{org_slug}/releases-by-week/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Public, read-only, aggregates only. 404 when the organization has the portal off. */
+        get: operations["portal_releases_by_week_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quadrant-assignments/": {
         parameters: {
             query?: never;
@@ -6273,6 +6558,56 @@ export interface components {
             /** Format: uuid */
             applied_by: string;
         };
+        ArcoCreateRequest: {
+            request_type: components["schemas"]["RequestTypeEnum"];
+            requester_reference: string;
+            /** Format: date */
+            received_on?: string;
+            /** Format: uuid */
+            owner_id?: string | null;
+        };
+        ArcoRequest: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly request_type: components["schemas"]["RequestTypeEnum"];
+            readonly requester_reference: string;
+            /** Format: date */
+            readonly received_on: string;
+            /** Format: date */
+            readonly due_on: string;
+            readonly status: components["schemas"]["ArcoStatusEnum"];
+            /** Format: uuid */
+            readonly owner_id: string | null;
+            readonly resolution_note: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly remaining_days: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `resolved` - resolved
+         *     * `rejected` - rejected
+         * @enum {string}
+         */
+        ArcoResolveOutcomeEnum: "resolved" | "rejected";
+        ArcoResolveRequest: {
+            outcome: components["schemas"]["ArcoResolveOutcomeEnum"];
+            resolution_note: string;
+        };
+        /**
+         * @description * `received` - Received
+         *     * `in_progress` - In Progress
+         *     * `resolved` - Resolved
+         *     * `rejected` - Rejected
+         * @enum {string}
+         */
+        ArcoStatusEnum: "received" | "in_progress" | "resolved" | "rejected";
+        /**
+         * @description * `in_progress` - in_progress
+         * @enum {string}
+         */
+        ArcoUpdateStatusEnum: "in_progress";
         Assignment: {
             /** Format: uuid */
             quadrant: string;
@@ -6837,6 +7172,20 @@ export interface components {
             sampling_points: components["schemas"]["SamplingPointChange"][];
             ovitraps: components["schemas"]["OvitrapChange"][];
         };
+        Chart: {
+            key: string;
+            kind: components["schemas"]["ChartKindEnum"];
+            label: components["schemas"]["Label"];
+            unit: string;
+            series: components["schemas"]["Series"][];
+            table: components["schemas"]["Table"];
+        };
+        /**
+         * @description * `bar` - bar
+         *     * `line` - line
+         * @enum {string}
+         */
+        ChartKindEnum: "bar" | "line";
         /**
          * @description * `ok` - Ok
          *     * `minor` - Minor
@@ -6877,6 +7226,10 @@ export interface components {
          * @enum {string}
          */
         CodeEnum: "incident_conflict";
+        Column: {
+            key: string;
+            label: components["schemas"]["Label"];
+        };
         CommentRequest: {
             expected_revision: number;
             text: string;
@@ -7299,6 +7652,25 @@ export interface components {
             /** @description Kinds must be unique; duplicates return 400 validation_error. */
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
+        };
+        Dashboard: {
+            /** Format: date-time */
+            cutoff: string;
+            filters: components["schemas"]["DashboardFilters"];
+            indicators: components["schemas"]["Indicator"][];
+            charts: components["schemas"]["Chart"][];
+            notes: components["schemas"]["Label"][];
+        };
+        DashboardFilters: {
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            granularity: components["schemas"]["GranularityEnum"];
+            /** Format: uuid */
+            center: string | null;
+            /** Format: uuid */
+            quadrant: string | null;
         };
         /**
          * @description * `keep` - keep
@@ -7858,6 +8230,12 @@ export interface components {
             /** Format: double */
             accuracy_m?: number | null;
         };
+        /**
+         * @description * `day` - day
+         *     * `week` - week
+         * @enum {string}
+         */
+        GranularityEnum: "day" | "week";
         Health: {
             status: string;
         };
@@ -8330,6 +8708,23 @@ export interface components {
             expected_revision: number;
             expected_result_revision: number;
         };
+        Indicator: {
+            key: string;
+            label: components["schemas"]["Label"];
+            /** Format: double */
+            value: number | null;
+            unit: string;
+        };
+        /**
+         * @description * `releases_total` - releases_total
+         *     * `quadrants_covered` - quadrants_covered
+         *     * `readings_total` - readings_total
+         *     * `egg_positivity` - egg_positivity
+         *     * `releases_by_week` - releases_by_week
+         *     * `coverage` - coverage
+         * @enum {string}
+         */
+        IndicatorsEnum: "releases_total" | "quadrants_covered" | "readings_total" | "egg_positivity" | "releases_by_week" | "coverage";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -8939,6 +9334,12 @@ export interface components {
             reason: string;
             replacement?: components["schemas"]["LabReplacementRequest"];
             queue_context?: components["schemas"]["LabQueueQueryRequest"];
+        };
+        Label: {
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
         };
         /**
          * @description * `es-MX` - es-MX
@@ -10059,6 +10460,19 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AccessLog"][];
+        };
+        PaginatedArcoRequestList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["ArcoRequest"][];
         };
         PaginatedAssignmentList: {
             /** @example 123 */
@@ -11230,6 +11644,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["TrainingVersionRead"][];
         };
+        PaginatedTransferAuthorizationList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["TransferAuthorization"][];
+        };
         PaginatedTransferList: {
             /** @example 123 */
             count: number;
@@ -11269,6 +11696,11 @@ export interface components {
         PasswordResetRequestRequest: {
             /** Format: email */
             email: string;
+        };
+        PatchedArcoUpdateRequest: {
+            status?: components["schemas"]["ArcoUpdateStatusEnum"];
+            /** Format: uuid */
+            owner_id?: string | null;
         };
         /** @description `code`, `is_other` and `is_active` are not editable here: unknown keys are ignored. */
         PatchedCatalogItemUpdateRequest: {
@@ -11691,6 +12123,16 @@ export interface components {
             point: components["schemas"]["SamplingPoint"];
             spacing_warnings: components["schemas"]["SpacingWarning"][];
         };
+        PortalSettings: {
+            enabled?: boolean;
+            indicators: components["schemas"]["IndicatorsEnum"][];
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        PortalSettingsRequest: {
+            enabled?: boolean;
+            indicators: components["schemas"]["IndicatorsEnum"][];
+        };
         PrepareInventoryIntentRequest: components["schemas"]["AssignmentReleaseIntentRequest"] | components["schemas"]["ReleaseCancelIntentRequest"] | components["schemas"]["ReturnAcceptIntentRequest"] | components["schemas"]["ReconcileJustifyIntentRequest"] | components["schemas"]["LotWriteOffIntentRequest"] | components["schemas"]["BagDisposalIntentRequest"];
         PrepareLineRequest: {
             /** Format: uuid */
@@ -11830,6 +12272,11 @@ export interface components {
         };
         /** @enum {string} */
         PublicationStateEnum: "outboxed" | "pending_outbox";
+        /**
+         * @description * `uieb_shipment` - uieb_shipment
+         * @enum {string}
+         */
+        PurposeEnum: "uieb_shipment";
         /**
          * @description * `not_requested` - not_requested
          *     * `awaiting_independent_qa` - awaiting_independent_qa
@@ -12818,6 +13265,14 @@ export interface components {
             readonly action_prerequisites: components["schemas"]["IncidentActionPrerequisites"] | null;
         };
         /**
+         * @description * `access` - Access
+         *     * `rectification` - Rectification
+         *     * `cancellation` - Cancellation
+         *     * `opposition` - Opposition
+         * @enum {string}
+         */
+        RequestTypeEnum: "access" | "rectification" | "cancellation" | "opposition";
+        /**
          * @description * `species` - species
          *     * `strain` - strain
          *     * `generation` - generation
@@ -13632,6 +14087,13 @@ export interface components {
             q: string;
             groups: components["schemas"]["SearchGroup"][];
         };
+        Series: {
+            key: string;
+            label: components["schemas"]["Label"];
+            points: {
+                [key: string]: unknown;
+            }[];
+        };
         /**
          * @description * `routine` - Routine
          *     * `repair` - Repair
@@ -14316,6 +14778,12 @@ export interface components {
             results: components["schemas"]["EventResult"][];
             changes: components["schemas"]["Changes"];
         };
+        Table: {
+            columns: components["schemas"]["Column"][];
+            rows: {
+                [key: string]: unknown;
+            }[];
+        };
         Task: {
             /** Format: uuid */
             id: string;
@@ -14447,6 +14915,40 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        TransferAuthorization: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly recipient_institution: string;
+            readonly purpose: components["schemas"]["PurposeEnum"];
+            readonly fields: unknown;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            /** Format: date-time */
+            readonly valid_from: string;
+            /** Format: date-time */
+            readonly valid_until: string;
+            readonly reference: string;
+            readonly status: string;
+            readonly revoked_at: unknown;
+            readonly revocation_reason: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        TransferAuthorizationCreateRequest: {
+            recipient_institution: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id?: string | null;
+            /** Format: date-time */
+            valid_from: string;
+            /** Format: date-time */
+            valid_until: string;
+            reference: string;
+            fields?: string[];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -14604,6 +15106,9 @@ export interface components {
             /** Format: uuid */
             destination_version_id: string;
             available_at_observation: string;
+        };
+        TransferRevocationRequest: {
+            reason: string;
         };
         /** @enum {string} */
         TransferStateEnum: "prepared" | "dispatched" | "received" | "discrepancy" | "resolved";
@@ -14851,6 +15356,308 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedAccessLogList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    analytics_entomology_retrieve: {
+        parameters: {
+            query?: {
+                center?: string;
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `day` - day
+                 *     * `week` - week
+                 */
+                granularity?: "day" | "week";
+                quadrant?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    analytics_operations_retrieve: {
+        parameters: {
+            query?: {
+                center?: string;
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `day` - day
+                 *     * `week` - week
+                 */
+                granularity?: "day" | "week";
+                quadrant?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    analytics_wolbachia_prevalence_retrieve: {
+        parameters: {
+            query?: {
+                center?: string;
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `day` - day
+                 *     * `week` - week
+                 */
+                granularity?: "day" | "week";
+                quadrant?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arco_requests_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedArcoRequestList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arco_requests_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequest"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arco_requests_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this arco request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequest"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arco_requests_partial_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this arco request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedArcoUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequest"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arco_requests_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this arco request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoResolveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequest"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -16448,6 +17255,147 @@ export interface operations {
             };
         };
     };
+    data_transfers_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTransferAuthorizationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    data_transfers_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferAuthorizationCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferAuthorization"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    data_transfers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this data transfer authorization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferAuthorization"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    data_transfers_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this data transfer authorization. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRevocationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferAuthorization"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     devices_list: {
         parameters: {
             query?: {
@@ -17502,6 +18450,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PeopleReceipt"];
                 };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    export_list: {
+        parameters: {
+            query: {
+                /**
+                 * @description * `releases` - releases
+                 *     * `readings` - readings
+                 *     * `lab_results` - lab_results
+                 */
+                dataset: "releases" | "readings" | "lab_results";
+                date_from: string;
+                date_to: string;
+                /**
+                 * @description * `csv` - csv
+                 *     * `xlsx` - xlsx
+                 */
+                file_format?: "csv" | "xlsx";
+                recipient_institution?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV or XLSX file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
             default: {
@@ -21792,6 +22785,168 @@ export interface operations {
                     "image/jpeg": string;
                     "image/png": string;
                     "application/pdf": string;
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_settings_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSettings"][];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_settings_update_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalSettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSettings"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_coverage_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_releases_by_week_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

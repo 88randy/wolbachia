@@ -189,4 +189,5 @@ export const refresh: Record<keyof typeof source, string> = {
   "refresh.preview.cardMenuAction": "Review history",
   "refresh.preview.help": "View shortcuts (?)",
   "refresh.preview.palette": "Find areas (Ctrl / ⌘ K)",
+  "refresh.background.label": "Updating…",
 };

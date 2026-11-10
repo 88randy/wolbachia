@@ -3,6 +3,7 @@ import { NotFoundState } from "../states/NotFoundState";
 import { fleetRecordOptions } from "./fleet-query";
 import { FleetRecordState } from "./FleetRecordState";
 import { MotorcycleScreen } from "./MotorcycleScreen";
+import { useDisplaySettled } from "../session/use-visible-session-state";
 import { useFleetScope } from "./use-fleet-scope";
 import { ApiError } from "@wolbachia/api-client";
 import { useFleetOperations } from "./use-fleet-operations";
@@ -15,10 +16,11 @@ export function MotorcycleRecord({ code, urlCenter }: Props) {
   const query = useQuery(fleetRecordOptions(scope, code));
   const data = query.isPlaceholderData ? undefined : query.data;
   const operations = useFleetOperations(scope, { ...query, data });
+  const isSettled = useDisplaySettled(scope.identity.isSettled);
   const retry = () => {
     void query.refetch();
   };
-  if (!scope.identity.isSettled) return <FleetRecordState error={null} onRetry={retry} />;
+  if (!isSettled) return <FleetRecordState error={null} onRetry={retry} />;
   if (data === null || (query.error instanceof ApiError && [403, 404].includes(query.error.status)))
     return <NotFoundState />;
   // The same screen/dialog stays mounted when refreshed state is not yet verified.

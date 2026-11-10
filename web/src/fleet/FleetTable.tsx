@@ -11,6 +11,7 @@ import { fleetListOptions } from "./fleet-query";
 import { FLEET_PAGE_SIZE, FLEET_TABLE } from "./fleet-table";
 import { useFleetColumns } from "./use-fleet-columns";
 import { useFleetAuthor } from "./use-fleet-author";
+import { useDisplaySettled } from "../session/use-visible-session-state";
 import { CardSkeleton } from "../ui/CardSkeleton";
 export function FleetTable() {
   const { t } = useTranslation();
@@ -21,7 +22,8 @@ export function FleetTable() {
   const author = useFleetAuthor();
   const format = useFormatDateTime();
   const reasonLabel = useVoidReasonLabel();
-  if (!scope.identity.isSettled) return <CardSkeleton />;
+  const isSettled = useDisplaySettled(scope.identity.isSettled);
+  if (!isSettled) return <CardSkeleton />;
   return (
     <>
       <FleetFilters controller={controller} />

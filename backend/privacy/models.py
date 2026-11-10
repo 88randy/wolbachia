@@ -47,3 +47,61 @@ class DataTransferRevocation(TransferFact):
         DataTransferAuthorization, on_delete=models.PROTECT, related_name="revocation"
     )
     reason = models.TextField()
+
+
+class ArcoRequest(OrgScopedModel):
+    """ARCO (access, rectification, cancellation, opposition) request; status moves forward."""
+
+    class Kind(models.TextChoices):
+        ACCESS = "access"
+        RECTIFICATION = "rectification"
+        CANCELLATION = "cancellation"
+        OPPOSITION = "opposition"
+
+    class Status(models.TextChoices):
+        RECEIVED = "received"
+        IN_PROGRESS = "in_progress"
+        RESOLVED = "resolved"
+        REJECTED = "rejected"
+
+    request_type = models.CharField(max_length=16, choices=Kind.choices)
+    # Opaque reference chosen by the officer; never the holder's name or contact data.
+    requester_reference = models.CharField(max_length=200)
+    received_on = models.DateField()
+    due_on = models.DateField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.RECEIVED)
+    owner = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    resolution_note = models.TextField(blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["due_on", "id"]
+        indexes = [models.Index(fields=["organization", "status", "due_on"])]
+
+
+class PortalSettings(OrgScopedModel):
+    """Public portal switches of one organization (disabled until an admin enables it)."""
+
+    organization = models.OneToOneField(
+        "organizations.Organization", on_delete=models.PROTECT, related_name="portal_settings"
+    )
+    enabled = models.BooleanField(default=False)
+    # Subset of portal.PORTAL_INDICATORS.
+    indicators = models.JSONField(default=list)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ExportLog(OrgScopedModel):
+    """One receipt per official export (W57 history); filters only, never row values."""
+
+    dataset = models.CharField(max_length=16)
+    date_from = models.DateField()
+    date_to = models.DateField()
+    recipient_institution = models.CharField(max_length=200, blank=True)
+    row_count = models.PositiveIntegerField()
+    rfc_rows_released = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["-created_at", "-id"]

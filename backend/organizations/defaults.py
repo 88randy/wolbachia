@@ -14,6 +14,7 @@ from accounts.permissions import (
     ADMIN_PERSONNEL_PERMISSION_CODES,
     USER_OPERATIONAL_READ,
 )
+from analytics import permissions as analytics_permissions
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -54,6 +55,8 @@ from lab.permissions import COUNT_VOID
 from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
 from notifications.permissions import INTERNAL_CODES as NOTIFICATION_CODES
 from organizations.models import Organization, Profile
+from privacy.permissions import ADMIN_CODES as PRIVACY_ADMIN_CODES
+from privacy.permissions import REGULATORY_CODES as PRIVACY_REGULATORY_CODES
 from ovitraps.permissions import (
     OVITRAP_REMOVAL_RESOLVE,
     READ_CODES,
@@ -92,6 +95,8 @@ READ_ONLY_CODES = (
 )
 ADMIN_CODES = (
     HOME_READ,
+    *PRIVACY_ADMIN_CODES,
+    *analytics_permissions.ADMIN_CODES,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
@@ -161,6 +166,7 @@ COURIER_CODES = (
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     HOME_READ,
+    *analytics_permissions.SUPERVISOR_CODES,
     USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
@@ -199,6 +205,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
         HOME_READ,
+        *analytics_permissions.ENTOMOLOGIST_CODES,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
         FIELD_UPLOAD,
@@ -218,6 +225,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "admin": ADMIN_CODES,
     "coordinator": (
         HOME_READ,
+        *analytics_permissions.COORDINATOR_CODES,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
@@ -242,7 +250,13 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *TRANSFER_WAREHOUSE_CODES,
         FIELD_UPLOAD,
     ),
-    "regulatory": (*READ_ONLY_CODES, PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ),
+    "regulatory": (
+        *READ_ONLY_CODES,
+        PERMIT_MANAGE,
+        PERMIT_SUSPEND,
+        RELEASE_READ,
+        *PRIVACY_REGULATORY_CODES,
+    ),
     "government": ("portal.read",),
 }
 
