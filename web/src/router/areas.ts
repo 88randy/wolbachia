@@ -41,13 +41,17 @@ export const AREAS = [
     group: "operation",
     requiredPermissions: ["quadrant.read"],
   },
-  { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
+  {
+    id: "releases",
+    path: "/releases",
+    group: "operation",
+    requiredPermissions: ["release.read", "permit.manage"],
+  },
   {
     id: "community",
     path: "/community",
     group: "operation",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: ["community_activity.read"],
   },
   {
     id: "inventory",

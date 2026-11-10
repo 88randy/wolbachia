@@ -9,7 +9,6 @@ import { trainingsOptions, TRAINING_PAGE_SIZE } from "./training-query";
 import type { TrainingScope, Training } from "./training-query";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { TRAINING_TABLE, trainingTableQuery } from "./training-table";
-import { TrainingVersionReference } from "./TrainingVersionReference";
 const TABLE_SCOPE = {
   ignoredPrefixes: [
     "course",
@@ -26,11 +25,6 @@ const TABLE_SCOPE = {
 const COLUMNS: DataTableColumn<Training>[] = [
   { id: "code", headerKey: "trainings.field.code", cell: (row) => row.code },
   { id: "name", headerKey: "trainings.field.name", cell: (row) => row.name },
-  {
-    id: "current_version_id",
-    headerKey: "trainings.field.trainingVersion",
-    cell: (row) => <TrainingVersionReference id={row.current_version_id} />,
-  },
 ];
 export function TrainingList({ scope }: { scope: TrainingScope }) {
   const { t } = useTranslation();
@@ -48,7 +42,7 @@ export function TrainingList({ scope }: { scope: TrainingScope }) {
         data={operationTableData(query, table.state.page, TRAINING_PAGE_SIZE)}
         rowActions={(row) => (
           <Link to="/people/trainings" search={{ ...search, course: row.code }}>
-            {t("trainings.course.open")} {row.code}
+            {t("trainings.course.open")} {row.name}
           </Link>
         )}
       />

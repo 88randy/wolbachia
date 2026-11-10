@@ -12960,10 +12960,14 @@ export interface components {
             readonly declared_event_id: string;
             /** Format: uuid */
             readonly permit_version: string;
+            readonly permit_code: string;
+            readonly quadrant_code: string;
             /** Format: uuid */
             readonly lot: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly release_device: string;
+            readonly release_device_code: string;
             /** Format: uuid */
             readonly training_version: string;
             /** Format: uuid */
@@ -13099,10 +13103,13 @@ export interface components {
             readonly code: string;
             /** Format: uuid */
             readonly center: string;
+            readonly center_code: string;
             /** Format: uuid */
             readonly quadrant: string;
+            readonly quadrant_code: string;
             /** Format: uuid */
             readonly source_lot: string;
+            readonly source_lot_code: string;
             /** Format: uuid */
             readonly source_lot_version: string;
             readonly status: string;

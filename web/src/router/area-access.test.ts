@@ -28,7 +28,7 @@ describe("canOpenArea", () => {
   });
 
   test("a pending area is visible to every member until its issue defines a code", () => {
-    expect(canOpenArea(makeMe({ permissions: [] }), area("releases"))).toBe(true);
+    expect(canOpenArea(makeMe({ permissions: [] }), area("regulatory"))).toBe(true);
   });
 
   test.each(["bag.receive", "egg_count.create", "egg_count.read"])(
@@ -46,7 +46,7 @@ describe("canOpenArea", () => {
 describe("areas still waiting for a permission code", () => {
   // Each issue that builds an area replaces its "pending" with real codes and removes it here.
   test("are exactly these", () => {
-    expect(pendingAreaIds()).toEqual(["releases", "community", "dashboards"]);
+    expect(pendingAreaIds()).toEqual([]);
   });
 
   test("Home and Settings are never pending", () => {

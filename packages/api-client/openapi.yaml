@@ -31590,13 +31590,25 @@ components:
           type: string
           format: uuid
           readOnly: true
+        permit_code:
+          type: string
+          readOnly: true
+        quadrant_code:
+          type: string
+          readOnly: true
         lot:
           type: string
           format: uuid
           readOnly: true
+        lot_code:
+          type: string
+          readOnly: true
         release_device:
           type: string
           format: uuid
+          readOnly: true
+        release_device_code:
+          type: string
           readOnly: true
         training_version:
           type: string
@@ -31648,10 +31660,14 @@ components:
       - id
       - location
       - lot
+      - lot_code
+      - permit_code
       - permit_version
       - provenance
+      - quadrant_code
       - quantity
       - release_device
+      - release_device_code
       - schedule_task
       - server_received_at
       - training_version
@@ -31919,13 +31935,22 @@ components:
           type: string
           format: uuid
           readOnly: true
+        center_code:
+          type: string
+          readOnly: true
         quadrant:
           type: string
           format: uuid
           readOnly: true
+        quadrant_code:
+          type: string
+          readOnly: true
         source_lot:
           type: string
           format: uuid
+          readOnly: true
+        source_lot_code:
+          type: string
           readOnly: true
         source_lot_version:
           type: string
@@ -31954,13 +31979,16 @@ components:
       required:
       - blocked_by
       - center
+      - center_code
       - code
       - created_at
       - created_by
       - id
       - quadrant
+      - quadrant_code
       - revision
       - source_lot
+      - source_lot_code
       - source_lot_version
       - status
     ReleaseDeviceStatus:

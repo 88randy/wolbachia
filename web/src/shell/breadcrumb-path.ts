@@ -21,6 +21,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   bags: "labReception.page.title",
   "permit-types": "permits.types.title",
   permits: "permits.list.title",
+  devices: "releases.devices.title",
   trainings: "trainings.workspace.title",
   evaluations: "evaluations.page.title",
   reviews: "reviews.workspace.title",
@@ -47,7 +48,9 @@ const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   reconciliations: "allocation.reconciliation.title",
   "write-offs": "allocation.writeOff.title",
 };
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 function resourceKey(parts: string[], index: number): MessageKey | undefined {
+  if (UUID.test(parts[index] ?? "")) return "releases.detail.crumb";
   if (parts[0] !== "inventory") return RESOURCE_LABELS[parts[index] ?? ""];
   if (index === 1) return INVENTORY_LABELS[parts[index] ?? ""];
   return lotResourceKey(parts, index);

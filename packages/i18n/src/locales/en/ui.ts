@@ -1,5 +1,8 @@
 import type { ui as esMX } from "../es-MX/ui.ts";
 export const ui: Record<keyof typeof esMX, string> = {
+  "ui.picker.search": "Search by name",
+  "ui.picker.empty": "No matches",
+  "ui.picker.loading": "Loading…",
   "ui.actions.more": "More actions",
   "ui.actions.createFirst": "Create the first record",
   "ui.actions.clearFilters": "Clear filters",
