@@ -59,6 +59,7 @@ export const permits: Record<keyof typeof source, string> = {
   "permits.blocker.permitSuspended": "The permit is suspended.",
   "permits.blocker.permitExpired": "The permit is outside its validity.",
   "permits.blocker.permitUnavailable": "The permit has no official version.",
+  "permits.blocker.deviceInactive": "The release device is not active.",
   "permits.blocker.other": "Condition not met.",
   "permits.blocker.unblockedBy": "Resolved by: {role}",
   "permits.detail.back": "Permits",

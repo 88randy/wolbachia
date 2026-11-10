@@ -7,10 +7,8 @@ export const QUADRANT_TABLE: TableQueryConfig = {
   defaultOrdering: "code",
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
-  filters: [
-    CENTER_FILTER,
-    { key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 },
-  ],
+  // The shell center filter already scopes the list; no raw center id field on screen.
+  filters: [{ key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 }],
 };
 export const RECORD_TABLE: TableQueryConfig = {
   paging: "page",

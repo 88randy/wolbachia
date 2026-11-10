@@ -1,12 +1,5 @@
-import { areaHomeRoute } from "../router/area-route";
-import { AreaPlaceholder } from "./AreaPlaceholder";
-
 /**
- * Areas with no screen yet. They are hidden from the sidebar (`hidden` in `router/areas.ts`);
- * the address keeps answering so old links do not break. When an area gets its first screen,
- * move it to `web/src/<area>/routes.tsx` and drop `hidden`.
+ * Areas with no screen yet (hidden from the sidebar). Every area has screens now, so none is left;
+ * a new area adds its placeholder here until its first screen lands.
  */
-export const placeholderRoutes = [
-  areaHomeRoute("community", () => <AreaPlaceholder areaId="community" />),
-  areaHomeRoute("regulatory", () => <AreaPlaceholder areaId="regulatory" />),
-];
+export const placeholderRoutes: never[] = [];

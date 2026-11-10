@@ -7,6 +7,12 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.field.code": "Course code",
   "trainings.field.name": "Course name",
   "trainings.field.validity": "Validity (seconds)",
+  "trainings.field.noneOption": "No quadrant",
+  "trainings.field.pickPlaceholder": "Choose from the list",
+  "trainings.field.otherAction": "Other action (specify)",
+  "trainings.field.pickCourseFirst": "Choose the course first.",
+  "trainings.field.versionOption": "Version {version}",
+  "trainings.action.release.record": "Record releases",
   "trainings.field.actions": "Enabled actions",
   "trainings.field.actionsHint":
     "Configured action keys, separated by commas. Publishing a course does not assign permissions.",
@@ -65,8 +71,7 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.course.unavailable":
     "The record is unavailable in your scope. Check the reference or request access from Administration.",
   "trainings.person.title": "Certifications by person",
-  "trainings.person.lookupHint":
-    "Use authorized person and context references. Training access does not grant personnel directory search or private evaluation access.",
+  "trainings.person.lookupHint": "Choose the person and the center to see their trainings.",
   "trainings.person.inspect": "Inspect certifications and eligibility",
   "trainings.person.certificates": "Certification history",
   "trainings.person.create": "Record certification",

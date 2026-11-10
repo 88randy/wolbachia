@@ -196,3 +196,22 @@ DOM/evidence before one explicit publication with expected revision3 and exact g
 and resolutions. A literal fake Response is cloned by the common fake API; no consumed-
 response defect is claimed. The other recovery cases already await their relevant new
 projection/operation/URL evidence and are unchanged without a demonstrated violation.
+
+## Map editor (`/quadrants/editor`, W23 editor board)
+
+`editor/` draws on the same MapLibre map with Terra Draw 1.39.0 and
+`terra-draw-maplibre-gl-adapter` 1.5.0 (one instance per map, created on `onLoad`;
+the memoized style keeps its layers). Four tools:
+
+- Draw quadrant: polygon mode, corner undo, close on the first/last corner, then name,
+  center, area (km2) and point count; saves with `POST /quadrants/`.
+- Place sampling point: must fall inside a block; `POST /sampling-points/`.
+- Place release point: must fall inside a quadrant; warns when no permit zone of that
+  quadrant contains it; `POST /release-points/` (new minimal geography endpoint).
+- Move or correct: select mode on the chosen quadrant, its sampling and release points.
+  A changed shape publishes `POST /quadrants/{id}/versions/` with a decision and reason
+  for every point left outside; moved points then use their own version endpoints.
+
+Static layers show every quadrant (center = color + solid/dashed outline), blocks and
+points, with a legend. Without WebGL the screen shows a notice; coordinates stay
+editable from each quadrant record.

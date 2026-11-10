@@ -109,13 +109,17 @@ class AccessLogSerializer(OrgScopedModelSerializer):
     target_id = serializers.UUIDField(read_only=True, allow_null=True)
     center_id = serializers.UUIDField(read_only=True)
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
+    actor_name = serializers.CharField(read_only=True, allow_null=True, default=None)
+    target_name = serializers.CharField(read_only=True, allow_null=True, default=None)
 
     class Meta:
         model = AccessLog
         fields = [
             "id",
             "actor_id",
+            "actor_name",
             "target_id",
+            "target_name",
             "center_id",
             "quadrant_id",
             "action",
