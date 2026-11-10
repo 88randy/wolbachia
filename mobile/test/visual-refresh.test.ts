@@ -8,10 +8,10 @@ import { unlockTitle } from "../src/screens/auth/unlock-presentation.ts";
 import { parseScheme, resolveScheme } from "../src/app/preferences.ts";
 import { FONT_FAMILY, MONO_FONT_FAMILY, textStyleFor } from "../src/theme/typography.ts";
 
-void test("appearance follows live system changes until an explicit saved choice", () => {
+void test("appearance is light by default and follows the system only when chosen", () => {
   const defaultPreference = parseScheme(null);
-  assert.equal(resolveScheme(defaultPreference, "light"), "light");
-  assert.equal(resolveScheme(defaultPreference, "dark"), "dark");
+  assert.equal(resolveScheme(defaultPreference, "dark"), "light");
+  assert.equal(resolveScheme(parseScheme("system"), "dark"), "dark");
   assert.equal(resolveScheme(parseScheme("light"), "dark"), "light");
   assert.equal(resolveScheme(parseScheme("dark"), "light"), "dark");
   assert.equal(resolveScheme(parseScheme("unknown"), null), "light");
