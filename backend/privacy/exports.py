@@ -221,44 +221,38 @@ def _safe(value: object) -> object:
     return value
 
 
+@dataclass(frozen=True)
+class ExportRequest:
+    dataset: str
+    date_from: date
+    date_to: date
+    recipient_institution: str = ""
+
+
 def build_export(
-    actor: UploadActor,
-    dataset: str,
-    date_from: date,
-    date_to: date,
-    recipient_institution: str,
+    actor: UploadActor, request: ExportRequest
 ) -> tuple[tuple[str, ...], list[list[object]]]:
-    spec = DATASETS[dataset]
-    raw = spec.rows(actor, date_from, date_to)
+    spec = DATASETS[request.dataset]
+    raw = spec.rows(actor, request.date_from, request.date_to)
     if len(raw) > EXPORT_MAX_ROWS:
         raise FieldValidationError("date_to", "too_many_rows", {"max_rows": EXPORT_MAX_ROWS})
-    resolver = _RfcResolver(actor, recipient_institution)
+    resolver = _RfcResolver(actor, request.recipient_institution)
     header = (*spec.columns, RFC_COLUMN, "note")
     table: list[list[object]] = []
     for row in raw:
         rfc, note = resolver.resolve(row["_user"], row["_center"], row["_quadrant"])
         table.append([_safe(row[c]) for c in spec.columns] + [_safe(rfc), note])
-    _log_export(actor, dataset, (date_from, date_to), recipient_institution, table)
-    return header, table
-
-
-def _log_export(
-    actor: UploadActor,
-    dataset: str,
-    span: tuple[date, date],
-    recipient: str,
-    rows: list[list[object]],
-) -> None:
     ExportLog.objects.create(
         organization=actor.organization,
         created_by=actor.user,
-        dataset=dataset,
-        date_from=span[0],
-        date_to=span[1],
-        recipient_institution=recipient.strip(),
-        row_count=len(rows),
-        rfc_rows_released=sum(1 for row in rows if row[-1] == ""),
+        dataset=request.dataset,
+        date_from=request.date_from,
+        date_to=request.date_to,
+        recipient_institution=request.recipient_institution.strip(),
+        row_count=len(table),
+        rfc_rows_released=sum(1 for row in table if row[-1] == ""),
     )
+    return header, table
 
 
 def to_csv(header: Iterable[str], table: list[list[object]]) -> bytes:

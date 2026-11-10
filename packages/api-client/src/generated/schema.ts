@@ -15338,8 +15338,24 @@ export interface operations {
     access_log_list: {
         parameters: {
             query?: {
+                /**
+                 * @description * `user.create` - Create
+                 *     * `user.update` - Update
+                 *     * `user.deactivate` - Deactivate
+                 *     * `user.reveal_rfc` - Reveal Rfc
+                 *     * `user.rotate_rfc` - Rotate Rfc
+                 */
+                action?: "user.create" | "user.update" | "user.deactivate" | "user.reveal_rfc" | "user.rotate_rfc";
+                actor_id?: string;
+                created_after?: string;
+                created_before?: string;
                 /** @description The pagination cursor value. */
                 cursor?: string;
+                /**
+                 * @description * `success` - Success
+                 *     * `rfc_rejected` - RFC rejected
+                 */
+                result?: "success" | "rfc_rejected";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */

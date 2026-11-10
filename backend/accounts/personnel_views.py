@@ -15,8 +15,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 
 from accounts.models import AccessLog, Personnel
-from accounts.personnel_selectors import operational_projection, scoped_access_log, scoped_personnel
+from accounts.personnel_selectors import (
+    filter_access_log,
+    operational_projection,
+    scoped_access_log,
+    scoped_personnel,
+)
 from accounts.personnel_serializers import (
+    AccessLogFilterSerializer,
     AccessLogSerializer,
     OperationalPersonnelSerializer,
     PersonnelFilterSerializer,
@@ -160,4 +166,9 @@ class AccessLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Ge
     def get_queryset(self) -> QuerySet[AccessLog]:
         if getattr(self, "swagger_fake_view", False):
             return AccessLog.objects.none()
-        return scoped_access_log(self.request.membership)  # type: ignore[attr-defined]
+        rows = scoped_access_log(self.request.membership)  # type: ignore[attr-defined]
+        return filter_access_log(rows, self.request.query_params)
+
+    @extend_schema(parameters=[AccessLogFilterSerializer], responses=AccessLogSerializer(many=True))
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)

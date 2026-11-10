@@ -133,3 +133,8 @@ def test_other_organization_is_isolated(
     other = APIClient()
     other.force_authenticate(user)
     assert other.get("/api/v1/data-transfers/").json()["results"] == []
+
+
+def test_access_log_filters(regulator: APIClient) -> None:
+    assert regulator.get("/api/v1/access-log/", {"action": "user.create"}).status_code == 200
+    assert regulator.get("/api/v1/access-log/", {"action": "nope"}).status_code == 400

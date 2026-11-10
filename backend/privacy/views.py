@@ -22,7 +22,7 @@ from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.models import Membership, Organization
 from privacy import portal
-from privacy.exports import build_export, to_csv, to_xlsx
+from privacy.exports import ExportRequest, build_export, to_csv, to_xlsx
 from privacy.models import ArcoRequest, DataTransferAuthorization, PortalSettings
 from privacy.permissions import (
     ARCO_MANAGE,
@@ -50,8 +50,10 @@ from privacy.services import (
 )
 from uploads.access import actor_from_request
 
-# [ASSUMPTION] legal response window; configurable per deployment until the client confirms.
-ARCO_DUE_DAYS = 20
+# [ASSUMPTION] 20 dias habiles (supuesto, configurable); business-day math deferred.
+ARCO_DUE_DAYS = (
+    20  # "20 dias habiles (supuesto, configurable)"; calendar days for now, no business-day math
+)
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -131,10 +133,12 @@ class ExportViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         data = query.validated_data
         header, table = build_export(
             actor_from_request(request),
-            data["dataset"],
-            data["date_from"],
-            data["date_to"],
-            data.get("recipient_institution", ""),
+            ExportRequest(
+                data["dataset"],
+                data["date_from"],
+                data["date_to"],
+                data.get("recipient_institution", ""),
+            ),
         )
         name = f"{data['dataset']}_{data['date_from']}_{data['date_to']}"
         if data["file_format"] == "xlsx":
