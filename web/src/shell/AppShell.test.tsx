@@ -41,6 +41,7 @@ describe("sidebar navigation", () => {
           "quadrant.read",
           "supply_type.read",
           "incident.read",
+          "egg_count.read",
           "review_item.read",
         ],
       }),
@@ -67,8 +68,9 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/quadrants");
     expect(hrefs).not.toContain("/inventory");
     expect(hrefs).not.toContain("/incidents");
+    expect(hrefs).not.toContain("/lab");
     expect(hrefs).not.toContain("/operations");
-    expect(hrefs).toHaveLength(7);
+    expect(hrefs).toHaveLength(6);
   });
 
   test("groups the areas under headings", async () => {
@@ -94,7 +96,7 @@ describe("sidebar navigation", () => {
   });
 
   test("navigating by keyboard changes the page", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
 
     screen.getByRole("link", { name: "Laboratorio" }).focus();
     await userEvent.keyboard("{Enter}");
@@ -180,7 +182,7 @@ describe("focus on navigation", () => {
   });
 
   test("moves focus to main after following a sidebar link", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
 
