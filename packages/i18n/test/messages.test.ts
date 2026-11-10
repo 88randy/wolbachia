@@ -20,6 +20,13 @@ const locales = Object.keys(messages) as Locale[];
  * author of a void; the minimum is 10 by default, so no sentence has a singular form.
  */
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
+  ["allocation.assignment.lineQuantity", ["code"]],
+  ["allocation.assignment.panelTitle", ["name"]],
+  ["allocation.assignment.removeLine", ["code"]],
+  ["allocation.assignment.saved", ["revision"]],
+  ["allocation.assignment.stateOver", ["count"]],
+  ["allocation.assignment.stateShort", ["count"]],
+  ["allocation.field.reasonTextHint", ["count"]],
   ["auth.lockout.message", ["minutes"]],
   ["catalogs.actions.movedDown", ["name"]],
   ["catalogs.actions.moveDown", ["name"]],

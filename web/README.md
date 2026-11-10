@@ -19,6 +19,11 @@ manifest identity scanning, photo-backed reception and discrepancy resolution.
 See [signed transfers](src/inventory/transfers/README.md) for supported contracts,
 the preparation/physical-code gap tracked in #337 and criterion-to-test ownership.
 
+Issue #153 adds W15–W17 and W39 at `/inventory/assignments`, `/inventory/reconciliations`,
+`/inventory/write-offs` and `/lab/write-offs`: courier supply allocation with signature status,
+the reconciliation equation with justify/open-discrepancy, and one shared RPBI-backed write-off
+form. See [allocation](src/inventory/allocation/README.md) for the two-step intent flow and limits.
+
 Issue #148 adds W50/W51 at `/people/trainings` and `/people/evaluations`.
 See [people workflows](src/people/README.md) for permission separation, retained
 rubric/certification provenance, test mapping and explicit B03 read gaps.

@@ -6148,7 +6148,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "AssignmentReleaseIntentRequest";
+            kind: "assignment_release";
             /** Format: uuid */
             assignment_id: string;
         };
@@ -6257,7 +6257,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "BagDisposalIntentRequest";
+            kind: "bag_disposal";
             /** Format: uuid */
             bag_id: string;
             /** Format: uuid */
@@ -8938,7 +8938,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "LotWriteOffIntentRequest";
+            kind: "lot_write_off";
             /** Format: uuid */
             lot_id: string;
             /** Format: uuid */
@@ -11958,7 +11958,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReconcileJustifyIntentRequest";
+            kind: "reconcile_justify";
             /** Format: uuid */
             reconciliation_id: string;
             /** Format: uuid */
@@ -12162,7 +12162,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReleaseCancelIntentRequest";
+            kind: "release_cancel";
             /** Format: uuid */
             release_id: string;
         };
@@ -12628,7 +12628,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReturnAcceptIntentRequest";
+            kind: "return_accept";
             /** Format: uuid */
             declaration_id: string;
             /** Format: decimal */
