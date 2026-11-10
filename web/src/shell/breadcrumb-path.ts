@@ -49,7 +49,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** Only known routes become ancestor links; human codes remain plain text. */
 export function breadcrumbsOf(pathname: string) {
   // Records without a human code (UUID routes) end the trail at their list.
-  const parts = pathname.split("/").filter((part) => part && !UUID_PATTERN.test(part));
+  const parts = pathname
+    .split("/")
+    .filter((part) => part && !UUID_PATTERN.test(part))
+    // A catalog tab slug is a technical name; the tab already names the catalog.
+    .filter((_part, index, all) => !(index === 2 && all[1] === "catalogs"));
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;

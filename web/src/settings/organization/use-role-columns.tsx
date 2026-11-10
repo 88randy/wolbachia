@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { ProfileScopeSummary } from "./ProfileScopeSummary";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
@@ -17,7 +18,11 @@ export function useRoleColumns(
     {
       id: "slug",
       headerKey: "orgAdmin.roles.profile",
-      cell: (profile) => (i18n.language === "en" ? profile.label_en : profile.label_es),
+      cell: (profile) => (
+        <span className="block min-w-36 font-semibold text-ink">
+          {i18n.language === "en" ? profile.label_en : profile.label_es}
+        </span>
+      ),
     },
     PROFILE_SCOPE_COLUMN,
     {

@@ -70,6 +70,8 @@ export const orgAdmin = {
   "orgAdmin.organization.phone": "Phone on ovitrap labels",
   "orgAdmin.organization.support": "Support contact",
   "orgAdmin.brand.saved": "Logo saved",
+  "orgAdmin.section.general": "General details",
+  "orgAdmin.brand.choose": "Choose image",
   "orgAdmin.brand.logo": "Logo",
   "orgAdmin.brand.initials": "Organization initials",
   "orgAdmin.brand.preview": "Label preview",

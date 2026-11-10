@@ -10,18 +10,11 @@ import {
   unconfiguredOptions,
 } from "./incident-types-query";
 import { useTypeNavigation } from "./use-type-navigation";
-import { TYPE_CODE_MAX_LENGTH } from "./type-limits";
 export const TYPES_TABLE: TableQueryConfig = {
   paging: "page",
   pageSize: TYPE_PAGE_SIZE,
-  filters: [
-    {
-      key: "code",
-      kind: "text",
-      labelKey: "incidentTypes.field.code",
-      maxLength: TYPE_CODE_MAX_LENGTH,
-    },
-  ],
+  // Few types per organization: no exact-code search on screen.
+  filters: [],
   sortableIds: ["code", "created_at"],
   defaultOrdering: "code",
   supportsVoided: false,

@@ -24,6 +24,8 @@ const NAME_KEYS: Readonly<Record<string, MessageKey>> = {
   reminder_minutes_before_end: "rules.param.reminderBeforeEnd",
   max_paddle_reuses: "rules.param.maxPaddleReuses",
   revisit_interval_days: "rules.param.revisitInterval",
+  daily_task_target: "rules.param.dailyTaskTarget",
+  max_gps_accuracy_m: "rules.param.maxGpsAccuracy",
 };
 
 /** Typed on the API's unit enum: a new unit in the schema fails the build until it is named here. */

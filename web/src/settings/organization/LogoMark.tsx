@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLogo } from "./use-logo";
-import styles from "./organization.module.css";
 interface Props {
   name: string;
   url: string | null;
@@ -20,7 +19,7 @@ export function LogoMark({ name, url, revision }: Props) {
     .toLocaleUpperCase();
   return source && failed !== source ? (
     <img
-      className={styles.logo}
+      className="max-h-16 w-auto max-w-full object-contain"
       src={source}
       alt={t("orgAdmin.brand.logo")}
       onError={() => {
@@ -28,7 +27,10 @@ export function LogoMark({ name, url, revision }: Props) {
       }}
     />
   ) : (
-    <span className={styles.initials} aria-label={t("orgAdmin.brand.initials")}>
+    <span
+      className="text-2xl font-bold text-action-strong"
+      aria-label={t("orgAdmin.brand.initials")}
+    >
       {initials}
     </span>
   );

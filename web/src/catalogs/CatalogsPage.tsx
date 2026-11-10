@@ -14,7 +14,8 @@ import { useSessionIdentity } from "../session/use-session-identity";
 import { CatalogItems } from "./CatalogItems";
 import { CatalogNavigation } from "./CatalogNavigation";
 import { useCatalogRefresh } from "./use-catalog-refresh";
-import page from "../styles/page.module.css";
+import { PageFrame } from "../components/templates/PageFrame";
+import { PageHeader } from "../components/templates/PageHeader";
 
 /** W63: API-defined tabs, first-catalog redirect, and an identity- and slug-scoped editor. */
 export function CatalogsPage() {
@@ -33,11 +34,11 @@ export function CatalogsPage() {
   const catalog = query.data.find((entry) => entry.slug === slug);
   if (!catalog) return <NotFoundState />;
   return (
-    <section className={page.page}>
-      <h1 className={page.title}>{t("catalogs.page.title")}</h1>
+    <PageFrame>
+      <PageHeader title={t("catalogs.page.title")} description={t("refresh.settings.catalogs")} />
       <CatalogRefreshNotice error={query.error} onRetry={refresh} />
       <CatalogNavigation slug={slug} isParentError={query.error !== null} />
       <CatalogItems key={catalogEditorKey(scope.identity, "tabs")} catalog={catalog} />
-    </section>
+    </PageFrame>
   );
 }

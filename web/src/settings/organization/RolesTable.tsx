@@ -8,8 +8,9 @@ export function RolesTable() {
   const table = useRolesTable();
   return (
     <>
-      <p>{t("orgAdmin.roles.hint")}</p>
-      <p role="status">{table.isSaved ? t("orgAdmin.action.saved") : ""}</p>
+      <p role="status" className="m-0 text-sm font-semibold text-success-fg empty:hidden">
+        {table.isSaved ? t("orgAdmin.action.saved") : ""}
+      </p>
       <FilterBar controller={table.controller} />
       <DataTable
         caption={t("orgAdmin.roles.title")}

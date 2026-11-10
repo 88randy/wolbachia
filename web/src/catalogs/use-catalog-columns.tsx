@@ -23,13 +23,6 @@ const IDENTITY_COLUMNS: Column[] = [
     align: "end",
     cell: (item) => <CatalogUsage item={item} />,
   },
-  {
-    id: "code",
-    headerKey: "catalogs.table.code",
-    cell: (item) => (
-      <span className={classNames(styles.code, !item.is_active && styles.struck)}>{item.code}</span>
-    ),
-  },
 ];
 const ACTION_COLUMNS: Column[] = [
   {

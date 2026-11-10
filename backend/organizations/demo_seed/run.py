@@ -15,6 +15,7 @@ from organizations.demo_seed import (
     lab_history,
     operations,
     people,
+    personnel,
     releases,
     training,
 )
@@ -53,6 +54,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
         center.code: center for center in people.ensure_centers(organization, admin.user)
     }
     quadrants = geography.ensure_geography(centers, admin)
+    personnel.ensure_personnel(organization, members, list(centers.values()))
     operations.ensure_incident_types(
         organization,
         admin,

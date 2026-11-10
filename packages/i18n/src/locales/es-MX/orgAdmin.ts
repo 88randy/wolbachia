@@ -71,6 +71,8 @@ export const orgAdmin = {
   "orgAdmin.organization.phone": "Teléfono en etiquetas de ovitrampa",
   "orgAdmin.organization.support": "Contacto de soporte",
   "orgAdmin.brand.saved": "Logotipo guardado",
+  "orgAdmin.section.general": "Datos generales",
+  "orgAdmin.brand.choose": "Elegir imagen",
   "orgAdmin.brand.logo": "Logotipo",
   "orgAdmin.brand.initials": "Iniciales de la organización",
   "orgAdmin.brand.preview": "Vista previa de etiqueta",

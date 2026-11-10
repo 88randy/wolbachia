@@ -31,6 +31,8 @@ export const rules = {
   "rules.param.sessionIdle": "Inactividad que cierra la sesión",
   "rules.param.reminderBeforeEnd": "Aviso antes del fin de la jornada",
   "rules.param.maxPaddleReuses": "Reutilizaciones máximas de la papeleta",
+  "rules.param.dailyTaskTarget": "Meta diaria de tareas",
+  "rules.param.maxGpsAccuracy": "Precisión mínima del GPS",
   "rules.param.revisitInterval": "Intervalo entre revisitas",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
