@@ -18,6 +18,7 @@ describe("visibleNavGroups", () => {
             "motorcycle.read",
             "quadrant.read",
             "location.read",
+            "bag.receive",
             "egg_count.read",
           ],
         }),

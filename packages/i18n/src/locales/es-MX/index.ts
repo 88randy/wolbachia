@@ -1,3 +1,4 @@
+import { labReception } from "./labReception.ts";
 import { lab } from "./lab.ts";
 import { shift } from "./shift.ts";
 import { incidents } from "./incidents.ts";
@@ -34,6 +35,7 @@ export const esMX = {
   ...reviews,
   ...relocations,
   ...closure,
+  ...labReception,
   ...incidents,
   ...inventory,
   ...ui,

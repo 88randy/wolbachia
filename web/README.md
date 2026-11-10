@@ -34,6 +34,11 @@ Full inventory with states: [`docs/web-screens.md`](../docs/web-screens.md). End
 
 ## Profiles
 
+W34 reception is available at `/lab/bags` with `bag.receive`; `/lab` exposes the
+permitted reception and independent W35 URL links. See
+[`src/lab/README.md`](src/lab/README.md) for contracts, count definitions,
+design deviations and the keyboard/accessibility test matrix.
+
 B-01 defines nine seeded profile bundles: courier, supervisor, entomologist, community promoter, admin, coordinator, warehouse, regulatory and government. W65 renders the backend projections as data and never branches on profile names. Government has a read-only portal boundary; the fixed-profile projection gap is documented in the W-03 section.
 
 Shared permission rules:

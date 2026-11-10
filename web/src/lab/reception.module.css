@@ -1,0 +1,83 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  min-width: 0;
+}
+.page h1,
+.page p {
+  margin: 0;
+}
+.page header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.page h1 {
+  font-size: var(--web-type-title-font-size);
+  line-height: var(--web-type-title-line-height);
+}
+.scanner,
+.noPaddle,
+.metric {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3);
+}
+.scanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.scanForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.scanForm > div {
+  flex: 1;
+  min-width: 0;
+}
+.scanIcon {
+  width: var(--web-icon-lg);
+  height: var(--web-icon-lg);
+  flex-shrink: 0;
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+.metric > a {
+  font-size: var(--web-type-title-font-size);
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+.noPaddle summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.page a,
+.page td {
+  overflow-wrap: anywhere;
+}
+.page :is(input, select) {
+  max-width: 100%;
+}
+.filters form > div {
+  flex-wrap: wrap;
+}
+.filters form button {
+  flex: none;
+}
