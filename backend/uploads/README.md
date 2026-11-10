@@ -1,5 +1,18 @@
 # Private evidence (B-04 / #102)
 
+## Third-party material delivery (#118)
+
+`material_request` is an additional concrete AttachmentLink parent. Notification
+evidence and delivery signatures use the same staged, sanitized, verified unbound
+uploads; the request command locks and consumes exact actor/device-owned uploads
+atomically with its notification or delivery fact. An upload has one parent and
+cannot serve as a later signature after being consumed for a notification.
+Target retries require the actual retained declaration plus current
+`material_request.notify` or `material_request.deliver` and `field.upload` for the
+real request location. Downloads require current `material_request.read`, checked
+before and after unlocked storage I/O. Evidence UUIDs, verification and a prior
+delivery never supply continuing authorization. No new byte transport is added.
+
 ## Certification evidence (#101)
 
 One additional concrete AttachmentLink parent is Certification. Keep every prior

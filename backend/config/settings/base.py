@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
     "notifications",
+    "privacy.apps.PrivacyConfig",
     "releases.apps.ReleasesConfig",
 ]
 

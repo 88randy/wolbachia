@@ -138,8 +138,8 @@ current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. Only the singleton
 field/review migration jobs temporarily allow 25 minutes (#331, decision 172);
 all other jobs retain 15 minutes. Original test assertions and coverage omit
-policy are unchanged. Releases and Notifications are included in the configured
-statement denominator (20 configured
+policy are unchanged. Releases, Privacy and Notifications are included in the configured
+statement denominator (21 configured
 apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
 for exact-attempt conservation, failure handling, timing evidence and compute costs.
 
