@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDialogContainer } from "./use-dialog-container";
 
 /** Radix Select forbids an empty item value; "" (All / none) travels as this sentinel. */
 const EMPTY = "__empty__";
@@ -42,6 +43,7 @@ export function SelectMenu(props: SelectMenuProps) {
   const { id, value, options, onValueChange, placeholder, invalid, describedBy } = props;
   const hasEmptyOption = options.some((option) => option.value === "");
   const current = value === "" ? (hasEmptyOption ? EMPTY : undefined) : value;
+  const [container, triggerRef] = useDialogContainer();
   return (
     <Root
       value={current ?? ""}
@@ -53,6 +55,7 @@ export function SelectMenu(props: SelectMenuProps) {
       }}
     >
       <SelectTrigger
+        ref={triggerRef}
         id={id}
         aria-label={props.ariaLabel}
         aria-invalid={invalid || undefined}
@@ -62,14 +65,24 @@ export function SelectMenu(props: SelectMenuProps) {
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectMenuItems options={options} />
+      <SelectMenuItems options={options} container={container} />
     </Root>
   );
 }
 
-function SelectMenuItems({ options }: { options: readonly SelectMenuOption[] }) {
+function SelectMenuItems({
+  options,
+  container,
+}: {
+  options: readonly SelectMenuOption[];
+  container: HTMLElement | null;
+}) {
   return (
-    <SelectContent position="popper" className="max-h-80 rounded-xl border border-line">
+    <SelectContent
+      position="popper"
+      container={container}
+      className="max-h-80 rounded-xl border border-line"
+    >
       {options.map((option) => (
         <SelectItem
           key={option.value || EMPTY}

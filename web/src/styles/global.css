@@ -203,3 +203,96 @@ select:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/*
+ * One look for every text field, whatever screen module styles it: one border, the same height,
+ * radius and focus ring as `forms/TextField`. The `html body` prefix outranks screen modules
+ * (`.formFields input`, `.page input`...). Search boxes and the command palette keep their own
+ * chrome, and the inner input of a composite field (`forms/form.module.css .input`) stays bare.
+ */
+html
+  body
+  :is(
+    input:not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="color"],
+      [type="hidden"],
+      [type="search"],
+      [cmdk-input]
+    ),
+    textarea,
+    select:not([aria-hidden="true"])
+  ) {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: var(--web-control-xl);
+  padding-inline: var(--space-1-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-level-1);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--web-type-body-font-size);
+}
+html body textarea {
+  min-height: calc(var(--web-control-xl) * 2);
+  padding-block: var(--space-1);
+  line-height: var(--web-type-body-line-height);
+}
+html body select:not([aria-hidden="true"]) {
+  appearance: none;
+  padding-inline-end: var(--space-4);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
+    linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+html
+  body
+  :is(
+    input:not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="color"],
+      [type="hidden"],
+      [type="search"],
+      [cmdk-input]
+    ),
+    textarea,
+    select:not([aria-hidden="true"])
+  ):focus-visible {
+  border-color: var(--color-action);
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+}
+html body :is(input, textarea, select)[aria-invalid="true"] {
+  border-color: var(--color-status-critical-fg);
+}
+
+/* Field labels: the TextField label everywhere a label sits right before its control. */
+html
+  body
+  label:has(
+    + :is(
+      input:not([type="checkbox"], [type="radio"]),
+      textarea,
+      select,
+      button[role="combobox"],
+      div
+    )
+  ) {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+  line-height: var(--web-type-body-line-height);
+}
