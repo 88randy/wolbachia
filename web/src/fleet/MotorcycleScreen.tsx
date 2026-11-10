@@ -1,8 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useDocumentTitle } from "../shell/use-document-title";
-import page from "../styles/page.module.css";
-import { classNames } from "../styles/class-names";
+import { DetailPage } from "../components/templates/DetailPage";
 import type { MotorcycleDetail } from "./fleet-query";
 import type { FleetRecordScope } from "./use-fleet-scope";
 import { FleetTabs } from "./FleetTabs";
@@ -10,10 +8,12 @@ import { FleetHistory } from "./FleetHistory";
 import { canFleetAction } from "./use-fleet-scope";
 import type { useFleetOperations } from "./use-fleet-operations";
 import { FleetRecordOperations } from "./FleetRecordOperations";
+import { FleetRecordFeedback } from "./FleetRecordFeedback";
+import { MotorcycleActions } from "./MotorcycleActions";
+import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
 import { MotorcycleSummary } from "./MotorcycleSummary";
-import { MotorcycleRecordHeader } from "./MotorcycleRecordHeader";
+import { blockedReasonKey } from "./motorcycle-status";
 import { useFleetTabs } from "./use-fleet-tabs";
-import styles from "./fleet.module.css";
 interface Props {
   motorcycle: MotorcycleDetail;
   scope: FleetRecordScope;
@@ -33,32 +33,62 @@ function historyActions(props: Props) {
     onClear: props.operations.openClear,
   };
 }
+/** W21: header with status and actions, tabs, then card sections. */
 export function MotorcycleScreen(props: Props) {
   const { t } = useTranslation();
   const tabs = useFleetTabs();
-  useDocumentTitle(props.motorcycle.code);
+  const { motorcycle } = props;
+  const isVerified = props.error === null && !props.isRefreshing;
+  const subtitle = [motorcycle.plate, motorcycle.is_blocked ? t(blockedReasonKey(motorcycle)) : ""]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <section className={classNames(page.page, styles.content)}>
-      <Link to="/fleet/motorcycles" search={tabs.listSearch}>
-        {t("fleet.record.back")}
-      </Link>
-      <MotorcycleRecordHeader {...props} />
-      <FleetRecordOperations
-        motorcycle={props.motorcycle}
-        scope={props.scope}
-        operations={props.operations}
-      />
-      <FleetTabs code={props.motorcycle.code} />
+    <DetailPage
+      title={motorcycle.code}
+      status={isVerified ? <MotorcycleStatusBadge motorcycle={motorcycle} compact /> : undefined}
+      subtitle={subtitle || undefined}
+      back={{
+        label: t("fleet.record.back"),
+        link: { to: "/fleet/motorcycles", search: tabs.listSearch },
+      }}
+      actions={
+        <>
+          <FleetRecordOperations
+            motorcycle={motorcycle}
+            scope={props.scope}
+            operations={props.operations}
+          />
+          <MotorcycleActions motorcycle={motorcycle} isUnverified={!isVerified} />
+        </>
+      }
+      moreActions={[
+        {
+          id: "refresh",
+          label: t("fleet.action.refresh"),
+          icon: <RefreshCw aria-hidden="true" className="size-4" />,
+          onSelect: props.onRetry,
+          disabled: props.isRefreshing,
+        },
+      ]}
+      notices={
+        <FleetRecordFeedback
+          error={props.error}
+          onRetry={props.onRetry}
+          isRefreshing={props.isRefreshing}
+        />
+      }
+    >
+      <FleetTabs code={motorcycle.code} />
       {tabs.tab === "summary" ? (
-        <MotorcycleSummary motorcycle={props.motorcycle} />
+        <MotorcycleSummary motorcycle={motorcycle} />
       ) : (
         <FleetHistory
-          key={`${props.scope.context}|${props.motorcycle.id}|${tabs.tab}`}
-          motorcycle={props.motorcycle.id}
+          key={`${props.scope.context}|${motorcycle.id}|${tabs.tab}`}
+          motorcycle={motorcycle.id}
           tab={tabs.tab}
           actions={historyActions(props)}
         />
       )}
-    </section>
+    </DetailPage>
   );
 }

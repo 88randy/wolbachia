@@ -1,30 +1,46 @@
-import { MotorcycleVoidSummary } from "./MotorcycleVoidSummary";
-import { Card } from "../ui/Card";
 import { useTranslation } from "react-i18next";
+import { DescriptionGrid } from "../components/templates/DescriptionGrid";
+import { DetailSection } from "../components/templates/DetailSection";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { EntityName } from "../lookups/EntityName";
 import type { MotorcycleDetail } from "./fleet-query";
 import { MotorcycleMetricsSummary } from "./MotorcycleMetricsSummary";
-import { useFleetAuthor } from "./use-fleet-author";
-import styles from "./fleet.module.css";
 export function MotorcycleSummary({ motorcycle }: { motorcycle: MotorcycleDetail }) {
   const { t } = useTranslation();
   const format = useFormatDateTime();
-  const author = useFleetAuthor();
+  const voided = motorcycle.voided_at
+    ? [
+        { label: t("fleet.summary.voidedAt"), value: format(motorcycle.voided_at) },
+        {
+          label: t("fleet.summary.voidedBy"),
+          value: <EntityName kind="user" id={motorcycle.voided_by} />,
+        },
+        { label: t("common.fields.voidReason"), value: motorcycle.void_reason, wide: true },
+      ]
+    : [];
   return (
-    <Card title={t("fleet.tab.summary")}>
-      <dl className={styles.summary}>
-        <dt>{t("fleet.column.code")}</dt>
-        <dd className={styles.code}>{motorcycle.code}</dd>
-        <dt>{t("fleet.column.plate")}</dt>
-        <dd className={styles.code}>{motorcycle.plate || t("fleet.summary.unknown")}</dd>
-        <dt>{t("fleet.summary.createdAt")}</dt>
-        <dd className={styles.timestamp}>{format(motorcycle.created_at)}</dd>
-        <dt>{t("fleet.summary.createdBy")}</dt>
-        <dd>{author(motorcycle.created_by)}</dd>
-        <MotorcycleVoidSummary motorcycle={motorcycle} />
-      </dl>
-      <MotorcycleMetricsSummary motorcycle={motorcycle} />
-      <p className={styles.hint}>{t("fleet.summary.historyGap")}</p>
-    </Card>
+    <>
+      <DetailSection title={t("fleet.tab.summary")}>
+        <DescriptionGrid
+          items={[
+            { label: t("fleet.column.code"), value: motorcycle.code },
+            { label: t("fleet.column.plate"), value: motorcycle.plate },
+            { label: t("fleet.summary.createdAt"), value: format(motorcycle.created_at) },
+            {
+              label: t("fleet.summary.createdBy"),
+              value: motorcycle.created_by ? (
+                <EntityName kind="user" id={motorcycle.created_by} />
+              ) : (
+                t("fleet.summary.system")
+              ),
+            },
+            ...voided,
+          ]}
+        />
+      </DetailSection>
+      <DetailSection title={t("fleet.summary.metrics")} hint={t("fleet.efficiency.detail")}>
+        <MotorcycleMetricsSummary motorcycle={motorcycle} />
+      </DetailSection>
+    </>
   );
 }
