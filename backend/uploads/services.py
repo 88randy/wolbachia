@@ -121,6 +121,8 @@ def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
 def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -> None:
     if target is None:
         return
+    if upload.content_type == PDF_CONTENT_TYPE:
+        raise FieldValidationError("file", "upload_type_not_allowed")
     parent = authorize_target(actor, target, upload)
     existing, _created = AttachmentLink.objects.get_or_create(
         upload=upload,

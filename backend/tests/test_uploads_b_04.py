@@ -1117,6 +1117,13 @@ def pdf_bytes(*, encrypted=False):
     )
 
 
+def hidden_trailer_pdf():
+    """startxref points at a plain object while an earlier trailer carries /Encrypt."""
+    head = pdf_bytes(encrypted=True).replace(b"startxref", b"%ignored").rsplit(b"%%EOF", 1)[0]
+    plain = b"\n5 0 obj\n<< /Type /Catalog >>\nendobj\n"
+    return head + plain + b"startxref\n" + str(len(head) + 1).encode() + b"\n%%EOF\n"
+
+
 def stage_bytes(private, content, content_type="application/pdf"):
     private.content = content
     identifier, lease = authorize(private, content_type=content_type)
@@ -1141,6 +1148,12 @@ def test_valid_pdf_is_stored_unchanged_and_verified(private):
         (b"MZ\x90\x00 executable", "application/pdf", "upload_content_mismatch"),
         (pdf_bytes(), "image/png", "upload_content_mismatch"),
         (pdf_bytes(encrypted=True), "application/pdf", "upload_pdf_encrypted"),
+        (
+            pdf_bytes(encrypted=True).replace(b"/Encrypt", b"/Encr#79pt"),
+            "application/pdf",
+            "upload_pdf_encrypted",
+        ),
+        (hidden_trailer_pdf(), "application/pdf", "upload_invalid_pdf"),
         (pdf_bytes()[:-30], "application/pdf", "upload_invalid_pdf"),
         (b"%PDF-1.4\nstartxref\n999999\n%%EOF\n", "application/pdf", "upload_invalid_pdf"),
         (b"%PDF-1.4\nstartxref\n0\n%%EOF\n", "application/pdf", "upload_invalid_pdf"),
@@ -1206,11 +1219,53 @@ def test_pdf_api_codes_and_download_is_attachment_with_nosniff(field, settings):
     assert put_response.status_code == 204
     done = client.post(f"/api/v1/field/uploads/{identifier}/finalize/", {}, format="json")
     assert done.data["state"] == "verified"
+    # A PDF declared on a field event is never linked as its evidence.
     source = envelope(field, payload={"evidence_ids": [identifier]})
-    assert ingest(field, source).status == "accepted"
-    response = client.get(f"/api/v1/attachments/{identifier}/download/")
+    ingest(field, source)
+    assert not AttachmentLink.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_pdf_with_script_is_downloaded_as_attachment_with_nosniff(field, monkeypatch):
+    from accounts.services import DeviceInfo, start_device_session
+
+    issued = start_device_session(
+        field.batch.user, field.batch.organization, DeviceInfo(field.batch.device.pk)
+    )
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {issued.access}")
+    content = b"%PDF-1.4\n<html><script>alert(document.cookie)</script></html>\n%%EOF\n"
+    monkeypatch.setattr(
+        "uploads.views.download_attachment", lambda *_args: (content, "application/pdf")
+    )
+    response = client.get(f"/api/v1/attachments/{uuid4()}/download/")
     assert response.status_code == 200
     assert response["Content-Type"] == "application/pdf"
     assert response["Content-Disposition"] == "attachment"
     assert response["X-Content-Type-Options"] == "nosniff"
     assert response.content == content
+
+
+def test_xref_stream_pdf_is_accepted():
+    from uploads.pdf import verify_pdf
+
+    content = b"%PDF-1.5\n1 0 obj\n<< /Type /XRef /Size 1 >>\nstream\nx\nendstream\nendobj\n"
+    content += b"startxref\n9\n%%EOF\n"
+    assert verify_pdf(content).content_type == "application/pdf"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_pdf_cannot_bind_as_parent_evidence(private):
+    motorcycle = MotorcycleFactory(organization=private.actor.organization)
+    fault = make_fault(motorcycle, private.actor.user)
+    identifier = stage_bytes(private, pdf_bytes())
+    finalize_upload(private.actor, identifier)
+    with pytest.raises(FieldValidationError) as refused:
+        finalize_upload(private.actor, identifier, AttachmentTarget("motorcycle_fault", fault.pk))
+    assert refused.value.fields["file"][0]["code"] == "upload_type_not_allowed"
+    assert not AttachmentLink.objects.exists()
+    upload = Upload.objects.get()
+    with pytest.raises(FieldValidationError):
+        AttachmentLink.objects.create(
+            organization=upload.organization, created_by=upload.uploader, upload=upload, fault=fault
+        )
