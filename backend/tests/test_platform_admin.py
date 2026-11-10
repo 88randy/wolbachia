@@ -189,7 +189,8 @@ def test_create_organization_with_defaults_centers_and_admin(
     assert response.status_code == 201, response.data
     assert response["Cache-Control"].startswith("max-age=0")
     password = response.data["admin"]["temporary_password"]
-    assert password and len(password) == 19
+    assert password
+    assert len(password) == 19
     organization = Organization.objects.get(slug="norte")
     assert organization.epi_week == "mmwr"
     assert Profile.objects.filter(organization=organization, slug="admin").exists()
