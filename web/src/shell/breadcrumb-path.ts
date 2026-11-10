@@ -23,7 +23,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   evaluations: "evaluations.page.title",
   reviews: "reviews.workspace.title",
   relocations: "relocations.workspace.title",
-  closure: "closure.page.title",
+  closure: "closure.crumb",
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
   "count-history": "lab.history.title",
