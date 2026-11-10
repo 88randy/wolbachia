@@ -229,6 +229,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
+        "review_item.read",
         "community_activity.read",
         "community_activity.void",
         *READ_ONLY_CODES,
