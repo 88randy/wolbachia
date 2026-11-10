@@ -179,7 +179,7 @@ def regulatory_facts(stock, point):
             "type_id": kind.pk,
             "number": "R116-OFFICIAL",
             "authority": "Synthetic authority",
-            "official_document_id": verified_upload(actor),
+            "official_document_id": verified_upload(actor, "application/pdf"),
             "document_attestation": "Reviewed synthetic official document and geometry",
             "geometry": GEOMETRY,
             "valid_from": AT - timedelta(days=1),

@@ -78,6 +78,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.unlock.passwordRequired", ["count"]],
   ["mobile.unlock.pinProgress", ["count"]],
   ["mobile.unlock.wrongPin", ["count"]],
+  ["notifications.inbox.total", ["count"]],
   ["refresh.reorder.position", ["count"]],
   ["reviews.workspace.blocker", ["code"]],
   ["reviews.workspace.incidentReceipt", ["id"]],

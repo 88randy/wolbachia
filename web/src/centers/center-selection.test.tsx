@@ -75,7 +75,10 @@ test("changing center clears caches and URL chips; an obsolete answer cannot ret
   expect(
     app.queryClient
       .getQueriesData({ predicate: (query) => query.queryKey[0] === "org" })
-      .some(([, result]) => JSON.stringify(result).includes("Contenido obsoleto")),
+      .some(
+        ([, result]) =>
+          result !== undefined && JSON.stringify(result).includes("Contenido obsoleto"),
+      ),
   ).toBe(false);
 });
 

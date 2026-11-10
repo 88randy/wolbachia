@@ -2,6 +2,19 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## UIEB shipment and transfer eligibility (#118)
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| envío UIEB | UiebShipment | Immutable technical source projection with cutoff and linked supersession. |
+| fuente de envío | ShipmentSource | Genuine selected Bag, WolbachiaSample or Lot identity; not a legal Annex VI template. |
+| muestra de Wolbachia | WolbachiaSample | Canonical minimal B21 identity with actual collection event, origin, method and Reading or Lot provenance. |
+| solicitud de material | MaterialRequest | Actual recipient, lot, storage, unit, quantity and optional piece. |
+| evidencia de notificación CENAPRECE | NotificationEvidence | Recorded reference/date and verified owned private upload. |
+| recibo de entrega | DeliveryReceipt | Unique authenticated command, verified signature and one real stock debit. |
+| autorización de transferencia | DataTransferAuthorization | Exact recipient/purpose/field, actual scope pair and explicit validity interval. |
+| revocación de transferencia | DataTransferRevocation | Append-only withdrawal; never rewrites earlier evidence or stores an RFC value. |
+
 ## Private evidence (#102)
 
 | Spanish | English name in code | API / field form | Notes |
@@ -45,6 +58,14 @@ Rules:
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
 
+
+## Notifications (#150)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| notificación | notification | `Notification`, `/notifications/` | Immutable organization- and recipient-owned coded inbox content; no user-facing text. |
+| acuse de lectura | notification read | `NotificationRead`, `read_at` | One immutable receipt per notification; repeated reads preserve the original instant. |
+| preferencia de canal | notification preference | `PreferenceVersion`, `/me/notification-preferences/` | Immutable per-kind in-app/email choices, with required channels enforced by the backend. |
 
 ## Configuration
 

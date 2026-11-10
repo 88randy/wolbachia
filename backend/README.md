@@ -27,6 +27,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
 | `community/` | Aggregate community activities at real Block identities, immutable cross-transport command receipts, complaint links and void-aware scoped totals (B34; see its README) |
 | `people/` | Evidence-backed training/certification, private immutable evaluations, current qualification and durable notice intents (B03; see its README) |
+| `notifications/` | Owner-scoped durable inbox, read receipts and required-channel preferences for W5 (#150; see its README) |
 | `releases/` | Official permit revisions and suspensions, release-device lineage/status, explicit planned release tasks and revalidated single-ledger consumption (B20; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
@@ -128,15 +129,17 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
-CI runs every test once across twelve internally serial PostgreSQL partitions:
-residual `regular`, one explicit `regular-integration` cohort containing the complete
-B10/B04 and six permit/release modules, and ten singleton complete migration-module
-cohorts. The
-original `checks` job validates all twelve
+CI runs every test once across thirteen internally serial PostgreSQL partitions:
+residual `regular`, `regular-integration` containing the complete B10/B04 and six
+permit/release modules, `regular-lab` containing eight complete ordinary Lab
+modules, and ten singleton complete migration-module cohorts. The
+original `checks` job validates all thirteen
 current artifacts and applies the existing 85% gate to their combined statement
-coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
-original test assertions and coverage omit policy are unchanged; Releases joins
-the configured statement denominator (19 configured
+coverage. A fragment is data only, not a whole-suite result. Only the singleton
+field/review migration jobs temporarily allow 25 minutes (#331, decision 172);
+all other jobs retain 15 minutes. Original test assertions and coverage omit
+policy are unchanged. Releases, Privacy and Notifications are included in the configured
+statement denominator (21 configured
 apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
 for exact-attempt conservation, failure handling, timing evidence and compute costs.
 

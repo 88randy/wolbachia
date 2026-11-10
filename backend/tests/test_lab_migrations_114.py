@@ -161,6 +161,14 @@ RELEASE_ADDITIVE_TRIGGERS = {
     ("inventory_stockmovement", "inventory_release_movement_complete"),
 }
 
+# Explicit #118 additions outside the Lab tables excluded by the legacy query.
+SHIPMENT_ADDITIVE_TRIGGERS = {
+    ("inventory_stockoperation", "inventory_material_delivery_operation_guard"),
+    ("inventory_stockoperation", "inventory_material_delivery_operation_complete"),
+    ("inventory_stockmovement", "inventory_material_delivery_movement_complete"),
+    ("uploads_attachmentlink", "uploads_material_request_parent_guard"),
+}
+
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
@@ -329,10 +337,12 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         ("uploads", "0004_remove_attachmentlink_attachment_exactly_one_parent_and_more"),
         ("incidents", "0002_automaticincidentorigin"),
     ]
+    head_state = None
     try:
-        executor.migrate(old)
+        legacy_state = executor.migrate(old)
         triggers = old_trigger_definitions()
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         retained = {(table, name): definition for table, name, definition in triggers}
         restored = {
             (table, name): definition for table, name, definition in old_trigger_definitions()
@@ -345,6 +355,7 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             | QA_ADDITIVE_TRIGGERS
             | PEOPLE_ADDITIVE_TRIGGERS
             | RELEASE_ADDITIVE_TRIGGERS
+            | SHIPMENT_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
@@ -366,11 +377,13 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         assert not LabMethod.objects.exists()
         # Exercise a populated released114 ->115 upgrade separately from the empty reverse.
         released = [("lab", "0003_material_disposition_guard")]
-        MigrationExecutor(connection).migrate(released)
-        old_apps = MigrationExecutor(connection).loader.project_state(released).apps
+        executor = MigrationExecutor(connection)
+        released_state = executor.migrate(released)
+        old_apps = released_state.apps
         request, saved = insert_genuine_legacy_lab_observation(old_apps, context, bag)
         original = LabCommand.objects.filter(command_id=request.command_id).values().get()
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=released_state)
         from datetime import timedelta
         from zoneinfo import ZoneInfo
 
@@ -448,14 +461,19 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         )
         assert exposed_attempt.body["code"] == "lab_recount_disclosed"
         assert execute_lab_command(attester, attestation_command).body == attested.body
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate(released)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate(released)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert EggCountAttempt.objects.get(pk=saved["count"]["id"]).value == 0
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)
 
 
 @pytest.mark.django_db(transaction=True)

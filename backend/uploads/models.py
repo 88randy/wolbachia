@@ -104,12 +104,16 @@ class AttachmentLink(EvidenceRecord):
     lab_paddle_command = models.ForeignKey(
         "lab.LabCommand", null=True, on_delete=models.PROTECT, related_name="paddle_attachments"
     )
+    material_request = models.ForeignKey(
+        "lab.MaterialRequest", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
             models.CheckConstraint(
                 condition=(
                     models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=False,
                         certification__isnull=True,
                         inventory_intent__isnull=True,
@@ -121,6 +125,7 @@ class AttachmentLink(EvidenceRecord):
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=False,
                         certification__isnull=True,
@@ -132,6 +137,7 @@ class AttachmentLink(EvidenceRecord):
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=False,
@@ -143,6 +149,7 @@ class AttachmentLink(EvidenceRecord):
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -154,6 +161,7 @@ class AttachmentLink(EvidenceRecord):
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -165,6 +173,7 @@ class AttachmentLink(EvidenceRecord):
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -176,6 +185,7 @@ class AttachmentLink(EvidenceRecord):
                         inventory_intent__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -187,6 +197,7 @@ class AttachmentLink(EvidenceRecord):
                         certification__isnull=True,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -198,6 +209,7 @@ class AttachmentLink(EvidenceRecord):
                         certification__isnull=False,
                     )
                     | models.Q(
+                        material_request__isnull=True,
                         lab_paddle_command__isnull=False,
                         certification__isnull=True,
                         field_event__isnull=True,
@@ -207,6 +219,18 @@ class AttachmentLink(EvidenceRecord):
                         transfer_event__isnull=True,
                         lab_rejection__isnull=True,
                         inventory_intent__isnull=True,
+                    )
+                    | models.Q(
+                        material_request__isnull=False,
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                        inventory_intent__isnull=True,
+                        certification__isnull=True,
+                        lab_paddle_command__isnull=True,
                     )
                 ),
                 name="attachment_exactly_one_parent",
