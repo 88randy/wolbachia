@@ -18,6 +18,7 @@ export const releases = {
   "releases.column.status": "Estado",
   "releases.status.accepted": "Aceptada",
   "releases.status.inReview": "En revisión",
+  "releases.detail.crumb": "Detalle",
   "releases.detail.title": "Liberación del {when}",
   "releases.detail.back": "Volver a liberaciones",
   "releases.detail.notFound": "No encontramos esa liberación.",

@@ -18,6 +18,7 @@ export const releases: Record<keyof typeof source, string> = {
   "releases.column.status": "Status",
   "releases.status.accepted": "Accepted",
   "releases.status.inReview": "In review",
+  "releases.detail.crumb": "Detail",
   "releases.detail.title": "Release of {when}",
   "releases.detail.back": "Back to releases",
   "releases.detail.notFound": "We could not find that release.",
