@@ -21,7 +21,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.sample.unavailable": "Unavailable",
   "mobile.sample.code": "Sample code",
   "mobile.sample.codeHint":
-    "Enter the container code, up to 50 characters. The server checks that it is unique.",
+    "Enter the container code, up to 50 characters. The office checks that it is unique.",
   "mobile.sample.codeRequired": "Enter a code of up to 50 characters.",
   "mobile.sample.otherText": "Specify the other origin",
   "mobile.sample.otherHint": "Describe the sample origin, up to 1000 characters.",
@@ -52,11 +52,11 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.sample.blockedHint":
     "Complete the missing fields. If downloaded requirements are missing, refresh or contact your supervisor. They cannot be bypassed.",
   "mobile.sample.phoneSaved": "Sample saved on this phone. Sending is still pending.",
-  "mobile.sample.serverReceived": "The server received the sample record.",
+  "mobile.sample.serverReceived": "The office received the sample record.",
   "mobile.sample.inReview":
     "The record is in review. This does not confirm an operational sample or lab reception.",
   "mobile.sample.rejected":
-    "The server rejected the record. Your data and photos are retained; check the inbox and contact your supervisor.",
+    "The office rejected the record. Your data and photos are retained; check the inbox and contact your supervisor.",
   "mobile.sample.evidencePending": "Private evidence is still awaiting verification.",
   "mobile.sample.reviewApplied":
     "An applied review was observed. The original sending status is retained.",
@@ -116,7 +116,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.release.photoUnavailable":
     "We could not obtain the photo. Your input is retained; check camera permission and try again.",
   "mobile.release.reviewApplied":
-    "An applied review was recorded for this declaration. The original server response is retained.",
+    "An applied review was recorded for this declaration. The original office response is retained.",
   "mobile.release.reviewDiscarded":
     "The review discarded this declaration. Evidence and the original response are retained.",
   "mobile.release.reviewObserved":
@@ -139,7 +139,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.release.noBypass":
     "Do not release while a requirement is missing. This screen has no bypass.",
   "mobile.release.cachedOnly":
-    "This check uses the downloaded copy. The server validates again during sync.",
+    "This check uses the downloaded copy. The office validates again during sync.",
   "mobile.release.deviceId": "Release device",
   "mobile.release.taskId": "Scheduled task",
   "mobile.release.permitId": "Permit",
@@ -192,7 +192,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.release.detailScopeUnavailable":
     "The downloaded copy does not authorize this capture. Keep the record and contact your supervisor.",
   "mobile.release.detailContractUnavailable":
-    "Safety information that the server must download is missing. Do not release; contact your supervisor.",
+    "Safety information that the office must download is missing. Do not release; contact your supervisor.",
   "mobile.release.quantity": "Estimated quantity",
   "mobile.release.quantityHint":
     "Enter the observed quantity. Planned quantities do not confirm stock or authorization.",
@@ -207,18 +207,18 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.release.photoPreview": "Release photo preview",
   "mobile.release.capturePhoto": "Take photo",
   "mobile.release.undoPhoto": "Undo last photo",
-  "mobile.release.phoneSaved": "Saved on the phone. There is no server receipt yet.",
+  "mobile.release.phoneSaved": "Saved on the phone. There is no office receipt yet.",
   "mobile.release.serverReceived":
-    "The server received the record. Check its review outcome separately.",
+    "The office received the record. Check its review outcome separately.",
   "mobile.release.inReview":
-    "The server received the record for review. This does not confirm an authorized release.",
+    "The office received the record for review. This does not confirm an authorized release.",
   "mobile.release.criticalRejected":
-    "The server rejected the release for safety. Evidence is retained; tell your supervisor. This screen has no approval override.",
+    "The office rejected the release for safety. Evidence is retained; tell your supervisor. This screen has no approval override.",
   "mobile.release.evidencePending":
     "Photos are still waiting for upload or verification. The record remains saved on the phone.",
   "mobile.release.openInbox": "View receipt and outcome in the inbox",
   "mobile.release.saveHint":
-    "Saving retains the record on the phone; it does not confirm server authorization.",
+    "Saving retains the record on the phone; it does not confirm office authorization.",
   "mobile.release.working": "Processing on the phone…",
   "mobile.release.save": "Save release record",
   "mobile.release.reportDevice": "Report damaged device",
@@ -274,8 +274,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftClose.title": "Close shift",
   "mobile.shiftClose.closedTitle": "Shift closed",
   "mobile.shiftClose.phoneClosed": "Closed on the phone",
-  "mobile.shiftClose.serverReceived": "Server received the closing records",
-  "mobile.shiftClose.inReview": "Server received a record for review",
+  "mobile.shiftClose.serverReceived": "Office received the closing records",
+  "mobile.shiftClose.inReview": "Office received a record for review",
   "mobile.shiftClose.rejected":
     "A record was rejected. Check the inbox; the shift remains closed on the phone.",
   "mobile.shiftClose.pending": "Pending points",
@@ -316,15 +316,15 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftClose.shrinkageQuantity": "Additional shrinkage quantity",
   "mobile.shiftClose.reason": "Shrinkage reason (10 to 1000 characters)",
   "mobile.shiftClose.photo": "Take shrinkage photo",
-  "mobile.shiftClose.photoRequired": "Shrinkage requires a photo and a catalog reason.",
+  "mobile.shiftClose.photoRequired": "Shrinkage requires a photo and a list reason.",
   "mobile.shiftClose.photoSaved": "Photo saved on phone; delivery pending",
   "mobile.shiftOpen.closed": "This shift is closed on the phone. Open its summary.",
 
   "mobile.unlock.greetingNeutral": "Hello",
   "mobile.shiftOpen.severeSaved":
     "You cannot depart with this motorcycle because of a severe fault. Contact your supervisor to arrange fleet clearance.",
-  "mobile.shiftOpen.receivedRejected": "Received by server · Opening rejected",
-  "mobile.shiftOpen.receivedInReview": "Received by server · In review",
+  "mobile.shiftOpen.receivedRejected": "Received by office · Opening rejected",
+  "mobile.shiftOpen.receivedInReview": "Received by office · In review",
   "mobile.preview.title": "Style preview",
   "mobile.preview.sample": "Sample",
   "mobile.preview.intro":
@@ -352,7 +352,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.preview.empty": "No records yet",
   "mobile.preview.partial": "The rest stays available",
   "mobile.preview.error": "This example could not update. Retry; what you entered is still here.",
-  "mobile.preview.retryResult": "Example retry completed. No server was contacted.",
+  "mobile.preview.retryResult": "Example retry completed. No office was contacted.",
   "mobile.lifecycle.replace": "Replace ovitrap",
   "mobile.lifecycle.relocate": "Propose relocation",
   "mobile.lifecycle.remove": "Remove ovitrap",
@@ -377,21 +377,21 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.unrecovered": "Unrecovered: could not find it",
   "mobile.lifecycle.unconfirmed": "Recovery unconfirmed",
   "mobile.lifecycle.recoveryNotice":
-    "Recovery remains unresolved. Unconfirmed is retained on the phone and reported as unrecovered to the server.",
-  "mobile.lifecycle.reason": "Reason from the downloaded catalog",
+    "Recovery remains unresolved. Unconfirmed is retained on the phone and reported as unrecovered to the office.",
+  "mobile.lifecycle.reason": "Reason from the downloaded list",
   "mobile.lifecycle.chooseReason": "Choose reason",
   "mobile.lifecycle.other": "Other: describe the reason (1000 characters maximum)",
   "mobile.lifecycle.incidentNotice":
-    "The server links the finding to an incident when it applies the capture. The phone does not create an incident.",
+    "The office links the finding to an incident when it applies the capture. The phone does not create an incident.",
   "mobile.lifecycle.photoRequired": "Add at least one photo for this capture before saving.",
   "mobile.lifecycle.capturePhoto": "Add evidence photo",
   "mobile.lifecycle.discardPhoto": "Remove draft photo",
   "mobile.lifecycle.photoDiscarded": "Photo removed from the draft. You can undo this.",
   "mobile.lifecycle.undo": "Undo",
   "mobile.lifecycle.reviewAcknowledge":
-    "I understand that GPS, distance or outdated rules require server review.",
-  "mobile.lifecycle.download": "Download lifecycle catalogs and rules",
-  "mobile.lifecycle.adopt": "Review and use downloaded catalogs and rules",
+    "I understand that GPS, distance or outdated rules require office review.",
+  "mobile.lifecycle.download": "Download lifecycle lists and rules",
+  "mobile.lifecycle.adopt": "Review and use downloaded lists and rules",
   "mobile.lifecycle.begin": "Start capture for this point",
   "mobile.lifecycle.loading": "Loading local draft?",
   "mobile.lifecycle.empty":
@@ -405,9 +405,9 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.proposed": "Proposed",
   "mobile.lifecycle.approved": "Approved",
   "mobile.lifecycle.rejected": "Rejected",
-  "mobile.lifecycle.reviewAccepted": "Server result: accepted. Supervisor review: unconfirmed.",
+  "mobile.lifecycle.reviewAccepted": "Office result: accepted. Supervisor review: unconfirmed.",
   "mobile.lifecycle.reviewRejected":
-    "Server result: rejected. Keep the evidence and contact your supervisor.",
+    "Office result: rejected. Keep the evidence and contact your supervisor.",
   "mobile.lifecycle.decisionPending": "Supervisor decision: awaiting sync",
   "mobile.lifecycle.nextTask": "Task received through sync",
   "mobile.lifecycle.noTask": "No synced task; no early local assignment.",
@@ -419,7 +419,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.scopeBlocked":
     "This point is outside your downloaded scope. The draft is retained; contact your supervisor.",
   "mobile.lifecycle.noCamera": "Camera unavailable. Keep the draft and retry on an enabled device.",
-  "mobile.lifecycle.noReasons": "The reason catalog is missing. Download it before continuing.",
+  "mobile.lifecycle.noReasons": "The reason list is missing. Download it before continuing.",
 
   "mobile.ovitrap.pendingDraft":
     "Another capture draft is pending. Resume it before switching ovitraps.",
@@ -446,7 +446,7 @@ export const mobile: Record<keyof typeof source, string> = {
     "One bag per reading. Write the point code and date; fold inwards. The lab counts the eggs.",
   "mobile.ovitrap.lagged": "Mark as lagged",
   "mobile.ovitrap.laggedHint":
-    "A lagged paddle still goes to the lab and remains countable. The server determines its exclusion from indices.",
+    "A lagged paddle still goes to the lab and remains countable. The office determines its exclusion from indices.",
   "mobile.ovitrap.prepare": "Prepare and reinstate",
   "mobile.ovitrap.clean": "I washed and scrubbed the container",
   "mobile.ovitrap.water": "Clean water to three quarters, without chlorine or larvicide",
@@ -483,22 +483,22 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.camera.fileFailed":
     "The photo could not be saved on this phone. Check available storage and take it again; your draft is still on this phone.",
   "mobile.ovitrap.photoUnavailable":
-    "The evidence camera is unavailable in this build. Keep the draft and ask for help if the catalog requires a photo.",
-  "mobile.ovitrap.refresh": "Download catalogs and rules",
+    "The evidence camera is unavailable in this build. Keep the draft and ask for help if the list requires a photo.",
+  "mobile.ovitrap.refresh": "Download lists and rules",
   "mobile.ovitrap.adopt": "Review and use downloaded versions",
   "mobile.ovitrap.catalogChanged":
-    "A newer catalog is available. Your answers and historical labels are retained; review before changing versions.",
+    "A newer list is available. Your answers and historical labels are retained; review before changing versions.",
   "mobile.ovitrap.confirm": "Review before saving",
   "mobile.ovitrap.phoneSaved": "Saved on phone",
-  "mobile.ovitrap.serverPending": "Server receipt: pending",
-  "mobile.ovitrap.serverReceived": "Received by server",
+  "mobile.ovitrap.serverPending": "Office receipt: pending",
+  "mobile.ovitrap.serverReceived": "Received by office",
   "mobile.ovitrap.reviewPending": "Review: pending; ask your supervisor for help",
   "mobile.ovitrap.reviewUnknown": "Supervisor review: not confirmed",
   "mobile.ovitrap.repeat":
     "This ovitrap already has a reading this week. You can void it with a reason and record a new reading. Original evidence is retained.",
   "mobile.ovitrap.correct": "Void with reason and record new",
   "mobile.ovitrap.reason": "Reason: 10 visible characters to 1000 characters",
-  "mobile.ovitrap.reasonCode": "Catalog reason",
+  "mobile.ovitrap.reasonCode": "List reason",
   "mobile.ovitrap.newBag": "Use a new bag code: previous codes remain reserved.",
   "mobile.ovitrap.scan": "Scan ovitrap",
   "mobile.ovitrap.manual": "Enter code manually",
@@ -519,8 +519,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.ovitrap.distance":
     "You are far from the point under downloaded rules. Move closer or keep the capture for review.",
   "mobile.ovitrap.location":
-    "This ovitrap point is unknown on the phone. The server will review location and scope; compliance is not confirmed.",
-  "mobile.ovitrap.acknowledge": "I understand this capture needs server review",
+    "This ovitrap point is unknown on the phone. The office will review location and scope; compliance is not confirmed.",
+  "mobile.ovitrap.acknowledge": "I understand this capture needs office review",
   "mobile.ovitrap.retryGps": "Retry GPS",
   "mobile.ovitrap.shiftBlocked":
     "This shift does not allow capture or saving. Review the opening with your supervisor; the draft is retained.",
@@ -533,10 +533,10 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.ovitrap.gateShift": "Open a shift before saving. The draft is retained.",
   "mobile.ovitrap.gateAssignment":
     "An assignment with explicit scope and epi week is missing. Download it before saving.",
-  "mobile.ovitrap.gateCatalog": "The catalog is missing. Download it before saving.",
+  "mobile.ovitrap.gateCatalog": "The list is missing. Download it before saving.",
   "mobile.ovitrap.gateRules": "Usable rules are missing. Download them before saving.",
   "mobile.ovitrap.gatePoint": "Choose an allowed point and verify supply references.",
-  "mobile.ovitrap.gateFinding": "Choose a finding from the saved catalog.",
+  "mobile.ovitrap.gateFinding": "Choose a finding from the saved list.",
   "mobile.ovitrap.gatePaddle": "Confirm egg paddle presence and type.",
   "mobile.ovitrap.gateEggs": "Confirm Yes or No: does it have eggs?",
   "mobile.ovitrap.gateBag": "Enter the human bag code.",
@@ -545,7 +545,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.ovitrap.gateOther": "Other requires a description of up to 1000 characters.",
   "mobile.ovitrap.gatePrepare": "Complete preparation before saving.",
   "mobile.ovitrap.gateEvidence":
-    "This catalog requires photo evidence. Keep the draft and ask for help.",
+    "This list requires photo evidence. Keep the draft and ask for help.",
   "mobile.ovitrap.gateReuse": "This paddle is not approved for reuse. Choose a new one.",
   "mobile.ovitrap.gateReason":
     "Choose a reason and write at least 10 visible characters, up to 1000.",
@@ -592,10 +592,10 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.relocateStatus": "To relocate",
   "mobile.day.unknownStatus": "Status unconfirmed",
   "mobile.day.phoneSaved": "Saved on phone",
-  "mobile.day.serverReceived": "Server received · review is separate",
+  "mobile.day.serverReceived": "Office received · review is separate",
   "mobile.day.receiptRejected": "Capture rejected. See the pending inbox for details.",
-  "mobile.day.captureInReview": "Capture under server review",
-  "mobile.day.reviewUnconfirmed": "Server review unconfirmed",
+  "mobile.day.captureInReview": "Capture under office review",
+  "mobile.day.reviewUnconfirmed": "Office review unconfirmed",
   "mobile.day.place": "Place",
   "mobile.day.check": "Check",
   "mobile.day.replace": "Replace",
@@ -639,8 +639,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.coordinates": "Coordinates: {coordinates}",
   // M-04: P3-P7 shift opening
   "mobile.shiftOpen.catalogChanged":
-    "The catalog changed. Review the items and confirm the new version. If a captured fault is no longer listed, ask your supervisor for help; the evidence is retained.",
-  "mobile.shiftOpen.confirmCatalog": "Confirm catalog and review again",
+    "The list changed. Review the items and confirm the new version. If a captured fault is no longer listed, ask your supervisor for help; the evidence is retained.",
+  "mobile.shiftOpen.confirmCatalog": "Confirm list and review again",
   "mobile.shiftOpen.start": "Open shift",
   "mobile.shiftOpen.resume": "Resume opening",
   "mobile.shiftOpen.noShift": "No open shift",
@@ -650,15 +650,15 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftOpen.inbox": "View uploads",
   "mobile.shiftOpen.motorcycleTitle": "Step 1 of 4 · Your motorcycle",
   "mobile.shiftOpen.motorcycleHint":
-    "Enter and confirm the motorcycle code. At sync, the server checks whether it exists, is blocked or is in use.",
+    "Enter and confirm the motorcycle code. At sync, the office checks whether it exists, is blocked or is in use.",
   "mobile.shiftOpen.motorcycleCode": "Motorcycle code",
   "mobile.shiftOpen.continue": "Continue",
   "mobile.shiftOpen.checklistTitle": "Step 2 of 4 · Check your motorcycle",
   "mobile.shiftOpen.unconfigured":
-    "The safety checklist is not configured. Download the catalog or ask your supervisor to configure it. You cannot depart.",
+    "The safety checklist is not configured. Download the list or ask your supervisor to configure it. You cannot depart.",
   "mobile.shiftOpen.catalogUnavailable":
-    "The catalog could not be updated. The last saved copy is retained. Check your session and connection, then retry.",
-  "mobile.shiftOpen.refreshCatalog": "Update safety catalog",
+    "The list could not be updated. The last saved copy is retained. Check your session and connection, then retry.",
+  "mobile.shiftOpen.refreshCatalog": "Update safety list",
   "mobile.shiftOpen.ok": "OK",
   "mobile.shiftOpen.minor": "Minor fault",
   "mobile.shiftOpen.severeResult": "Severe fault",
@@ -666,16 +666,16 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftOpen.requiredNote": "Required note",
   "mobile.shiftOpen.odometerTitle": "Step 3 of 4 · Opening odometer",
   "mobile.shiftOpen.photoHint":
-    "The odometer photo is optional unless the catalog requires evidence. Saved photos stay on this phone.",
+    "The odometer photo is optional unless the list requires evidence. Saved photos stay on this phone.",
   "mobile.shiftOpen.capturePhoto": "Take photo",
   "mobile.shiftOpen.photoUnavailable":
     "The camera is not available in this build. Your input is retained; if a photo is required, departure stays blocked.",
   "mobile.shiftOpen.photoCount": "Photos saved on this phone:",
   "mobile.shiftOpen.odometerKm": "Odometer km (whole number)",
   "mobile.shiftOpen.lastOdometer": "Last odometer known to this phone:",
-  "mobile.shiftOpen.unknownOdometer": "No local reference; the server will check at sync.",
+  "mobile.shiftOpen.unknownOdometer": "No local reference; the office will check at sync.",
   "mobile.shiftOpen.odometerWarning":
-    "This is below the last known reading. Check it; you can continue without losing it. The server may flag it for review.",
+    "This is below the last known reading. Check it; you can continue without losing it. The office may flag it for review.",
   "mobile.shiftOpen.mapsTitle": "Step 4 of 4 · Prepare map",
   "mobile.shiftOpen.mapReady":
     "Map verified with coverage. You may continue once the motorcycle checklist is complete.",
@@ -690,21 +690,21 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftOpen.mapProgress": "Preparation progress (%):",
   "mobile.shiftOpen.recordSevere": "Save severe fault · Do not depart",
   "mobile.shiftOpen.severe":
-    "You cannot depart with this motorcycle. Save the severe fault and contact your supervisor to arrange fleet clearance. Saving does not confirm server receipt.",
+    "You cannot depart with this motorcycle. Save the severe fault and contact your supervisor to arrange fleet clearance. Saving does not confirm office receipt.",
   "mobile.shiftOpen.editChecklist": "Return to motorcycle selection and checklist",
   "mobile.shiftOpen.motorcycle":
     "Confirm the motorcycle code. If the local copy shows a block, ask your supervisor for help.",
   "mobile.shiftOpen.checklist": "Answer every safety item before continuing.",
   "mobile.shiftOpen.noteGate": "Describe the severe fault or Other before saving.",
   "mobile.shiftOpen.photo":
-    "The catalog requires a photo. Capture it before departure; this build has no camera support.",
+    "The list requires a photo. Capture it before departure; this build has no camera support.",
   "mobile.shiftOpen.odometer": "Enter kilometers as a whole number. Your input is retained.",
   "mobile.shiftOpen.map":
     "Departure requires verified map files and full coverage. Retry preparation.",
   "mobile.shiftOpen.rejected":
-    "The server rejected the opening. Check Uploads for the outcome and contact your supervisor before departure.",
-  "mobile.shiftOpen.phoneSaved": "Saved on phone · Awaiting server receipt",
-  "mobile.shiftOpen.serverReceived": "Received by server · Check the outcome",
+    "The office rejected the opening. Check Uploads for the outcome and contact your supervisor before departure.",
+  "mobile.shiftOpen.phoneSaved": "Saved on phone · Awaiting office receipt",
+  "mobile.shiftOpen.serverReceived": "Received by office · Check the outcome",
   "mobile.shiftOpen.reviewPending": "Subsequent review: no confirmed resolution in this build.",
   "mobile.shiftOpen.correctAndRetry": "Correct and try again",
   "mobile.shiftOpen.retrySave": "Retry saving input",
@@ -727,7 +727,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.home.title": "Home",
   "mobile.home.placeholder": "Your shift will be here. This version only prepares sending records.",
   "mobile.home.serverMissing":
-    "The server address is not set. Set it in Settings so your records can be sent.",
+    "The connection is not set up. Ask your supervisor; your records stay on the phone.",
 
   // Top-bar sync chip
   "mobile.chip.allSent": "All sent",
@@ -740,7 +740,7 @@ export const mobile: Record<keyof typeof source, string> = {
   // Sync inbox (P28)
   "mobile.inbox.title": "Outbox",
   "mobile.inbox.lastConnection": "Last connection: {time}",
-  "mobile.inbox.neverConnected": "No connection with the server yet",
+  "mobile.inbox.neverConnected": "No connection with the office yet",
   "mobile.inbox.problems": "Needs attention",
   "mobile.inbox.onPhone": "On the phone · {count}",
   "mobile.inbox.sent": "Sent · {count}",
@@ -755,8 +755,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.inbox.offline":
     "No signal. Your records are saved and will be sent when the connection comes back.",
   "mobile.inbox.rejectionQuota":
-    "The daily limit for records needing review was reached. Your records are still saved and will be sent after the server's waiting period.",
-  "mobile.inbox.waitingRetry": "We couldn't reach the server. The app will try again by itself.",
+    "The daily limit for records needing review was reached. Your records are still saved and will be sent after the office's waiting period.",
+  "mobile.inbox.waitingRetry": "We couldn't reach the office. The app will try again by itself.",
   "mobile.inbox.parkedHint":
     "This record could not be sent as it is. Tap “Try now”; if it happens again, tell your supervisor.",
 
@@ -766,7 +766,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.blocked.clockWrong":
     "The phone's date and time are not right. Fix them in the phone settings and your records will be sent by themselves.",
   "mobile.blocked.noServer":
-    "The server address is not set. Set it in Settings so your records are sent; nothing was lost.",
+    "The office address is not set. Set it in Settings so your records are sent; nothing was lost.",
   "mobile.blocked.forbidden":
     "Your account can't send records right now. Tell your supervisor; your records are saved.",
 
@@ -802,12 +802,12 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.language": "Language",
   "mobile.settings.languageEs": "Español (México)",
   "mobile.settings.languageEn": "English",
-  "mobile.settings.server": "Server",
-  "mobile.settings.serverHint": "API address, for example https://api.example.com",
+  "mobile.settings.server": "Connection",
+  "mobile.settings.serverHint": "Address from your supervisor, for example https://api.example.com",
   "mobile.settings.serverSave": "Save address",
   "mobile.settings.serverReset": "Use the build's",
   "mobile.settings.serverIdentityBound":
-    "The server is part of this phone's identity and cannot be changed here. Call your supervisor.",
+    "The office is part of this phone's identity and cannot be changed here. Call your supervisor.",
   "mobile.settings.serverSaved": "Address saved",
   "mobile.settings.serverInvalid":
     "The address is not valid. Write it in full, without a path, for example https://api.example.com",
@@ -819,7 +819,6 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.dev.deviceId": "This phone's ID",
   "mobile.dev.addEvent": "Add a test record",
   // P1/P2 authentication and local unlock
-  "mobile.login.logo": "[Codequim logo]",
   "mobile.login.title": "Sign in to your account",
   "mobile.login.username": "Username",
   "mobile.login.password": "Password",
@@ -845,8 +844,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.login.onlineRequired":
     "For security, sign in again with a signal. Your work is still saved on the phone.",
   "mobile.login.serverMissing":
-    "The server is not configured. Open server settings or call your supervisor.",
-  "mobile.login.serverSettings": "Configure server",
+    "The connection is not set up. Tap Set up connection or ask your supervisor.",
+  "mobile.login.serverSettings": "Set up connection",
   "mobile.login.version": "Version {version}",
   "mobile.unlock.greeting": "Hello, {name}",
   "mobile.unlock.enterPin": "Enter your PIN",
@@ -873,7 +872,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.advisoryUnavailable":
     "Advisory unavailable for this instant and these rules. Capture can continue.",
   "mobile.lifecycle.advisoryFuture":
-    "The capture instant is still in the server’s future. Retry later.",
+    "The capture instant is still in the office’s future. Retry later.",
   "mobile.lifecycle.advisoryAt":
     "Facts observed through {at}. Late facts or voids can change this observation.",
   "mobile.lifecycle.advisoryCounts": "Closed-house weeks: {weeks}. Point incidents: {incidents}.",
@@ -888,7 +887,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.sourceVoided":
     "The source was voided: {at}. Proposal and evidence are retained.",
   "mobile.lifecycle.legacyDecision":
-    "Earlier local record retained for audit; it does not prove server review.",
+    "Earlier local record retained for audit; it does not prove office review.",
   "mobile.lifecycle.taskReferenceOnly":
     "Scheduled reference; it is not yet a current task assigned to you.",
   "mobile.lifecycle.taskAssigned": "Current task assigned to you and not completed.",
@@ -896,7 +895,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.ingestAccepted": "Original ingestion result: accepted.",
   "mobile.lifecycle.ingestRejected": "Original ingestion result: rejected.",
   "mobile.lifecycle.ingestReview": "Original ingestion result: in review.",
-  "mobile.lifecycle.reviewedTitle": "Later server decision",
+  "mobile.lifecycle.reviewedTitle": "Later office decision",
   "mobile.lifecycle.effectApplied": "Effect applied after review.",
   "mobile.lifecycle.effectAdopted": "Earlier effect acknowledged; original provenance retained.",
   "mobile.lifecycle.effectDiscarded": "Work discarded by decision; its history is retained.",
@@ -916,7 +915,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.lifecycle.recoveryBlocked":
     "The draft is retained, but ownership is unproven for this session. Sign in with the original account or contact support.",
   "mobile.lifecycle.remoteProposal":
-    "Downloaded server proposal; it is not an editable local capture.",
+    "Downloaded office proposal; it is not an editable local capture.",
   "mobile.supplyReceipt.title": "Receive supplies",
   "mobile.supplyReceipt.subtitle": "Sign only for what you physically received",
   "mobile.supplyReceipt.start": "Review this delivery",
@@ -938,13 +937,13 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.supplyReceipt.working": "Saving on the phone…",
   "mobile.supplyReceipt.save": "Save signed receipt on the phone",
   "mobile.supplyReceipt.saved":
-    "Signed receipt saved on the phone. This does not yet confirm server receipt.",
+    "Signed receipt saved on the phone. This does not yet confirm office receipt.",
   "mobile.supplyReceipt.serverReceived":
-    "Initial acknowledgement: the server received the receipt. Check any supervisor review separately.",
+    "Initial acknowledgement: the office received the receipt. Check any supervisor review separately.",
   "mobile.supplyReceipt.review":
-    "Initial acknowledgement: the server received the receipt for review. What you signed is retained; this acknowledgement alone does not confirm credited inventory.",
+    "Initial acknowledgement: the office received the receipt for review. What you signed is retained; this acknowledgement alone does not confirm credited inventory.",
   "mobile.supplyReceipt.rejected":
-    "The server did not apply the receipt. Your capture and signature are retained; check the inbox or contact your supervisor.",
+    "The office did not apply the receipt. Your capture and signature are retained; check the inbox or contact your supervisor.",
   "mobile.supplyReceipt.pendingSignature":
     "The signature is saved on the phone and its file is still waiting to upload. Check or retry in the inbox.",
   "mobile.supplyReceipt.inbox": "Open sync inbox",
@@ -964,7 +963,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.supplyReceipt.other": "Other (specify)",
   "mobile.supplyReceipt.discrepancyText": "Explanation of the difference",
   "mobile.supplyReceipt.discrepancyHint":
-    "Sign the actual quantities. The server retains the difference for review; do not change quantities to make them match.",
+    "Sign the actual quantities. The office retains the difference for review; do not change quantities to make them match.",
   "mobile.supplyReceipt.photo": "Photograph the damage",
   "mobile.supplyReceipt.photoSaved":
     "Damage photo retained only on the phone. It cannot be submitted with this receipt yet; contact your supervisor.",
@@ -990,7 +989,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.supplyReceipt.shiftRequired":
     "Open an authorized shift before receiving supplies. Your draft is retained.",
   "mobile.supplyReceipt.configurationRequired":
-    "Downloaded catalogs or rules are missing. Refresh online before signing.",
+    "Downloaded lists or rules are missing. Refresh online before signing.",
   "mobile.supplyReceipt.startScanner": "Scan QR with camera",
   "mobile.supplyReceipt.scannerTitle": "Scan a lot in this delivery",
   "mobile.supplyReceipt.scannerHint":
@@ -1036,22 +1035,22 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.fuel.insufficient":
     "Insufficient efficiency data: consecutive full fills with a known distance are required. You can save the load and close your shift.",
   "mobile.fuel.unconfigured":
-    "Efficiency limits for this interval have not been downloaded. You can save; the server will review the load when received.",
+    "Efficiency limits for this interval have not been downloaded. You can save; the office will review the load when received.",
   "mobile.fuel.decreased":
     "The odometer is below the previous reading. Check the number; you can keep it and save the load.",
   "mobile.fuel.efficiencyOk": "Comparable-interval efficiency is within the advisory limits.",
   "mobile.fuel.efficiencyReview":
     "Efficiency is outside the advisory range. Check litres and odometer; you can save as entered and close your shift.",
-  "mobile.fuel.saved": "Saved on the phone · awaiting server receipt.",
-  "mobile.fuel.serverReceived": "Fuel load received by the server.",
+  "mobile.fuel.saved": "Saved on the phone · awaiting office receipt.",
+  "mobile.fuel.serverReceived": "Fuel load received at the office.",
   "mobile.fuel.reviewPending":
-    "Received by the server · awaiting review. Your quantities are retained.",
+    "Received at the office · awaiting review. Your quantities are retained.",
   "mobile.fuel.rejected":
-    "The server rejected this load. The capture is retained; check the inbox reason and contact your supervisor.",
+    "The office rejected this load. The capture is retained; check the inbox reason and contact your supervisor.",
   "mobile.fuel.receiptPending":
     "Receipt upload or verification pending; this is not a review of the fuel load.",
   "mobile.fuel.receiptVerified":
-    "Receipt photo verified by the server; this is not a review of the fuel load.",
+    "Receipt photo verified by the office; this is not a review of the fuel load.",
   "mobile.fuel.reviewedAccepted": "Later review: fuel load accepted by the supervisor.",
   "mobile.fuel.reviewedVoided": "Later review: fuel load voided. The original capture is retained.",
   "mobile.fuel.incidentOpen":
@@ -1098,11 +1097,11 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.incidents.photoUnavailable":
     "The camera could not open. The capture is retained; retry when safe.",
   "mobile.incidents.saved": "Saved on the phone: waiting to upload.",
-  "mobile.incidents.serverReceived": "Received by the server.",
+  "mobile.incidents.serverReceived": "Received at the office.",
   "mobile.incidents.reviewPending":
-    "Received by the server: review required. The original capture is retained.",
+    "Received at the office: review required. The original capture is retained.",
   "mobile.incidents.rejected":
-    "The server did not accept the report. It remains on the phone; review the reason in the inbox.",
+    "The office did not accept the report. It remains on the phone; review the reason in the inbox.",
   "mobile.incidents.evidencePending":
     "Photos await verification. The capture remains saved; use the inbox to retry upload.",
   "mobile.incidents.noDeliveryPromise":
@@ -1119,7 +1118,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.incidents.evidence": "Evidence photos",
   "mobile.incidents.evidenceMinimum": "Configured minimum photos for this type:",
   "mobile.incidents.evidenceMissing":
-    "Required evidence is missing. You can retain the report; the server may send it for review.",
+    "Required evidence is missing. You can retain the report; the office may send it for review.",
   "mobile.incidents.uploadUnavailable":
     "Your current context does not allow photo attachments. Keep the details and ask your supervisor for support.",
   "mobile.incidents.takePhoto": "Add photo",
@@ -1183,8 +1182,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.history.reviewed": "Reviewed",
   "mobile.history.voided": "Voided",
   "mobile.history.observed": "Observed",
-  "mobile.history.received": "Received by server",
-  "mobile.history.serverFact": "Server observation",
+  "mobile.history.received": "Received by office",
+  "mobile.history.serverFact": "Office observation",
   "mobile.history.author": "Author (name or reference)",
   "mobile.history.unavailableValue": "Unavailable",
   "mobile.history.reference": "Original reference",
@@ -1207,7 +1206,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.files": "Files awaiting verification or binding",
   "mobile.settings.drafts": "Drafts not yet saved as records",
   "mobile.settings.lockHint":
-    "Closing access locks this phone. Drafts, files and uploads are retained; unlock with your PIN to continue. The server session keeps its original lifetime.",
+    "Closing access locks this phone. Drafts, files and uploads are retained; unlock with your PIN to continue. The office session keeps its original lifetime.",
   "mobile.settings.viewUploads": "View uploads and observations",
   "mobile.settings.lockAccess": "Close local access and retain work",
 
@@ -1222,7 +1221,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.causeUpdateRequired": "A required app update is available.",
   "mobile.global.causeUpdateAvailable": "A new app version is available.",
   "mobile.global.causeClockSkew":
-    "The phone clock does not match the server; your records will go to review.",
+    "The phone clock does not match the office; your records will go to review.",
   "mobile.global.causeGpsOff": "Location is turned off.",
   "mobile.global.causeGpsDenied": "The app has no location permission.",
   "mobile.global.causeGpsUnreliable":

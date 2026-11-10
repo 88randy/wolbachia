@@ -17,11 +17,23 @@ const ICONS: Readonly<Record<BlockingLevel, IconName>> = {
 };
 const styles = StyleSheet.create({ list: { gap: spacing[1], padding: spacing[1] } });
 
+function stateMessage(state: GlobalState, isCalm: boolean, t: ReturnType<typeof useT>): string {
+  const level = isCalm ? [] : [t(levelKey(state.level)) + "."];
+  return [...level, t(causeKey(state.cause)), t(nextKey(state.nextAction))].join(" ");
+}
+
 /**
  * Shows the highest-priority global states. Each one states its cause, its level (as text, never
  * color alone) and the next action. Extra states are counted, not hidden silently.
  */
-export function GlobalStateList({ states }: { readonly states: readonly GlobalState[] }) {
+export function GlobalStateList({
+  states,
+  isCalm = false,
+}: {
+  readonly states: readonly GlobalState[];
+  /** Login/unlock: a calm informational note without the alarming level word (owner, 2026-11-10). */
+  readonly isCalm?: boolean;
+}) {
   const t = useT();
   if (states.length === 0) return null;
   return (
@@ -29,13 +41,9 @@ export function GlobalStateList({ states }: { readonly states: readonly GlobalSt
       {states.slice(0, MAX_SHOWN).map((state) => (
         <Notice
           key={state.cause}
-          tone={TONES[state.level]}
-          icon={ICONS[state.level]}
-          message={[
-            t(levelKey(state.level)) + ".",
-            t(causeKey(state.cause)),
-            t(nextKey(state.nextAction)),
-          ].join(" ")}
+          tone={isCalm ? "info" : TONES[state.level]}
+          icon={isCalm ? "clock" : ICONS[state.level]}
+          message={stateMessage(state, isCalm, t)}
         />
       ))}
       {states.length > MAX_SHOWN ? (

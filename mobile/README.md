@@ -1,5 +1,63 @@
 # mobile
 
+## UI library decision and design kit (2026-11-10)
+
+**Decision: NativeWind v4 (4.2.7) on Tailwind CSS 3.4.19, with Lucide icons (`lucide-react-native` 1.71.0).**
+React Native Paper was the fallback and was not needed.
+
+- Why: the timeboxed spike compiled. CI run 42876777985 (`mobile-apk`, `workflow_dispatch` on
+  `develop-mobile-foundation`) produced a debug APK with NativeWind, `react-native-reanimated` 4.7.1 and
+  `react-native-worklets` 0.13.0, the versions Expo SDK 58 pins in `expo/bundledNativeModules.json`. Utility
+  classes match the web stack (Tailwind and shadcn), so both apps describe the same design in the same words.
+  Paper would have imposed Material styling that we would have to fight to match the prototype.
+- react-native-reusables: we use its *pattern* (copy small components into the app, style them with
+  NativeWind) but not its CLI or `@rn-primitives/*` yet. The kit needed no headless primitive. A flow that
+  needs one (dialog, select, popover) adds that primitive and its dependencies in the same change and says
+  why in the commit message.
+- Native and build impact (relevant to other branches): new native module Reanimated 4 (+ Worklets);
+  new `babel.config.js` (`jsxImportSource: "nativewind"` + `nativewind/babel`, with Expo's own worklets
+  plugin turned off so it is not added twice); `metro.config.js` is wrapped with `withNativeWind`
+  (`global.css`); `tailwind.config.js`; `nativewind-env.d.ts`. Keep these when merging.
+- Colors: `tailwind.config.js` holds NO hex value. Every color class (`bg-action`, `text-ink`,
+  `border-line`, `bg-success`...) reads a CSS variable that `src/ui/theme-vars.ts` fills from
+  `packages/tokens` (light/dark) at the root (`ThemeVarsRoot`). Icon colors come from `useTheme()`.
+- Text: always `AppText` (Inter, tabular figures, 130 % scale). Layout and colors: `className`.
+  The light theme is the default; dark only when the user chooses it in Ajustes.
+
+### Kit (`src/ui`, one component per file)
+
+| Component | Use |
+|---|---|
+| `ScreenScaffold` | Page template: `header`, scrolling body, sticky `footer` (the ONE primary action), optional `tab`. `isScrollable={false}` for maps. |
+| `AppHeader` | Back button (stack by default, `onBack={null}` hides it), title, `subtitle`, `step` ("Paso X de N" + progress), sync chip. |
+| `StepProgress` | Segmented wizard bar (`current`, `total`). |
+| `BigActionCard` | "Lo que sigue": `icon`, `title`, `body`, `actionLabel` + `onPress`. |
+| `ActionTile` / `ActionGrid` | Home tiles, two per row (`icon`, `label`, `hint`, `disabled`, `tone="danger"` for Emergencia). |
+| `PrimaryButton` / `SecondaryButton` | 56 dp, icon + verb, `isLoading`, `tone="danger"` (primary only). |
+| `ChoiceButton` | Huge Yes/No, filled green/red/blue when selected, check mark + "Elegido". |
+| `CheckRow` | Checklist item with filled "Bien" / "Con falla" (icon + text). |
+| `InfoNotice` | Calm tinted message (`info`, `success`, `warning`, `danger`), icon + words. |
+| `Counter` | Minus / number / plus for quantities (never eggs). |
+| `BottomTabBar` | Mi día / Mapa / Ayuda. |
+| `EmptyState` | Icon, sentence and at most one action. |
+| `Wordmark` | Organization logo when given (`logoUri`), otherwise the "AedesVision" text wordmark. |
+
+Older primitives (`Button`, `Card`, `Notice`, `TopBar`...) still serve the flows that were not re-skinned
+yet; new work uses the kit. Copy for the kit, Mi día and Ayuda lives in `packages/i18n` area `courier`.
+
+### Navigation convention for new features (no shared-file collisions)
+
+New screens do not edit `routes.ts` or `ScreenRouter.tsx`:
+
+1. `src/features/<feature>/routes.ts` augments `FeatureRouteParams` (see `src/navigation/feature-routes.ts`):
+   `myScreen: { readonly taskId: string }` or `myScreen: NoParams`.
+2. `src/features/<feature>/screens.ts` imports `./routes.ts` and calls
+   `registerScreen("myScreen", MyScreen)`; the screen receives `{ route }` with its typed params.
+3. Add ONE import line for `screens.ts` to `src/navigation/feature-screens.ts` (alphabetical).
+
+`push`, `goBack`, `popToRoot` (back to Mi día after "Listo") and `replace` (swap a finished step)
+come from `useNavigation()`. `src/features/help/` is the reference example.
+
 ## M10 release, blocked release and samples (#139)
 
 Assignments4 release tasks now remain visible in the day list and open P18/P19.
@@ -143,7 +201,7 @@ Pure logic (state machine, failure table, backoff, chip, inbox model, URL rule) 
 You need the backend reachable from the phone ([#92](https://github.com/88randy/wolbachia/issues/92) covers the opt-in LAN exposure; until it lands, the compose API listens on `127.0.0.1` only) and a debug APK (see below).
 
 1. Install the debug APK from the pull request (artifact `wolbachia-debug-apk-<sha>`).
-2. On P1 open **Configurar servidor**, enter the API address and save. Debug builds allow private LAN http; release builds require https. Server settings also remain available in Ajustes.
+2. On P1 open **Configurar conexión** (it opens on top of the login), enter the API address and save. Debug builds allow private LAN http; release builds require https. Server settings also remain available in Ajustes.
 3. Sign in with signal, then create and confirm a nontrivial four-digit PIN. Login sends the generated device_id and the version in mobile/package.json.
 4. Open Ajustes to inspect the device id and add a test event. These tools use the authenticated session; there is no pasted-token field. The test void references a nonexistent record, so the inbox shows void_target_not_found.
 5. Tap the sync chip for the inbox. Background the app or wait for idle locking, then unlock offline.

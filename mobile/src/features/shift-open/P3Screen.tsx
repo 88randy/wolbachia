@@ -1,47 +1,22 @@
-import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
-import { OvitrapEntry } from "../ovitrap-check/OvitrapEntry.tsx";
-import { HomeShiftAction } from "./HomeShiftAction.tsx";
-import { useT } from "../../i18n/I18nProvider.tsx";
-import { useNavigation } from "../../navigation/NavigationProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { ShiftAction } from "./ShiftAction.tsx";
-import { HomeShiftCard } from "./HomeShiftCard.tsx";
+import { HomeNextCard } from "./HomeNextCard.tsx";
+import { HomeShiftDetails } from "./HomeShiftDetails.tsx";
+import { HomeTiles } from "./HomeTiles.tsx";
 import { SaveFeedback } from "./SaveFeedback.tsx";
-import { createShiftStyles } from "./styles.ts";
+import { useHomeNext } from "./use-home-next.ts";
 import { useM04 } from "./use-m-04.ts";
-import { SupplyReceiptEntry } from "../supply-receipt/SupplyReceiptEntry.tsx";
-import { FuelEntry } from "../fuel/FuelEntry.tsx";
-import { IncidentEntry } from "../incidents/IncidentEntry.tsx";
-import { ScannerEntry } from "../scanner/ScannerEntry.tsx";
-/** No invented assignment, motorcycle availability or server receipt on the no-shift home. */
+
+/** Mi día body: "Lo que sigue", the local shift status and the action grid. No invented data. */
 export function P3Screen() {
   const model = useM04();
-  const t = useT();
-  const { push } = useNavigation();
-  const styles = useStyles(createShiftStyles);
+  const next = useHomeNext(model);
+  const hasShift = Boolean(model.state?.opening && model.state.opening.status !== "rejected");
   return (
-    <AppScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <>
       <SaveFeedback model={model} />
-      <HomeShiftCard state={model.state} />
-      <HomeShiftAction model={model} />
-      <ScannerEntry isAllowed={Boolean(captureShiftId(model.state))} />
-      <OvitrapEntry isAllowed={Boolean(captureShiftId(model.state))} />
-      <SupplyReceiptEntry isAllowed={Boolean(captureShiftId(model.state))} />
-      <FuelEntry isAllowed={Boolean(captureShiftId(model.state))} />
-      <IncidentEntry />
-      <ShiftAction
-        label={t("mobile.shiftOpen.inbox")}
-        onPress={() => {
-          push({ name: "inbox" });
-        }}
-      />
-      <ShiftAction
-        label={t("mobile.nav.settings")}
-        onPress={() => {
-          push({ name: "settings" });
-        }}
-      />
-    </AppScrollView>
+      <HomeNextCard model={next} isBusy={model.isBusy || model.state === null} />
+      {model.state?.opening ? <HomeShiftDetails state={model.state} /> : null}
+      <HomeTiles canCapture={Boolean(captureShiftId(model.state))} hasShift={hasShift} />
+    </>
   );
 }
