@@ -8,7 +8,7 @@ export const refresh: Record<keyof typeof source, string> = {
   "refresh.filters.catalogNavigation": "Find or sort catalogs",
   "refresh.filters.catalogPager": "Catalog pages",
   "refresh.filters.catalogsSearch": "Search catalogs",
-  "refresh.filters.catalogSlug": "Catalog code",
+  "refresh.filters.catalogSlug": "Catalog",
   "refresh.filters.history": "History filters",
   "refresh.filters.ordering": "Sort by",
   "refresh.filters.defaultOrder": "Default order",

@@ -4,7 +4,7 @@ export const transferEvidence: Record<keyof typeof SpanishCatalog, string> = {
     "Select a PNG or JPEG image up to 10 MiB and verify the upload before continuing.",
   "transferEvidence.upload.verify": "Verify image",
   "transferEvidence.upload.pending": "Image awaiting verification",
-  "transferEvidence.upload.verified": "Image verified by the server",
+  "transferEvidence.upload.verified": "Image verified",
   "transferEvidence.upload.invalid": "Select a PNG or JPEG image up to 10 MiB.",
   "transferEvidence.upload.failed":
     "We could not confirm the image. Retry verification; your file is preserved.",

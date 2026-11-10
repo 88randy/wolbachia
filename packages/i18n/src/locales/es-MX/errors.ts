@@ -12,7 +12,7 @@ export const errors = {
   "errors.api.duplicateCode":
     "Ese código ya está registrado. Usa otro código e inténtalo de nuevo.",
   "errors.api.generic": "No pudimos completar la acción. Inténtalo de nuevo.",
-  "errors.api.network": "No hay conexión con el servidor. Revisa tu señal e inténtalo de nuevo.",
+  "errors.api.network": "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
   "errors.api.validation": "Hay datos que no son válidos. Revisa los campos marcados y corrígelos.",
   "errors.api.notFound": "No encontramos lo que buscas. Regresa e inténtalo de nuevo.",
   "errors.api.permissionDenied":

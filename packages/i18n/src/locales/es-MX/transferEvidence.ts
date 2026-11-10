@@ -4,7 +4,7 @@ export const transferEvidence = {
     "Selecciona una imagen PNG o JPEG de hasta 10 MiB y verifica la carga antes de continuar.",
   "transferEvidence.upload.verify": "Verificar imagen",
   "transferEvidence.upload.pending": "Imagen pendiente de verificación",
-  "transferEvidence.upload.verified": "Imagen verificada por el servidor",
+  "transferEvidence.upload.verified": "Imagen verificada",
   "transferEvidence.upload.invalid": "Selecciona una imagen PNG o JPEG de hasta 10 MiB.",
   "transferEvidence.upload.failed":
     "No pudimos confirmar la imagen. Reintenta verificarla; conservamos el archivo.",

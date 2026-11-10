@@ -7,7 +7,7 @@ export const labReception = {
   "labReception.page.scope":
     "Recepción de toda la organización. Usa el punto de muestreo y la semana epidemiológica para acotar las listas; el centro seleccionado no filtra esta vista.",
   "labReception.scan.label": "Código de bolsa",
-  "labReception.scan.readingId": "Identificador de lectura (UUID)",
+  "labReception.scan.readingId": "Lectura",
   "labReception.scan.noPaddleHint":
     "Usa el identificador de una lectura que registró ausencia de papeleta. No puede entrar a la cola de conteo.",
   "labReception.scan.hint":

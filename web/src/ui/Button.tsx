@@ -1,11 +1,11 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { ButtonContent } from "./ButtonContent";
+import { buttonVariants } from "./button-variants";
 import { getButtonState } from "./button-state";
 import { guardButtonClick } from "./guard-button-click";
-import { classNames } from "../styles/class-names";
-import styles from "../styles/button.module.css";
 export interface ButtonProps extends ComponentPropsWithRef<"button"> {
-  variant?: "primary" | "secondary" | "tertiary" | "ghost";
+  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "destructive";
   size?: "sm" | "md" | "lg" | "xl";
   leadingIcon?: ReactNode;
   loading?: boolean;
@@ -25,7 +25,7 @@ export function Button({
   const attributes = {
     ...props,
     type: props.type ?? "button",
-    className: classNames(styles.button, styles[variant], styles[size], className),
+    className: cn(buttonVariants({ variant, size }), className),
     "aria-busy": loading || undefined,
     "aria-disabled": state.ariaDisabled,
     onClick: guardButtonClick({ isBusy: state.isDisabled, onClick }),

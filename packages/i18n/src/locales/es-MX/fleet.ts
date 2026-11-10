@@ -35,8 +35,7 @@ export const fleet = {
   "fleet.action.refresh": "Actualizar ficha",
   "fleet.action.blocked":
     "La ficha está anulada o su estado actual no está confirmado. Actualiza o consulta a una persona con administración de flota.",
-  "fleet.write.invalid":
-    "Verifica los valores obligatorios y los límites del servidor antes de guardar.",
+  "fleet.write.invalid": "Verifica los valores obligatorios y los límites antes de guardar.",
   "fleet.write.conflict":
     "El estado cambió. Se conservan la captura y la evidencia. Revisa la ficha actual antes de otro intento explícito.",
   "fleet.write.uncertain":
@@ -47,7 +46,7 @@ export const fleet = {
     "No se pudo confirmar la autorización vigente. Se retiró la captura privada. Actualiza tu sesión y la ficha.",
   "fleet.clear.title": "Liberar falla grave · {record}",
   "fleet.clear.hint":
-    "Esta acción libera sólo la falla revisada. Los otros bloqueos y el estado de la moto siguen bajo autoridad del servidor. El registro de inspección o servicio es independiente.",
+    "Esta acción libera sólo la falla revisada. Los otros bloqueos y el estado de la moto siguen como están. El registro de inspección o servicio es independiente.",
   "fleet.clear.reason": "Motivo de la inspección",
   "fleet.clear.fault": "Falla revisada",
   "fleet.clear.revision": "Revisión de moto revisada",
@@ -91,8 +90,8 @@ export const fleet = {
   "fleet.fuel.full": "Llenado completo",
   "fleet.fuel.partial": "Llenado parcial",
   "fleet.fuel.deviceTime": "Hora de captura",
-  "fleet.fuel.serverTime": "Hora de recepción del servidor",
-  "fleet.fuel.rules": "Versiones de reglas / catálogo",
+  "fleet.fuel.serverTime": "Hora de recepción",
+  "fleet.fuel.rules": "Versión de reglas",
   "fleet.letter.date": "Fecha de emisión",
   "fleet.page.title": "Motos",
   "fleet.page.gaps":
@@ -130,7 +129,7 @@ export const fleet = {
   "fleet.summary.historyGap": "Este estado no confirma una salida autorizada ni una asignación.",
   "fleet.unblock.title": "Desbloquear {record}",
   "fleet.unblock.hint":
-    "Documenta la revisión y la evidencia en el motivo. Esta acción solo retira el bloqueo registrado por el servidor; debe realizarla una persona con permiso para desbloquear motos.",
+    "Documenta la revisión y la evidencia en el motivo. Esta acción solo retira el bloqueo registrado; debe realizarla una persona con permiso para desbloquear motos.",
   "fleet.unblock.confirm": "Desbloquear",
   "fleet.unblock.busy": "Desbloqueando…",
   "fleet.unblock.failure": "No pudimos desbloquear",

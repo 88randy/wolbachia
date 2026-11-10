@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Wordmark } from "../shell/Wordmark";
 import styles from "./auth.module.css";
 
 /** Left panel of the public pages: brand, what the platform is, and the regulatory reference. */
@@ -7,10 +8,7 @@ export function AuthBrandPanel() {
   return (
     <div className={styles.brandPanel}>
       <div className={styles.brand}>
-        <span className={styles.mark} aria-hidden="true">
-          {t("shell.brand.mark")}
-        </span>
-        <span>{t("shell.brand.name")}</span>
+        <Wordmark />
       </div>
       <div className={styles.brandCopy}>
         <p className={styles.eyebrow}>{t("auth.login.program")}</p>

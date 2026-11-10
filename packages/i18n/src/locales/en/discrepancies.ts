@@ -45,7 +45,7 @@ export const discrepancies = {
     "Resolution is final. It disposes only its own holds; it preserves the signed manifest and other holds. Acknowledging missing material adds no stock.",
   "discrepancies.close.action": "Review and close discrepancy",
   "discrepancies.close.confirm": "Confirm resolution",
-  "discrepancies.close.saved": "Resolution recorded on the server",
+  "discrepancies.close.saved": "Resolution recorded",
   "discrepancies.close.uncertain":
     "The response was not confirmed. The exact resolution is retained; check its status or retry the same request.",
   "discrepancies.close.failed":

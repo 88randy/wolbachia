@@ -4,8 +4,8 @@ import type { AreaCatalog } from "../area.ts";
 export const shell = {
   "shell.nav.notifications": "Notificaciones",
   // Web shell: brand, skip link, sidebar, top bar
-  "shell.brand.name": "Wolbachia",
-  "shell.brand.mark": "CQ",
+  "shell.brand.name": "AedesVision",
+  "shell.brand.mark": "AV",
   "shell.a11y.skipToContent": "Saltar al contenido",
   "shell.nav.label": "Navegación principal",
   "shell.sidebar.collapse": "Colapsar menú",
