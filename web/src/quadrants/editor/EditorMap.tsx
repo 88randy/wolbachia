@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import type { MapLayerMouseEvent } from "react-map-gl/maplibre";
@@ -14,14 +14,19 @@ import type { MapEditor } from "./use-map-editor";
 import { editorFeatures, initialView } from "./editor-features";
 import { centroid } from "./geo-math";
 import { geometryOf } from "./editor-model";
+import type { ShapeKind } from "./editor-draft";
 import { createEditorDraw } from "./terra-draw";
 
 const QUADRANT_FILL = "editor-quadrant-fill";
+const SAMPLING = "editor-sampling";
+const RELEASE = "editor-release";
 const FILL_OPACITY = 0.12;
-const SELECTED_OPACITY = 0.28;
+const HOVER_OPACITY = 0.24;
 const POINT_RADIUS = 6;
+const HOVER_RADIUS = 10;
 const RELEASE_RADIUS = 7;
 const DASH = [3, 2];
+const POINT_KINDS: readonly ShapeKind[] = ["sampling", "release"];
 
 interface Props {
   data: EditorData;
@@ -29,44 +34,79 @@ interface Props {
   viewQuadrants: EditorData["quadrants"];
   editor: MapEditor;
   source: MapSource;
+  /** Saved quadrants and points may be picked and corrected (publish permission). */
+  canEdit: boolean;
   onFailure: () => void;
 }
 
-export default function EditorMap({ data, viewQuadrants, editor, source, onFailure }: Props) {
+function pickRecord(event: MapLayerMouseEvent): { id: string; kind: ShapeKind } | null {
+  const hits = event.features ?? [];
+  // A point wins over the quadrant it sits in.
+  const hit =
+    hits.find((item) => POINT_KINDS.includes(item.properties["kind"] as ShapeKind)) ?? hits[0];
+  const id: unknown = hit?.properties["id"];
+  const kind: unknown = hit?.properties["kind"];
+  return typeof id === "string" && typeof kind === "string"
+    ? { id, kind: kind as ShapeKind }
+    : null;
+}
+
+export default function EditorMap({
+  data,
+  viewQuadrants,
+  editor,
+  source,
+  canEdit,
+  onFailure,
+}: Props) {
   const { t } = useTranslation();
   const colors = useMapTheme();
-  const { draw, setDraw, tool, quadrantId, selectQuadrant } = editor;
+  const { setDraw, tool, load, shapes, mapRef } = editor;
+  const [hovered, setHovered] = useState<string | null>(null);
   // A new style object would make MapLibre reload the style and drop the Terra Draw layers.
   const mapStyle = useMemo(
     () => baseMapStyle(source),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the url and kind define the style.
     [source.url, source.isRaster],
   );
-  const hiddenBlocks = useMemo(
+  // Saved records the draft draws itself are skipped by the static layers.
+  const hiddenIds = shapes
+    .flatMap((item) => (item.saved ? [item.saved.recordId] : []))
+    .sort()
+    .join(",");
+  const { quadrants, blocks, points, releasePoints } = data;
+  const collections = useMemo(
     () =>
-      new Set(
-        tool === "move" && quadrantId
-          ? data.blocks.filter((item) => item.quadrant === quadrantId).map((item) => item.id)
-          : [],
+      editorFeatures(
+        { quadrants, blocks, points, releasePoints },
+        { recordIds: new Set(hiddenIds ? hiddenIds.split(",") : []) },
       ),
-    [tool, quadrantId, data.blocks],
+    [quadrants, blocks, points, releasePoints, hiddenIds],
   );
-  const collections = editorFeatures(data, quadrantId, {
-    quadrant: tool === "move" ? quadrantId : null,
-    blockIds: hiddenBlocks,
-  });
+  const labels = useMemo(
+    () =>
+      quadrants.flatMap((item) => {
+        const geometry = geometryOf(item);
+        return geometry ? [{ id: item.id, code: item.code, at: centroid(geometry) }] : [];
+      }),
+    [quadrants],
+  );
   useEffect(
     () => () => {
-      draw?.stop();
+      editor.draw?.stop();
     },
-    [draw],
+    [editor.draw],
   );
+  const isDrawing = tool !== "select";
   const onClick = (event: MapLayerMouseEvent) => {
-    if (tool !== "browse" && tool !== "move") return;
-    const id: unknown = event.features?.[0]?.properties["id"];
-    if (typeof id === "string") selectQuadrant(id);
+    if (tool !== "select" || !canEdit) return;
+    const record = pickRecord(event);
+    if (record) load(record.kind, record.id);
   };
-  const isDrawing = tool === "quadrant" || tool === "sampling" || tool === "release";
+  const onMouseMove = (event: MapLayerMouseEvent) => {
+    if (tool !== "select" || !canEdit) return;
+    setHovered(pickRecord(event)?.id ?? null);
+  };
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-line bg-surface">
       <Map
@@ -76,12 +116,17 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
         workerUrl={workerUrl}
         attributionControl={false}
         doubleClickZoom={!isDrawing}
-        interactiveLayerIds={[QUADRANT_FILL]}
-        cursor={isDrawing ? "crosshair" : undefined}
+        interactiveLayerIds={[QUADRANT_FILL, SAMPLING, RELEASE]}
+        cursor={isDrawing ? "crosshair" : hovered ? "pointer" : undefined}
         locale={{ "Map.Title": t("mapEditor.map.label") }}
         onError={onFailure}
         onClick={onClick}
+        onMouseMove={onMouseMove}
+        onMouseOut={() => {
+          setHovered(null);
+        }}
         onLoad={(event) => {
+          mapRef.current = event.target;
           const instance = createEditorDraw(event.target, colors);
           instance.on("ready", () => {
             setDraw(instance);
@@ -96,7 +141,12 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
             filter={["==", ["get", "kind"], "quadrant"]}
             paint={{
               "fill-color": colors.action,
-              "fill-opacity": ["case", ["get", "selected"], SELECTED_OPACITY, FILL_OPACITY],
+              "fill-opacity": [
+                "case",
+                ["==", ["get", "id"], hovered ?? ""],
+                HOVER_OPACITY,
+                FILL_OPACITY,
+              ],
             }}
           />
           <Layer
@@ -109,7 +159,7 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
             ]}
             paint={{
               "line-color": colors.action,
-              "line-width": ["case", ["get", "selected"], 4, 2],
+              "line-width": ["case", ["==", ["get", "id"], hovered ?? ""], 4, 2],
             }}
           />
           <Layer
@@ -122,7 +172,7 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
             ]}
             paint={{
               "line-color": colors.status.warning.fg,
-              "line-width": ["case", ["get", "selected"], 4, 2],
+              "line-width": ["case", ["==", ["get", "id"], hovered ?? ""], 4, 2],
               "line-dasharray": DASH,
             }}
           />
@@ -139,7 +189,18 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
         </Source>
         <Source id="editor-points" type="geojson" data={collections.points}>
           <Layer
-            id="editor-sampling"
+            id="editor-point-halo"
+            type="circle"
+            filter={["all", ["!=", ["get", "kind"], "block"], ["==", ["get", "id"], hovered ?? ""]]}
+            paint={{
+              "circle-color": colors.tint,
+              "circle-radius": HOVER_RADIUS,
+              "circle-stroke-color": colors.actionStrong,
+              "circle-stroke-width": 2,
+            }}
+          />
+          <Layer
+            id={SAMPLING}
             type="circle"
             filter={["==", ["get", "kind"], "sampling"]}
             paint={{
@@ -150,7 +211,7 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
             }}
           />
           <Layer
-            id="editor-release"
+            id={RELEASE}
             type="circle"
             filter={["==", ["get", "kind"], "release"]}
             paint={{
@@ -161,18 +222,13 @@ export default function EditorMap({ data, viewQuadrants, editor, source, onFailu
             }}
           />
         </Source>
-        {data.quadrants.map((item) => {
-          const geometry = geometryOf(item);
-          if (!geometry) return null;
-          const [longitude, latitude] = centroid(geometry);
-          return (
-            <Marker key={item.id} longitude={longitude} latitude={latitude} anchor="center">
-              <span className="pointer-events-none rounded-md bg-surface/90 px-1.5 py-0.5 text-xs font-bold text-ink shadow-card">
-                {item.code}
-              </span>
-            </Marker>
-          );
-        })}
+        {labels.map((item) => (
+          <Marker key={item.id} longitude={item.at[0]} latitude={item.at[1]} anchor="center">
+            <span className="pointer-events-none rounded-md bg-surface/90 px-1.5 py-0.5 text-xs font-bold text-ink shadow-card">
+              {item.code}
+            </span>
+          </Marker>
+        ))}
       </Map>
       <p className="absolute right-2 bottom-2 m-0 rounded bg-surface/90 px-2 py-0.5 text-xs text-ink-2">
         <a href={OSM_COPYRIGHT} target="_blank" rel="noreferrer">

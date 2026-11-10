@@ -1,230 +1,425 @@
-/* eslint-disable max-lines-per-function, complexity -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
-import { useCallback, useEffect, useRef, useState } from "react";
+/* eslint-disable max-lines-per-function, complexity, max-depth, max-params -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
-
-type FeatureId = string | number;
-import type { Polygon } from "../geography/geometry";
+import type { Map as MapLibreMap } from "maplibre-gl";
+import { containsLocation } from "../geography/geometry";
+import { useToast } from "../../ui/toast-context";
 import type { EditorData } from "./use-editor-data";
-import type { EditorTool, EditTarget, PointDraft, PointKind, QuadrantDraft } from "./editor-model";
-import { geometryOf } from "./editor-model";
+import type { EditorTool, PointKind } from "./editor-model";
+import { blockAt, geometryOf, nextCode, quadrantAt } from "./editor-model";
+import type { Draft, DraftShape, History, HistoryAction, ShapeKind } from "./editor-draft";
+import {
+  changedShapes,
+  historyReducer,
+  INITIAL_HISTORY,
+  patchShape,
+  removeShapes,
+  upsertShape,
+  EMPTY_DRAFT,
+} from "./editor-draft";
+import { DRAFT_FLAG, featureOf, roundedGeometry, syncDraw } from "./draw-sync";
 import { roundPolygon, roundPosition } from "./geo-math";
+import { shapeBounds } from "./editor-features";
 import { DRAW_MODES } from "./terra-draw";
 
-type Snapshot = GeoJSONStoreFeatures;
+const MIN_CORNERS_OPEN_RING = 2;
+const FIT_PADDING = 56;
 
-function polygonOf(feature: Snapshot | undefined): Polygon | null {
-  return feature?.geometry.type === "Polygon"
-    ? roundPolygon({ type: "Polygon", coordinates: feature.geometry.coordinates })
-    : null;
+function modeFor(tool: EditorTool): string {
+  if (tool === "quadrant") return DRAW_MODES.polygon;
+  if (tool === "sampling" || tool === "release") return DRAW_MODES.point;
+  return DRAW_MODES.select;
 }
 
-function locationOf(feature: Snapshot | undefined): number[] | null {
-  return feature?.geometry.type === "Point" ? roundPosition(feature.geometry.coordinates) : null;
-}
-
-/** Tool state and Terra Draw events. Writes live in `use-editor-saves`. */
-export function useMapEditor(data: EditorData) {
-  const [draw, setDraw] = useState<TerraDraw | null>(null);
-  const [tool, setToolState] = useState<EditorTool>("browse");
-  const [quadrantId, setQuadrantId] = useState<string | null>(null);
-  const [quadrantDraft, setQuadrantDraft] = useState<QuadrantDraft | null>(null);
-  const [pointDraft, setPointDraft] = useState<PointDraft | null>(null);
-  const [editPolygon, setEditPolygon] = useState<Polygon | null>(null);
-  const [moved, setMoved] = useState<Record<string, number[]>>({});
-  const [vertexCount, setVertexCount] = useState(0);
-  const targets = useRef(new Map<string, EditTarget>());
-  const pointDraftRef = useRef<PointDraft | null>(null);
-  const toolRef = useRef<EditorTool>("browse");
-
-  const resetDraw = useCallback(() => {
-    if (!draw) return;
-    draw.setMode(DRAW_MODES.idle);
-    draw.clear();
-    targets.current.clear();
-    pointDraftRef.current = null;
-    setQuadrantDraft(null);
-    setPointDraft(null);
-    setEditPolygon(null);
-    setMoved({});
-    setVertexCount(0);
-  }, [draw]);
-
-  const loadForMove = useCallback(
-    (id: string) => {
-      if (!draw) return;
-      const quadrant = data.quadrants.find((item) => item.id === id);
-      const geometry = quadrant ? geometryOf(quadrant) : null;
-      if (!quadrant || !geometry) return;
-      const polygon = roundPolygon(geometry);
-      const features: Snapshot[] = [];
-      const add = (target: EditTarget, feature: Omit<Snapshot, "id" | "type">) => {
-        const featureId = String(draw.getFeatureId());
-        targets.current.set(featureId, target);
-        features.push({ ...feature, id: featureId, type: "Feature" });
-      };
-      add(
-        {
-          kind: "quadrant",
-          recordId: quadrant.id,
-          revision: quadrant.current_version?.revision ?? 0,
-          original: polygon,
-        },
-        { geometry: polygon, properties: { mode: DRAW_MODES.polygon, kind: "quadrant" } },
-      );
-      const blockIds = new Set(
-        data.blocks.filter((item) => item.quadrant === id).map((item) => item.id),
-      );
-      for (const point of data.points)
-        if (blockIds.has(point.block) && point.current_version)
-          add(
-            {
-              kind: "sampling",
-              recordId: point.id,
-              revision: point.current_version.version,
-              original: point.current_version.location,
-            },
-            {
-              geometry: {
-                type: "Point",
-                coordinates: roundPosition(point.current_version.location),
-              },
-              properties: { mode: DRAW_MODES.point, kind: "sampling" },
-            },
-          );
-      for (const point of data.releasePoints)
-        if (point.quadrant === id && point.current_version)
-          add(
-            {
-              kind: "release",
-              recordId: point.id,
-              revision: point.current_version.version,
-              original: point.current_version.location,
-            },
-            {
-              geometry: {
-                type: "Point",
-                coordinates: roundPosition(point.current_version.location),
-              },
-              properties: { mode: DRAW_MODES.point, kind: "release" },
-            },
-          );
-      draw.addFeatures(features);
-      draw.setMode(DRAW_MODES.select);
-      // The quadrant starts selected so its corners can be dragged right away.
-      if (features[0]) draw.selectFeature(features[0].id ?? "");
-      setEditPolygon(polygon);
-    },
-    [draw, data.quadrants, data.blocks, data.points, data.releasePoints],
+/** Suggested name of a new shape, counting the names already used in the draft. */
+function suggestCode(
+  kind: ShapeKind,
+  geometry: DraftShape["geometry"],
+  data: EditorData,
+  shapes: readonly DraftShape[],
+): string {
+  const drafted = (of: ShapeKind) =>
+    shapes.filter((item) => item.kind === of && !item.saved).map((item) => item.code);
+  if (kind === "quadrant")
+    return nextCode([...data.quadrants.map((item) => item.code), ...drafted("quadrant")], "C-");
+  const location = geometry.type === "Point" ? geometry.coordinates : [];
+  const quadrant = quadrantAt(data.quadrants, location);
+  const inDraft = shapes.find(
+    (item) =>
+      item.kind === "quadrant" &&
+      !item.saved &&
+      item.geometry.type === "Polygon" &&
+      containsLocation(item.geometry, location),
   );
+  if (kind === "release") {
+    const prefix = `${quadrant?.code ?? inDraft?.code ?? "PL"}-REL-P`;
+    const codes = data.releasePoints
+      .filter((item) => item.quadrant === quadrant?.id)
+      .map((item) => item.code);
+    return nextCode([...codes, ...drafted("release").filter((c) => c.startsWith(prefix))], prefix);
+  }
+  const block = blockAt(data.blocks, location);
+  const prefix = `${block?.code ?? (inDraft ? `${inDraft.code}-M1` : "P")}-P`;
+  const codes = data.points.filter((item) => item.block === block?.id).map((item) => item.code);
+  return nextCode([...codes, ...drafted("sampling").filter((c) => c.startsWith(prefix))], prefix);
+}
+
+/** Tool state, the single draft session with its undo history, and the Terra Draw events. */
+export function useMapEditor(data: EditorData) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [draw, setDraw] = useState<TerraDraw | null>(null);
+  const [tool, setToolState] = useState<EditorTool>("select");
+  const [history, setHistory] = useState<History>(INITIAL_HISTORY);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [vertexCount, setVertexCount] = useState(0);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const historyRef = useRef(history);
+  const toolRef = useRef(tool);
+  const dataRef = useRef(data);
+  const mirrored = useRef<Draft | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  const vertexRef = useRef(0);
+  dataRef.current = data;
+
+  const apply = useCallback((action: HistoryAction) => {
+    const next = historyReducer(historyRef.current, action);
+    if (next === historyRef.current) return;
+    historyRef.current = next;
+    setHistory(next);
+  }, []);
+  /** The change already happened on the map: record it without redrawing. */
+  const record = useCallback(
+    (next: Draft, mode: "commit" | "replace") => {
+      mirrored.current = next;
+      apply({ type: mode, next });
+    },
+    [apply],
+  );
+  const present = history.present;
+  const presentNow = () => historyRef.current.present;
+
+  const deselect = useCallback((instance: TerraDraw) => {
+    const key = selectedRef.current;
+    if (key && instance.getSnapshot().some((item) => item.id === key && item.properties.selected))
+      instance.deselectFeature(key);
+  }, []);
+
+  // Undo, redo, discard and removal redraw the map from the draft.
+  useEffect(() => {
+    if (!draw || mirrored.current === present) return;
+    mirrored.current = present;
+    deselect(draw);
+    syncDraw(draw, present.shapes);
+  }, [draw, present, deselect]);
 
   const setTool = useCallback(
     (next: EditorTool) => {
-      resetDraw();
       toolRef.current = next;
       setToolState(next);
+      vertexRef.current = 0;
+      setVertexCount(0);
       if (!draw) return;
-      if (next === "quadrant") draw.setMode(DRAW_MODES.polygon);
-      if (next === "sampling" || next === "release") draw.setMode(DRAW_MODES.point);
-      if (next === "move" && quadrantId) loadForMove(quadrantId);
+      draw.setMode(modeFor(next));
     },
-    [draw, resetDraw, quadrantId, loadForMove],
+    [draw],
   );
 
-  const selectQuadrant = useCallback(
-    (id: string | null) => {
-      setQuadrantId(id);
-      if (toolRef.current === "move") {
-        resetDraw();
-        if (id) loadForMove(id);
+  /** Bring a saved quadrant or point into the draft so it can be edited. */
+  const load = useCallback(
+    (kind: ShapeKind, recordId: string, select = true) => {
+      if (!draw) return;
+      const existing = presentNow().shapes.find((item) => item.saved?.recordId === recordId);
+      let key = existing?.key;
+      if (!existing) {
+        const source = dataRef.current;
+        let shape: DraftShape | null = null;
+        if (kind === "quadrant") {
+          const record = source.quadrants.find((item) => item.id === recordId);
+          const geometry = record ? geometryOf(record) : null;
+          if (record && geometry)
+            shape = {
+              key: String(draw.getFeatureId()),
+              kind,
+              geometry: roundPolygon(geometry),
+              code: record.code,
+              centerId: record.center,
+              saved: {
+                recordId,
+                revision: record.current_version?.revision ?? 0,
+                code: record.code,
+                original: roundPolygon(geometry),
+              },
+            };
+        } else {
+          const record = (kind === "sampling" ? source.points : source.releasePoints).find(
+            (item) => item.id === recordId,
+          );
+          const version = record?.current_version;
+          if (record && version) {
+            const point = { type: "Point" as const, coordinates: roundPosition(version.location) };
+            shape = {
+              key: String(draw.getFeatureId()),
+              kind,
+              geometry: point,
+              code: record.code,
+              centerId: "",
+              saved: { recordId, revision: version.version, code: record.code, original: point },
+            };
+          }
+        }
+        if (!shape) return;
+        key = shape.key;
+        draw.addFeatures([featureOf(shape)]);
+        record(upsertShape(presentNow(), shape), "replace");
       }
+      if (!select || !key) return;
+      if (toolRef.current !== "select") setTool("select");
+      draw.setMode(DRAW_MODES.select);
+      draw.selectFeature(key);
     },
-    [resetDraw, loadForMove],
+    [draw, record, setTool],
   );
 
   useEffect(() => {
     if (!draw) return;
-    const onFinish = (id: FeatureId, context: { mode: string }) => {
-      const featureId = String(id);
+    const onFinish = (id: string | number, context: { mode: string }) => {
+      const key = String(id);
       const feature = draw.getSnapshotFeature(id);
-      if (context.mode === DRAW_MODES.polygon) {
-        const polygon = polygonOf(feature);
-        if (!polygon) return;
-        setQuadrantDraft({ featureId, polygon, isClosed: true });
+      const geometry = feature ? roundedGeometry(feature.geometry) : null;
+      if (!feature || !geometry) return;
+      const shapes = presentNow().shapes;
+      const known = shapes.find((item) => item.key === key);
+      if (known) {
+        if (JSON.stringify(known.geometry) === JSON.stringify(geometry)) return;
+        record(upsertShape(presentNow(), { ...known, geometry }), "commit");
+        return;
+      }
+      if (context.mode === DRAW_MODES.polygon && geometry.type === "Polygon") {
+        const shape: DraftShape = {
+          key,
+          kind: "quadrant",
+          geometry,
+          code: suggestCode("quadrant", geometry, dataRef.current, shapes),
+          centerId: dataRef.current.centers[0]?.id ?? "",
+          saved: null,
+        };
+        draw.updateFeatureProperties(id, { kind: "quadrant", [DRAFT_FLAG]: true });
+        record(upsertShape(presentNow(), shape), "commit");
+        // The new quadrant stays selected so its corners can be adjusted right away.
+        toolRef.current = "select";
+        setToolState("select");
+        vertexRef.current = 0;
         setVertexCount(0);
         draw.setMode(DRAW_MODES.select);
         draw.selectFeature(id);
         return;
       }
-      if (context.mode === DRAW_MODES.point) {
-        const location = locationOf(feature);
+      if (context.mode === DRAW_MODES.point && geometry.type === "Point") {
         const kind: PointKind = toolRef.current === "release" ? "release" : "sampling";
-        if (!location) return;
-        const previous = pointDraftRef.current;
-        if (previous && draw.hasFeature(previous.featureId))
-          draw.removeFeatures([previous.featureId]);
-        draw.updateFeatureProperties(id, { kind });
-        const next = { featureId, kind, location };
-        pointDraftRef.current = next;
-        setPointDraft(next);
-        return;
-      }
-      // Select mode: a vertex or a point was dragged.
-      const target = targets.current.get(featureId);
-      if (target?.kind === "quadrant") setEditPolygon(polygonOf(feature));
-      else if (target) {
-        const location = locationOf(feature);
-        if (location) setMoved((current) => ({ ...current, [featureId]: location }));
-      } else {
-        const polygon = polygonOf(feature);
-        if (polygon) setQuadrantDraft({ featureId, polygon, isClosed: true });
+        const shape: DraftShape = {
+          key,
+          kind,
+          geometry,
+          code: suggestCode(kind, geometry, dataRef.current, shapes),
+          centerId: "",
+          saved: null,
+        };
+        draw.updateFeatureProperties(id, { kind, [DRAFT_FLAG]: true });
+        record(upsertShape(presentNow(), shape), "commit");
       }
     };
-    const onChange = (_ids: FeatureId[], type: string) => {
-      if (draw.getMode() !== DRAW_MODES.polygon || type === "delete") return;
+    const onChange = () => {
+      if (draw.getMode() !== DRAW_MODES.polygon) return;
       const drawing = draw
         .getSnapshot()
-        .find((item) => item.properties["mode"] === DRAW_MODES.polygon && !item.properties["kind"]);
+        .find(
+          (item: GeoJSONStoreFeatures) =>
+            item.properties["mode"] === DRAW_MODES.polygon && !item.properties[DRAFT_FLAG],
+        );
       const ring = drawing?.geometry.type === "Polygon" ? drawing.geometry.coordinates[0] : [];
       // An open ring repeats the cursor and closing positions.
-      setVertexCount(Math.max((ring?.length ?? 0) - 2, 0));
+      const count = Math.max((ring?.length ?? 0) - MIN_CORNERS_OPEN_RING, 0);
+      if (count === vertexRef.current) return;
+      vertexRef.current = count;
+      setVertexCount(count);
+    };
+    const onSelect = (id: string | number) => {
+      const key = String(id);
+      if (!presentNow().shapes.some((item) => item.key === key)) return;
+      selectedRef.current = key;
+      setSelectedKey(key);
+    };
+    const onDeselect = () => {
+      selectedRef.current = null;
+      setSelectedKey(null);
     };
     draw.on("finish", onFinish);
     draw.on("change", onChange);
+    draw.on("select", onSelect);
+    draw.on("deselect", onDeselect);
     return () => {
       draw.off("finish", onFinish);
       draw.off("change", onChange);
+      draw.off("select", onSelect);
+      draw.off("deselect", onDeselect);
     };
-  }, [draw]);
+  }, [draw, record]);
 
   const undo = useCallback(() => {
-    if (!draw) return;
-    if (tool === "quadrant" && quadrantDraft) {
-      setTool("quadrant");
+    // While a polygon is still being clicked, undo takes back its last corner.
+    if (draw && vertexRef.current > 0 && draw.canUndo()) {
+      draw.undo();
       return;
     }
-    if (draw.canUndo()) draw.undo();
-  }, [draw, tool, quadrantDraft, setTool]);
+    apply({ type: "undo" });
+  }, [draw, apply]);
+  const redo = useCallback(() => {
+    if (draw && vertexRef.current > 0 && draw.canRedo()) {
+      draw.redo();
+      return;
+    }
+    apply({ type: "redo" });
+  }, [draw, apply]);
 
-  const target = (featureId: string) => targets.current.get(featureId);
+  /** Escape: drop the polygon being drawn (the finished shapes stay). */
+  const cancelDrawing = useCallback(() => {
+    if (!draw) return;
+    draw.setMode(DRAW_MODES.idle);
+    draw.setMode(modeFor(toolRef.current));
+    vertexRef.current = 0;
+    setVertexCount(0);
+  }, [draw]);
+
+  /** Enter: Terra Draw closes the polygon on a key event from its canvas. */
+  const finishDrawing = useCallback(() => {
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas && vertexRef.current >= 3)
+      canvas.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
+  }, []);
+
+  const removeShape = useCallback(
+    (key: string, withUndo = true) => {
+      const shape = presentNow().shapes.find((item) => item.key === key);
+      if (!shape) return;
+      if (shape.saved) {
+        // Nothing saved is ever deleted: it is retired from its record with a reason.
+        showToast({ message: t("mapEditor.delete.saved"), tone: "warning" });
+        return;
+      }
+      apply({ type: "commit", next: removeShapes(presentNow(), new Set([key])) });
+      if (withUndo)
+        showToast({
+          message: t("mapEditor.delete.done"),
+          tone: "info",
+          action: {
+            label: t("mapEditor.action.undoStep"),
+            onAction: () => {
+              apply({ type: "undo" });
+            },
+          },
+        });
+    },
+    [apply, showToast, t],
+  );
+
+  const revertShape = useCallback(
+    (key: string) => {
+      const shape = presentNow().shapes.find((item) => item.key === key);
+      if (!shape?.saved) return;
+      apply({
+        type: "commit",
+        next: patchShape(presentNow(), key, { geometry: shape.saved.original }),
+      });
+    },
+    [apply],
+  );
+
+  const discardAll = useCallback(() => {
+    if (!presentNow().shapes.length) return;
+    apply({ type: "commit", next: EMPTY_DRAFT });
+    showToast({
+      message: t("mapEditor.discard.done"),
+      tone: "info",
+      action: {
+        label: t("mapEditor.action.undoStep"),
+        onAction: () => {
+          apply({ type: "undo" });
+        },
+      },
+    });
+  }, [apply, showToast, t]);
+
+  const updateShape = useCallback(
+    (key: string, patch: Partial<Pick<DraftShape, "code" | "centerId">>) => {
+      record(patchShape(presentNow(), key, patch), "replace");
+    },
+    [record],
+  );
+
+  /** After a save: the saved shapes leave the draft and the undo steps start over. */
+  const settle = useCallback((keys: ReadonlySet<string>) => {
+    const next = removeShapes(presentNow(), keys);
+    historyRef.current = { present: next, past: [], future: [] };
+    setHistory(historyRef.current);
+  }, []);
+
+  const select = useCallback(
+    (key: string) => {
+      if (!draw) return;
+      if (toolRef.current !== "select") setTool("select");
+      draw.setMode(DRAW_MODES.select);
+      draw.selectFeature(key);
+    },
+    [draw, setTool],
+  );
+
+  const fit = useCallback((extra?: readonly DraftShape[]) => {
+    const bounds = shapeBounds(dataRef.current.quadrants, extra ?? presentNow().shapes);
+    if (bounds && mapRef.current)
+      mapRef.current.fitBounds(bounds, { padding: FIT_PADDING, duration: 400, maxZoom: 18 });
+  }, []);
+
+  /** Zoom to one quadrant (and keep the draft in view when it is empty). */
+  const fitQuadrant = useCallback((recordId: string) => {
+    const record = dataRef.current.quadrants.find((item) => item.id === recordId);
+    const geometry = record ? geometryOf(record) : null;
+    const bounds = geometry ? shapeBounds([], [{ geometry }]) : null;
+    if (bounds && mapRef.current)
+      mapRef.current.fitBounds(bounds, { padding: FIT_PADDING, duration: 400, maxZoom: 18 });
+  }, []);
+
+  const pending = useMemo(() => changedShapes(present), [present]);
+  const selected = present.shapes.find((item) => item.key === selectedKey) ?? null;
 
   return {
     draw,
     setDraw,
+    mapRef,
     tool,
     setTool,
-    quadrantId,
-    selectQuadrant,
-    quadrantDraft,
-    pointDraft,
-    editPolygon,
-    moved,
-    target,
-    targets: targets.current,
+    shapes: present.shapes,
+    pending,
+    pendingCount: pending.length,
+    selected,
+    selectedKey,
     vertexCount,
+    canUndo: history.past.length > 0 || vertexCount > 0,
+    canRedo: history.future.length > 0,
     undo,
-    reset: () => {
-      setTool(toolRef.current);
-    },
+    redo,
+    load,
+    select,
+    removeShape,
+    revertShape,
+    discardAll,
+    updateShape,
+    settle,
+    cancelDrawing,
+    finishDrawing,
+    fit,
+    fitQuadrant,
   };
 }
 

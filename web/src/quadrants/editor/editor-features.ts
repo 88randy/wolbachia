@@ -1,10 +1,10 @@
-/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
+/* eslint-disable max-lines-per-function, max-params -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import type { Schemas } from "@wolbachia/api-client";
 import { centerPatterns, geometryOf } from "./editor-model";
 
 interface Hidden {
-  quadrant: string | null;
-  blockIds: ReadonlySet<string>;
+  /** Saved records the draft draws itself (Terra Draw), so the static layer skips them. */
+  recordIds: ReadonlySet<string>;
 }
 
 /** Static (read-only) layers; the quadrant being edited is drawn by Terra Draw instead. */
@@ -15,7 +15,6 @@ export function editorFeatures(
     points: readonly Schemas["SamplingPoint"][];
     releasePoints: readonly Schemas["ReleasePoint"][];
   },
-  selected: string | null,
   hidden: Hidden,
 ) {
   const centerOf = new Map(data.quadrants.map((item) => [item.id, item.center]));
@@ -23,7 +22,7 @@ export function editorFeatures(
   const polygons = [
     ...data.quadrants.flatMap((item) => {
       const geometry = geometryOf(item);
-      if (!geometry || item.id === hidden.quadrant) return [];
+      if (!geometry || hidden.recordIds.has(item.id)) return [];
       return [
         {
           type: "Feature" as const,
@@ -33,7 +32,6 @@ export function editorFeatures(
             code: item.code,
             kind: "quadrant",
             pattern: centerPattern(item.center),
-            selected: item.id === selected,
           },
           geometry,
         },
@@ -50,27 +48,26 @@ export function editorFeatures(
             code: item.code,
             kind: "block",
             pattern: centerPattern(centerOf.get(item.quadrant) ?? ""),
-            selected: false,
           },
           geometry,
         },
       ];
     }),
   ];
-  const pointFeature = (code: string, kind: string, location: number[]) => ({
+  const pointFeature = (id: string, code: string, kind: string, location: number[]) => ({
     type: "Feature" as const,
-    properties: { code, kind },
+    properties: { id, code, kind },
     geometry: { type: "Point" as const, coordinates: location },
   });
   const points = [
     ...data.points.flatMap((item) =>
-      item.current_version && !hidden.blockIds.has(item.block)
-        ? [pointFeature(item.code, "sampling", item.current_version.location)]
+      item.current_version && !hidden.recordIds.has(item.id)
+        ? [pointFeature(item.id, item.code, "sampling", item.current_version.location)]
         : [],
     ),
     ...data.releasePoints.flatMap((item) =>
-      item.current_version && item.quadrant !== hidden.quadrant
-        ? [pointFeature(item.code, "release", item.current_version.location)]
+      item.current_version && !hidden.recordIds.has(item.id)
+        ? [pointFeature(item.id, item.code, "release", item.current_version.location)]
         : [],
     ),
   ];
@@ -90,4 +87,26 @@ export function initialView(quadrants: readonly Schemas["Quadrant"][]) {
     [Math.max(...longitudes), Math.max(...latitudes)],
   ];
   return { bounds, fitBoundsOptions: { padding: 48 } };
+}
+
+/** Bounds of every quadrant plus the shapes of the draft, or null when the map is empty. */
+export function shapeBounds(
+  quadrants: readonly Schemas["Quadrant"][],
+  shapes: readonly { geometry: { type: string; coordinates: unknown } }[],
+): [[number, number], [number, number]] | null {
+  const positions: number[][] = [
+    ...quadrants.flatMap((item) => geometryOf(item)?.coordinates[0] ?? []),
+    ...shapes.flatMap((item) =>
+      item.geometry.type === "Polygon"
+        ? ((item.geometry.coordinates as number[][][])[0] ?? [])
+        : [item.geometry.coordinates as number[]],
+    ),
+  ];
+  if (!positions.length) return null;
+  const longitudes = positions.map((point) => Number(point[0]));
+  const latitudes = positions.map((point) => Number(point[1]));
+  return [
+    [Math.min(...longitudes), Math.min(...latitudes)],
+    [Math.max(...longitudes), Math.max(...latitudes)],
+  ];
 }
