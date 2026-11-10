@@ -20,15 +20,16 @@ then executes one disjoint selection serially. The single closed registry
 - `regular-integration`: sixteen complete ordinary modules: B10 supplies, B04
   private uploads, all six #116 permit/release modules and eight more modules
   covering field, defaults, shifts, incidents, reviews, geography and inventory.
-- `regular-lab`: all eight ordinary Lab test modules (API, concurrency, counts,
-  history, policy, reception and both recount modules).
+- `regular-lab`: ten complete Lab test modules (API, concurrency, counts,
+  history, policy, reception, both recount modules, B21 samples and sample shipments).
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration` and `regular-lab` cohorts
 are excluded from that derived migration-only subset. No second module registry
 exists. Every migration cohort contains exactly one whole module; the two ordinary
-cohorts retain twenty-four whole modules in total. No module can belong to two
+cohorts retain twenty-six whole modules in total: sixteen in `regular-integration`
+and ten in `regular-lab`. No module can belong to two
 cohorts. Each selection retains its original collected order. Upgrade, raw-SQL,
 protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
@@ -116,8 +117,12 @@ blanket 900-second restriction only for an already singleton owner that times ou
 In [run 42757560383](https://github.com/88randy/wolbachia/actions/runs/42757560383),
 attempt 2, `regular` took 736s wall (164s margin to 900s). Its retained session
 records 45 ordinary Lab cases with 117.893s summed setup/call/teardown. Those eight
-complete modules now form `regular-lab`; all other ordinary modules remain in their
-original cohort or the residual complement. The first regular case's 117.475s
+complete modules formed the initial `regular-lab` cohort. #117 adds the complete
+`test_lab_samples_b_21.py` and `test_lab_shipment_samples_118.py` modules to that
+existing cohort after the residual `regular` job exceeded its 15-minute limit.
+All other ordinary modules retain their original cohort or the residual complement;
+no timeout, workflow matrix, assertion or coverage threshold changes.
+The first regular case's 117.475s
 setup is retained startup work, not a promised saving. One additional standard
 runner/service/setup increases compute use.
 
@@ -240,9 +245,10 @@ improvement is predicted.
 ## Ordinary capacity rebalance (#149/#154)
 
 After merging #331, the two measured Lab modules remain solely in `regular-lab`;
-the other eight measured modules join `regular-integration`. The final cohorts
-contain sixteen and eight whole modules respectively, twenty-four ordinary
-modules in total. Adjacent progress intervals guided selection, not guaranteed
+the other eight measured modules join `regular-integration`. Together with #117's
+two complete sample modules in `regular-lab`, the merged cohorts contain sixteen
+and ten whole modules respectively, twenty-six ordinary modules in total.
+Adjacent progress intervals guided selection, not guaranteed
 savings; initial database setup remains. All thirteen current fragments, the
 existing decision 172 timeouts and the combined 85% gate remain mandatory.
 No test or assertion is removed; fresh CI must qualify the merged balance.

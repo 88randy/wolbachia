@@ -422,6 +422,19 @@ class EventProcessor:
                 ),
                 dict(serializer.validated_data),
             )
+        if envelope.type == "sample.collect":
+            from lab.samples.handlers import authorize_collection
+
+            authorize_collection(
+                EventContext(
+                    organization,
+                    self.batch.user,
+                    self.batch.device,
+                    envelope,
+                    self.batch.received_at,
+                ),
+                dict(serializer.validated_data),
+            )
         causal = classify_dependencies(self.batch, envelope, self.candidates)
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)
@@ -711,14 +724,8 @@ class EventProcessor:
                 batch.device.pk,
             )
             return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
-        if (
-            stored.type in {"community.activity", VOID_EVENT_TYPE}
-            or envelope.type == "community.activity"
-        ):
-            from community.review import replay_code
-
-            if code := replay_code(batch, envelope, stored.type):
-                return EventResult(envelope.id, EventStatus.REJECTED, code)
+        if code := self._owner_replay_code(envelope, stored):
+            return EventResult(envelope.id, EventStatus.REJECTED, code)
         supply = FieldEvent.objects.filter(
             pk=envelope.id,
             organization=batch.organization,
@@ -759,6 +766,21 @@ class EventProcessor:
         return EventResult(
             envelope.id, EventStatus(stored.status), stored.status_code, stored.status_params
         )
+
+    def _owner_replay_code(self, envelope: EventEnvelope, stored: StoredEvent) -> str | None:
+        if (
+            stored.type in {"community.activity", VOID_EVENT_TYPE}
+            or envelope.type == "community.activity"
+        ):
+            from community.review import replay_code
+
+            if code := replay_code(self.batch, envelope, stored.type):
+                return code
+        if stored.type in {"sample.collect", VOID_EVENT_TYPE} or envelope.type == "sample.collect":
+            from lab.samples.handlers import replay_code as sample_replay_code
+
+            return sample_replay_code(self.batch, envelope, stored.type)
+        return None
 
     def _replay_after_conflict(self, envelope: EventEnvelope, error: IntegrityError) -> EventResult:
         """A savepoint failed on the primary key: another batch stored this id first.

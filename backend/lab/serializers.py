@@ -196,6 +196,7 @@ class LabMethodWriteSerializer(StrictPayloadSerializer):
     supports_rejection = StrictBooleanField()
     supports_independent_qa = StrictBooleanField(required=False, default=False)
     supports_paddle_reuse = StrictBooleanField(required=False, default=False)
+    supports_wolbachia = StrictBooleanField(required=False, default=False)
 
 
 class LabMethodDecisionSerializer(StrictPayloadSerializer):
@@ -261,6 +262,7 @@ class LabMethodVersionSerializer(OrgScopedModelSerializer):
             "supports_rejection",
             "supports_independent_qa",
             "supports_paddle_reuse",
+            "supports_wolbachia",
             "verification",
             "availability",
             "created_at",

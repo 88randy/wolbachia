@@ -59,6 +59,8 @@ EXPECTED_COHORTS = {
         "tests/test_lab_reception_114.py",
         "tests/test_lab_recounts_114.py",
         "tests/test_lab_recounts_b_19.py",
+        "tests/test_lab_samples_b_21.py",
+        "tests/test_lab_shipment_samples_118.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -156,8 +158,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 35
-        )  # Residual regular, ten migration owners and twenty-four complete ordinary modules.
+            validate_fragments(bundles, expected) == 37
+        )  # Residual regular, ten migration owners and twenty-six complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -175,9 +177,12 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         *collected[:2],
         "tests/test_uploads_b_04.py::test_earlier_case",
         "tests/test_lab_counts_114.py::test_earlier_case",
+        "tests/test_lab_samples_b_21.py::test_earlier_case",
         *collected[2:],
         "tests/test_inventory_allocations_b_10.py::test_later_case",
         "tests/test_lab_counts_114.py::test_later_case",
+        "tests/test_lab_samples_b_21.py::test_later_case",
+        "tests/test_lab_shipment_samples_118.py::test_later_case",
     ]
     parts = partition_nodes(nodes)
     assert tuple(parts) == EXPECTED_PARTITIONS
@@ -190,6 +195,8 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         "tests/test_inventory_allocations_migrations_107.py",
         "tests/test_release_stock_116.py",
         "tests/test_lab_recounts_b_19.py",
+        "tests/test_lab_samples_b_21.py",
+        "tests/test_lab_shipment_samples_118.py",
     ):
         with pytest.raises(ValueError, match="CI evidence"):
             partition_nodes([node for node in nodes if node.split("::")[0] != absent])

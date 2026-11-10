@@ -149,6 +149,7 @@ class LabMethodVersion(LabFact):
     supports_rejection = models.BooleanField()
     supports_independent_qa = models.BooleanField(default=False)
     supports_paddle_reuse = models.BooleanField(default=False)
+    supports_wolbachia = models.BooleanField(default=False)
 
     class Meta(LabFact.Meta):
         ordering = ["-revision"]
@@ -402,7 +403,12 @@ from lab.independent_qa.models import (  # noqa: E402, I001 -- register same-app
     RecountRevision as RecountRevision,
 )
 
-from lab.samples.models import WolbachiaSample as WolbachiaSample  # noqa: E402
+from lab.samples.models import (  # noqa: E402, I001 -- same-app registration after shared bases.
+    SampleCommandReceipt as SampleCommandReceipt,
+    SampleReceipt as SampleReceipt,
+    WolbachiaResultAttempt as WolbachiaResultAttempt,
+    WolbachiaSample as WolbachiaSample,
+)
 
 from lab.shipments.models import (  # noqa: E402, I001 -- register same-app shipment facts after shared bases.
     DeliveryReceipt as DeliveryReceipt,

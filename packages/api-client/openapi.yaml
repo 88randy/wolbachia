@@ -15521,6 +15521,233 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/wolbachia-samples/:
+    get:
+      operationId: wolbachia_samples_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at, device_time, id. Prefix
+          with - for descending. Unsupported or blank terms return 400. Ties use id
+          ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code.'
+        schema:
+          type: string
+      tags:
+      - wolbachia-samples
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSampleSnapshotList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/wolbachia-samples/{id}/:
+    get:
+      operationId: wolbachia_samples_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - wolbachia-samples
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SampleSnapshot'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/wolbachia-samples/{id}/receive/:
+    post:
+      operationId: wolbachia_samples_receive_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - wolbachia-samples
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SampleCommandRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SampleCommandOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/wolbachia-samples/{id}/results/:
+    post:
+      operationId: wolbachia_samples_results_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - wolbachia-samples
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SampleResultRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SampleCommandOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/write-offs/:
     get:
       operationId: write_offs_list
@@ -21580,6 +21807,9 @@ components:
         supports_paddle_reuse:
           type: boolean
           readOnly: true
+        supports_wolbachia:
+          type: boolean
+          readOnly: true
         verification:
           nullable: true
           readOnly: true
@@ -21611,6 +21841,7 @@ components:
       - supports_paddle_reuse
       - supports_rejection
       - supports_viability
+      - supports_wolbachia
       - verification
     LabMethodWriteRequest:
       type: object
@@ -21645,6 +21876,9 @@ components:
           type: boolean
           default: false
         supports_paddle_reuse:
+          type: boolean
+          default: false
+        supports_wolbachia:
           type: boolean
           default: false
       required:
@@ -26410,6 +26644,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RuleParameterVersion'
+    PaginatedSampleSnapshotList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleSnapshot'
     PaginatedSamplingPointList:
       type: object
       required:
@@ -30524,6 +30781,20 @@ components:
       - void_reason_code
       - voided_at
       - voided_by
+    ResultStatusEnum:
+      enum:
+      - missing
+      - invalid
+      - disputed
+      - positive
+      - negative
+      type: string
+      description: |-
+        * `missing` - missing
+        * `invalid` - invalid
+        * `disputed` - disputed
+        * `positive` - positive
+        * `negative` - negative
     RetainedLocation:
       type: object
       description: |-
@@ -31573,6 +31844,224 @@ components:
       required:
       - attest_safe_now
       - inspection_id
+    SampleAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        command_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/WolbachiaAttemptStatusEnum'
+        result:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/WolbachiaResultEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        method_version_id:
+          type: string
+          format: uuid
+        method:
+          $ref: '#/components/schemas/LabMethodPin'
+        method_verification_id:
+          type: string
+          format: uuid
+        repeat_of:
+          type: string
+          format: uuid
+          nullable: true
+        author_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author_id
+      - command_id
+      - created_at
+      - id
+      - method
+      - method_verification_id
+      - method_version_id
+      - repeat_of
+      - result
+      - revision
+      - status
+    SampleCommandOutcome:
+      type: object
+      properties:
+        sample_id:
+          type: string
+          format: uuid
+        receipt:
+          allOf:
+          - $ref: '#/components/schemas/SampleReceipt'
+          nullable: true
+        attempt:
+          allOf:
+          - $ref: '#/components/schemas/SampleAttempt'
+          nullable: true
+      required:
+      - attempt
+      - receipt
+      - sample_id
+    SampleCommandRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+    SampleReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        command_id:
+          type: string
+          format: uuid
+        receiver_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - command_id
+      - created_at
+      - id
+      - receiver_id
+    SampleResultRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/WolbachiaAttemptStatusEnum'
+        result:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/WolbachiaResultEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        method_version:
+          type: string
+          format: uuid
+        repeat_of:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - command_id
+      - method_version
+      - result
+      - status
+    SampleSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        event_id:
+          type: string
+          format: uuid
+        origin_snapshot: {}
+        other_text:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        reading_id:
+          type: string
+          format: uuid
+          nullable: true
+        lot_id:
+          type: string
+          format: uuid
+          nullable: true
+        release_id:
+          type: string
+          format: uuid
+          nullable: true
+        method_version_id:
+          type: string
+          format: uuid
+        method:
+          $ref: '#/components/schemas/LabMethodPin'
+        location: {}
+        source_provenance: {}
+        device_time:
+          type: string
+          format: date-time
+        server_received_at:
+          type: string
+          format: date-time
+        collector_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        voided:
+          type: boolean
+        receipt:
+          allOf:
+          - $ref: '#/components/schemas/SampleReceipt'
+          nullable: true
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleAttempt'
+        selected_valid_result:
+          allOf:
+          - $ref: '#/components/schemas/SampleAttempt'
+          nullable: true
+        result_status:
+          $ref: '#/components/schemas/ResultStatusEnum'
+        numerator_eligible:
+          type: boolean
+        denominator_eligible:
+          type: boolean
+      required:
+      - attempts
+      - center_id
+      - code
+      - collector_id
+      - created_at
+      - denominator_eligible
+      - device_time
+      - event_id
+      - id
+      - location
+      - lot_id
+      - method
+      - method_version_id
+      - numerator_eligible
+      - origin_snapshot
+      - other_text
+      - quadrant_id
+      - reading_id
+      - receipt
+      - release_id
+      - result_status
+      - selected_valid_result
+      - server_received_at
+      - source_provenance
+      - voided
     SamplingPoint:
       type: object
       description: |-
@@ -34283,6 +34772,24 @@ components:
           format: date
       required:
       - week
+    WolbachiaAttemptStatusEnum:
+      enum:
+      - valid
+      - invalid
+      - disputed
+      type: string
+      description: |-
+        * `valid` - valid
+        * `invalid` - invalid
+        * `disputed` - disputed
+    WolbachiaResultEnum:
+      enum:
+      - positive
+      - negative
+      type: string
+      description: |-
+        * `positive` - positive
+        * `negative` - negative
     WriteOffOutcome:
       type: object
       properties:

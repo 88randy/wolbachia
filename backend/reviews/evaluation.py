@@ -128,6 +128,8 @@ def _community_permissions(source: FieldEvent, envelope: Any) -> list[str]:  # n
         required.append("community_activity.create")
         if envelope.payload.get("incident_id") is not None:
             required.append("incident.read")
+    if source.type == "sample.collect":
+        required.append("sample.collect")
     if (
         source.type == "record.void"
         and envelope.voids_event_id is not None
@@ -139,6 +141,17 @@ def _community_permissions(source: FieldEvent, envelope: Any) -> list[str]:  # n
         ).exists()
     ):
         required.append("community_activity.void")
+    if (
+        source.type == "record.void"
+        and envelope.voids_event_id is not None
+        and FieldEvent.objects.filter(
+            organization=source.organization,
+            pk=envelope.voids_event_id,
+            type="sample.collect",
+            created_by=source.created_by,
+        ).exists()
+    ):
+        required.append("sample.void")
     return required
 
 
