@@ -1,11 +1,14 @@
 """B-27: home summary, universal code search and unified record history."""
 
+import base64
+import json
 from uuid import uuid4
 
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
+from rest_framework.throttling import SimpleRateThrottle
 
 from geography.models import Block, Quadrant, SamplingPoint
 from lab.shipments.models import ShipmentSource, ShipmentVoid, UiebShipment
@@ -373,3 +376,29 @@ def test_every_history_entry_stays_inside_the_requested_record_organization(
     assert body["record"]["id"] == str(own.pk)
     assert body["results"] == []
     assert Motorcycle.objects.filter(code="SAME-1").count() == 2
+
+
+@pytest.mark.django_db
+def test_history_rejects_a_cursor_with_a_naive_datetime(api_client, org_a, make_member):
+    api_client.force_authenticate(member_with(make_member, org_a, BASE))
+    MotorcycleFactory(organization=org_a, code="H-4")
+    raw = json.dumps(["2026-01-01T00:00:00", "motorcycle_block", str(uuid4())])
+    cursor = base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+    response = api_client.get(history_url("motorcycle", "H-4"), {"cursor": cursor})
+
+    assert response.status_code == 400
+    assert response.json()["fields"]["cursor"][0]["code"] == "invalid_cursor"
+
+
+@pytest.mark.django_db
+def test_search_is_rate_limited_per_user_with_its_own_scope(
+    api_client, org_a, make_member, monkeypatch
+):
+    monkeypatch.setitem(SimpleRateThrottle.THROTTLE_RATES, "search", "2/min")
+    api_client.force_authenticate(member_with(make_member, org_a, BASE))
+
+    statuses = [api_client.get(SEARCH, {"q": "A"}).status_code for _ in range(3)]
+
+    assert statuses == [200, 200, 429]
+    assert api_client.get(HOME).status_code == 200

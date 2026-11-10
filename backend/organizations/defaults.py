@@ -84,7 +84,6 @@ from uploads.limits import FIELD_UPLOAD
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (
-    HOME_READ,
     CATALOG_READ,
     RULE_PARAMETER_READ,
     "organization.read",
@@ -161,6 +160,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    HOME_READ,
     USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
@@ -198,6 +198,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
+        HOME_READ,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
         FIELD_UPLOAD,
@@ -216,6 +217,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        HOME_READ,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
@@ -231,6 +233,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_REASSIGN,
     ),
     "warehouse": (
+        HOME_READ,
         ALLOCATE,
         RECONCILE,
         WRITE_OFF,

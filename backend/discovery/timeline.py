@@ -52,7 +52,10 @@ def decode_cursor(value: str) -> Cursor:
     try:
         padded = value + "=" * (-len(value) % 4)
         at, source_type, source_id = json.loads(base64.urlsafe_b64decode(padded.encode()))
-        return Cursor(datetime.fromisoformat(at), str(source_type), UUID(source_id))
+        moment = datetime.fromisoformat(at)
+        if moment.tzinfo is None:
+            raise ValueError("Cursor time must carry a UTC offset.")  # noqa: TRY301
+        return Cursor(moment, str(source_type), UUID(source_id))
     except (ValueError, TypeError, binascii.Error) as error:
         raise FieldValidationError("cursor", "invalid_cursor") from error
 

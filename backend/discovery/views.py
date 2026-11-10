@@ -6,6 +6,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
@@ -30,6 +31,14 @@ class DiscoveryViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
     queryset = Center.objects.none()
     pagination_class = None
     required_permissions = {"summary": HOME_READ, "search": HOME_READ, "history": HOME_READ}
+
+    throttle_scope = "search"
+
+    def get_throttles(self) -> list[BaseThrottle]:
+        throttles = super().get_throttles()
+        if self.action == "search":
+            throttles.append(ScopedRateThrottle())
+        return throttles
 
     def _member(self, request: Request) -> Membership:
         return cast(Membership, request.membership)  # type: ignore[attr-defined]
