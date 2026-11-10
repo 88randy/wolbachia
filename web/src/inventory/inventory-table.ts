@@ -19,9 +19,15 @@ const text = (key: string, labelKey: MessageKey): FilterDefinition => ({
 const dateEnd = (
   key: string,
   labelKey: MessageKey,
-  input: "date-from" | "date-to",
-  dateFormat: "date" | "datetime" = "datetime",
-): FilterDefinition => ({ key, labelKey, kind: "text", maxLength: 40, input, dateFormat });
+  end: { input: "date-from" | "date-to"; dateFormat?: "date" | "datetime" },
+): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 40,
+  input: end.input,
+  dateFormat: end.dateFormat ?? "datetime",
+});
 const hidden = (key: string, labelKey: MessageKey): FilterDefinition => ({
   key,
   labelKey,
@@ -96,8 +102,14 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
         ["available", "inventory.status.available"],
       ]),
       select("blocked_by", "inventory.field.blocker", Object.entries(blockerKeys)),
-      dateEnd("expiry_from_date", "inventory.field.expiryFrom", "date-from", "date"),
-      dateEnd("expiry_before_date", "inventory.field.expiryBefore", "date-to", "date"),
+      dateEnd("expiry_from_date", "inventory.field.expiryFrom", {
+        input: "date-from",
+        dateFormat: "date",
+      }),
+      dateEnd("expiry_before_date", "inventory.field.expiryBefore", {
+        input: "date-to",
+        dateFormat: "date",
+      }),
       hidden("expiry_from", "inventory.field.expiryFromInstant"),
       hidden("expiry_before", "inventory.field.expiryBeforeInstant"),
     ],
@@ -145,8 +157,8 @@ export const MOVEMENT_TABLE: TableQueryConfig = {
     text("operation", "inventory.field.operation"),
     text("piece", "inventory.field.piece"),
     text("unit", "inventory.field.unit"),
-    dateEnd("created_at_from", "inventory.field.movementFrom", "date-from"),
-    dateEnd("created_at_before", "inventory.field.movementBefore", "date-to"),
+    dateEnd("created_at_from", "inventory.field.movementFrom", { input: "date-from" }),
+    dateEnd("created_at_before", "inventory.field.movementBefore", { input: "date-to" }),
   ],
 };
 /** Only allowlisted server parameters leave the screen; view is a local URL concern. */

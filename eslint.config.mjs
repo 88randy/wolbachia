@@ -230,8 +230,9 @@ export default defineConfig([
       "web/src/data-table/Filter*.tsx",
       "web/src/data-table/QuickFilter.tsx",
       "web/src/catalogs/CatalogTabs.tsx",
+      "web/src/centers/CenterSelector.tsx",
     ],
-    rules: { "max-lines-per-function": "off", complexity: "off" },
+    rules: { "max-lines-per-function": "off", complexity: "off", "max-params": "off" },
   },
 
   // shadcn/ui components are vendored from the registry (CLI 4.23.0): keep them close to upstream.
