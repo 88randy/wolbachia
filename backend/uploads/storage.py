@@ -13,7 +13,7 @@ from django.db import connection
 
 from core.exceptions import FieldValidationError
 from uploads.exceptions import UploadStorageError
-from uploads.limits import MAX_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES
+from uploads.limits import MAX_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES, max_upload_bytes
 
 KEY_PATTERN = re.compile(r"(?:source|verified)/[0-9a-f]{32}\.bin", re.ASCII)
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ def _copy_source(stream: BinaryIO, output: BinaryIO, expected: tuple[int, str]) 
     size, digest = 0, hashlib.sha256()
     while chunk := stream.read(UPLOAD_CHUNK_BYTES):
         size += len(chunk)
-        if size > MAX_UPLOAD_BYTES or size > expected[0]:
+        if size > max_upload_bytes() or size > expected[0]:
             raise FieldValidationError("file", "upload_too_large", {"max_bytes": expected[0]})
         digest.update(chunk)
         output.write(chunk)

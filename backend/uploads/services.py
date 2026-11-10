@@ -23,8 +23,9 @@ from field_sync.services import (
 from uploads.access import UploadActor, lock_actor, require_upload_permission
 from uploads.exceptions import UploadConflictError, UploadInProgressError, UploadStorageError
 from uploads.images import sanitize_image
-from uploads.limits import UPLOAD_LEASE_SECONDS
+from uploads.limits import PDF_CONTENT_TYPE, UPLOAD_LEASE_SECONDS
 from uploads.models import AttachmentLink, Upload, UploadLease, UploadSource, UploadVerification
+from uploads.pdf import verify_pdf
 from uploads.storage import discard_candidate, read_object, store_source, store_verified
 from uploads.targets import AttachmentTarget, authorize_download, authorize_target
 
@@ -302,7 +303,11 @@ def finalize_upload(
     original = read_object(source.object_key)
     if len(original) != source.size_bytes or hashlib.sha256(original).hexdigest() != source.sha256:
         raise FieldValidationError("file", "upload_hash_mismatch")
-    cleaned = sanitize_image(original, upload.content_type)
+    cleaned = (
+        verify_pdf(original)
+        if upload.content_type == PDF_CONTENT_TYPE
+        else sanitize_image(original, upload.content_type)
+    )
     candidate = store_verified(cleaned.content)
     retained = False
     try:

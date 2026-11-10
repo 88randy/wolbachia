@@ -191,3 +191,39 @@ def test_lock_not_available_maps_to_429_in_review_accept(release_context):
     item = ReviewItem.objects.get(field_event_id=context.capture["id"])
     with _held_organization_lock(context.organization), pytest.raises(SyncInProgressError):
         decide_review(context.reviewer, item.pk, ReviewDecisionRequest("accept", 0, DECISION))
+
+
+def test_real_pdf_upload_binds_as_permit_official_document(release_context, tmp_path, settings):
+    import hashlib
+    from io import BytesIO
+
+    from tests.test_uploads_b_04 import pdf_bytes
+    from uploads.services import (
+        LEASE_HEADER,
+        UploadBody,
+        UploadRequest,
+        authorize_upload,
+        finalize_upload,
+        receive_upload,
+    )
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "private"
+    context = release_context
+    content = pdf_bytes()
+    answer = authorize_upload(
+        context.actor,
+        UploadRequest(
+            "application/pdf", len(content), hashlib.sha256(content).hexdigest(), None, None
+        ),
+    )
+    receive_upload(
+        context.actor,
+        UploadBody(answer["upload_id"], answer["headers"][LEASE_HEADER], BytesIO(content)),
+    )
+    finalize_upload(context.actor, answer["upload_id"])
+    version = append_permit_version(
+        context.actor,
+        context.permit.pk,
+        _version_values(context, answer["upload_id"], expected_revision=1),
+    )
+    assert version.official_document.content_type == "application/pdf"

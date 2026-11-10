@@ -1102,3 +1102,115 @@ def test_late_link_unique_wait_rolls_back_whole_pipeline_and_retry_keeps_exact_b
             == "ovitrap_evidence_required"
         )
         assert not RelocationProposal.objects.exists()
+
+
+def pdf_bytes(*, encrypted=False):
+    body = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n"
+    trailer = b"/Root 1 0 R" + (b" /Encrypt 2 0 R" if encrypted else b"")
+    return (
+        body
+        + b"xref\n0 1\n0000000000 65535 f \ntrailer\n<< /Size 1 "
+        + trailer
+        + b" >>\nstartxref\n"
+        + str(len(body)).encode()
+        + b"\n%%EOF\n"
+    )
+
+
+def stage_bytes(private, content, content_type="application/pdf"):
+    private.content = content
+    identifier, lease = authorize(private, content_type=content_type)
+    put(private, identifier, lease)
+    return identifier
+
+
+@pytest.mark.django_db(transaction=True)
+def test_valid_pdf_is_stored_unchanged_and_verified(private):
+    identifier = stage_bytes(private, pdf_bytes())
+    assert finalize_upload(private.actor, identifier)["state"] == "verified"
+    verification = UploadVerification.objects.get()
+    assert verification.content_type == "application/pdf"
+    assert read_object(verification.object_key) == private.content
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize(
+    ("content", "declared", "code"),
+    [
+        (image_bytes(), "application/pdf", "upload_content_mismatch"),
+        (b"MZ\x90\x00 executable", "application/pdf", "upload_content_mismatch"),
+        (pdf_bytes(), "image/png", "upload_content_mismatch"),
+        (pdf_bytes(encrypted=True), "application/pdf", "upload_pdf_encrypted"),
+        (pdf_bytes()[:-30], "application/pdf", "upload_invalid_pdf"),
+        (b"%PDF-1.4\nstartxref\n999999\n%%EOF\n", "application/pdf", "upload_invalid_pdf"),
+        (b"%PDF-1.4\nstartxref\n0\n%%EOF\n", "application/pdf", "upload_invalid_pdf"),
+    ],
+)
+def test_rejected_pdf_inputs_have_coded_errors_and_never_verify(private, content, declared, code):
+    identifier = stage_bytes(private, content, declared)
+    with pytest.raises(FieldValidationError) as invalid:
+        finalize_upload(private.actor, identifier)
+    assert invalid.value.fields["file"][0]["code"] == code
+    assert not UploadVerification.objects.exists()
+
+
+def test_size_limit_is_configurable_and_capped_by_the_sql_ceiling(settings):
+    from uploads.limits import MAX_UPLOAD_BYTES, max_upload_bytes
+    from uploads.pdf import verify_pdf
+
+    assert max_upload_bytes() == 10 * 1024 * 1024
+    settings.UPLOAD_MAX_BYTES = MAX_UPLOAD_BYTES * 5
+    assert max_upload_bytes() == MAX_UPLOAD_BYTES
+    settings.UPLOAD_MAX_BYTES = 1000
+    assert max_upload_bytes() == 1000
+    with pytest.raises(FieldValidationError) as big:
+        verify_pdf(pdf_bytes() + b"0" * 1000)
+    assert big.value.fields["file"][0]["code"] == "upload_too_large"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_pdf_api_codes_and_download_is_attachment_with_nosniff(field, settings):
+    from accounts.services import DeviceInfo, start_device_session
+
+    issued = start_device_session(
+        field.batch.user, field.batch.organization, DeviceInfo(field.batch.device.pk)
+    )
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {issued.access}")
+    content = pdf_bytes()
+    metadata = {
+        "content_type": "application/pdf",
+        "size_bytes": len(content),
+        "sha256": hashlib.sha256(content).hexdigest(),
+    }
+    refused = client.post(
+        "/api/v1/field/uploads/", {**metadata, "content_type": "text/html"}, format="json"
+    )
+    assert refused.status_code == 400
+    assert "upload_type_not_allowed" in str(refused.data)
+    settings.UPLOAD_MAX_BYTES = len(content) - 1
+    large = client.post("/api/v1/field/uploads/", metadata, format="json")
+    assert large.status_code == 400
+    assert "upload_too_large" in str(large.data)
+    settings.UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+    authorized = client.post("/api/v1/field/uploads/", metadata, format="json")
+    assert authorized.status_code == 201
+    identifier = authorized.data["upload_id"]
+    put_response = client.generic(
+        "PUT",
+        authorized.data["url"],
+        content,
+        content_type="application/pdf",
+        HTTP_UPLOAD_LEASE=authorized.data["headers"][LEASE_HEADER],
+    )
+    assert put_response.status_code == 204
+    done = client.post(f"/api/v1/field/uploads/{identifier}/finalize/", {}, format="json")
+    assert done.data["state"] == "verified"
+    source = envelope(field, payload={"evidence_ids": [identifier]})
+    assert ingest(field, source).status == "accepted"
+    response = client.get(f"/api/v1/attachments/{identifier}/download/")
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+    assert response["Content-Disposition"] == "attachment"
+    assert response["X-Content-Type-Options"] == "nosniff"
+    assert response.content == content
