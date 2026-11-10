@@ -147,7 +147,8 @@ export function usePcrDownload() {
                 params: { path: { id: target.id } },
                 parseAs: "blob",
               });
-      saveBlob(unwrap<Blob>(result), fileName);
+      const blob: Blob = unwrap(result);
+      saveBlob(blob, fileName);
     } catch {
       showToast({ message: t("pcr.error.generic"), tone: "critical" });
     }
