@@ -31,14 +31,15 @@ async function open(path = "/incidents", overrides: FakeApiRoutes = {}, allowed 
     "GET /api/v1/incident-types/": page([]),
     "GET /api/v1/incidents/context-options/": page([]),
     "GET /api/v1/me/": Response.json(me),
-    [LIST]: page(),
-    [DETAIL]: Response.json(incident()),
-    [`GET /api/v1/incidents/${ID}/owner-options/`]: Response.json({
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    }),
+    [LIST]: () => page(),
+    [DETAIL]: () => Response.json(incident()),
+    [`GET /api/v1/incidents/${ID}/owner-options/`]: () =>
+      Response.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      }),
     ...overrides,
   });
   const app = await renderApp({ path, fetch: api.fetch });
@@ -317,18 +318,18 @@ test("an unknown human code never triggers a UUID detail read", async () => {
 test("reassigns only to an eligible membership and changes severity with the current revision", async () => {
   const owner = "00000000-0000-4000-8000-000000000050";
   const { api } = await open("/incidents/I-0033", {
-    [`GET /api/v1/incidents/${ID}/owner-options/`]: Response.json({
-      count: 1,
-      next: null,
-      previous: null,
-      results: [{ membership_id: owner, label: "Eligible owner" }],
-    }),
+    [`GET /api/v1/incidents/${ID}/owner-options/`]: () =>
+      Response.json({
+        count: 1,
+        next: null,
+        previous: null,
+        results: [{ membership_id: owner, label: "Eligible owner" }],
+      }),
     [`POST /api/v1/incidents/${ID}/reassign/`]: Response.json(event),
     [`POST /api/v1/incidents/${ID}/change-severity/`]: Response.json(event),
   });
   await screen.findByRole("option", { name: "Eligible owner" });
-  api.setRoute(
-    DETAIL,
+  api.setRoute(DETAIL, () =>
     Response.json(incident({ revision: 3, owner_id: owner, owner_display: "Reassigned owner" })),
   );
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Responsable" }), owner);

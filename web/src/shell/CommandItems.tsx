@@ -1,3 +1,4 @@
+import { ShiftCommandItem } from "../operations/ShiftCommandItem";
 import { Command } from "cmdk";
 import { useTranslation } from "react-i18next";
 import { useMe } from "../session/use-me";
@@ -22,6 +23,7 @@ export function CommandItems({
       {visibleNavGroups(me).map((group) => (
         <CommandNavigationGroup key={group.id} group={group} onClose={onClose} />
       ))}
+      <ShiftCommandItem onClose={onClose} />
       <CommandActionGroup actions={actions} onClose={onClose} />
     </Command.List>
   );
