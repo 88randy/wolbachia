@@ -47,7 +47,7 @@ export const reviews = {
   "reviews.workspace.denied":
     "Esta vista requiere permiso de lectura y alcance explícito de centros y cuadrantes. Solicita la revisión del acceso a un administrador de la organización.",
   "reviews.workspace.consequence":
-    "Antes de aplicar esta decisión, que no se puede deshacer, se comprobarán \u0001.",
+    "Antes de aplicar esta decisión, que no se puede deshacer, se comprobarán la evidencia original, la autoridad vigente y los requisitos obligatorios de seguridad.",
   "reviews.workspace.operations": "Operación",
   "reviews.workspace.closeDetail": "Cerrar detalle de revisión",
 } as const;
