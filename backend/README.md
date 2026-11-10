@@ -131,7 +131,7 @@ Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache
 
 CI runs every test once across thirteen internally serial PostgreSQL partitions:
 residual `regular`, `regular-integration` containing the complete B10/B04 and six
-permit/release modules, `regular-lab` containing eight complete ordinary Lab
+permit/release modules, `regular-lab` containing ten complete ordinary Lab
 modules, and ten singleton complete migration-module cohorts. The
 original `checks` job validates all thirteen
 current artifacts and applies the existing 85% gate to their combined statement

@@ -39,6 +39,8 @@ MODULE_PARTITIONS = {
             "tests/test_lab_reception_114.py",
             "tests/test_lab_recounts_114.py",
             "tests/test_lab_recounts_b_19.py",
+            "tests/test_lab_samples_b_21.py",
+            "tests/test_lab_shipment_samples_118.py",
         }
     ),
 }

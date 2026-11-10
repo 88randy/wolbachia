@@ -243,6 +243,32 @@ class Migration(migrations.Migration):
                 "ordering": ["revision"],
                 "abstract": False,
                 "base_manager_name": "objects",
+                "constraints": [
+                    models.CheckConstraint(
+                        condition=models.Q(("created_by__isnull", False)),
+                        name="lab_wolbachiaresultattempt_author",
+                    ),
+                    models.UniqueConstraint(
+                        fields=("sample", "revision"), name="lab_wolbachia_attempt_revision"
+                    ),
+                    models.CheckConstraint(
+                        condition=models.Q(("revision__gt", 0)), name="lab_sample_attempt_positive"
+                    ),
+                    models.CheckConstraint(
+                        condition=models.Q(
+                            models.Q(
+                                ("result__in", ["positive", "negative"]),
+                                ("result__isnull", False),
+                                ("status", "valid"),
+                            ),
+                            models.Q(
+                                ("result__isnull", True), ("status__in", ["invalid", "disputed"])
+                            ),
+                            _connector="OR",
+                        ),
+                        name="lab_wolbachia_explicit_result",
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
@@ -289,6 +315,12 @@ class Migration(migrations.Migration):
             options={
                 "abstract": False,
                 "base_manager_name": "objects",
+                "constraints": [
+                    models.CheckConstraint(
+                        condition=models.Q(("created_by__isnull", False)),
+                        name="lab_samplereceipt_author",
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
@@ -344,6 +376,15 @@ class Migration(migrations.Migration):
             options={
                 "abstract": False,
                 "base_manager_name": "objects",
+                "constraints": [
+                    models.CheckConstraint(
+                        condition=models.Q(("created_by__isnull", False)),
+                        name="lab_samplecommandreceipt_author",
+                    ),
+                    models.UniqueConstraint(
+                        fields=("organization", "command_id"), name="lab_sample_command_once"
+                    ),
+                ],
             },
         ),
         migrations.AddConstraint(
@@ -374,64 +415,6 @@ class Migration(migrations.Migration):
                     _connector="OR",
                 ),
                 name="lab_sample_one_source",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiaresultattempt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_wolbachiaresultattempt_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiaresultattempt",
-            constraint=models.UniqueConstraint(
-                fields=("sample", "revision"), name="lab_wolbachia_attempt_revision"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiaresultattempt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("revision__gt", 0)),
-                name="lab_sample_attempt_positive",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiaresultattempt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    models.Q(
-                        ("result__in", ["positive", "negative"]),
-                        ("result__isnull", False),
-                        ("status", "valid"),
-                    ),
-                    models.Q(
-                        ("result__isnull", True),
-                        ("status__in", ["invalid", "disputed"]),
-                    ),
-                    _connector="OR",
-                ),
-                name="lab_wolbachia_explicit_result",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="samplereceipt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_samplereceipt_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="samplecommandreceipt",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("created_by__isnull", False)),
-                name="lab_samplecommandreceipt_author",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="samplecommandreceipt",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "command_id"), name="lab_sample_command_once"
             ),
         ),
         migrations.RunPython(migrations.RunPython.noop, protect_reverse),
