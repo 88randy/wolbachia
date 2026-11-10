@@ -3,7 +3,7 @@ import { cva } from "class-variance-authority";
 /** One button look for the whole app: brand `action` color, 12 px radius, token control heights. */
 export const buttonVariants = cva(
   [
-    "relative inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-transparent",
+    "relative inline-flex max-w-full min-w-0 items-center justify-center gap-2 self-start justify-self-start rounded-lg border border-transparent",
     "px-4 text-[13px] leading-5 font-semibold whitespace-normal no-underline [overflow-wrap:break-word]",
     "transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out select-none",
     "active:not-disabled:not-aria-disabled:translate-y-px",

@@ -1,5 +1,8 @@
 .button {
   position: relative;
+  /* Never stretched by a column parent: buttons keep their own width on desktop. */
+  align-self: flex-start;
+  justify-self: start;
   min-width: 0;
   max-width: 100%;
   overflow-wrap: break-word;
