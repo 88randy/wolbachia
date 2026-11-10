@@ -10,6 +10,8 @@ import { W30Page } from "../operations/reviews/W30Page";
 import { W31Page } from "../operations/relocations/W31Page";
 import { W33Page } from "../operations/closure/W33Page";
 import { InventoryHome } from "../inventory/InventoryHome";
+import { W12Page } from "../inventory/transfers/W12Page";
+import { W14Page } from "../inventory/transfers/W14Page";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
@@ -330,6 +332,16 @@ function inventoryRoute<const Path extends string>(
   });
 }
 const inventoryRoutes = [
+  inventoryRoute("/inventory/transfers", { permission: "transfer.read", component: W12Page }),
+  inventoryRoute("/inventory/transfers/$code", { permission: "transfer.read", component: W12Page }),
+  inventoryRoute("/inventory/discrepancies", {
+    permission: "discrepancy.read",
+    component: W14Page,
+  }),
+  inventoryRoute("/inventory/discrepancies/$code", {
+    permission: "discrepancy.read",
+    component: W14Page,
+  }),
   inventoryRoute("/inventory/supplies", { permission: "supply_type.read", component: W8Page }),
   inventoryRoute("/inventory/lots", { permission: "lot.read", component: W9Page }),
   inventoryRoute("/inventory/locations", { permission: "location.read", component: W11Page }),

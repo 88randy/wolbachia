@@ -1,3 +1,5 @@
+import { transfers } from "./transfers.ts";
+import { transferEvidence } from "./transferEvidence.ts";
 import { lab } from "./lab.ts";
 import { shift } from "./shift.ts";
 import { incidents } from "./incidents.ts";
@@ -28,7 +30,11 @@ import { sync } from "./sync.ts";
 import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
+import { discrepancies } from "./discrepancies.ts";
 export const esMX = {
+  ...transfers,
+  ...discrepancies,
+  ...transferEvidence,
   ...lab,
   ...shift,
   ...reviews,

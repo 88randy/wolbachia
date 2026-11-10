@@ -11,6 +11,8 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   versions: "geography.history.title",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
+  transfers: "transfers.page.title",
+  discrepancies: "discrepancies.page.title",
   supplies: "inventory.page.supplies",
   lots: "inventory.page.lots",
   locations: "inventory.page.locations",

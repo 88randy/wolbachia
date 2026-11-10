@@ -1,5 +1,11 @@
 # web — Wolbachia back-office and public portal
 
+Issue #152 adds W12–W14 at `/inventory/transfers[/:code]` and
+`/inventory/discrepancies[/:code]`: verified signed dispatch of prepared transfers,
+manifest identity scanning, photo-backed reception and discrepancy resolution.
+See [signed transfers](src/inventory/transfers/README.md) for supported contracts,
+the preparation/physical-code gap tracked in #337 and criterion-to-test ownership.
+
 Issue #160 adds the W30 review queue, W31 relocation decisions and W33 quadrant
 closure: `/operations/reviews`, `/operations/relocations`, and
 `/quadrants/<code>/closure`. See [operations](src/operations/README.md) for the
