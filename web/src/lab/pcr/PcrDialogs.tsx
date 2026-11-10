@@ -302,7 +302,7 @@ export function FilePicker({ id, label, accept, typeError, file, error, onChange
       </div>
       {file && <span className="text-xs text-ink-2">{file.name}</span>}
       {error && (
-        <span role="alert" className="text-xs font-semibold text-danger">
+        <span role="alert" className="text-xs font-semibold text-critical-fg">
           {error}
         </span>
       )}

@@ -30,7 +30,9 @@ export function PcrResultsPage() {
   const { code } = useParams({ strict: false });
   const scope = useLabScope();
   const query = useQuery(pcrDetailOptions(scope, code ?? ""));
+  const { t } = useTranslation();
   useBreadcrumbLabel(`/lab/pcr/${code ?? ""}`, code);
+  useBreadcrumbLabel(`/lab/pcr/${code ?? ""}/results`, t("pcr.results.title"));
   if (!code || query.data === null) return <NotFoundState />;
   if (!query.data) return <PendingState />;
   return <ResultsWorkspace batch={query.data} />;
@@ -167,7 +169,7 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                 </thead>
                 <tbody>
                   {preview.rows.map((row) => (
-                    <tr key={row.line} className={row.problems.length ? "border-t border-line bg-danger/5" : "border-t border-line"}>
+                    <tr key={row.line} className={row.problems.length ? "border-t border-line bg-critical-bg" : "border-t border-line"}>
                       <td className="px-3 py-2 text-right tabular-nums">{row.line}</td>
                       <td className="px-3 py-2 font-semibold">{row.sample_code}</td>
                       <td className="px-3 py-2">{row.target ? t(targetKey(row.target)) : "—"}</td>
@@ -176,12 +178,12 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                       <td className="px-3 py-2 text-right tabular-nums">{row.ct_value ?? "—"}</td>
                       <td className="px-3 py-2">
                         {row.problems.length === 0 ? (
-                          <span className="inline-flex items-center gap-1 text-success">
+                          <span className="inline-flex items-center gap-1 text-success-fg">
                             <CheckCircle2 aria-hidden="true" className="size-4" />
                             {t("pcr.action.done")}
                           </span>
                         ) : (
-                          <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-danger">
+                          <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-critical-fg">
                             {row.problems.map((error) => (
                               <li key={`${error.field}-${error.code}`} className="inline-flex items-center gap-1">
                                 <AlertTriangle aria-hidden="true" className="size-4 flex-none" />

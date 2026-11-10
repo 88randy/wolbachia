@@ -194,7 +194,7 @@ function Stepper({ batch }: { batch: PcrDetail }) {
   const current = FLOW.indexOf(batch.status);
   return (
     <DetailSection title={t("pcr.detail.progress")}>
-      <ol className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 xl:grid-cols-6">
+      <ol className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 2xl:grid-cols-6">
         {FLOW.map((status, index) => {
           const done = current >= 0 && index < current;
           const isCurrent = index === current;
@@ -204,7 +204,7 @@ function Stepper({ batch }: { batch: PcrDetail }) {
               aria-current={isCurrent ? "step" : undefined}
               className={cn(
                 "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-[13px] font-semibold",
-                done && "border-success/30 bg-success/10 text-success",
+                done && "border-success-fg/25 bg-success-bg text-success-fg",
                 isCurrent && "border-action bg-action text-on-action",
                 !done && !isCurrent && "border-line bg-surface text-ink-3",
               )}
@@ -212,7 +212,7 @@ function Stepper({ batch }: { batch: PcrDetail }) {
               <span
                 className={cn(
                   "grid size-6 flex-none place-items-center rounded-full text-xs",
-                  done ? "bg-success text-on-action" : isCurrent ? "bg-surface text-action-strong" : "bg-surface-muted",
+                  done ? "bg-success-fg text-surface" : isCurrent ? "bg-surface text-action-strong" : "bg-surface-muted",
                 )}
               >
                 {done ? <Check aria-hidden="true" className="size-3.5" /> : index + 1}
@@ -409,7 +409,7 @@ function History({ batch }: { batch: PcrDetail }) {
             <div className="flex min-w-0 flex-col gap-0.5 text-sm">
               <span className={cn("font-semibold", event.undone && "line-through")}>
                 {t(`pcr.event.${event.kind}`)}
-                {event.undone && <span className="ml-2 text-xs font-semibold text-warning no-underline">{t("pcr.detail.undone")}</span>}
+                {event.undone && <span className="ml-2 text-xs font-semibold text-warning-fg no-underline">{t("pcr.detail.undone")}</span>}
               </span>
               <span className="text-xs text-ink-2">
                 {event.author_name} · {formatDateTime(event.occurred_at)}
