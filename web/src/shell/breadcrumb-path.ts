@@ -7,6 +7,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   catalogs: "catalogs.page.title",
   organization: "orgAdmin.organization.title",
   roles: "orgAdmin.roles.title",
+  "incident-types": "incidentTypes.page.title",
   motorcycles: "fleet.page.title",
   versions: "geography.history.title",
   bags: "labReception.page.title",
@@ -21,7 +22,12 @@ const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
 function resourceKey(parts: string[], index: number): MessageKey | undefined {
   if (parts[0] !== "inventory") return RESOURCE_LABELS[parts[index] ?? ""];
   if (index === 1) return INVENTORY_LABELS[parts[index] ?? ""];
-  if (index === 2 && parts[1] === "lots" && parts[index] === "new") return "inventory.page.newLot";
+  return lotResourceKey(parts, index);
+}
+function lotResourceKey(parts: string[], index: number): MessageKey | undefined {
+  if (parts[1] !== "lots") return undefined;
+  if (index === 2 && parts[index] === "new") return "inventory.page.newLot";
+  if (index === 3 && parts[index] === "conditions") return "conditions.page.title";
   return undefined;
 }
 /** Only known routes become ancestor links; human codes remain plain text. */

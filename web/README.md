@@ -1,5 +1,13 @@
 # web — Wolbachia back-office and public portal
 
+W64 (#149) adds `/settings/incident-types` under `incident.manage_type` with named
+eligible assignees, versioned configuration and immutable history. W18 (#154)
+adds `/inventory/lots/<code>/conditions` with authoritative daily reading windows,
+exact retained protocols, historical ranges and authorized blocking incidents.
+See [incident type configuration](src/settings/incident-types/README.md) and
+[biological monitoring](src/inventory/conditions/README.md) for contract boundaries,
+design differences and criterion-to-test ownership.
+
 Issue #150 adds the W5 notification inbox, shell badge/panel, read/read-all and
 per-type required/optional channel preferences at `/notifications`. See
 [notifications](src/notifications/README.md) for cache/session boundaries,

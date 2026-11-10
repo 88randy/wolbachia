@@ -10,6 +10,7 @@ from django.db.models import Exists, OuterRef, Q, QuerySet, Subquery
 from django.http import Http404
 from django_stubs_ext import WithAnnotations
 
+from catalogs.models import CatalogItem
 from geography.models import Quadrant
 from incidents.models import (
     Incident,
@@ -80,7 +81,35 @@ def latest_types(organization: Organization) -> QuerySet[IncidentTypeVersion]:
     latest = IncidentTypeVersion.objects.filter(item_id=OuterRef("item_id")).order_by("-revision")
     return IncidentTypeVersion.objects.filter(
         organization=organization, pk=Subquery(latest.values("pk")[:1])
+    ).select_related("supervisor__user", "coordinator__user", "terminal__user")
+
+
+def type_versions(organization: Organization, item_id: UUID) -> QuerySet[IncidentTypeVersion]:
+    """The stable organization catalog item names immutable history, never a version UUID."""
+    if not CatalogItem.objects.filter(
+        organization=organization, catalog__slug="incident-type", pk=item_id
+    ).exists():
+        raise Http404
+    return (
+        IncidentTypeVersion.objects.filter(organization=organization, item_id=item_id)
+        .select_related("supervisor__user", "coordinator__user", "terminal__user")
+        .order_by("-revision", "pk")
     )
+
+
+def unconfigured_type_items(
+    organization: Organization, code: str | None = None
+) -> QuerySet[CatalogItem]:
+    """Expose real catalog identities for first configuration without supplying policy defaults."""
+    configured = IncidentTypeVersion.objects.filter(
+        organization=organization, item_id=OuterRef("pk")
+    )
+    rows = (
+        CatalogItem.objects.filter(organization=organization, catalog__slug="incident-type")
+        .filter(~Exists(configured))
+        .order_by("is_other", "sort", "pk")
+    )
+    return rows.filter(code=code) if code is not None else rows
 
 
 def active_blockers(organization: Organization) -> QuerySet[IncidentBlocker]:

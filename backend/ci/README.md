@@ -17,8 +17,9 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
-- `regular-integration`: complete B10 supplies, B04 private uploads and all six #116
-  permit/release test modules.
+- `regular-integration`: sixteen complete ordinary modules: B10 supplies, B04
+  private uploads, all six #116 permit/release modules and eight more modules
+  covering field, defaults, shifts, incidents, reviews, geography and inventory.
 - `regular-lab`: all eight ordinary Lab test modules (API, concurrency, counts,
   history, policy, reception and both recount modules).
 
@@ -26,9 +27,10 @@ then executes one disjoint selection serially. The single closed registry
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration` and `regular-lab` cohorts
 are excluded from that derived migration-only subset. No second module registry
-exists. Every migration cohort contains exactly one whole module; each ordinary
-cohort retains its eight whole modules. No module can belong to two cohorts. Each selection retains its original collected
-order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
+exists. Every migration cohort contains exactly one whole module; the two ordinary
+cohorts retain twenty-four whole modules in total. No module can belong to two
+cohorts. Each selection retains its original collected order. Upgrade, raw-SQL,
+protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
 xdist, skipped/xfail success or automatic retry is accepted. Adding a new owner
@@ -139,8 +141,9 @@ The original 15-minute capacity target remains unqualified for the two exception
 Matrix include/timeout syntax follows the
 [GitHub Actions reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstrategymatrixinclude).
 
-The sections below describe historical configurations and measurements; their
-job counts and blanket 900-second statements predate this #331 exception.
+The #107, #314, #101 and #116 sections below describe historical configurations
+and measurements; their job counts and blanket 900-second statements predate
+this #331 exception.
 
 ## Eighth whole migration owner (#107)
 
@@ -234,6 +237,16 @@ all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
 PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
 improvement is predicted.
 
+## Ordinary capacity rebalance (#149/#154)
+
+After merging #331, the two measured Lab modules remain solely in `regular-lab`;
+the other eight measured modules join `regular-integration`. The final cohorts
+contain sixteen and eight whole modules respectively, twenty-four ordinary
+modules in total. Adjacent progress intervals guided selection, not guaranteed
+savings; initial database setup remains. All thirteen current fragments, the
+existing decision 172 timeouts and the combined 85% gate remain mandatory.
+No test or assertion is removed; fresh CI must qualify the merged balance.
+
 ## Personnel integration capacity and measurement (#100)
 
 Run 42761104367 cancelled residual `regular` at the unchanged 15-minute limit after
@@ -250,11 +263,13 @@ ordinary integration cohort: `test_lab_recounts_b_19.py`,
 all twelve partitions and the combined gate: regular 8:12, integration 9:21,
 field 6:55 and review 9:14. Those observations qualify that configuration only.
 
-Normal integration of #348 preserves its thirteen-shard registry and temporary
-field/review limits, taking its cohort layout verbatim. The two Lab modules now
-belong solely to `regular-lab`; the other five return to residual `regular`. The residual remains
-the exact ordered complement. All thirteen fresh fragments, migration-owner
-boundaries, cases, assertions and the 85% combined gate are retained.
+At the #348 integration checkpoint, its thirteen-shard registry, temporary
+field/review limits and cohort layout were retained verbatim: the two Lab modules
+belonged solely to `regular-lab`, and the other five returned to residual `regular`.
+The subsequent #149/#154 rebalance above places those five back in the existing
+integration cohort while preserving Lab ownership. The residual remains the exact
+ordered complement. All thirteen fresh fragments, migration-owner boundaries,
+cases, assertions and the 85% combined gate are retained.
 
 CI selects Coverage 7.17.1's documented `sysmon` core on Python 3.13 for the existing
 statement-only/threaded configuration. Sources, omissions and aggregation remain

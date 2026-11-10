@@ -21,6 +21,8 @@ import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
 import { W10Page } from "../inventory/lots/W10Page";
+import { W18Page } from "../inventory/conditions/W18Page";
+import { W64Page } from "../settings/incident-types/W64Page";
 import type { ReactElement } from "react";
 import { W11Page } from "../inventory/locations/W11Page";
 import { ORGANIZATION_READ, ROLE_READ } from "../settings/organization/permissions";
@@ -279,6 +281,17 @@ const phonesRoute = createRoute({
   errorComponent: AreaErrorState,
 });
 
+const incidentTypesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/incident-types",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "incident.manage_type");
+  },
+  component: W64Page,
+  errorComponent: AreaErrorState,
+});
+
 // W62, rule parameters: the list and one parameter by its key (its human code). Both need
 // `rule_parameter.read`; the page of a parameter shows the form and the history by their own codes.
 const ruleParametersRoute = createRoute({
@@ -401,6 +414,10 @@ const inventoryRoutes = [
     component: W8Page,
   }),
   inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
+  inventoryRoute("/inventory/lots/$code/conditions", {
+    permission: "lot.read",
+    component: W18Page,
+  }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
 const eggCountsRoute = createRoute({
@@ -470,6 +487,7 @@ const routeTree = rootRoute.addChildren([
     organizationRoute,
     rolesRoute,
     phonesRoute,
+    incidentTypesRoute,
     ruleParametersRoute,
     ruleParameterRoute,
     notFoundRoute,

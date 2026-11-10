@@ -495,6 +495,44 @@ class ConditionSerializer(OrgScopedModelSerializer):
         )
 
 
+class ConditionStatusQuerySerializer(StrictPayloadSerializer):
+    location_id = serializers.UUIDField(required=False)
+
+
+class ConditionSlotSerializer(serializers.Serializer[Any]):
+    slot = serializers.ChoiceField(choices=[0, 1])
+    window = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=1440),
+        min_length=2,
+        max_length=2,
+        allow_null=True,
+    )
+    is_complete = serializers.BooleanField()
+    reading_id = serializers.UUIDField(allow_null=True)
+
+
+class ConditionBlockingIncidentSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+
+
+class ConditionStatusSerializer(serializers.Serializer[Any]):
+    lot_id = serializers.UUIDField()
+    lot_version_id = serializers.UUIDField()
+    protocol_id = serializers.UUIDField(allow_null=True)
+    location_id = serializers.UUIDField(allow_null=True)
+    evaluated_at = serializers.DateTimeField()
+    local_date = serializers.DateField()
+    timezone = serializers.CharField()
+    protocol = ProtocolSerializer(allow_null=True)
+    is_protocol_configured = serializers.BooleanField()
+    can_create_condition = serializers.BooleanField()
+    slots = ConditionSlotSerializer(many=True)
+    status = serializers.ChoiceField(choices=["draft", "available", "blocked"])
+    blocked_by = serializers.ListField(child=serializers.CharField())
+    blocking_incidents = ConditionBlockingIncidentSerializer(many=True)
+
+
 class StockSerializer(serializers.Serializer[Any]):
     lot = serializers.UUIDField(source="lot_id")
     lot_code = serializers.CharField(source="lot__code")

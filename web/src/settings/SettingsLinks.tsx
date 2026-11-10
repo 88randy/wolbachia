@@ -11,6 +11,7 @@ const DESCRIPTIONS = [
   "refresh.settings.catalogs",
   "refresh.settings.organization",
   "refresh.settings.roles",
+  "incidentTypes.page.title",
 ] as const;
 const LINKS = [
   { to: "/settings/phones", permission: "device.read", key: "phones.page.title" },
@@ -22,6 +23,11 @@ const LINKS = [
     key: "orgAdmin.organization.title",
   },
   { to: "/settings/roles", permission: "role.read", key: "orgAdmin.roles.title" },
+  {
+    to: "/settings/incident-types",
+    permission: "incident.manage_type",
+    key: "incidentTypes.page.title",
+  },
 ] as const satisfies readonly { to: string; permission: string; key: MessageKey }[];
 export function SettingsLinks() {
   const { t } = useTranslation();
