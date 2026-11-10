@@ -1,6 +1,7 @@
 from rest_framework.routers import SimpleRouter
 
 from lab.independent_qa.views import EggPaddleViewSet, LabQAPolicyViewSet, RecountViewSet
+from lab.shipments.views import MaterialRequestViewSet, UiebShipmentViewSet
 from lab.views import (
     EggCountViewSet,
     LabDiscrepancyViewSet,
@@ -12,6 +13,8 @@ from lab.views import (
 )
 
 router = SimpleRouter()
+router.register("uieb-shipments", UiebShipmentViewSet, basename="uieb-shipment")
+router.register("material-requests", MaterialRequestViewSet, basename="material-request")
 router.register("recounts", RecountViewSet, basename="recount")
 router.register("lab-qa-policy", LabQAPolicyViewSet, basename="lab-qa-policy")
 router.register("egg-paddles", EggPaddleViewSet, basename="egg-paddle")

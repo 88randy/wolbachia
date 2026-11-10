@@ -192,6 +192,12 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="stock_operation",
     )
+    material_delivery = models.OneToOneField(
+        "lab.DeliveryReceipt",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
     source_kind = models.CharField(
         max_length=24,
         choices=[
@@ -207,6 +213,7 @@ class StockOperation(InventoryRecord):
                 "lot_write_off",
                 "supply_compensation",
                 "paddle_return",
+                "material_delivery",
             )
         ],
     )
@@ -223,6 +230,7 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -234,6 +242,7 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=False,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -247,6 +256,7 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=False,
                         paddle_return__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind="paddle_return",
@@ -254,6 +264,15 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=False,
+                        material_delivery__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind="material_delivery",
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                        paddle_return__isnull=True,
+                        material_delivery__isnull=False,
                     )
                 ),
                 name="stock_exact_source_branch",
