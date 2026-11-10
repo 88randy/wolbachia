@@ -12598,13 +12598,12 @@ export interface components {
             outcome: (components["schemas"]["PcrOutcomeEnum"] | components["schemas"]["NullEnum"]) | null;
             serotype: string;
             ct_value: string | null;
-            errors: components["schemas"]["PcrRowError"][];
+            problems: components["schemas"]["PcrRowError"][];
         };
         PcrQuadrantOption: {
             /** Format: uuid */
             id: string;
             code: string;
-            name: string;
         };
         PcrReasonRequest: {
             reason: string;
@@ -12668,7 +12667,6 @@ export interface components {
             id: string;
             code: string;
             quadrant_code: string | null;
-            quadrant_name: string | null;
             center_name: string;
             epi_week: string | null;
             /** Format: date-time */

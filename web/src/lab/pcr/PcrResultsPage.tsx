@@ -18,17 +18,12 @@ import { StatusPill } from "../../ui/StatusPill";
 import { useToast } from "../../ui/toast-context";
 import { useLabScope } from "../use-lab-scope";
 import { SEROTYPES, pcrDetailOptions, pcrErrorKey } from "./pcr-api";
-import type { PcrDetail, PcrOutcome, PcrPreview, PcrTarget } from "./pcr-api";
+import type { PcrDetail, PcrOutcome, PcrPreview, PcrResultRow, PcrTarget } from "./pcr-api";
 import { STATUS_TONE, outcomeKey, statusKey, targetKey } from "./pcr-status";
 import { usePcrCommand, usePcrDownload } from "./use-pcr-command";
 
-type ResultBody = {
-  sample_id: string;
-  target: PcrTarget;
-  outcome: PcrOutcome;
-  serotype: string;
-  ct_value: string | null;
-};
+type ResultBody = PcrResultRow;
+type Serotype = ResultBody["serotype"];
 
 /** "Cargar resultados": a CSV from the external laboratory (preview first) or a grid by hand. */
 export function PcrResultsPage() {
@@ -113,7 +108,7 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
       setProblem(t(pcrErrorKey(caught)));
     },
   });
-  const ready = (preview?.rows ?? []).filter((row) => row.errors.length === 0);
+  const ready = (preview?.rows ?? []).filter((row) => row.problems.length === 0);
   const hasErrors = (preview?.error_count ?? 0) > 0;
   return (
     <div className="flex flex-col gap-4">
@@ -172,7 +167,7 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                 </thead>
                 <tbody>
                   {preview.rows.map((row) => (
-                    <tr key={row.line} className={row.errors.length ? "border-t border-line bg-danger/5" : "border-t border-line"}>
+                    <tr key={row.line} className={row.problems.length ? "border-t border-line bg-danger/5" : "border-t border-line"}>
                       <td className="px-3 py-2 text-right tabular-nums">{row.line}</td>
                       <td className="px-3 py-2 font-semibold">{row.sample_code}</td>
                       <td className="px-3 py-2">{row.target ? t(targetKey(row.target)) : "—"}</td>
@@ -180,14 +175,14 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                       <td className="px-3 py-2">{row.serotype || "—"}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{row.ct_value ?? "—"}</td>
                       <td className="px-3 py-2">
-                        {row.errors.length === 0 ? (
+                        {row.problems.length === 0 ? (
                           <span className="inline-flex items-center gap-1 text-success">
                             <CheckCircle2 aria-hidden="true" className="size-4" />
                             {t("pcr.action.done")}
                           </span>
                         ) : (
                           <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-danger">
-                            {row.errors.map((error) => (
+                            {row.problems.map((error) => (
                               <li key={`${error.field}-${error.code}`} className="inline-flex items-center gap-1">
                                 <AlertTriangle aria-hidden="true" className="size-4 flex-none" />
                                 {t(`pcr.row.${error.code}` as MessageKey, error.params as Record<string, unknown>)}
@@ -214,7 +209,7 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                       sample_id: row.sample_id ?? "",
                       target: row.target as PcrTarget,
                       outcome: row.outcome as PcrOutcome,
-                      serotype: row.serotype,
+                      serotype: row.serotype as Serotype,
                       ct_value: row.ct_value,
                     })),
                   );
@@ -251,6 +246,12 @@ function ResultGrid({ batch, isSaving, onApply }: ApplyProps) {
     { value: "", label: t("pcr.results.noSerotype") },
     ...SEROTYPES.map((value) => ({ value, label: value })),
   ];
+  const ctProblem = (rows: readonly ResultBody[]) =>
+    rows.some(
+      (row) => typeof row.ct_value === "string" && !/^\d{1,2}(\.\d{1,2})?$/.test(row.ct_value),
+    )
+      ? t("pcr.row.pcr_ct_invalid", { min: 0, max: 60 })
+      : undefined;
   const update = (key: string, patch: Partial<Draft>) => {
     setDrafts((previous) => ({
       ...previous,
@@ -265,7 +266,7 @@ function ResultGrid({ batch, isSaving, onApply }: ApplyProps) {
         sample_id: sampleId,
         target: target as PcrTarget,
         outcome: draft.outcome as PcrOutcome,
-        serotype: target === "dengue" && draft.outcome === "positive" ? draft.serotype : "",
+        serotype: (target === "dengue" && draft.outcome === "positive" ? draft.serotype : "") as Serotype,
         ct_value: draft.ct.trim() ? draft.ct.trim().replace(",", ".") : null,
       };
     });
@@ -355,11 +356,9 @@ function ResultGrid({ batch, isSaving, onApply }: ApplyProps) {
             leadingIcon={<Save aria-hidden="true" />}
             loading={isSaving}
             onClick={() => {
-              if (rows.length === 0) return setProblem(t("pcr.results.nothing"));
-              const badCt = rows.some((row) => row.ct_value !== null && !/^\d{1,2}(\.\d{1,2})?$/.test(row.ct_value));
-              if (badCt) return setProblem(t("pcr.row.pcr_ct_invalid", { min: 0, max: 60 }));
-              setProblem(undefined);
-              onApply(rows);
+              const reason = rows.length === 0 ? t("pcr.results.nothing") : ctProblem(rows);
+              setProblem(reason);
+              if (!reason) onApply(rows);
             }}
           >
             {t("pcr.results.applyGrid")}

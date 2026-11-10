@@ -121,7 +121,7 @@ def preview_csv(actor: UploadActor, batch: PcrBatch, content: str) -> dict[str, 
         }
         parsed.append(_parse_row(line, values, codes))
     _attach_domain_errors(actor, batch, parsed)
-    valid = sum(1 for row in parsed if not row["errors"])
+    valid = sum(1 for row in parsed if not row["problems"])
     return {
         "rows": parsed,
         "valid_count": valid,
@@ -157,14 +157,14 @@ def _parse_row(line: int, values: dict[str, str], codes: dict[str, Any]) -> dict
         "outcome": outcome,
         "serotype": serotype or "",
         "ct_value": None if ct_value is None else str(ct_value),
-        "errors": errors,
+        "problems": errors,
     }
 
 
 def _attach_domain_errors(
     actor: UploadActor, batch: PcrBatch, parsed: list[dict[str, Any]]
 ) -> None:
-    candidates = [row for row in parsed if not row["errors"]]
+    candidates = [row for row in parsed if not row["problems"]]
     rows = [
         ResultRow(
             sample_id=UUID(row["sample_id"]),
@@ -176,4 +176,4 @@ def _attach_domain_errors(
         for row in candidates
     ]
     for row, problems in zip(candidates, validate_result_rows(actor, batch, rows), strict=True):
-        row["errors"].extend(problems)
+        row["problems"].extend(problems)

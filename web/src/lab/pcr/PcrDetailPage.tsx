@@ -251,7 +251,7 @@ function SamplesCard({
             {batch.samples.map((sample) => (
               <tr key={sample.id} className="border-b border-line last:border-0">
                 <td className="px-3 py-2 font-semibold">{sample.code}</td>
-                <td className="px-3 py-2">{sample.quadrant_name ?? sample.quadrant_code ?? <EmptyValue />}</td>
+                <td className="px-3 py-2">{sample.quadrant_code ?? <EmptyValue />}</td>
                 <td className="px-3 py-2">{sample.epi_week ?? <EmptyValue />}</td>
                 {batch.targets.map((target) => {
                   const result = current.get(`${sample.id}:${target}`);
@@ -267,7 +267,7 @@ function SamplesCard({
                       <span className="flex flex-wrap items-center gap-2">
                         <StatusPill tone={outcomeTone(target, result.outcome)}>{t(outcomeKey(result.outcome))}</StatusPill>
                         {result.serotype && <span className="text-xs font-semibold">{result.serotype}</span>}
-                        {result.ct_value && <span className="text-xs text-ink-2 tabular-nums">Ct {result.ct_value}</span>}
+                        {result.ct_value && <span className="text-xs text-ink-2 tabular-nums">{`${t("pcr.col.ct")} ${result.ct_value}`}</span>}
                         {canManage && !lockable && (
                           <CardMenu
                             items={[

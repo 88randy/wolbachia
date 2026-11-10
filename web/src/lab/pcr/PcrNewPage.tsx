@@ -57,15 +57,18 @@ export function PcrNewPage() {
       setProblem(t(pcrErrorKey(caught)));
     },
   });
+  const missing = (): string | undefined => {
+    if (step === 1 && !labId) return t("pcr.wizard.needLab");
+    if (step === 1 && targets.length === 0) return t("pcr.wizard.needTarget");
+    if (step === 2 && selected.size === 0) return t("pcr.wizard.needSamples");
+    return undefined;
+  };
   const next = () => {
-    setProblem(undefined);
-    if (step === 1) {
-      if (!labId) return setProblem(t("pcr.wizard.needLab"));
-      if (targets.length === 0) return setProblem(t("pcr.wizard.needTarget"));
-    }
-    if (step === 2 && selected.size === 0) return setProblem(t("pcr.wizard.needSamples"));
-    if (step === 3) return create.mutate();
-    setStep(step + 1);
+    const reason = missing();
+    setProblem(reason);
+    if (reason) return;
+    if (step === 3) create.mutate();
+    else setStep(step + 1);
   };
   const titles = [
     [t("pcr.wizard.step1"), t("pcr.wizard.step1Hint")],
@@ -204,7 +207,7 @@ function SampleChooser({
             { value: ALL, label: t("pcr.wizard.allQuadrants") },
             ...(facets.data?.quadrants ?? []).map((entry) => ({
               value: entry.id,
-              label: entry.name ? `${entry.name} (${entry.code})` : entry.code,
+              label: entry.code,
             })),
           ]}
         />
@@ -290,7 +293,7 @@ function SampleChooser({
                   />
                 </td>
                 <td className="px-3 py-2 font-semibold">{row.code}</td>
-                <td className="px-3 py-2">{row.quadrant_name ?? row.quadrant_code ?? "—"}</td>
+                <td className="px-3 py-2">{row.quadrant_code ?? "—"}</td>
                 <td className="px-3 py-2">{row.center_name}</td>
                 <td className="px-3 py-2">{row.epi_week ?? "—"}</td>
                 <td className="px-3 py-2">{formatDate(row.collected_at)}</td>

@@ -118,7 +118,6 @@ def _sample_entry(sample: WolbachiaSample) -> dict[str, Any]:
         "id": str(sample.pk),
         "code": sample.code,
         "quadrant_code": quadrant.code if quadrant else None,
-        "quadrant_name": quadrant.name if quadrant else None,
         "center_name": sample.center.name,
         "epi_week": reading.epi_week if reading else None,
         "collected_at": sample.device_time.isoformat(),
@@ -169,7 +168,7 @@ def batch_detail(batch: PcrBatch) -> dict[str, Any]:
                 "carrier": event.carrier,
                 "tracking_number": event.tracking_number,
                 "has_evidence": event.evidence_id is not None,
-                "evidence_type": event.evidence.content_type if event.evidence_id else None,
+                "evidence_type": event.evidence.content_type if event.evidence else None,
                 "undone": event.pk in undone,
                 "reason": event.reason,
             }

@@ -2,6 +2,17 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## PCR tests at external laboratories
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| laboratorio externo | ExternalLab | Per-organization catalog (name, contact, address, active); deactivated, never deleted. |
+| prueba PCR | PcrBatch | Group of Wolbachia samples sent to one external lab; targets `wolbachia` and/or `dengue`. |
+| paso de la prueba | PcrBatchEvent | Immutable step (`ready`, `ship`, `receive`, `results`, `close`), `undo` of the last step or `void`. Status is derived. |
+| estados | `preparing`, `ready_to_ship`, `shipped`, `received_by_lab`, `results_received`, `closed`, `voided` | UI: En preparación, Lista para envío, Enviada, Recibida por el laboratorio, Resultados recibidos, Cerrada, Anulada. |
+| resultado PCR | PcrResult | Per sample and target: `positive`/`negative`/`invalid`, optional dengue serotype DENV-1..4 and Ct. Wolbachia results are also a `WolbachiaResultAttempt`. |
+| informe del laboratorio | PcrReport | Verified PDF upload of the external lab's report. |
+
 ## UIEB shipment and transfer eligibility (#118)
 
 | Spanish | English name in code | Notes |

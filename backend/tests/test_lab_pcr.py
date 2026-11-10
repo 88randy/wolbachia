@@ -168,7 +168,7 @@ def test_csv_preview_reports_row_errors_without_writing(pcr):
     assert preview["valid_count"] == 1
     assert preview["error_count"] == 2
     assert preview["rows"][0]["ct_value"] == "23.50"
-    codes = {error["code"] for row in preview["rows"] for error in row["errors"]}
+    codes = {error["code"] for row in preview["rows"] for error in row["problems"]}
     assert {"pcr_serotype_not_allowed", "pcr_sample_not_in_batch", "pcr_serotype_invalid"} <= codes
     assert not PcrResult.objects.exists()
     assert preview_csv(context.actor, batch, "a,b\n1,2\n")["file_error"] == "pcr_csv_header"

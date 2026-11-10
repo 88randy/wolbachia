@@ -7,7 +7,7 @@ import { uploadPermitDocument } from "../../releases/permit-document-upload";
 import { useToast } from "../../ui/toast-context";
 import { useLabScope } from "../use-lab-scope";
 import { pcrErrorKey, saveBlob } from "./pcr-api";
-import type { PcrDetail } from "./pcr-api";
+import type { PcrDetail, PcrResultRow } from "./pcr-api";
 
 export type PcrCommand =
   | { kind: "ready" | "receive" | "close"; occurred_at?: string | null }
@@ -21,7 +21,7 @@ export type PcrCommand =
   | { kind: "undo" | "void"; reason: string }
   | { kind: "void_result"; result_id: string; reason: string }
   | { kind: "report"; upload_id: string }
-  | { kind: "results"; rows: { sample_id: string; target: "wolbachia" | "dengue"; outcome: "positive" | "negative" | "invalid"; serotype: string; ct_value: string | null }[] };
+  | { kind: "results"; rows: PcrResultRow[] };
 
 /** One mutation for every step of a batch; the answer is the fresh detail. */
 export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
@@ -47,7 +47,12 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
         case "close":
           return unwrap(await client.POST("/api/v1/pcr-batches/{id}/close/", { ...path, body: {} }));
         case "ship": {
-          const { kind: _kind, ...body } = command;
+          const body = {
+            occurred_at: command.occurred_at ?? null,
+            tracking_number: command.tracking_number,
+            carrier: command.carrier,
+            evidence_id: command.evidence_id ?? null,
+          };
           return unwrap(await client.POST("/api/v1/pcr-batches/{id}/ship/", { ...path, body }));
         }
         case "undo":
@@ -142,7 +147,7 @@ export function usePcrDownload() {
                 params: { path: { id: target.id } },
                 parseAs: "blob",
               });
-      saveBlob(unwrap(result) as Blob, fileName);
+      saveBlob(unwrap<Blob>(result), fileName);
     } catch {
       showToast({ message: t("pcr.error.generic"), tone: "critical" });
     }

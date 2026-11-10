@@ -289,10 +289,14 @@ export function FilePicker({ id, label, accept, typeError, file, error, onChange
           className="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-tint file:px-3 file:py-2 file:text-[13px] file:font-semibold file:text-action-strong"
           onChange={(event) => {
             const picked = event.currentTarget.files?.[0];
-            if (!picked) return onChange(undefined, undefined);
-            if (!accept.includes(picked.type)) return onChange(undefined, typeError);
-            if (picked.size > MAX_BYTES) return onChange(undefined, t("pcr.file.tooLarge"));
-            onChange(picked, undefined);
+            const problem = !picked
+              ? undefined
+              : !accept.includes(picked.type)
+                ? typeError
+                : picked.size > MAX_BYTES
+                  ? t("pcr.file.tooLarge")
+                  : undefined;
+            onChange(problem ? undefined : picked, problem);
           }}
         />
       </div>

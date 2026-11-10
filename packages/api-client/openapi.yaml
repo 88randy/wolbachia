@@ -30400,15 +30400,15 @@ components:
         ct_value:
           type: string
           nullable: true
-        errors:
+        problems:
           type: array
           items:
             $ref: '#/components/schemas/PcrRowError'
       required:
       - ct_value
-      - errors
       - line
       - outcome
+      - problems
       - sample_code
       - sample_id
       - serotype
@@ -30421,12 +30421,9 @@ components:
           format: uuid
         code:
           type: string
-        name:
-          type: string
       required:
       - code
       - id
-      - name
     PcrReasonRequest:
       type: object
       properties:
@@ -30579,9 +30576,6 @@ components:
         quadrant_code:
           type: string
           nullable: true
-        quadrant_name:
-          type: string
-          nullable: true
         center_name:
           type: string
         epi_week:
@@ -30597,7 +30591,6 @@ components:
       - epi_week
       - id
       - quadrant_code
-      - quadrant_name
     PcrShipRequest:
       type: object
       properties:

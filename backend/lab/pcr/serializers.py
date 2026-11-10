@@ -113,7 +113,6 @@ class PcrSampleEntrySerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     code = serializers.CharField()
     quadrant_code = serializers.CharField(allow_null=True)
-    quadrant_name = serializers.CharField(allow_null=True)
     center_name = serializers.CharField()
     epi_week = serializers.CharField(allow_null=True)
     collected_at = serializers.DateTimeField()
@@ -195,7 +194,7 @@ class PcrPreviewRowSerializer(serializers.Serializer[Any]):
     outcome = serializers.ChoiceField(choices=OUTCOMES, allow_null=True)
     serotype = serializers.CharField(allow_blank=True)
     ct_value = serializers.CharField(allow_null=True)
-    errors = PcrRowErrorSerializer(many=True)
+    problems = PcrRowErrorSerializer(many=True)
 
 
 class PcrPreviewSerializer(serializers.Serializer[Any]):
@@ -208,7 +207,6 @@ class PcrPreviewSerializer(serializers.Serializer[Any]):
 class PcrQuadrantOptionSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     code = serializers.CharField()
-    name = serializers.CharField()
 
 
 class PcrEligibleFacetsSerializer(serializers.Serializer[Any]):

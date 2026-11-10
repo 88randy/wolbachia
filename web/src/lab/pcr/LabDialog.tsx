@@ -65,7 +65,12 @@ function LabForm({
   const [error, setError] = useState<string>();
   const save = useMutation({
     mutationFn: async () => {
-      const body = { name: name.trim(), contact: contact.trim(), address: address.trim() };
+      const body = {
+        name: name.trim(),
+        contact: contact.trim(),
+        address: address.trim(),
+        is_active: lab?.is_active ?? true,
+      };
       if (lab)
         return unwrap(
           await scope.client.PATCH("/api/v1/external-labs/{id}/", {

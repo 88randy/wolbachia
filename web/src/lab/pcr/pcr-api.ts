@@ -1,5 +1,5 @@
 import { ApiError, unwrap } from "@wolbachia/api-client";
-import type { ApiClient, Schemas } from "@wolbachia/api-client";
+import type { Schemas } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
 import { toFilterParams } from "../../data-table/table-state";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
@@ -75,10 +75,6 @@ export const LAB_TABLE: TableQueryConfig = {
   filters: [],
 };
 
-type PcrQuery = NonNullable<
-  NonNullable<Parameters<ApiClient["GET"]>[1]>["params"]
->["query"];
-
 export function pcrListOptions(scope: LabScope, state: TableState) {
   return orgScopedQueryOptions(scope.identity, {
     key: ["pcr", "list", state],
@@ -87,7 +83,7 @@ export function pcrListOptions(scope: LabScope, state: TableState) {
         await scope.client.GET("/api/v1/pcr-batches/", {
           params: {
             query: {
-              ...(toFilterParams(state) as PcrQuery),
+              ...(toFilterParams(state) as Record<string, string>),
               ...(state.includeVoided ? { include_voided: true } : {}),
               page: state.page,
               page_size: PAGE_SIZE,
@@ -174,13 +170,12 @@ export function eligibleOptions(scope: LabScope, filters: EligibleFilters) {
 
 /** i18n key of an API failure of a PCR command; never shows the server's text. */
 export function pcrErrorKey(caught: unknown): MessageKey {
-  if (caught instanceof ApiError) {
-    const fieldCode = Object.values(caught.envelope?.fields ?? {})[0]?.[0]?.code;
-    for (const code of [caught.code, fieldCode]) {
-      if (code && `pcr.error.${code}` in PCR_ERROR_KEYS) return `pcr.error.${code}` as MessageKey;
-    }
-  }
-  return "pcr.error.generic";
+  if (!(caught instanceof ApiError)) return "pcr.error.generic";
+  const fieldCode = Object.values(caught.envelope?.fields ?? {})[0]?.[0]?.code;
+  const known = [caught.code, fieldCode].find(
+    (code) => code !== undefined && `pcr.error.${code}` in PCR_ERROR_KEYS,
+  );
+  return known ? (`pcr.error.${known}` as MessageKey) : "pcr.error.generic";
 }
 
 const PCR_ERROR_KEYS: Record<string, true> = Object.fromEntries(

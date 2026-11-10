@@ -214,7 +214,7 @@ class PcrBatchViewSet(
             snapshots = [row for row in snapshots if row["status"] == values["status"]]
         elif not values["include_voided"]:
             snapshots = [row for row in snapshots if row["status"] != "voided"]
-        page = self.paginate_queryset(snapshots)  # type: ignore[arg-type]
+        page = self.paginate_queryset(snapshots)
         response = self.get_paginated_response(page or [])
         response.data["status_counts"] = counts
         return response
@@ -254,7 +254,7 @@ class PcrBatchViewSet(
         rows = eligible_samples(actor_from_request(request))
         quadrants = (
             rows.filter(quadrant__isnull=False)
-            .values("quadrant_id", "quadrant__code", "quadrant__name")
+            .values("quadrant_id", "quadrant__code")
             .distinct()
             .order_by("quadrant__code")
         )
@@ -270,7 +270,6 @@ class PcrBatchViewSet(
                     {
                         "id": str(row["quadrant_id"]),
                         "code": row["quadrant__code"],
-                        "name": row["quadrant__name"],
                     }
                     for row in quadrants
                 ],

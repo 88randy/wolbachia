@@ -165,6 +165,9 @@ def ensure_pcr_history(
     organization: Organization, members: dict[str, Membership], device: Device
 ) -> int:
     """Create the demo PCR batches once; returns how many batches were written."""
+    from organizations.defaults import seed_default_permission_codes
+
+    seed_default_permission_codes(organization)  # grants pcr.* to an already seeded demo
     if PcrBatch.objects.filter(organization=organization).exists():
         return 0
     _pending_samples(organization, members, device)
