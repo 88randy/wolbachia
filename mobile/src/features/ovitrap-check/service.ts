@@ -252,15 +252,16 @@ export class OvitrapService {
       target === "ovitrap",
     );
   }
-  enterBag(value: string, eventId: string | null): Promise<Snapshot> {
+  enterBag(value: string, eventId: string | null, isManual = true): Promise<Snapshot> {
     return this.#write(async () => {
       const { draft, event, draftVersion } = await this.#readExpected(eventId);
       if (!draft || event) return this.read();
+      const { assignment } = await this.#deps.store.snapshots();
       await this.#updateDraft(
         {
           ...draft,
-          ...bagIdentity(value, draft),
-          manualCapture: true,
+          ...bagIdentity(value, { ...draft, assignment }),
+          manualCapture: draft.manualCapture || isManual,
         },
         draftVersion,
       );

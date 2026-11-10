@@ -9,10 +9,15 @@ export type Route =
       readonly manualCapture: boolean;
     }
   | { readonly name: "day" }
+  | { readonly name: "qrScanner" }
+  | { readonly name: "supplyDetail"; readonly lotId: string }
   | { readonly name: "map" }
   | { readonly name: "ovitrapCapture" }
-  | { readonly name: "ovitrapScanner"; readonly target: "ovitrap" | "bag" }
-  | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }
+  | {
+      readonly name: "ovitrapScanner";
+      readonly target: "ovitrap" | "bag";
+      readonly eventId: string | null;
+    }
   | { readonly name: "closeShift" }
   | { readonly name: "openShift" }
   | { readonly name: "supplyReceipt" }
@@ -50,10 +55,15 @@ export function currentRoute(stack: Stack): Route {
 
 function isSameRoute(left: Route | undefined, right: Route): boolean {
   if (!left || left.name !== right.name) return false;
+  if ("lotId" in right) return "lotId" in left && left.lotId === right.lotId;
+  if ("target" in right) return isSameScanner(left, right);
   if (!("ovitrapId" in right)) return true;
   return (
     "ovitrapId" in left &&
     left.ovitrapId === right.ovitrapId &&
     left.manualCapture === right.manualCapture
   );
+}
+function isSameScanner(left: Route, right: Extract<Route, { name: "ovitrapScanner" }>): boolean {
+  return "target" in left && left.target === right.target && left.eventId === right.eventId;
 }

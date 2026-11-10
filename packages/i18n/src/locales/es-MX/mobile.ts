@@ -2,6 +2,49 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.scanner.title": "Escanear código",
+  "mobile.scanner.hint": "Apunta al código QR del programa.",
+  "mobile.scanner.start": "Usar cámara",
+  "mobile.scanner.manual": "Escribir código",
+  "mobile.scanner.code": "Código impreso debajo del QR",
+  "mobile.scanner.lookup": "Buscar código",
+  "mobile.scanner.torchOn": "Encender linterna",
+  "mobile.scanner.torchOff": "Apagar linterna",
+  "mobile.scanner.denied":
+    "La app no puede usar la cámara. Actívala en Ajustes del teléfono › Permisos › Cámara, o escribe el código.",
+  "mobile.scanner.settings": "Abrir ajustes del teléfono",
+  "mobile.scanner.cameraFailed":
+    "No pudimos abrir la cámara. Intenta de nuevo o escribe el código impreso.",
+  "mobile.scanner.damaged":
+    "Si el código no se lee, limpia la etiqueta, enciende la linterna o escribe el código impreso.",
+  "mobile.scanner.retry": "Escanear de nuevo",
+  "mobile.scanner.resume": "Continuar captura guardada en el teléfono",
+  "mobile.scanner.loading": "Buscando en la copia descargada…",
+  "mobile.scanner.report": "Reportar daño o caducidad",
+  "mobile.scanner.invalid":
+    "No pudimos reconocer este código. Busca la etiqueta del programa o escribe el código impreso.",
+  "mobile.scanner.version":
+    "Esta versión de código no es compatible. Escribe el código impreso o consulta a tu supervisor.",
+  "mobile.scanner.kind":
+    "Este tipo de código no corresponde a esta captura. Escanea la etiqueta solicitada o escribe su código.",
+  "mobile.scanner.unavailable":
+    "Este registro no está disponible en tu copia descargada. Escanea otro código o consulta a tu supervisor.",
+  "mobile.scanner.retired":
+    "Esta ovitrampa está retirada. Escanea otra etiqueta o avisa a tu supervisor si la encontraste en campo.",
+  "mobile.scanner.duplicate":
+    "Ya se leyó este código. Puedes continuar la captura o escanear de nuevo; no se agregó otro registro.",
+  "mobile.scanner.storage":
+    "No pudimos guardar el cambio en el teléfono. Conserva tu captura e intenta de nuevo.",
+  "mobile.scanner.supplyTitle": "Detalle de insumo",
+  "mobile.scanner.lot": "Identificador del lote",
+  "mobile.scanner.quantity": "Cantidad prevista en el plan descargado",
+  "mobile.scanner.unit": "Identificador de la versión de unidad",
+  "mobile.scanner.assignment": "Asignación de origen",
+  "mobile.scanner.date": "Fecha de la asignación",
+  "mobile.scanner.revision": "Revisión del plan descargado",
+  "mobile.scanner.sourceLine": "Renglón de origen",
+  "mobile.scanner.missingMetadata":
+    "La copia descargada no incluye nombres de insumo o unidad, código impreso del lote ni caducidad. Esta cantidad es del plan; no confirma recepción ni existencias. Consulta la etiqueta o a tu supervisor.",
   "mobile.shiftClose.refreshSupplies": "Actualizar recepciones descargadas",
   "mobile.shiftClose.sourceFrame":
     "Saldo confirmado descargado; las declaraciones adicionales se muestran debajo.",

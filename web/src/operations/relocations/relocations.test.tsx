@@ -16,7 +16,11 @@ async function open(
     permissions,
     scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
   });
-  const api = createFakeApi({ "GET /api/v1/me/": Response.json(me), [LIST]: page(), ...overrides });
+  const api = createFakeApi({
+    "GET /api/v1/me/": Response.json(me),
+    [LIST]: () => page(),
+    ...overrides,
+  });
   const app = await renderApp({
     path: `/operations/relocations?relocation=${PROPOSAL_ID}`,
     fetch: api.fetch,
