@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { ListPage } from "../components/templates/ListPage";
@@ -40,10 +39,7 @@ export function W25Page() {
       notices={
         !canMove && (
           <InlineNotice tone="info">
-            <p className="flex items-center gap-2">
-              <Info aria-hidden="true" className="size-4" />
-              {t("scheduling.assign.readOnly")}
-            </p>
+            <p>{t("scheduling.assign.readOnly")}</p>
           </InlineNotice>
         )
       }
@@ -59,7 +55,6 @@ export function W25Page() {
           {columns.map((id) => {
             const mine = rows.filter((row) => (row.courier ?? NONE) === id);
             if (id === NONE && mine.length === 0) return null;
-            const load = mine.reduce((sum, row) => sum + row.load, 0);
             return (
               <section
                 key={id}
@@ -71,7 +66,7 @@ export function W25Page() {
                     {nameOf(id === NONE ? null : id)}
                   </h2>
                   <span className="text-xs text-ink-2 tabular-nums">
-                    {t("scheduling.assign.columnSummary", { count: mine.length, load })}
+                    {t("scheduling.assign.columnSummary", { count: mine.length })}
                   </span>
                 </header>
                 <ul className="m-0 flex list-none flex-col gap-3 p-0">

@@ -2,6 +2,12 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { AREAS } from "../router/areas";
 const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   shifts: "shift.page.title",
+  plan: "scheduling.plan.menu",
+  live: "live.title",
+  risk: "scheduling.risk.menu",
+  interventions: "scheduling.intervention.title",
+  import: "scheduling.import.title",
+  assignments: "scheduling.assign.title",
   phones: "phones.page.title",
   "rule-parameters": "rules.page.title",
   catalogs: "catalogs.page.title",

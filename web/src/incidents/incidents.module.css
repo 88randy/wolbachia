@@ -19,8 +19,10 @@
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  color: var(--color-action);
-  font-family: var(--font-family-mono);
+  box-shadow: 0 0 0 1px var(--color-border-soft);
+  color: var(--color-action-strong);
+  font-weight: 600;
+  text-decoration: none;
 }
 .summary {
   display: grid;

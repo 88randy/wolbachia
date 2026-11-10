@@ -3,7 +3,7 @@ import type { AreaCatalog } from "../area.ts";
 
 export const live = {
   "live.title": "Jornadas de hoy",
-  "live.description": "{count} repartidores trabajando ahora. Se actualiza solo cada 30 segundos.",
+  "live.description": "Repartidores trabajando ahora: {count}. Se actualiza solo cada 30 segundos.",
   "live.note":
     "Mostramos los cuadrantes que cada repartidor trabaja hoy. Cuando termina su jornada, desaparece de aquí.",
   "live.listTitle": "En campo",

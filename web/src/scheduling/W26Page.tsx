@@ -8,7 +8,7 @@ import { ErrorState } from "../ui/ErrorState";
 import { ReassignCard } from "./ReassignCard";
 import { ScheduleDayList } from "./ScheduleDayList";
 import { ScheduleMatrix } from "./ScheduleMatrix";
-import { useCourierNames } from "./use-directories";
+import { useCouriers } from "./use-directories";
 import { usePlan } from "./use-plan";
 import { useGenerateWeek } from "./use-scheduling-writes";
 import { addDays, weekNumberOf } from "./week-dates";
@@ -20,13 +20,13 @@ export function W26Page() {
   const can = useCan();
   const plan = usePlan();
   const generate = useGenerateWeek();
-  const nameOf = useCourierNames([...plan.loads.keys()]);
+  const { nameOf, ids } = useCouriers([...plan.loads.keys()]);
   const goToWeek = (week: string) => {
     void navigate({ to: ".", search: { week } });
   };
   const selected = plan.courier;
   const pending = plan.tasks.filter((task) => !task.is_completed && task.courier === selected);
-  const options = [...plan.loads.keys()]
+  const options = ids
     .filter((id) => id !== selected)
     .map((id) => ({ id, name: nameOf(id), load: plan.loads.get(id)?.get(plan.day) ?? 0 }));
   const title = t("scheduling.plan.title", { week: weekNumberOf(plan.week) });

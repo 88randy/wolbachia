@@ -49,5 +49,7 @@ export const reviews = {
   "reviews.workspace.consequence":
     "Antes de aplicar esta decisión, que no se puede deshacer, se comprobarán la evidencia original, la autoridad vigente y los requisitos obligatorios de seguridad.",
   "reviews.workspace.operations": "Operación",
+  "reviews.workspace.purpose": "Registros que el sistema marcó y esperan una decisión tuya.",
+  "reviews.workspace.pick": "Elige un registro de la lista para ver qué pasó y decidir.",
   "reviews.workspace.closeDetail": "Cerrar detalle de revisión",
 } as const;

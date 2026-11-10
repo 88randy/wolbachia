@@ -135,3 +135,37 @@ export function blocksDirectoryOptions(client: ApiClient, identity: SessionIdent
       ).results,
   });
 }
+
+export interface DayLoad {
+  loads: { courier: string | null; load: number }[];
+  target: number;
+  revision: number;
+}
+
+/**
+ * The load of each courier on each day of a week. The server plans under a lock that answers 429
+ * to concurrent readers, so the seven days are asked one after the other, never in parallel.
+ */
+export function weekLoadsOptions(
+  client: ApiClient,
+  identity: SessionIdentity,
+  week: string,
+  days: readonly string[],
+) {
+  return orgScopedQueryOptions(identity, {
+    key: ["schedule", "week-loads", week],
+    queryFn: async ({ signal }) => {
+      const result: DayLoad[] = [];
+      for (const day of days) {
+        const page = unwrap(
+          await client.GET("/api/v1/schedule/", {
+            params: { query: { week, day, page_size: 1 } },
+            signal,
+          }),
+        );
+        result.push({ loads: page.load, target: page.target, revision: page.revision });
+      }
+      return result;
+    },
+  });
+}

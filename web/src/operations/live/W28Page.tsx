@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { Bike, Clock, Info, Map as MapIcon } from "lucide-react";
+import { Bike, Clock, Map as MapIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DetailPage } from "../../components/templates/DetailPage";
 import { useFormatDateTime } from "../../format/use-format-date-time";
@@ -29,10 +29,7 @@ export function W28Page() {
       description={t("live.description", { count: live.shifts.length })}
       notices={
         <InlineNotice tone="info">
-          <p className="flex items-center gap-2">
-            <Info aria-hidden="true" className="size-4 shrink-0" />
-            {t("live.note")}
-          </p>
+          <p>{t("live.note")}</p>
         </InlineNotice>
       }
     >

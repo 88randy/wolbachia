@@ -1,53 +1,49 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
-import { MAX_PAGE, scheduleOptions } from "./scheduling-queries";
+import { MAX_PAGE, scheduleOptions, weekLoadsOptions } from "./scheduling-queries";
+import type { DayLoad } from "./scheduling-queries";
 import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
 
-/** Week, day and courier of the plan, read from the address bar; one query per day of the week. */
+/** Courier -> day -> number of points. */
+function loadTable(days: readonly string[], perDay: readonly DayLoad[] | undefined) {
+  const table = new Map<string, Map<string, number>>();
+  perDay?.forEach((entry, index) => {
+    const date = days[index];
+    for (const row of entry.loads) {
+      if (row.courier === null || date === undefined) continue;
+      const byDay = table.get(row.courier) ?? new Map<string, number>();
+      byDay.set(date, row.load);
+      table.set(row.courier, byDay);
+    }
+  });
+  return table;
+}
+
+/** Week, day and courier of the plan, read from the address bar. */
 export function usePlan() {
   const client = useApiClient();
   const identity = useSessionIdentity();
   const me = useMe();
   const search: Record<string, string | undefined> = useSearch({ strict: false });
-  const convention = me.organization?.epi_week ?? "iso";
-  const timeZone = me.organization?.timezone ?? "UTC";
-  const today = todayIn(timeZone);
-  const week = weekStartOf(search["week"] ?? today, convention);
+  const today = todayIn(me.organization?.timezone ?? "UTC");
+  const week = weekStartOf(search["week"] ?? today, me.organization?.epi_week ?? "iso");
   const days = daysOfWeek(week);
   const requestedDay = search["day"];
-  const day =
-    requestedDay && days.includes(requestedDay)
-      ? requestedDay
-      : days.includes(today)
-        ? today
-        : week;
-  const courier = search["courier"];
+  const fallbackDay = days.includes(today) ? today : week;
+  const day = requestedDay && days.includes(requestedDay) ? requestedDay : fallbackDay;
 
-  const perDay = useQueries({
-    queries: days.map((value) =>
-      scheduleOptions(client, identity, { week, day: value, pageSize: 1 }),
-    ),
-  });
-  const loads = useMemo(() => {
-    const table = new Map<string, Map<string, number>>();
-    perDay.forEach((query, index) => {
-      const date = days[index];
-      for (const row of query.data?.load ?? []) {
-        if (row.courier === null || date === undefined) continue;
-        const byDay = table.get(row.courier) ?? new Map<string, number>();
-        byDay.set(date, row.load);
-        table.set(row.courier, byDay);
-      }
-    });
-    return table;
+  const weekQuery = useQuery(weekLoadsOptions(client, identity, week, days));
+  const loads = useMemo(
+    () => loadTable(days, weekQuery.data),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `days` is derived from `week`.
-  }, [perDay.map((query) => query.dataUpdatedAt).join(","), week]);
-
-  const selected = courier ?? [...loads.keys()].find((id) => (loads.get(id)?.get(day) ?? 0) > 0);
+    [weekQuery.data, week],
+  );
+  const selected =
+    search["courier"] ?? [...loads.keys()].find((id) => (loads.get(id)?.get(day) ?? 0) > 0);
   const dayOptions = scheduleOptions(client, identity, {
     week,
     day,
@@ -56,9 +52,9 @@ export function usePlan() {
   });
   const dayTasks = useQuery({
     ...dayOptions,
-    enabled: dayOptions.enabled && selected !== undefined,
+    enabled: dayOptions.enabled && weekQuery.isSuccess && selected !== undefined,
   });
-
+  const first = weekQuery.data?.[0];
   return {
     week,
     days,
@@ -66,18 +62,16 @@ export function usePlan() {
     today,
     courier: selected,
     loads,
-    isLoading: perDay.some((query) => query.isPending),
-    isError: perDay.some((query) => query.isError),
+    isLoading: weekQuery.isPending,
+    isError: weekQuery.isError,
     refetch: () => {
-      perDay.forEach((query) => void query.refetch());
+      void weekQuery.refetch();
       void dayTasks.refetch();
     },
-    target: perDay.find((query) => query.data)?.data?.target ?? 0,
-    revision: dayTasks.data?.revision ?? perDay.find((query) => query.data)?.data?.revision ?? 0,
+    target: first?.target ?? 0,
+    revision: dayTasks.data?.revision ?? first?.revision ?? 0,
     tasks: dayTasks.data?.results ?? [],
-    dayLoads: dayTasks.data?.load ?? [],
-    isTasksLoading: dayTasks.isPending,
-    totalTasks: dayTasks.data?.count ?? 0,
+    isTasksLoading: dayTasks.isPending && selected !== undefined,
   };
 }
 
