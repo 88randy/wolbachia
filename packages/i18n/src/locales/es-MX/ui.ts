@@ -1,5 +1,8 @@
 import type { AreaCatalog } from "../area.ts";
 export const ui = {
+  "ui.picker.search": "Buscar por nombre",
+  "ui.picker.empty": "Sin coincidencias",
+  "ui.picker.loading": "Cargando…",
   "ui.actions.more": "Más acciones",
   "ui.actions.createFirst": "Crear el primer registro",
   "ui.actions.clearFilters": "Limpiar filtros",
