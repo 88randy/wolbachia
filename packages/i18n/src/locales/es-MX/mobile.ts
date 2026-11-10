@@ -1282,4 +1282,11 @@ export const mobile = {
   "mobile.speedLock.limit": "Límite configurado: {limit} km/h",
   "mobile.speedLock.emergencyOnly":
     "Solo la llamada de emergencia está disponible mientras te mueves.",
+  "mobile.map.label": "Mapa de tus puntos y zonas",
+  "mobile.map.loading": "Preparando el mapa...",
+  "mobile.map.unavailable": "El mapa no está disponible por ahora",
+  "mobile.map.unavailableHint": "Conéctate una vez para guardarlo en el teléfono.",
+  "mobile.map.retry": "Intentar de nuevo",
+  "mobile.map.attribution": "© colaboradores de OpenStreetMap",
+  "mobile.map.zone": "Zona {name}",
 } as const satisfies AreaCatalog<"mobile">;
