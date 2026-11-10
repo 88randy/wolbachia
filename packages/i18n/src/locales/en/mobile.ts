@@ -1210,4 +1210,43 @@ export const mobile: Record<keyof typeof source, string> = {
     "Closing access locks this phone. Drafts, files and uploads are retained; unlock with your PIN to continue. The server session keeps its original lifetime.",
   "mobile.settings.viewUploads": "View uploads and observations",
   "mobile.settings.lockAccess": "Close local access and retain work",
+
+  // Speed lock and global states (M-16)
+  "mobile.global.levelBlocking": "Blocked",
+  "mobile.global.levelWarning": "Warning",
+  "mobile.global.levelInfo": "Information",
+  "mobile.global.causeSpeedLock": "You are moving too fast.",
+  "mobile.global.causeSessionEnded": "Your session ended; your drafts and uploads are still saved.",
+  "mobile.global.causeStorageFull": "The phone is almost out of space; saving is not safe.",
+  "mobile.global.causeStorageLow": "The phone is running low on space.",
+  "mobile.global.causeUpdateRequired": "A required app update is available.",
+  "mobile.global.causeUpdateAvailable": "A new app version is available.",
+  "mobile.global.causeClockSkew":
+    "The phone clock does not match the server; your records will go to review.",
+  "mobile.global.causeGpsOff": "Location is turned off.",
+  "mobile.global.causeGpsDenied": "The app has no location permission.",
+  "mobile.global.causeGpsUnreliable":
+    "There is no reliable location yet; speed cannot be confirmed.",
+  "mobile.global.causeBatteryLow": "Low battery.",
+  "mobile.global.causeNoSignal":
+    "No signal: nothing is lost, everything uploads when there is network.",
+  "mobile.global.nextStopMoving":
+    "Stop somewhere safe; after a few seconds you return to the same step.",
+  "mobile.global.nextSignIn": "Sign in to continue where you left off.",
+  "mobile.global.nextFreeSpace": "Free up space on the phone and try again.",
+  "mobile.global.nextInstallWhenSignal": "You keep working; it installs when there is signal.",
+  "mobile.global.nextInstallWhenClosing": "Install it when you close the shift.",
+  "mobile.global.nextKeepWorkingReview":
+    "You can continue; today's records will be in review, no blame.",
+  "mobile.global.nextEnableLocation": "Turn on location in the phone settings.",
+  "mobile.global.nextWaitForFix": "Wait a few seconds, in the open if you can.",
+  "mobile.global.nextChargeOrSaveBattery": "Charge the phone or lower the brightness.",
+  "mobile.global.nextKeepWorkingSaved": "Keep working; what is saved on the phone is not lost.",
+  "mobile.global.more": "{count} more notices",
+  "mobile.speedLock.title": "Stop to keep capturing",
+  "mobile.speedLock.body":
+    "Once you stop for a few seconds you return to the same step. Nothing captured is lost.",
+  "mobile.speedLock.speed": "Current speed: {speed} km/h",
+  "mobile.speedLock.limit": "Configured limit: {limit} km/h",
+  "mobile.speedLock.emergencyOnly": "Only the emergency call is available while you are moving.",
 };

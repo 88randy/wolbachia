@@ -20,6 +20,13 @@ const locales = Object.keys(messages) as Locale[];
  * author of a void; the minimum is 10 by default, so no sentence has a singular form.
  */
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
+  ["allocation.assignment.lineQuantity", ["code"]],
+  ["allocation.assignment.panelTitle", ["name"]],
+  ["allocation.assignment.removeLine", ["code"]],
+  ["allocation.assignment.saved", ["revision"]],
+  ["allocation.assignment.stateOver", ["count"]],
+  ["allocation.assignment.stateShort", ["count"]],
+  ["allocation.field.reasonTextHint", ["count"]],
   ["auth.lockout.message", ["minutes"]],
   ["catalogs.actions.movedDown", ["name"]],
   ["catalogs.actions.moveDown", ["name"]],
@@ -62,6 +69,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.day.progress", ["completed", "total"]],
   ["mobile.day.reference", ["reference"]],
   ["mobile.day.unreadable", ["count"]],
+  ["mobile.global.more", ["count"]],
   ["mobile.inbox.evidencePending", ["count"]],
   ["mobile.inbox.groupTitle", ["count", "label"]],
   ["mobile.inbox.lastConnection", ["time"]],
@@ -74,6 +82,8 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.lifecycle.sourceVoided", ["at"]],
   ["mobile.login.throttled", ["minutes"]],
   ["mobile.login.version", ["version"]],
+  ["mobile.speedLock.limit", ["limit"]],
+  ["mobile.speedLock.speed", ["speed"]],
   ["mobile.unlock.greeting", ["name"]],
   ["mobile.unlock.passwordRequired", ["count"]],
   ["mobile.unlock.pinProgress", ["count"]],

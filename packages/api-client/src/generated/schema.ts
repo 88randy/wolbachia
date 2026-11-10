@@ -6252,7 +6252,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "AssignmentReleaseIntentRequest";
+            kind: "assignment_release";
             /** Format: uuid */
             assignment_id: string;
         };
@@ -6361,7 +6361,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "BagDisposalIntentRequest";
+            kind: "bag_disposal";
             /** Format: uuid */
             bag_id: string;
             /** Format: uuid */
@@ -7058,12 +7058,6 @@ export interface components {
             /** Format: decimal */
             humidity_pct: string;
         };
-        /**
-         * @description * `image/jpeg` - image/jpeg
-         *     * `image/png` - image/png
-         * @enum {string}
-         */
-        ContentTypeEnum: "image/jpeg" | "image/png";
         CorrectionOutcome: {
             /** Format: uuid */
             line_id: string;
@@ -7609,7 +7603,7 @@ export interface components {
             role: components["schemas"]["SupplyEvidenceRoleEnum"];
         };
         EvidenceUploadRequestRequest: {
-            content_type: components["schemas"]["ContentTypeEnum"];
+            content_type: string;
             size_bytes: number;
             sha256: string;
             /** Format: uuid */
@@ -9047,7 +9041,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "LotWriteOffIntentRequest";
+            kind: "lot_write_off";
             /** Format: uuid */
             lot_id: string;
             /** Format: uuid */
@@ -12083,7 +12077,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReconcileJustifyIntentRequest";
+            kind: "reconcile_justify";
             /** Format: uuid */
             reconciliation_id: string;
             /** Format: uuid */
@@ -12287,7 +12281,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReleaseCancelIntentRequest";
+            kind: "release_cancel";
             /** Format: uuid */
             release_id: string;
         };
@@ -12840,7 +12834,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "ReturnAcceptIntentRequest";
+            kind: "return_accept";
             /** Format: uuid */
             declaration_id: string;
             /** Format: decimal */
@@ -14718,6 +14712,7 @@ export interface operations {
                 content: {
                     "image/jpeg": string;
                     "image/png": string;
+                    "application/pdf": string;
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -17599,6 +17594,7 @@ export interface operations {
             content: {
                 "image/jpeg": string;
                 "image/png": string;
+                "application/pdf": string;
             };
         };
         responses: {

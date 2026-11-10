@@ -7,7 +7,7 @@ from io import BytesIO
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from core.exceptions import FieldValidationError
-from uploads.limits import JPEG_QUALITY, MAX_IMAGE_PIXELS, MAX_UPLOAD_BYTES
+from uploads.limits import JPEG_QUALITY, MAX_IMAGE_PIXELS, MAX_UPLOAD_BYTES, max_upload_bytes
 
 
 @dataclass(frozen=True)
@@ -33,8 +33,10 @@ def _check_image(image: Image.Image, declared: str) -> None:
 
 def sanitize_image(original: bytes, content_type: str) -> SanitizedImage:
     """Only JPEG/PNG, fully decoded, oriented and saved into a metadata-free new image."""
-    if len(original) > MAX_UPLOAD_BYTES:
-        raise FieldValidationError("file", "upload_too_large", {"max_bytes": MAX_UPLOAD_BYTES})
+    if len(original) > max_upload_bytes():
+        raise FieldValidationError("file", "upload_too_large", {"max_bytes": max_upload_bytes()})
+    if original.startswith(b"%PDF-"):
+        raise FieldValidationError("file", "upload_content_mismatch")
     try:
         with Image.open(BytesIO(original), formats=["JPEG", "PNG"]) as probe:
             _check_image(probe, content_type)

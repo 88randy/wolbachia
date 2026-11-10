@@ -1916,3 +1916,17 @@ def test_actual_disposal_and_physical_replacement_serialize_all_four_real_humans
         assert EggCountAttempt.objects.filter(bag=bag).count() == 2
         assert not BagDisposition.objects.filter(bag=bag).exists()
     assert not StockMovement.objects.exists()  # A Bag is not a guessed numeric supply quantity.
+
+
+def test_intent_request_discriminator_maps_wire_kinds_to_their_schemas():
+    from drf_spectacular.generators import SchemaGenerator
+
+    from inventory.allocations.permissions import INTENT_KINDS
+
+    schemas = SchemaGenerator(urlconf="config.urls").get_schema(public=True)["components"][
+        "schemas"
+    ]
+    mapping = schemas["PrepareInventoryIntentRequest"]["discriminator"]["mapping"]
+
+    assert tuple(mapping) == INTENT_KINDS
+    assert mapping["lot_write_off"] == "#/components/schemas/LotWriteOffIntentRequest"

@@ -1242,4 +1242,44 @@ export const mobile = {
     "Cerrar el acceso bloquea este teléfono. Conserva borradores, archivos y envíos; desbloquea con tu PIN para continuar. La sesión del servidor mantiene su vigencia original.",
   "mobile.settings.viewUploads": "Ver envíos y observaciones",
   "mobile.settings.lockAccess": "Cerrar acceso local y conservar trabajo",
+
+  // Speed lock and global states (M-16)
+  "mobile.global.levelBlocking": "Bloqueo",
+  "mobile.global.levelWarning": "Aviso",
+  "mobile.global.levelInfo": "Información",
+  "mobile.global.causeSpeedLock": "Te estás moviendo rápido.",
+  "mobile.global.causeSessionEnded": "Tu sesión terminó; tus borradores y envíos siguen guardados.",
+  "mobile.global.causeStorageFull":
+    "El teléfono casi no tiene espacio; no se puede guardar con seguridad.",
+  "mobile.global.causeStorageLow": "Queda poco espacio en el teléfono.",
+  "mobile.global.causeUpdateRequired": "Hay una actualización necesaria de la app.",
+  "mobile.global.causeUpdateAvailable": "Hay una versión nueva de la app.",
+  "mobile.global.causeClockSkew":
+    "La hora del teléfono no coincide con la del servidor; tus registros quedarán en revisión.",
+  "mobile.global.causeGpsOff": "La ubicación está apagada.",
+  "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
+  "mobile.global.causeGpsUnreliable":
+    "Aún no hay una ubicación confiable; la velocidad no se puede confirmar.",
+  "mobile.global.causeBatteryLow": "Batería baja.",
+  "mobile.global.causeNoSignal": "Sin señal: nada se pierde, todo se sube cuando haya red.",
+  "mobile.global.nextStopMoving":
+    "Detente en un lugar seguro; al pasar unos segundos vuelves al mismo paso.",
+  "mobile.global.nextSignIn": "Inicia sesión para continuar donde te quedaste.",
+  "mobile.global.nextFreeSpace": "Libera espacio en el teléfono y vuelve a intentar.",
+  "mobile.global.nextInstallWhenSignal": "Seguirás trabajando; se instalará cuando haya señal.",
+  "mobile.global.nextInstallWhenClosing": "Instálala al cerrar jornada.",
+  "mobile.global.nextKeepWorkingReview": "Puedes seguir; lo de hoy quedará en revisión, sin culpa.",
+  "mobile.global.nextEnableLocation": "Activa la ubicación en los ajustes del teléfono.",
+  "mobile.global.nextWaitForFix": "Espera unos segundos, a cielo abierto si puedes.",
+  "mobile.global.nextChargeOrSaveBattery": "Carga el teléfono o baja el brillo.",
+  "mobile.global.nextKeepWorkingSaved":
+    "Sigue trabajando; lo guardado en el teléfono no se pierde.",
+  "mobile.global.more": "{count} avisos más",
+  "mobile.speedLock.title": "Detente para seguir capturando",
+  "mobile.speedLock.body":
+    "Al detenerte unos segundos, vuelves al mismo paso. Lo capturado no se pierde.",
+  "mobile.speedLock.speed": "Velocidad actual: {speed} km/h",
+  "mobile.speedLock.limit": "Límite configurado: {limit} km/h",
+  "mobile.speedLock.emergencyOnly":
+    "Solo la llamada de emergencia está disponible mientras te mueves.",
 } as const satisfies AreaCatalog<"mobile">;

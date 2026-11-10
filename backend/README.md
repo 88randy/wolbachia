@@ -129,11 +129,11 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
-CI runs every test once across thirteen internally serial PostgreSQL partitions:
+CI runs every test once across fifteen internally serial PostgreSQL partitions:
 residual `regular`, `regular-integration` containing sixteen complete cross-domain
-modules (including B10/B04 and six permit/release modules), `regular-lab` containing ten complete ordinary Lab
-modules, and ten singleton complete migration-module cohorts. The
-original `checks` job validates all thirteen
+modules (including B10/B04 and six permit/release modules), `regular-lab` (six complete Lab modules), `regular-lab-2` (four complete Lab modules),
+`regular-auth` (ten complete authentication/rules modules), and ten singleton complete migration-module cohorts. The
+original `checks` job validates all fifteen
 current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. Only the singleton
 field/review migration jobs temporarily allow 25 minutes (#331, decision 172);
@@ -198,6 +198,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
 | `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | A consumed refresh token presented again inside this window (and before any later token was used) is accepted once more; otherwise the session is revoked |
 | `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin revoke that allows it; `0` disables it [PENDING client] |
+| `UPLOAD_MAX_BYTES` | `10485760` | Per-file limit for `uploads` (10 MiB); a higher value is capped at the 10 MiB SQL ceiling (#350) |
 | `AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR` | `3` | Reset emails sent to one address per hour (anyone who knows the address can use the quota: trade-off in decision 58) |
 | `DRF_NUM_PROXIES` | `0` (**required in prod**) | Trusted reverse proxies in front of the API |
 | `AUTH_LOGIN_MAX_FAILURES` / `AUTH_LOGIN_LOCKOUT_MINUTES` | `5` / `15` | Lockout of a username + address pair [PENDING client] |

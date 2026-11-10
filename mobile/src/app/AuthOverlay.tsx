@@ -11,6 +11,8 @@ import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
 import { LoginScreen } from "../screens/auth/LoginScreen.tsx";
 import { UnlockScreen } from "../screens/auth/UnlockScreen.tsx";
 import { Notice } from "../ui/Notice.tsx";
+import { GlobalStateList } from "../features/safety/GlobalStateList.tsx";
+import { useSafety } from "../features/safety/SafetyProvider.tsx";
 import { LockedEmergencyCall } from "../features/incidents/LockedEmergencyCall.tsx";
 
 const createStyles = (theme: Theme) =>
@@ -34,9 +36,15 @@ export function AuthOverlay({ snapshot, isWarning, keepWorking }: AuthOverlayPro
   const styles = useStyles(createStyles);
   const { scheme } = useTheme();
   const t = useT();
+  const { globals } = useSafety();
   return (
     <SafeAreaView style={styles.overlay} accessibilityViewIsModal>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <GlobalStateList
+        states={globals.filter(
+          (state) => state.cause !== "speedLock" && state.cause !== "clockSkew",
+        )}
+      />
       {snapshot.hasClockSkew && snapshot.phase !== "login" ? (
         <Notice tone="warning" icon="alert" message={t("mobile.login.clockSkew")} />
       ) : null}
