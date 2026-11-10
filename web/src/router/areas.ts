@@ -101,8 +101,13 @@ export const AREAS = [
     id: "regulatory",
     path: "/regulatory",
     group: "analysis",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: [
+      "transfer_authorization.read",
+      "export.run",
+      "arco_request.read",
+      "access_log.read",
+      "portal.manage",
+    ],
   },
   {
     id: "settings",

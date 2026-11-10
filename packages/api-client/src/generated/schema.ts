@@ -18608,6 +18608,8 @@ export interface operations {
     export_log_list: {
         parameters: {
             query?: {
+                created_after?: string;
+                created_before?: string;
                 /** @description The pagination cursor value. */
                 cursor?: string;
             };

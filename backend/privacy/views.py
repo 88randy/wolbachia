@@ -5,8 +5,10 @@ from typing import Any
 
 from django.db.models import Q
 from django.http import Http404, HttpResponse
+from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -307,8 +309,25 @@ class ExportLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Ge
     http_method_names = ["get", "head", "options"]
     required_permissions = {"list": "access_log.read"}
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("created_after", OpenApiTypes.DATETIME, required=False),
+            OpenApiParameter("created_before", OpenApiTypes.DATETIME, required=False),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self) -> Any:  # noqa: ANN401
-        return with_actor_name(super().get_queryset()).order_by("-created_at", "-id")
+        rows = with_actor_name(super().get_queryset()).order_by("-created_at", "-id")
+        for key, lookup in (
+            ("created_after", "created_at__gte"),
+            ("created_before", "created_at__lt"),
+        ):
+            value = parse_datetime(self.request.query_params.get(key) or "")
+            if value is not None:
+                rows = rows.filter(**{lookup: value})
+        return rows
 
 
 class PortalSettingsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
