@@ -99,7 +99,7 @@ def scoped_devices(actor: UploadActor, permission: str = RELEASE_READ) -> QueryS
         QuerySet[ReleaseDevice],
         filter_by_scope(
             ReleaseDevice.objects.filter(organization=actor.organization).select_related(
-                "source_lot_version"
+                "source_lot_version", "center", "quadrant", "source_lot"
             ),
             current_scope(actor),
             permission,
@@ -112,7 +112,7 @@ def scoped_releases(actor: UploadActor) -> QuerySet[Release]:
         QuerySet[Release],
         filter_by_scope(
             Release.objects.filter(organization=actor.organization).select_related(
-                "permit_version__permit"
+                "permit_version__permit__quadrant", "lot", "release_device"
             ),
             current_scope(actor),
             RELEASE_READ,
