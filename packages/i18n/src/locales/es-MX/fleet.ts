@@ -78,8 +78,8 @@ export const fleet = {
   "fleet.efficiency.detail":
     "Consulta el historial de combustible para revisar el intervalo real y sus límites guardados.",
   "fleet.fuel.comparison": "Comparación de rendimiento",
-  "fleet.fuel.from": "Desde (instante con zona horaria)",
-  "fleet.fuel.before": "Anterior a (instante con zona horaria)",
+  "fleet.fuel.from": "Desde",
+  "fleet.fuel.before": "Anterior a",
   "fleet.fuel.litres": "Litros",
   "fleet.fuel.amount": "Importe / moneda",
   "fleet.fuel.shift": "Referencia de jornada",

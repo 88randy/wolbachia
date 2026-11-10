@@ -31,9 +31,10 @@
   min-width: 0;
   min-height: var(--web-control-xl);
   padding: 0 var(--space-1-5);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-inner);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-level-1);
   color: var(--color-text-primary);
 }
 
@@ -52,10 +53,16 @@
 /* The ring is drawn on the whole control (above), not twice on the inner input. */
 .input {
   flex: 1;
+  width: auto !important;
   min-width: 0;
   height: 100%;
-  border: 0;
-  background: transparent;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: inherit;
   font: inherit;
 }

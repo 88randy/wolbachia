@@ -78,8 +78,8 @@ export const fleet = {
   "fleet.efficiency.detail":
     "Open fuel history to inspect the actual interval and saved thresholds.",
   "fleet.fuel.comparison": "Efficiency comparison",
-  "fleet.fuel.from": "From (instant with time zone)",
-  "fleet.fuel.before": "Before (instant with time zone)",
+  "fleet.fuel.from": "From",
+  "fleet.fuel.before": "Before",
   "fleet.fuel.litres": "Litres",
   "fleet.fuel.amount": "Amount / currency",
   "fleet.fuel.shift": "Source shift reference",

@@ -1,3 +1,4 @@
+import { EmptyValue } from "../ui/EmptyValue";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
@@ -81,8 +82,7 @@ function lotColumns(context: Context): Column[] {
     {
       id: "expiry",
       headerKey: "inventory.field.expiry",
-      cell: (row) =>
-        "expiry" in row && row.expiry ? format(row.expiry) : t("inventory.state.unconfigured"),
+      cell: (row) => ("expiry" in row && row.expiry ? format(row.expiry) : <EmptyValue />),
     },
     lotQuantity(context),
     statusColumn(t),

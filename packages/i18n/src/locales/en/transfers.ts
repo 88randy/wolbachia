@@ -1,7 +1,7 @@
 import type { transfers as spanish } from "../es-MX/transfers.ts";
 export const transfers: Record<keyof typeof spanish, string> = {
-  "transfers.field.from": "Created since (instant with time zone)",
-  "transfers.field.before": "Created before (instant with time zone)",
+  "transfers.field.from": "Created since",
+  "transfers.field.before": "Created before",
   "transfers.write.review": "Review current state and edit the draft",
   "transfers.page.title": "Transfers",
   "transfers.page.preparedOnly": "This view lets you dispatch and receive prepared transfers.",

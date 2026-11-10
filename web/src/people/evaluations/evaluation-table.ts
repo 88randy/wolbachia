@@ -8,9 +8,27 @@ export const EVALUATION_TABLE: TableQueryConfig = {
   sortableIds: ["created_at", "id"],
   defaultOrdering: "-created_at",
   filters: [
-    { kind: "text", key: "subject", labelKey: "evaluations.field.subject", maxLength: 36 },
-    { kind: "text", key: "center", labelKey: "evaluations.field.center", maxLength: 36 },
-    { kind: "text", key: "quadrant", labelKey: "evaluations.field.quadrant", maxLength: 36 },
+    {
+      kind: "text",
+      key: "subject",
+      labelKey: "evaluations.field.subject",
+      maxLength: 36,
+      input: "hidden",
+    },
+    {
+      kind: "text",
+      key: "center",
+      labelKey: "evaluations.field.center",
+      maxLength: 36,
+      input: "hidden",
+    },
+    {
+      kind: "text",
+      key: "quadrant",
+      labelKey: "evaluations.field.quadrant",
+      maxLength: 36,
+      input: "hidden",
+    },
   ],
 };
 export const EVALUATION_TABLE_SCOPE = {

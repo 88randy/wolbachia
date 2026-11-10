@@ -1,19 +1,8 @@
-import type { TableController } from "../data-table/table-types";
 import { FilterBar } from "../data-table/FilterBar";
+import type { TableController } from "../data-table/table-types";
 
-/**
- * The shared filter bar, minus the reference-id filters: neither a person nor a center directory
- * exists for them, and the active center already scopes every fleet read.
- */
+/** The center comes from the shell's center filter, so it is not offered again here. */
 export function FleetFilters({ controller }: { controller: TableController }) {
-  const controls = {
-    ...controller,
-    config: {
-      ...controller.config,
-      filters: controller.config.filters.filter(
-        (filter) => !["courier", "center"].includes(filter.key),
-      ),
-    },
-  };
-  return <FilterBar controller={controls} />;
+  const filters = controller.config.filters.filter((filter) => filter.key !== "center");
+  return <FilterBar controller={{ ...controller, config: { ...controller.config, filters } }} />;
 }
