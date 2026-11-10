@@ -19,7 +19,7 @@ export function CountInput(props: CountInputProps) {
   return (
     <div className={styles.field}>
       <label htmlFor={id}>
-        {t(props.isReplacement ? "lab.count.replacement" : "lab.count.value")}
+        {t(props.isReplacement ? "lab.count.replacement" : "lab.count.howMany")}
       </label>
       <input
         id={id}

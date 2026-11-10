@@ -27,7 +27,7 @@ async function loadBagMetadata(scope: LabScope, bag: Candidate, signal: AbortSig
     }),
   );
   const block = await loadBlockMetadata(scope, point.block, signal);
-  return { bag: record, block };
+  return { bag: record, block, ovitrap, point };
 }
 export type BagMetadataResult = Awaited<ReturnType<typeof loadBagMetadata>>;
 

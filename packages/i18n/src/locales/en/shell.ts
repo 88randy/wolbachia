@@ -26,6 +26,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.home": "Home",
   "shell.nav.incidents": "Incidents",
   "shell.nav.operations": "Supervision",
+  "shell.nav.scheduling": "Planning",
   "shell.nav.quadrants": "Quadrants and sampling",
   "shell.nav.releases": "Releases",
   "shell.nav.community": "Community",

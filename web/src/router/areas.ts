@@ -30,6 +30,12 @@ export const AREAS = [
     requiredPermissions: ["shift.read", "review_item.read", "relocation.read"],
   },
   {
+    id: "scheduling",
+    path: "/scheduling",
+    group: "operation",
+    requiredPermissions: ["schedule.read", "intervention.read", "risk_import.apply"],
+  },
+  {
     id: "quadrants",
     path: "/quadrants",
     group: "operation",

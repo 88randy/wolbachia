@@ -10,7 +10,7 @@ import type { RelocationScope } from "./relocations-query";
 import { RELOCATION_TABLE, relocationTableQuery } from "./relocation-table";
 import { useRelocationColumns } from "./use-relocation-columns";
 import { RelocationSheet } from "./RelocationSheet";
-import styles from "./relocations.module.css";
+import { ListPage } from "../../components/templates/ListPage";
 const TABLE_SCOPE = { ignoredPrefixes: ["relocation"] };
 export function RelocationWorkspace({ scope }: { scope: RelocationScope }) {
   const { t } = useTranslation();
@@ -18,9 +18,10 @@ export function RelocationWorkspace({ scope }: { scope: RelocationScope }) {
   const query = useQuery(relocationListOptions(scope, relocationTableQuery(controller.state)));
   const columns = useRelocationColumns();
   return (
-    <section className={styles.page}>
-      <h1>{t("relocations.workspace.title")}</h1>
-      <InlineNotice tone="info">{t("relocations.workspace.defaultView")}</InlineNotice>
+    <ListPage
+      title={t("relocations.workspace.title")}
+      notices={<InlineNotice tone="info">{t("relocations.workspace.defaultView")}</InlineNotice>}
+    >
       <FilterBar controller={controller} />
       <DataTable
         caption={t("relocations.workspace.title")}
@@ -39,6 +40,6 @@ export function RelocationWorkspace({ scope }: { scope: RelocationScope }) {
         }
       />
       <RelocationSheet scope={scope} />
-    </section>
+    </ListPage>
   );
 }

@@ -20,14 +20,14 @@
 .countInput {
   width: 100%;
   box-sizing: border-box;
-  min-height: 5rem;
+  min-height: 84px;
   padding: var(--space-2);
   border: 2px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text-primary);
   font-family: var(--font-family-mono);
-  font-size: 3rem;
+  font-size: 48px;
   line-height: 1.1;
   font-weight: 700;
   text-align: center;

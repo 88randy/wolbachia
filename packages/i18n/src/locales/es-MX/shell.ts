@@ -26,6 +26,7 @@ export const shell = {
   "shell.nav.home": "Inicio",
   "shell.nav.incidents": "Incidentes",
   "shell.nav.operations": "Supervisión",
+  "shell.nav.scheduling": "Programación",
   "shell.nav.quadrants": "Cuadrantes y muestreo",
   "shell.nav.releases": "Liberaciones",
   "shell.nav.community": "Comunidad",
