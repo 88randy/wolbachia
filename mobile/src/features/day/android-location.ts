@@ -8,6 +8,7 @@ function fromNative(fix: Location.LocationObject): LocationState {
       lng: fix.coords.longitude,
       accuracy_m: fix.coords.accuracy,
       fixedAt: fix.timestamp,
+      speed_mps: fix.coords.speed,
     },
   };
 }
