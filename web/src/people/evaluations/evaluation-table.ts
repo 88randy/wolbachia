@@ -7,11 +7,7 @@ export const EVALUATION_TABLE: TableQueryConfig = {
   supportsVoided: true,
   sortableIds: ["created_at", "id"],
   defaultOrdering: "-created_at",
-  filters: [
-    { kind: "text", key: "subject", labelKey: "evaluations.field.subject", maxLength: 36 },
-    { kind: "text", key: "center", labelKey: "evaluations.field.center", maxLength: 36 },
-    { kind: "text", key: "quadrant", labelKey: "evaluations.field.quadrant", maxLength: 36 },
-  ],
+  filters: [],
 };
 export const EVALUATION_TABLE_SCOPE = {
   ignoredPrefixes: ["item", "rubric_", "attempt_", "notice_"],

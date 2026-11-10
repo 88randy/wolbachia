@@ -7,6 +7,12 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.field.code": "Course code",
   "trainings.field.name": "Course name",
   "trainings.field.validity": "Validity (seconds)",
+  "trainings.field.noneOption": "No quadrant",
+  "trainings.field.pickPlaceholder": "Choose from the list",
+  "trainings.field.otherAction": "Other action (specify)",
+  "trainings.field.pickCourseFirst": "Choose the course first.",
+  "trainings.field.versionOption": "Version {version}",
+  "trainings.action.release.record": "Record releases",
   "trainings.field.actions": "Enabled actions",
   "trainings.field.actionsHint":
     "Configured action keys, separated by commas. Publishing a course does not assign permissions.",
