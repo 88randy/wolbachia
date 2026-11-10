@@ -290,6 +290,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["supervisor"] == {
         USER_OPERATIONAL_READ,
+        "release.read",
         "training.read",
         "community_activity.read",
         "community_activity.void",
@@ -379,6 +380,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["coordinator"] == {
         USER_OPERATIONAL_READ,
+        "release.read",
         "training.read",
         "community_activity.read",
         "community_activity.void",
@@ -395,8 +397,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "quadrant.publish",
         "sampling_point.create",
     }
+    assert by_slug["regulatory"] == reader | {"permit.manage", "permit.suspend", "release.read"}
     assert by_slug["admin"] == {
         *ADMIN_PERSONNEL_PERMISSION_CODES,
+        "permit.manage",
+        "permit.suspend",
+        "release.read",
         "training.read",
         "training.manage",
         "evaluation.create",

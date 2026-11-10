@@ -60,6 +60,7 @@ from ovitraps.permissions import (
 )
 from people.permissions import ADMIN_CODES as PEOPLE_ADMIN_CODES
 from people.permissions import TRAINING_READ
+from releases.permissions import PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ
 from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
@@ -83,6 +84,9 @@ from uploads.limits import FIELD_UPLOAD
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
     *ADMIN_PERSONNEL_PERMISSION_CODES,
+    PERMIT_MANAGE,
+    PERMIT_SUSPEND,
+    RELEASE_READ,
     *PEOPLE_ADMIN_CODES,
     "community_activity.read",
     "community_activity.create",
@@ -145,6 +149,7 @@ COURIER_CODES = (
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     USER_OPERATIONAL_READ,
+    RELEASE_READ,
     TRAINING_READ,
     "community_activity.read",
     "community_activity.void",
@@ -199,6 +204,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "admin": ADMIN_CODES,
     "coordinator": (
         USER_OPERATIONAL_READ,
+        RELEASE_READ,
         TRAINING_READ,
         "community_activity.read",
         "community_activity.void",
@@ -220,7 +226,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *TRANSFER_WAREHOUSE_CODES,
         FIELD_UPLOAD,
     ),
-    "regulatory": READ_ONLY_CODES,
+    "regulatory": (*READ_ONLY_CODES, PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ),
     "government": ("portal.read",),
 }
 

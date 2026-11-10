@@ -113,7 +113,9 @@ class ScheduledTask(PlanningRecord):
     point = models.ForeignKey(
         "geography.SamplingPoint", on_delete=models.PROTECT, related_name="scheduled_tasks"
     )
-    action = models.CharField(max_length=5, choices=[("place", "place"), ("check", "check")])
+    action = models.CharField(
+        max_length=7, choices=[("place", "place"), ("check", "check"), ("release", "release")]
+    )
     due_date = models.DateField()
     rule_version_ids = models.JSONField(default=dict)
     scope_center_lookup: ClassVar[str] = "point__block__quadrant__center_id"
@@ -126,7 +128,8 @@ class ScheduledTask(PlanningRecord):
                 name="scheduling_task_identity",
             ),
             models.CheckConstraint(
-                condition=models.Q(action__in=["place", "check"]), name="scheduling_task_action"
+                condition=models.Q(action__in=["place", "check", "release"]),
+                name="scheduling_task_action",
             ),
         ]
 

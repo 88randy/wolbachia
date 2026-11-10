@@ -129,6 +129,25 @@ def reference_sources(source: FieldEvent) -> set[UUID]:
 
 def _inventory_references(source: FieldEvent) -> set[UUID]:
     identifiers: set[UUID] = set()
+    if source.type == "release.record" and source.created_by is not None:
+        from field_sync.registry import EventContext
+        from releases.stock import release_source_references
+
+        try:
+            envelope = original_source_envelope(source)
+        except ValueError:
+            return identifiers
+        identifiers.update(
+            release_source_references(
+                EventContext(
+                    source.organization,
+                    source.created_by,
+                    source.device,
+                    envelope,
+                    source.server_received_at,
+                )
+            )
+        )
     if source.type in {"transfer.dispatch", "transfer.receive"}:
         from inventory.transfers.dependencies import source_references
 
@@ -316,7 +335,7 @@ def _prepare_accept(
     from reviews.boundaries import retain_domain_boundary
 
     if (
-        evaluation.subjects.resource_kind in {"transfer", "supply_assignment"}
+        evaluation.subjects.resource_kind in {"transfer", "supply_assignment", "release"}
         or source.type == "shift.close"
     ):
         from inventory.transactions import inventory_transaction

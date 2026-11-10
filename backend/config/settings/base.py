@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "lab.apps.LabConfig",
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
+    "releases.apps.ReleasesConfig",
 ]
 
 MIDDLEWARE = [
@@ -245,6 +246,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "ReleaseDeviceStatusEnum": ["active", "inactive", "retired"],
         "OutcomeEnum": ["recovered_later", "written_off"],
         "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],
         "ResourceTypeEnum": ["quadrant", "block"],

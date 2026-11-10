@@ -84,15 +84,17 @@ def test_record_void_is_registered_by_the_app_itself() -> None:
             "sampling_points",
             "ovitraps",
             "eligibility",
+            "permits",
         )
     } == {
         "history": 7,
         "supplies": 1,
-        "assignments": 3,
+        "assignments": 4,
         "quadrants": 2,
         "sampling_points": 1,
         "ovitraps": 1,
         "eligibility": 1,
+        "permits": 1,
     }
 
 

@@ -8666,6 +8666,434 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permit-types/:
+    get:
+      operationId: permit_types_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, name, created_at, id. Prefix with
+          - for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code, name.'
+        schema:
+          type: string
+      tags:
+      - permit-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPermitTypeList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: permit_types_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - permit-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermitTypeWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermitType'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permits/:
+    get:
+      operationId: permits_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at, id. Prefix with -
+          for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code.'
+        schema:
+          type: string
+      tags:
+      - permits
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPermitList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: permits_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - permits
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermitWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permit'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permits/{id}/:
+    get:
+      operationId: permits_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this permit.
+        required: true
+      tags:
+      - permits
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permit'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permits/{id}/schedule/:
+    post:
+      operationId: permits_schedule_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this permit.
+        required: true
+      tags:
+      - permits
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseScheduleWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseSchedule'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permits/{id}/suspend/:
+    post:
+      operationId: permits_suspend_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this permit.
+        required: true
+      tags:
+      - permits
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermitSuspensionWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermitSuspension'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/permits/{id}/versions/:
+    post:
+      operationId: permits_versions_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this permit.
+        required: true
+      tags:
+      - permits
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermitVersionAppendRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermitVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quadrant-assignments/:
     get:
       operationId: quadrant_assignments_list
@@ -9934,6 +10362,338 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IndependenceAttestationOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-devices/:
+    get:
+      operationId: release_devices_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at, id. Prefix with -
+          for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code.'
+        schema:
+          type: string
+      tags:
+      - release-devices
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReleaseDeviceList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: release_devices_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - release-devices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseDeviceWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseDevice'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-devices/{id}/:
+    get:
+      operationId: release_devices_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this release device.
+        required: true
+      tags:
+      - release-devices
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseDevice'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-devices/{id}/status/:
+    post:
+      operationId: release_devices_status_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this release device.
+        required: true
+      tags:
+      - release-devices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseDeviceStatusWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseDeviceStatus'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/releases/:
+    get:
+      operationId: releases_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: created_at, id. Prefix with - for descending.
+          Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: .'
+        schema:
+          type: string
+      tags:
+      - releases
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReleaseList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/releases/{id}/:
+    get:
+      operationId: releases_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this release.
+        required: true
+      tags:
+      - releases
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Release'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -14871,8 +15631,7 @@ components:
         permits:
           type: array
           items:
-            type: object
-            additionalProperties: {}
+            $ref: '#/components/schemas/PermitBundle'
         eligibility:
           type: array
           items:
@@ -15481,7 +16240,7 @@ components:
         permits:
           type: array
           items:
-            $ref: '#/components/schemas/ProducerChange'
+            $ref: '#/components/schemas/PermitChange'
         eligibility:
           type: array
           items:
@@ -23390,6 +24149,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaddleReuseReceipt'
+    PaginatedPermitList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permit'
+    PaginatedPermitTypeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermitType'
     PaginatedPersonnelList:
       type: object
       required:
@@ -23643,6 +24448,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecountRequest'
+    PaginatedReleaseDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseDevice'
+    PaginatedReleaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Release'
     PaginatedRelocationList:
       type: object
       required:
@@ -24516,6 +25367,462 @@ components:
       - field_event.sync
       type: string
       description: '* `field_event.sync` - field_event.sync'
+    Permit:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        current_version:
+          allOf:
+          - $ref: '#/components/schemas/PermitVersion'
+          nullable: true
+          readOnly: true
+        suspension:
+          allOf:
+          - $ref: '#/components/schemas/PermitSuspension'
+          readOnly: true
+        blocked_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseBlocker'
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocked_by
+      - center
+      - code
+      - created_at
+      - created_by
+      - current_version
+      - id
+      - quadrant
+      - revision
+      - suspension
+    PermitBundle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        version:
+          type: string
+        permit_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        permit_type_id:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+          minimum: 1
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+        geometry:
+          nullable: true
+        valid_from:
+          type: string
+          format: date-time
+          nullable: true
+        valid_to:
+          type: string
+          format: date-time
+          nullable: true
+        requirements: {}
+        blocked_by:
+          type: array
+          items:
+            type: string
+      required:
+      - blocked_by
+      - center_id
+      - code
+      - geometry
+      - id
+      - permit_type_id
+      - permit_version_id
+      - quadrant_id
+      - requirements
+      - revision
+      - valid_from
+      - valid_to
+      - version
+    PermitChange:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ProjectionUpsertActionEnum'
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_version:
+          type: string
+        data:
+          $ref: '#/components/schemas/PermitBundle'
+      required:
+      - action
+      - data
+      - resource_id
+      - resource_type
+      - resource_version
+      - sequence
+    PermitSuspension:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        permit:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - effective_from
+      - id
+      - permit
+      - reason
+      - revision
+    PermitSuspensionWriteRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - expected_revision
+      - reason
+    PermitType:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        requirements:
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - id
+      - name
+      - requirements
+    PermitTypeWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        requirements: {}
+      required:
+      - code
+      - name
+      - requirements
+    PermitVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        permit:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        type:
+          type: string
+          format: uuid
+          readOnly: true
+        requirements:
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        authority:
+          type: string
+          readOnly: true
+        official_document:
+          type: string
+          format: uuid
+          readOnly: true
+        document_attestation:
+          type: string
+          readOnly: true
+        geometry:
+          readOnly: true
+        valid_from:
+          type: string
+          format: date-time
+          readOnly: true
+        valid_to:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - authority
+      - created_at
+      - created_by
+      - document_attestation
+      - geometry
+      - id
+      - number
+      - official_document
+      - permit
+      - requirements
+      - revision
+      - type
+      - valid_from
+      - valid_to
+    PermitVersionAppendRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uuid
+        number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        authority:
+          type: string
+          minLength: 1
+          maxLength: 300
+        official_document:
+          type: string
+          format: uuid
+        document_attestation:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - authority
+      - document_attestation
+      - expected_revision
+      - geometry
+      - number
+      - official_document
+      - type
+      - valid_from
+      - valid_to
+    PermitWriteRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uuid
+        number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        authority:
+          type: string
+          minLength: 1
+          maxLength: 300
+        official_document:
+          type: string
+          format: uuid
+        document_attestation:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        quadrant:
+          type: string
+          format: uuid
+      required:
+      - authority
+      - code
+      - document_attestation
+      - geometry
+      - number
+      - official_document
+      - quadrant
+      - type
+      - valid_from
+      - valid_to
     Personnel:
       type: object
       description: |-
@@ -26297,6 +27604,104 @@ components:
       - evidence_ids
       - method_version
       - reason
+    Release:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        declared_event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        permit_version:
+          type: string
+          format: uuid
+          readOnly: true
+        lot:
+          type: string
+          format: uuid
+          readOnly: true
+        release_device:
+          type: string
+          format: uuid
+          readOnly: true
+        training_version:
+          type: string
+          format: uuid
+          readOnly: true
+        schedule_task:
+          type: string
+          format: uuid
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          readOnly: true
+        location:
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        provenance:
+          readOnly: true
+        blocked_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseBlocker'
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocked_by
+      - created_at
+      - created_by
+      - declared_event_id
+      - device_time
+      - id
+      - location
+      - lot
+      - permit_version
+      - provenance
+      - quantity
+      - release_device
+      - schedule_task
+      - server_received_at
+      - training_version
+    ReleaseBlocker:
+      type: object
+      properties:
+        reason:
+          type: string
+        unblocked_by_role:
+          type: string
+        link:
+          type: string
+      required:
+      - link
+      - reason
+      - unblocked_by_role
     ReleaseCancelIntentKindEnum:
       enum:
       - release_cancel
@@ -26335,6 +27740,159 @@ components:
       - reason
       - reason_code
       - release_id
+    ReleaseDevice:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+        source_lot:
+          type: string
+          format: uuid
+          readOnly: true
+        source_lot_version:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        blocked_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseBlocker'
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocked_by
+      - center
+      - code
+      - created_at
+      - created_by
+      - id
+      - quadrant
+      - revision
+      - source_lot
+      - source_lot_version
+      - status
+    ReleaseDeviceStatus:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseDeviceStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - device
+      - id
+      - reason
+      - revision
+      - status
+    ReleaseDeviceStatusEnum:
+      enum:
+      - active
+      - inactive
+      - retired
+      type: string
+      description: |-
+        * `active` - active
+        * `inactive` - inactive
+        * `retired` - retired
+    ReleaseDeviceStatusWriteRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ReleaseDeviceStatusEnum'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - expected_revision
+      - reason
+      - status
+    ReleaseDeviceWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        quadrant:
+          type: string
+          format: uuid
+        source_lot:
+          type: string
+          format: uuid
+      required:
+      - code
+      - quadrant
+      - source_lot
     ReleaseOutcome:
       type: object
       properties:
@@ -26342,6 +27900,46 @@ components:
           $ref: '#/components/schemas/SupplyRelease'
       required:
       - release
+    ReleaseSchedule:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        permit_version_id:
+          type: string
+          format: uuid
+        due_date:
+          type: string
+          format: date
+        courier_id:
+          type: string
+          format: uuid
+      required:
+      - courier_id
+      - due_date
+      - permit_version_id
+      - task_id
+    ReleaseScheduleWriteRequest:
+      type: object
+      properties:
+        point_id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+        due_date:
+          type: string
+          format: date
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - courier_id
+      - due_date
+      - expected_revision
+      - point_id
     Relocation:
       type: object
       description: |-
@@ -29917,10 +31515,12 @@ components:
       enum:
       - place
       - check
+      - release
       type: string
       description: |-
         * `place` - place
         * `check` - check
+        * `release` - release
     TrainingRead:
       type: object
       description: |-
