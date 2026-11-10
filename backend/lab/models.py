@@ -419,3 +419,13 @@ from lab.shipments.models import (  # noqa: E402, I001 -- register same-app ship
     ShipmentVoid as ShipmentVoid,
     UiebShipment as UiebShipment,
 )
+
+from lab.pcr.models import (  # noqa: E402, I001 -- register same-app PCR facts after shared bases.
+    ExternalLab as ExternalLab,
+    PcrBatch as PcrBatch,
+    PcrBatchEvent as PcrBatchEvent,
+    PcrBatchSample as PcrBatchSample,
+    PcrReport as PcrReport,
+    PcrResult as PcrResult,
+    PcrResultVoid as PcrResultVoid,
+)

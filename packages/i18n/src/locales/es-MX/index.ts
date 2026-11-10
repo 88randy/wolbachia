@@ -5,6 +5,7 @@ import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
 import { permitDocument } from "./permitDocument.ts";
 import { permits } from "./permits.ts";
+import { pcr } from "./pcr.ts";
 import { releases } from "./releases.ts";
 import { community } from "./community.ts";
 import { transferEvidence } from "./transferEvidence.ts";
@@ -67,6 +68,7 @@ export const esMX = {
   ...transferEvidence,
   ...permitDocument,
   ...permits,
+  ...pcr,
   ...releases,
   ...community,
 

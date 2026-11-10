@@ -50,13 +50,12 @@ from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from inventory.transfers.permissions import ADMIN_CODES as TRANSFER_ADMIN_CODES
 from inventory.transfers.permissions import SUPERVISOR_CODES as TRANSFER_SUPERVISOR_CODES
 from inventory.transfers.permissions import WAREHOUSE_CODES as TRANSFER_WAREHOUSE_CODES
+from lab.pcr.permissions import CODES as PCR_CODES
 from lab.permissions import ADMIN_CODES as LAB_ADMIN_CODES
 from lab.permissions import COUNT_VOID
 from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
 from notifications.permissions import INTERNAL_CODES as NOTIFICATION_CODES
 from organizations.models import Organization, Profile
-from privacy.permissions import ADMIN_CODES as PRIVACY_ADMIN_CODES
-from privacy.permissions import REGULATORY_CODES as PRIVACY_REGULATORY_CODES
 from ovitraps.permissions import (
     OVITRAP_REMOVAL_RESOLVE,
     READ_CODES,
@@ -65,6 +64,8 @@ from ovitraps.permissions import (
 )
 from people.permissions import ADMIN_CODES as PEOPLE_ADMIN_CODES
 from people.permissions import TRAINING_READ
+from privacy.permissions import ADMIN_CODES as PRIVACY_ADMIN_CODES
+from privacy.permissions import REGULATORY_CODES as PRIVACY_REGULATORY_CODES
 from releases.permissions import PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ
 from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
@@ -108,6 +109,9 @@ ADMIN_CODES = (
     "community_activity.void",
     *SUPPLY_ADMIN_CODES,
     *LAB_ADMIN_CODES,
+    "shipment.read",
+    "material_request.read",
+    *PCR_CODES,
     *TRANSFER_ADMIN_CODES,
     RELOCATION_DECIDE,
     QUADRANT_CLOSE,
@@ -208,6 +212,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *analytics_permissions.ENTOMOLOGIST_CODES,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
+        *PCR_CODES,
         FIELD_UPLOAD,
         INTERVENTION_READ,
         INTERVENTION_CREATE,
@@ -230,6 +235,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "coordinator": (
         HOME_READ,
         *analytics_permissions.COORDINATOR_CODES,
+        *PCR_CODES,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,

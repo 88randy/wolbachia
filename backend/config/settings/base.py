@@ -261,6 +261,17 @@ SPECTACULAR_SETTINGS = {
         "CredentialDeliveryEnum": ["password", "invite"],
         "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
         "WolbachiaResultEnum": ["positive", "negative"],
+        "PcrBatchStatusEnum": [
+            "preparing",
+            "ready_to_ship",
+            "shipped",
+            "received_by_lab",
+            "results_received",
+            "closed",
+            "voided",
+        ],
+        "PcrOutcomeEnum": ["positive", "negative", "invalid"],
+        "PcrTargetEnum": ["wolbachia", "dengue"],
         "CodeEnum": ["incident_conflict"],
         "NotificationKindEnum": [
             ("critical", "Critical"),
