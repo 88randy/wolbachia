@@ -35,7 +35,13 @@ describe("sidebar navigation", () => {
   test("lists every area as a link inside lists", async () => {
     await renderApp({
       me: makeMe({
-        permissions: ["catalog.read", "motorcycle.read", "quadrant.read", "supply_type.read"],
+        permissions: [
+          "catalog.read",
+          "motorcycle.read",
+          "quadrant.read",
+          "supply_type.read",
+          "incident.read",
+        ],
       }),
     });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });
@@ -59,7 +65,8 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/fleet");
     expect(hrefs).not.toContain("/quadrants");
     expect(hrefs).not.toContain("/inventory");
-    expect(hrefs).toHaveLength(9);
+    expect(hrefs).not.toContain("/incidents");
+    expect(hrefs).toHaveLength(8);
   });
 
   test("groups the areas under headings", async () => {
@@ -71,11 +78,11 @@ describe("sidebar navigation", () => {
   });
 
   test("marks only the current page with aria-current", async () => {
-    await renderApp({ path: "/incidents" });
+    await renderApp({ path: "/operations" });
 
     const current = screen.getAllByRole("link", { current: "page" });
 
-    expect(current.map((link) => link.textContent)).toEqual(["Incidentes"]);
+    expect(current.map((link) => link.textContent)).toEqual(["Supervisión"]);
   });
 
   test("home is current only at the root, not on every page", async () => {
@@ -197,7 +204,7 @@ describe("collapse button", () => {
 
     const toggle = screen.getByRole("button", { name: "Colapsar menú" });
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("link", { name: "Incidentes" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Supervisión" })).toBeDefined();
     expect(window.localStorage.getItem(STORAGE_KEYS.sidebarCollapsed)).toBe("true");
   });
 
@@ -232,7 +239,7 @@ describe("compact viewport", () => {
     await renderApp();
 
     expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Incidentes" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Supervisión" })).toBeDefined();
   });
 
   test("above the breakpoint the toggle is there", async () => {
@@ -288,7 +295,7 @@ describe("top bar", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }));
 
-    expect(screen.getByRole("link", { name: "Incidents" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Supervision" })).toBeDefined();
     expect(screen.getByRole("button", { name: "EN: change language to Spanish" })).toBeDefined();
     expect(document.documentElement.lang).toBe("en");
   });

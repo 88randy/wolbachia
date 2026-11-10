@@ -36,6 +36,7 @@ class ProducerContext:
     now: datetime
     permission: str
     configuration_generation: dict[str, Any] = field(default_factory=dict)
+    lab_visibility_revision: str = ""
 
     def includes(self, row: dict[str, Any]) -> bool:
         """Defense in depth before serialization: require ownership metadata on every row.
@@ -104,6 +105,11 @@ def build_sections(ctx: ProducerContext) -> dict[str, list[dict[str, Any]]]:
         sections[key] = [
             serialize_payload(producer, row) for row in producer.build(ctx) if ctx.includes(row)
         ]
+        if key == "history":
+            from lab.independent_qa.services import publish_history_batch
+            from uploads.access import UploadActor
+
+            publish_history_batch(UploadActor(ctx.user, ctx.organization), sections[key])
     return sections
 
 

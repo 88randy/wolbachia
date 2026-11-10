@@ -5,17 +5,26 @@ import { apiError } from "../test/fake-api";
 import { simulateSignOut } from "../test/simulate-session";
 import { BAG, candidate, openCount, outcome, pageOf } from "./count-test-helpers";
 
-beforeEach(() => { window.sessionStorage.clear(); });
+beforeEach(() => {
+  window.sessionStorage.clear();
+});
 
 test("a confirmed high count replays the complete command after a lost response", async () => {
   let attempts = 0;
-  const { api } = await openCount({ routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => {
-    attempts += 1;
-    if (attempts === 1) return apiError(409, "lab_confirmation_required");
-    if (attempts === 2) throw new TypeError("Synthetic lost confirmed reply");
-    return outcome();
-  } } });
-  await userEvent.type(await screen.findByRole("textbox", { name: "Huevos de laboratorio" }), "1200{Enter}");
+  const { api } = await openCount({
+    routes: {
+      [`POST /api/v1/bags/${BAG}/counts/`]: () => {
+        attempts += 1;
+        if (attempts === 1) return apiError(409, "lab_confirmation_required");
+        if (attempts === 2) throw new TypeError("Synthetic lost confirmed reply");
+        return outcome();
+      },
+    },
+  });
+  await userEvent.type(
+    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    "1200{Enter}",
+  );
   await screen.findByRole("button", { name: "Confirmar conteo alto" });
   await userEvent.keyboard("{Enter}");
   expect(attempts).toBe(1);
@@ -32,18 +41,35 @@ test("background queue changes do not move the active numeric draft", async () =
   const { api, app } = await openCount();
   await userEvent.type(await screen.findByRole("textbox", { name: "Huevos de laboratorio" }), "12");
   api.setRoute("GET /api/v1/egg-counts/queue/", pageOf([{ ...candidate("B-032"), id: "bag-32" }]));
-  await act(async () => { await app.queryClient.invalidateQueries({ predicate: (query) => query.queryKey.includes("lab") }); });
+  await act(async () => {
+    await app.queryClient.invalidateQueries({
+      predicate: (query) => query.queryKey.includes("lab"),
+    });
+  });
   expect(screen.getByRole("heading", { name: "B-031" })).toBeDefined();
-  expect((screen.getByRole("textbox", { name: "Huevos de laboratorio" }) as HTMLInputElement).value).toBe("12");
+  expect(
+    screen.getByRole<HTMLInputElement>("textbox", { name: "Huevos de laboratorio" }).value,
+  ).toBe("12");
 });
 
 test("a count response from a departed session cannot advance the queue", async () => {
   let release!: (reply: Response) => void;
-  const held = new Promise<Response>((resolve) => { release = resolve; });
+  const held = new Promise<Response>((resolve) => {
+    release = resolve;
+  });
   const { api } = await openCount({ routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => held } });
-  await userEvent.type(await screen.findByRole("textbox", { name: "Huevos de laboratorio" }), "12{Enter}");
-  await waitFor(() => { expect(api.requests.some((request) => request.method === "POST")).toBe(true); });
-  await act(async () => { simulateSignOut(); release(outcome({ ...candidate("B-032"), id: "bag-32" })); await held; });
+  await userEvent.type(
+    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    "12{Enter}",
+  );
+  await waitFor(() => {
+    expect(api.requests.some((request) => request.method === "POST")).toBe(true);
+  });
+  await act(async () => {
+    simulateSignOut();
+    release(outcome({ ...candidate("B-032"), id: "bag-32" }));
+    await held;
+  });
   expect(screen.queryByRole("heading", { name: "B-032" })).toBeNull();
   expect(screen.queryByText("Conteo guardado.")).toBeNull();
 });

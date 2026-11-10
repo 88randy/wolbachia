@@ -1,5 +1,20 @@
 # Private evidence transport (#246)
 
+M11 (#140) enrolls only the saved fuel event's `receipt_upload_id` through this
+same journal. Retaken/adopted-only files remain private and unenrolled. Normal
+claim and retry timing require that exact enrolled receipt to be verified, while
+null receipts remain explicit pending evidence. Fuel JSON waits for a pending
+matching opening; same-shift close JSON waits for
+earlier pending fuel to receive an ingest response, preventing a closed-shift
+rejection after file/network delay; local close and reviewed-fuel outcomes remain
+nonblocking. The final-upload exception and single SyncEngine remain unchanged.
+
+M05 (#134) adopts real PNG signature rasters through the same EvidenceCapture.
+Save enrolls only its declared signature_upload_id. Claim/retry eligibility checks
+that exact verified signature binding before supplies.receive JSON selection.
+Damage photos remain private local-only facts because B10 does not declare them.
+No-file receipt drafts participate in the existing owner-activation arbiter.
+
 One immutable evidence UUID identifies original bytes, their SHA-256/type/size and
 their proven issuer/organization/user/device owner. This journal transports files;
 the existing event outbox remains the only event queue. Camera-only native

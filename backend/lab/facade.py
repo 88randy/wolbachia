@@ -12,6 +12,10 @@ from rest_framework.response import Response
 
 from lab.access import LabTarget, prepare_lab_subject, scoped_bags
 from lab.commands import ACTION_PERMISSION, LabCommandInput, execute_lab_command
+from lab.independent_qa.serializers import (
+    IndependentCountOutcomeSerializer,
+    IndependentCountSerializer,
+)
 from lab.permissions import BAG_RECEIVE
 from lab.serializers import (
     CountWriteSerializer,
@@ -42,6 +46,24 @@ def run_command(
 
 
 class BagLabActions:
+    @extend_schema(
+        request=IndependentCountSerializer,
+        responses={201: IndependentCountOutcomeSerializer},
+    )
+    @action(detail=True, methods=["post"])
+    def recount(self, request: Request, pk: str | None = None) -> Response:
+        from lab.permissions import RECOUNT_CREATE
+
+        actor = actor_from_request(request)
+        target = LabTarget("bag", UUID(str(pk)))
+        prepare_lab_subject(actor, target, RECOUNT_CREATE)
+        payload = IndependentCountSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        values = dict(payload.validated_data)
+        command_id = values.pop("command_id")
+        outcome = execute_lab_command(actor, LabCommandInput("recount", target, command_id, values))
+        return Response(outcome.body, status=outcome.status)
+
     @extend_schema(
         request=ReceiveBagSerializer,
         responses={200: LabReceptionOutcomeSerializer, 409: LabReceptionConflictSerializer},

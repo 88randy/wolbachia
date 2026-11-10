@@ -14,7 +14,7 @@ export const PENDING = "pending";
 
 export const AREAS = [
   { id: "home", path: "/", group: "main", requiredPermissions: [] },
-  { id: "incidents", path: "/incidents", group: "main", requiredPermissions: PENDING },
+  { id: "incidents", path: "/incidents", group: "main", requiredPermissions: ["incident.read"] },
   { id: "operations", path: "/operations", group: "operation", requiredPermissions: PENDING },
   {
     id: "quadrants",
@@ -31,7 +31,12 @@ export const AREAS = [
     requiredPermissions: ["supply_type.read", "lot.read", "location.read"],
   },
   { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: ["motorcycle.read"] },
-  { id: "lab", path: "/lab", group: "resources", requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive"] },
+  {
+    id: "lab",
+    path: "/lab",
+    group: "resources",
+    requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive"],
+  },
   { id: "people", path: "/people", group: "resources", requiredPermissions: PENDING },
   { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },
   { id: "regulatory", path: "/regulatory", group: "analysis", requiredPermissions: PENDING },

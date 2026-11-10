@@ -86,14 +86,21 @@ def disposal_assessment(bag: Bag) -> dict[str, Any]:
     """No absent request/open day is clearance; the SAME canonical population owns the hash."""
     if BagDisposition.objects.filter(bag=bag).exists():
         raise InventoryConflictError("bag_already_disposed")
+    from lab.models import PaddleReuse
+
+    if PaddleReuse.objects.filter(binding__bag=bag).exists():
+        raise InventoryConflictError("bag_material_unavailable")
     receipt = BagReceipt.objects.filter(
         bag=bag, reading=bag.reading, source=bag.reading.event, kind="bag"
     ).first()
     current = LabResultRevision.objects.filter(bag=bag).first()
     if receipt is None or current is None or current.count_id is None:
         raise InventoryConflictError("lab_disposal_unassessed")
-    if RecountRequest.objects.filter(count__bag=bag, supersession__isnull=True).exists():
-        raise InventoryConflictError("lab_recount_pending")
+    from lab.independent_qa.selectors import obligation_resolution
+
+    for request in RecountRequest.objects.filter(count__bag=bag, supersession__isnull=True):
+        if obligation_resolution(request, current) is None:
+            raise InventoryConflictError("lab_recount_pending")
     count = current.count
     sample = (
         DailyRecountSample.objects.filter(
@@ -114,7 +121,10 @@ def disposal_assessment(bag: Bag) -> dict[str, Any]:
         sample.frame_hash != fingerprint
         or sample.population != size
         or member is None
-        or member.selected
+        or (
+            member.selected
+            and not RecountRequest.objects.filter(count=count, supersession__isnull=True).exists()
+        )
     ):
         raise InventoryConflictError("lab_draw_unassessed")
     proof = {
@@ -128,7 +138,7 @@ def disposal_assessment(bag: Bag) -> dict[str, Any]:
         "sample_id": str(sample.pk),
         "sample_frame_hash": sample.frame_hash,
         "sample_member_id": str(member.pk),
-        "selected": False,
+        "selected": member.selected,
         "pending_request_ids": [],
     }
     return {**proof, "proof_hash": snapshot_hash(proof)}
@@ -136,8 +146,15 @@ def disposal_assessment(bag: Bag) -> dict[str, Any]:
 
 def material_availability(bag: Bag) -> dict[str, Any]:
     disposition = BagDisposition.objects.filter(bag=bag).first()
+    from lab.models import PaddleReuse
+
+    reused = PaddleReuse.objects.filter(binding__bag=bag).exists()
     return {
-        "available": disposition is None,
+        "available": disposition is None and not reused,
         "disposition_id": None if disposition is None else str(disposition.pk),
-        "reason": None if disposition is None else "bag_disposed",
+        "reason": "bag_disposed"
+        if disposition is not None
+        else "paddle_reused"
+        if reused
+        else None,
     }

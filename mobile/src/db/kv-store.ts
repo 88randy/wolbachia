@@ -7,6 +7,7 @@ export const KV_KEYS = {
   syncCursor: "sync_cursor",
   daySamplingPointsBootstrapPending: "day_sampling_points_bootstrap_pending",
   dayCompletionBootstrapPending: "day_completion_bootstrap_pending",
+  daySuppliesBootstrapReady: "day_supplies_bootstrap_ready",
   catalogVersion: "catalog_version",
   rulesVersion: "rules_version",
   lastSyncAt: "last_sync_at",

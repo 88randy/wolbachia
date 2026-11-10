@@ -1,7 +1,8 @@
+import { AppScrollView } from "../ui/AppScrollView.tsx";
 import { spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
+import { BottomActions } from "../ui/BottomActions.tsx";
 
 import { useLocale, useT } from "../i18n/I18nProvider.tsx";
 import { useOutboxAction } from "../outbox/use-outbox-action.ts";
@@ -20,13 +21,6 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.color.background },
     content: { padding: spacing[2], gap: spacing[2] },
-    footer: {
-      paddingHorizontal: spacing[2],
-      paddingTop: spacing[1.5],
-      backgroundColor: theme.color.surface,
-      borderTopWidth: 1,
-      borderTopColor: theme.color.border.default,
-    },
   });
 
 function useInboxRetry() {
@@ -42,7 +36,6 @@ export function InboxScreen() {
   const snapshot = useSyncSnapshot();
   const { run, errorKey } = useInboxRetry();
   const model = useInbox();
-  const insets = useSafeAreaInsets();
   const subtitle =
     snapshot.lastSyncAt === null
       ? t("mobile.inbox.neverConnected")
@@ -52,15 +45,15 @@ export function InboxScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title={t("mobile.inbox.title")} subtitle={subtitle} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <AppScrollView contentContainerStyle={styles.content}>
         {errorKey !== null && <Notice tone="critical" icon="alert" message={t(errorKey)} />}
         <InboxNoticeBanner snapshot={snapshot} />
         <EvidenceNotice />
         <InboxLists model={model} />
-      </ScrollView>
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing[2.5] }]}>
+      </AppScrollView>
+      <BottomActions>
         <Button icon="refresh" label={t("mobile.inbox.tryNow")} onPress={run} />
-      </View>
+      </BottomActions>
     </View>
   );
 }

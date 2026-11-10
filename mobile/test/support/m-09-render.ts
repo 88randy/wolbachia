@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as tokens from "@wolbachia/tokens";
+import * as messages from "@wolbachia/i18n";
 import type { Locale } from "@wolbachia/i18n";
 import { createTranslate } from "../../src/i18n/translate.ts";
 export interface RenderNode {
@@ -15,9 +16,16 @@ interface Options {
   readonly scheme: "light" | "dark";
   readonly fontScale: number;
 }
+const SHARED_MODULES: Readonly<Record<string, unknown>> = {
+  "@wolbachia/tokens": tokens,
+  "@wolbachia/i18n": messages,
+  "react-native-safe-area-context": {
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  },
+};
 function nativeRequire(name: string, options: Options): unknown {
   const theme = options.scheme === "dark" ? tokens.darkTheme : tokens.lightTheme;
-  if (name === "@wolbachia/tokens") return tokens;
+  if (Object.hasOwn(SHARED_MODULES, name)) return SHARED_MODULES[name];
   if (name.endsWith("I18nProvider.tsx"))
     return { useT: () => createTranslate(options.locale), useLocale: () => options.locale };
   if (name.endsWith("ThemeProvider.tsx"))
@@ -34,6 +42,7 @@ function nativeRequire(name: string, options: Options): unknown {
       Text: "Text",
       Pressable: "Pressable",
       TextInput: "TextInput",
+      Image: "Image",
       Modal: "Modal",
       ScrollView: "ScrollView",
       StyleSheet: { create: (styles: unknown) => styles },

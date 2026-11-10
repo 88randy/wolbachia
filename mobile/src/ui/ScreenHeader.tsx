@@ -15,13 +15,13 @@ const createStyles = (theme: Theme) =>
     header: {
       backgroundColor: theme.color.surface,
       borderBottomWidth: 1,
-      borderBottomColor: theme.color.border.default,
+      borderBottomColor: theme.color.border.soft,
       paddingBottom: spacing[1.5],
       paddingRight: spacing[2],
       paddingLeft: spacing[1],
     },
-    row: { flexDirection: "row", alignItems: "center", gap: spacing[0.5] },
-    title: { flex: 1 },
+    row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing[0.5] },
+    title: { flexGrow: 1, flexBasis: spacing[6] * 2 },
   });
 
 interface ScreenHeaderProps {

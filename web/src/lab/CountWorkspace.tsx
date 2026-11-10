@@ -11,6 +11,20 @@ export function CountWorkspace({ scope, draftKey }: { scope: LabScope; draftKey:
   const controller = useTableUrlState(QUEUE_TABLE);
   const query = useQuery(queueOptions(scope, controller.state));
   if (query.isPending) return <CardSkeleton />;
-  if (!query.data) return <ErrorState onRetry={() => { void query.refetch(); }} />;
-  return <CountWorkspaceBody scope={scope} draftKey={draftKey} controller={controller} initial={query.data.results[0] ?? null} />;
+  if (!query.data)
+    return (
+      <ErrorState
+        onRetry={() => {
+          void query.refetch();
+        }}
+      />
+    );
+  return (
+    <CountWorkspaceBody
+      scope={scope}
+      draftKey={draftKey}
+      controller={controller}
+      initial={query.data.results[0] ?? null}
+    />
+  );
 }

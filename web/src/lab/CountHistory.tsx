@@ -13,7 +13,17 @@ export function CountHistory({ scope, draftKey }: { scope: LabScope; draftKey: s
   const controller = useTableUrlState(HISTORY_TABLE);
   const query = useQuery(historyOptions(scope, controller.state));
   const columns = useHistoryColumns(scope, draftKey);
-  return <><FilterBar controller={controller} /><DataTable caption={t("lab.history.title")} columns={columns} getRowId={(count) => count.id}
-    controller={controller} data={pageTableData(query, controller.state.page, PAGE_SIZE)}
-    renderDetail={(count) => count.voided ? <p>{t("lab.history.retained")}</p> : null} /></>;
+  return (
+    <>
+      <FilterBar controller={controller} />
+      <DataTable
+        caption={t("lab.history.title")}
+        columns={columns}
+        getRowId={(count) => count.id}
+        controller={controller}
+        data={pageTableData(query, controller.state.page, PAGE_SIZE)}
+        renderDetail={(count) => (count.voided ? <p>{t("lab.history.retained")}</p> : null)}
+      />
+    </>
+  );
 }

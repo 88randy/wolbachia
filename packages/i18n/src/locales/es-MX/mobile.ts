@@ -2,6 +2,94 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.shiftClose.refreshSupplies": "Actualizar recepciones descargadas",
+  "mobile.shiftClose.sourceFrame":
+    "Saldo confirmado descargado; las declaraciones adicionales se muestran debajo.",
+
+  "mobile.shiftClose.title": "Cerrar jornada",
+  "mobile.shiftClose.closedTitle": "Jornada cerrada",
+  "mobile.shiftClose.phoneClosed": "Cerrada en el tel?fono",
+  "mobile.shiftClose.serverReceived": "El servidor recibi? los registros de cierre",
+  "mobile.shiftClose.inReview": "El servidor recibi? un registro para revisi?n",
+  "mobile.shiftClose.rejected":
+    "Un registro fue rechazado. Revisa la bandeja; la jornada sigue cerrada en el tel?fono.",
+  "mobile.shiftClose.pending": "Puntos pendientes",
+  "mobile.shiftClose.noPending": "No hay puntos pendientes en la copia descargada.",
+  "mobile.shiftClose.goNow": "Ir al d?a",
+  "mobile.shiftClose.leavePending": "Cerrar sin completar este punto",
+  "mobile.shiftClose.leftPending": "Confirmado: el punto queda pendiente",
+  "mobile.shiftClose.planned": "Asignado por almac?n",
+  "mobile.shiftClose.equation": "Recibido ? usado ? devuelto ? merma",
+  "mobile.shiftClose.difference": "Diferencia",
+  "mobile.shiftClose.unknown": "Sin dato confirmado",
+  "mobile.shiftClose.supplies": "Conciliaci?n de insumos",
+  "mobile.shiftClose.differenceAllowed":
+    "Las diferencias quedan para revisi?n y no impiden cerrar. La devoluci?n es una declaraci?n; almac?n confirma su recepci?n.",
+  "mobile.shiftClose.suppliesUnavailable":
+    "No hay una recepci?n descargada vinculada a esta jornada. Los saldos y la conciliaci?n quedan sin confirmar; puedes cerrar.",
+  "mobile.shiftClose.returnQuantity": "Cantidad adicional que devuelves",
+  "mobile.shiftClose.returnDestination": "Devoluci?n al almac?n de origen",
+  "mobile.shiftClose.odometer": "Od?metro al cerrar (km)",
+  "mobile.shiftClose.note": "Nota de cierre (opcional)",
+  "mobile.shiftClose.lowOdometer":
+    "El od?metro es menor que al abrir. Se conservar? para revisi?n; puedes cerrar en el tel?fono.",
+  "mobile.shiftClose.confirmTitle": "?Cerrar la jornada?",
+  "mobile.shiftClose.confirmHint":
+    "Se guardar? en este tel?fono y dejar?s de capturar y recopilar ubicaci?n en esta jornada. Los puntos pendientes no se completar?n.",
+  "mobile.shiftClose.close": "Cerrar jornada en el tel?fono",
+  "mobile.shiftClose.continue": "Revisar y confirmar cierre",
+  "mobile.shiftClose.retryHint":
+    "Lo pendiente se reintentar? al recuperar la sesi?n y la conexi?n. No desinstales la app. Los adjuntos pendientes y los rechazos se consultan en la bandeja.",
+  "mobile.shiftClose.reviewHistory": "Historial de revisi?n",
+  "mobile.shiftClose.notReviewed": "Sin decisi?n de supervisor descargada.",
+  "mobile.shiftClose.observed": "Observada por supervisor",
+  "mobile.shiftClose.approved": "Aprobaci?n vigente",
+  "mobile.shiftClose.staleApproval": "Aprobaci?n anterior; requiere nueva revisi?n",
+  "mobile.shiftClose.noShift": "No hay una jornada local para cerrar. Vuelve al inicio.",
+  "mobile.shiftClose.saveFailed":
+    "No se guard? el cambio. Conservamos tus entradas. Revisa los pendientes, cantidades y motivos, y vuelve a intentar; si contin?a, revisa el almacenamiento con tu supervisor.",
+  "mobile.shiftClose.shrinkageQuantity": "Cantidad adicional de merma",
+  "mobile.shiftClose.reason": "Motivo de merma (10 a 1000 caracteres)",
+  "mobile.shiftClose.photo": "Tomar foto de merma",
+  "mobile.shiftClose.photoRequired": "La merma requiere una foto y un motivo de cat?logo.",
+  "mobile.shiftClose.photoSaved": "Foto guardada en el tel?fono; pendiente de entrega",
+  "mobile.shiftOpen.closed": "La jornada est? cerrada en este tel?fono. Consulta su resumen.",
+
+  "mobile.unlock.greetingNeutral": "Hola",
+  "mobile.shiftOpen.severeSaved":
+    "No puedes salir con esta moto por una falla grave. Avisa a tu supervisor para que gestione la liberación de flota.",
+  "mobile.shiftOpen.receivedRejected": "Recibido por el servidor · Apertura rechazada",
+  "mobile.shiftOpen.receivedInReview": "Recibido por el servidor · En revisión",
+  "mobile.preview.title": "Vista de estilos",
+  "mobile.preview.sample": "Ejemplo",
+  "mobile.preview.intro":
+    "Ejemplos de interfaz sin datos reales. No guardan cambios ni envían registros.",
+  "mobile.preview.themeHint": "Sigue el teléfono o elige una apariencia.",
+  "mobile.preview.textScaleHint":
+    "Para revisar texto al 130 %, usa el tamaño de texto del teléfono.",
+  "mobile.preview.system": "Sistema",
+  "mobile.preview.light": "Claro",
+  "mobile.preview.dark": "Oscuro",
+  "mobile.preview.toggleTheme": "Cambiar apariencia",
+  "mobile.preview.primary": "Terminar revisión",
+  "mobile.preview.data": "Datos de ejemplo",
+  "mobile.preview.progress": "Puntos revisados · meta del día",
+  "mobile.preview.received": "Recibido",
+  "mobile.preview.onPhone": "En el teléfono",
+  "mobile.preview.problem": "Con problema",
+  "mobile.preview.review": "En revisión",
+  "mobile.preview.inactive": "Sin actividad",
+  "mobile.preview.fields": "Captura",
+  "mobile.preview.code": "Código de ejemplo",
+  "mobile.preview.disabled": "Acción no disponible",
+  "mobile.preview.disabledHint":
+    "Ejemplo: falta una configuración. Tu supervisor puede habilitar esta acción.",
+  "mobile.preview.loading": "Cargando en el teléfono",
+  "mobile.preview.empty": "Aún sin registros",
+  "mobile.preview.partial": "El resto sigue disponible",
+  "mobile.preview.error":
+    "No se pudo actualizar este ejemplo. Reintenta; lo que capturaste sigue aquí.",
+  "mobile.preview.retryResult": "Reintento de ejemplo completado. No se contactó al servidor.",
   "mobile.lifecycle.replace": "Sustituir ovitrampa",
   "mobile.lifecycle.relocate": "Proponer reubicaci?n",
   "mobile.lifecycle.remove": "Retirar ovitrampa",
@@ -587,4 +675,169 @@ export const mobile = {
     "El borrador se conserva, pero su propiedad no está probada para esta sesión. Entra con la cuenta original o pide ayuda a soporte.",
   "mobile.lifecycle.remoteProposal":
     "Propuesta descargada del servidor; no es una captura local editable.",
+  "mobile.supplyReceipt.title": "Recibir insumos",
+  "mobile.supplyReceipt.subtitle": "Firma solo lo que recibiste físicamente",
+  "mobile.supplyReceipt.start": "Revisar esta entrega",
+  "mobile.supplyReceipt.resume": "Abrir recibo guardado",
+  "mobile.supplyReceipt.assignment": "Asignación",
+  "mobile.supplyReceipt.release": "Salida de almacén",
+  "mobile.supplyReceipt.lot": "Lote",
+  "mobile.supplyReceipt.piece": "Pieza",
+  "mobile.supplyReceipt.unit": "Unidad declarada",
+  "mobile.supplyReceipt.expected": "Cantidad esperada",
+  "mobile.supplyReceipt.actual": "Cantidad recibida",
+  "mobile.supplyReceipt.declaredUnits":
+    "Usa la unidad declarada en esta entrega. No conviertas cajas a piezas. Los códigos y nombres de unidad aún no están disponibles; verifica los identificadores con almacén.",
+  "mobile.supplyReceipt.noAssignments":
+    "No hay entregas asignadas disponibles en la copia descargada. Puedes actualizar o volver a tu jornada.",
+  "mobile.supplyReceipt.unavailable":
+    "Falta una copia actual autorizada de tus entregas. Actualiza con señal o pide ayuda a tu supervisor. Tus recibos se conservan.",
+  "mobile.supplyReceipt.refresh": "Actualizar entregas",
+  "mobile.supplyReceipt.working": "Guardando en el teléfono…",
+  "mobile.supplyReceipt.save": "Guardar recibo firmado en el teléfono",
+  "mobile.supplyReceipt.saved":
+    "Recibo firmado guardado en el teléfono. Esto aún no confirma su recepción en el servidor.",
+  "mobile.supplyReceipt.serverReceived":
+    "Acuse inicial: el servidor recibió el recibo. Consulta por separado cualquier revisión de tu supervisor.",
+  "mobile.supplyReceipt.review":
+    "Acuse inicial: el servidor recibió el recibo para revisión. Se conserva lo que firmaste; este acuse por sí solo no confirma inventario acreditado.",
+  "mobile.supplyReceipt.rejected":
+    "El servidor no aplicó el recibo. La captura y tu firma se conservan; revisa la bandeja o pide ayuda a tu supervisor.",
+  "mobile.supplyReceipt.pendingSignature":
+    "La firma está guardada en el teléfono y su archivo sigue pendiente de carga. Puedes consultar o reintentar en la bandeja.",
+  "mobile.supplyReceipt.inbox": "Abrir bandeja de sincronización",
+  "mobile.supplyReceipt.scanLabel": "Código QR del lote",
+  "mobile.supplyReceipt.scanHint":
+    "También puedes pegar el contenido completo del QR o capturar el UUID del lote. Un código de etiqueta sin identificación confirmada no se agrega.",
+  "mobile.supplyReceipt.scan": "Validar QR del lote",
+  "mobile.supplyReceipt.manual": "Validar UUID del lote manualmente",
+  "mobile.supplyReceipt.duplicate": "Este código ya fue registrado. No se agregó otra pieza.",
+  "mobile.supplyReceipt.added":
+    "Código reconocido. Revisa la cantidad en la unidad declarada antes de firmar.",
+  "mobile.supplyReceipt.invalid":
+    "No pudimos validar este código para tu entrega. No se agregó. Verifica el identificador con almacén o tu supervisor.",
+  "mobile.supplyReceipt.discrepancy": "Explica cualquier diferencia",
+  "mobile.supplyReceipt.missing": "Falta material",
+  "mobile.supplyReceipt.damaged": "Llegó dañado",
+  "mobile.supplyReceipt.other": "Otro (especificar)",
+  "mobile.supplyReceipt.discrepancyText": "Explicación de la diferencia",
+  "mobile.supplyReceipt.discrepancyHint":
+    "Firma las cantidades reales. El servidor conservará la diferencia para revisión; no cambies las cantidades para hacerlas coincidir.",
+  "mobile.supplyReceipt.photo": "Fotografiar el daño",
+  "mobile.supplyReceipt.photoSaved":
+    "Foto del daño conservada solo en el teléfono. Aún no puede enviarse junto con este recibo; pide ayuda a tu supervisor.",
+  "mobile.supplyReceipt.signatureTitle": "Firma de recibido",
+  "mobile.supplyReceipt.signatureHint":
+    "Firma aquí con el dedo o fotografía tu firma manuscrita. La firma corresponde a las cantidades y diferencias que aparecen arriba.",
+  "mobile.supplyReceipt.signatureCapture": "Conservar esta firma",
+  "mobile.supplyReceipt.signaturePhoto": "Fotografiar mi firma manuscrita",
+  "mobile.supplyReceipt.signatureSaved": "Firma conservada en el teléfono",
+  "mobile.supplyReceipt.undo": "Deshacer último trazo",
+  "mobile.supplyReceipt.clear": "Empezar la firma de nuevo",
+  "mobile.supplyReceipt.signatureRequired":
+    "Falta tu firma. Firma con el dedo o fotografía tu firma manuscrita antes de guardar.",
+  "mobile.supplyReceipt.quantityInvalid":
+    "Revisa las cantidades en su unidad declarada. Una pieza solo admite cero o uno; el resto admite hasta seis decimales dentro de la entrega.",
+  "mobile.supplyReceipt.discrepancyRequired":
+    "Declara el motivo de la diferencia antes de firmar el recibo.",
+  "mobile.supplyReceipt.otherRequired": "Escribe una explicación para Otro antes de guardar.",
+  "mobile.supplyReceipt.evidenceRequired":
+    "Falta la foto del daño. Tómala antes de firmar; el resto de tu captura se conserva.",
+  "mobile.supplyReceipt.staleDraft":
+    "La captura cambió mientras trabajabas. Revisa el recibo conservado y vuelve a intentar.",
+  "mobile.supplyReceipt.shiftRequired":
+    "Abre una jornada autorizada antes de recibir insumos. Tu borrador se conserva.",
+  "mobile.supplyReceipt.configurationRequired":
+    "Faltan catálogos o reglas descargados. Actualiza con señal antes de firmar.",
+  "mobile.supplyReceipt.startScanner": "Escanear QR con la cámara",
+  "mobile.supplyReceipt.scannerTitle": "Escanear lote de esta entrega",
+  "mobile.supplyReceipt.scannerHint":
+    "Apunta al código QR del lote. El lector se cierra después de cada lectura; revisa la cantidad antes de firmar.",
+  "mobile.supplyReceipt.stopScanner": "Cerrar lector y volver al recibo",
+  "mobile.supplyReceipt.scannerPermission":
+    "El permiso de cámara no está disponible. Puedes activarlo en Ajustes o usar la captura manual del identificador.",
+  "mobile.supplyReceipt.scannerRetry":
+    "Desbloquea el teléfono y vuelve a abrir el lector desde este recibo. La captura manual sigue disponible.",
+  "mobile.supplyReceipt.scannerUnavailable":
+    "No pudimos abrir la cámara. Vuelve a intentar o usa la captura manual del identificador.",
+  "mobile.supplyReceipt.reviewedAccepted": "Revisión posterior: recibo aceptado por el supervisor.",
+  "mobile.supplyReceipt.reviewedVoided":
+    "Revisión posterior: recibo anulado por el supervisor. La captura firmada se conserva.",
+  "mobile.supplyReceipt.incidentOpen":
+    "Revisión posterior: se abrió una incidencia. Esto no acepta ni anula el recibo.",
+  "mobile.fuel.title": "Cargar gasolina",
+  "mobile.fuel.subtitle": "Captura sin señal · moto de tu jornada",
+  "mobile.fuel.motorcycle": "Moto",
+  "mobile.fuel.motorcycleFixed": "La moto es la de tu jornada abierta; no se puede cambiar aquí.",
+  "mobile.fuel.litres": "Litros (L)",
+  "mobile.fuel.amount": "Monto (MXN)",
+  "mobile.fuel.odometer": "Odómetro actual (km)",
+  "mobile.fuel.fullRefill": "¿Llenaste el tanque?",
+  "mobile.fuel.fullRefillYes": "Sí · tanque lleno",
+  "mobile.fuel.fullRefillNo": "No · carga parcial",
+  "mobile.fuel.receipt": "Foto del ticket",
+  "mobile.fuel.receiptPreview": "Vista previa privada del ticket de esta carga",
+  "mobile.fuel.receiptCheck":
+    "Revisa que se lean los números. Si está borrosa, repite la foto con más luz y sin moverte; tus cantidades se conservan.",
+  "mobile.fuel.receiptSaved": "La foto original del ticket se conserva con esta carga.",
+  "mobile.fuel.noReceiptSaved":
+    "Esta carga se guardó sin foto del ticket; el recibo queda pendiente.",
+  "mobile.fuel.noReceipt":
+    "Sin foto del ticket. Puedes intentar tomarla o guardar la carga con el recibo pendiente.",
+  "mobile.fuel.takePhoto": "Tomar foto del ticket",
+  "mobile.fuel.retake": "Repetir foto del ticket",
+  "mobile.fuel.previewUnavailable":
+    "No pudimos mostrar la vista previa. La referencia se conserva; revisa la foto antes de guardar o vuelve a tomarla.",
+  "mobile.fuel.photoUnavailable":
+    "No pudimos abrir la cámara. Vuelve a intentar; tus cantidades y la foto anterior se conservan.",
+  "mobile.fuel.insufficient":
+    "Datos insuficientes para calcular el rendimiento: se necesitan cargas completas consecutivas con distancia conocida. Puedes guardar la carga y cerrar tu jornada.",
+  "mobile.fuel.unconfigured":
+    "No hay límites de rendimiento descargados para este intervalo. Puedes guardar; el servidor revisará la carga al recibirla.",
+  "mobile.fuel.decreased":
+    "El odómetro es menor que la lectura anterior. Revisa el número; puedes conservarlo y guardar la carga.",
+  "mobile.fuel.efficiencyOk":
+    "Rendimiento del intervalo comparable dentro de los límites informativos.",
+  "mobile.fuel.efficiencyReview":
+    "El rendimiento queda fuera del rango informativo. Revisa litros y odómetro; puedes guardar así y cerrar tu jornada.",
+  "mobile.fuel.saved": "Guardada en el teléfono · pendiente de recibir por el servidor.",
+  "mobile.fuel.serverReceived": "Carga recibida por el servidor.",
+  "mobile.fuel.reviewPending":
+    "Carga recibida por el servidor · pendiente de revisión. Las cantidades se conservan.",
+  "mobile.fuel.rejected":
+    "El servidor rechazó esta carga. La captura se conserva; revisa el motivo en la bandeja y avisa a tu supervisor.",
+  "mobile.fuel.receiptPending":
+    "Ticket pendiente de envío o verificación; no es una revisión de la carga.",
+  "mobile.fuel.receiptVerified":
+    "Foto del ticket verificada por el servidor; no es una revisión de la carga.",
+  "mobile.fuel.reviewedAccepted": "Revisión posterior: carga aceptada por el supervisor.",
+  "mobile.fuel.reviewedVoided":
+    "Revisión posterior: carga anulada. La captura original se conserva.",
+  "mobile.fuel.incidentOpen":
+    "Revisión posterior: se abrió una incidencia; la carga no queda aceptada ni anulada.",
+  "mobile.fuel.litresInvalid":
+    "Escribe litros mayores que cero, con hasta tres decimales y sin separadores de miles.",
+  "mobile.fuel.amountInvalid":
+    "Escribe un monto mayor que cero, con hasta dos decimales y sin separadores de miles.",
+  "mobile.fuel.odometerInvalid":
+    "Escribe kilómetros enteros entre 0 y 999999, sin separadores de miles.",
+  "mobile.fuel.unavailable":
+    "La jornada o los datos descargados no autorizan esta captura. Revisa tu jornada y vuelve a intentar; el borrador se conserva.",
+  "mobile.fuel.shiftRequired":
+    "Abre una jornada autorizada antes de cargar gasolina. Tu borrador se conserva.",
+  "mobile.fuel.staleDraft":
+    "La captura cambió mientras trabajabas. Revisa el borrador conservado y vuelve a intentar.",
+  "mobile.fuel.draftSaved":
+    "Borrador en este teléfono · revisa los datos antes de guardar la carga.",
+  "mobile.fuel.draftPending":
+    "Hay cambios pendientes de guardar en el teléfono. Vuelve a intentar antes de salir.",
+  "mobile.fuel.empty":
+    "Todavía no hay una captura de gasolina. Inicia una para la moto de tu jornada.",
+  "mobile.fuel.begin": "Iniciar captura de gasolina",
+  "mobile.fuel.beginAnother": "Capturar otra carga",
+  "mobile.fuel.save": "Guardar carga",
+  "mobile.fuel.working": "Guardando en el teléfono…",
+  "mobile.fuel.saveHint":
+    "Guardar conserva la carga en este teléfono. El envío y la revisión ocurren después.",
+  "mobile.fuel.inbox": "Ver envío y revisión en la bandeja",
 } as const satisfies AreaCatalog<"mobile">;

@@ -325,6 +325,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "recount.create",
         "bag.dispose",
         "bag.receive",
         "egg_count.create",
@@ -387,6 +388,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "recount.create",
+        "recount.adjudicate",
+        "egg_paddle.reuse",
         "community_activity.read",
         "community_activity.create",
         "community_activity.void",
@@ -727,6 +731,12 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
         if code not in ("lot.update", "inventory.allocate", FIELD_UPLOAD)
     ]
     warehouse.save(update_fields=["permission_codes"])
+    entomologist = Profile.objects.get(organization=organization, slug="entomologist")
+    entomologist.permission_codes.remove("recount.create")
+    entomologist.save(update_fields=["permission_codes"])
+    admin = Profile.objects.get(organization=organization, slug="admin")
+    admin.permission_codes.remove("recount.adjudicate")
+    admin.save(update_fields=["permission_codes"])
     custom = Profile.objects.create(
         organization=organization,
         slug="custom-inventory",
@@ -737,6 +747,12 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
     seed_default_permission_codes(organization)
     warehouse.refresh_from_db()
     custom.refresh_from_db()
+    entomologist.refresh_from_db()
+    admin.refresh_from_db()
+    assert "recount.create" not in entomologist.permission_codes
+    assert not {"recount.adjudicate", "egg_paddle.reuse"} & set(entomologist.permission_codes)
+    assert "recount.adjudicate" not in admin.permission_codes
+    assert "egg_paddle.reuse" in admin.permission_codes
     assert "lot.update" not in warehouse.permission_codes
     assert "inventory.allocate" not in warehouse.permission_codes
     assert FIELD_UPLOAD not in warehouse.permission_codes

@@ -144,6 +144,26 @@ class CommunityHistoryEntrySerializer(serializers.Serializer[Any]):
     subjects = HistorySubjectSerializer(many=True, allow_empty=False)
 
 
+class LabQAHistoryEntrySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=["lab_recount", "lab_adjudication", "lab_paddle_reuse"])
+    bag_id = serializers.UUIDField()
+    reading_id = serializers.UUIDField()
+    source_event_id = serializers.UUIDField()
+    source_device_time = serializers.DateTimeField()
+    source_server_received_at = serializers.DateTimeField()
+    recorded_at = serializers.DateTimeField()
+    author_id = serializers.UUIDField()
+    count_id = serializers.UUIDField()
+    request_id = serializers.UUIDField(allow_null=True)
+    attempt_id = serializers.UUIDField(allow_null=True)
+    resolution_id = serializers.UUIDField(allow_null=True)
+    reuse_id = serializers.UUIDField(allow_null=True)
+    value = serializers.IntegerField(allow_null=True)
+    method_version_id = serializers.UUIDField(allow_null=True)
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+
+
 SUPPLY_HISTORY_SOURCES = (
     "plan",
     "release",
@@ -206,6 +226,8 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
 
     @staticmethod
     def _serializer(kind: str) -> type[serializers.Serializer[Any]]:
+        if kind in {"lab_recount", "lab_adjudication", "lab_paddle_reuse"}:
+            return LabQAHistoryEntrySerializer
         if kind == "community_activity":
             return CommunityHistoryEntrySerializer
         if isinstance(kind, str) and kind in {
@@ -248,8 +270,9 @@ class CourierHistorySchema(OpenApiSerializerExtension):
         lab = auto_schema.resolve_serializer(LabHistoryEntrySerializer(), direction).ref
         community = auto_schema.resolve_serializer(CommunityHistoryEntrySerializer(), direction).ref
         supply = auto_schema.resolve_serializer(SupplyHistoryEntrySerializer(), direction).ref
+        lab_qa = auto_schema.resolve_serializer(LabQAHistoryEntrySerializer(), direction).ref
         return {
-            "oneOf": [review, relocation, transfer, lab, community, supply],
+            "oneOf": [review, relocation, transfer, lab, community, supply, lab_qa],
             "discriminator": {
                 "propertyName": "kind",
                 "mapping": {
@@ -258,6 +281,10 @@ class CourierHistorySchema(OpenApiSerializerExtension):
                     "shift_validation": review["$ref"],
                     "relocation_proposal": relocation["$ref"],
                     "transfer_custody": transfer["$ref"],
+                    **{
+                        kind: lab_qa["$ref"]
+                        for kind in ("lab_recount", "lab_adjudication", "lab_paddle_reuse")
+                    },
                     **{
                         kind: supply["$ref"]
                         for kind in (

@@ -1,4 +1,5 @@
-import { Modal, ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { Modal, View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
@@ -22,9 +23,9 @@ export function CatalogSheet({ isOpen, close, ...choices }: Props) {
             {t("mobile.lifecycle.reason")}
           </AppText>
           <ShiftAction label={t("common.actions.cancel")} onPress={close} />
-          <ScrollView contentContainerStyle={styles.content}>
+          <AppScrollView contentContainerStyle={styles.content}>
             <CatalogOptions {...choices} />
-          </ScrollView>
+          </AppScrollView>
         </View>
       </View>
     </Modal>

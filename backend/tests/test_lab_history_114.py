@@ -49,6 +49,62 @@ def test_lab_history_preserves_real_source_identity_and_current_scope_before_lim
         FIELD_BOOTSTRAP,
     )
     assert build_history(producer) == []
+    from field_sync.producers import build_sections
+    from field_sync.selectors import _typed_changes, list_courier_changes
+    from lab.independent_qa.selectors import eligibility_reason
+    from lab.models import LabNumericDisclosure, RecountRequest
+    from uploads.access import UploadActor
+
+    context.field.profile.permission_codes += [FIELD_BOOTSTRAP]
+    context.field.profile.save(update_fields=["permission_codes"])
+    producer = ProducerContext(
+        context.actor.organization,
+        context.field.batch.user,
+        effective_scope(context.field.membership),
+        AT,
+        FIELD_BOOTSTRAP,
+    )
+    assert "lab_count" not in {row["kind"] for row in build_sections(producer)["history"]}
+    hidden_changes, _ = list_courier_changes(producer, 0)
+    assert "history.lab_count" not in {row.resource_type for row in hidden_changes}
+    assert not LabNumericDisclosure.objects.filter(created_by=context.field.batch.user).exists()
+    # Actual underlying read permission remains necessary; field.bootstrap grants none.
+    context.field.profile.permission_codes.remove("recount.create")
+    context.field.profile.save(update_fields=["permission_codes"])
+    producer = ProducerContext(
+        context.actor.organization,
+        context.field.batch.user,
+        effective_scope(context.field.membership),
+        AT,
+        FIELD_BOOTSTRAP,
+    )
+    published = build_sections(producer)["history"]
+    assert next(row for row in published if row["kind"] == "lab_count")["value"] == 1
+    visible_changes, _ = list_courier_changes(producer, 0)
+    delivered = _typed_changes(visible_changes, producer)["history"]
+    assert (
+        next(row for row in delivered if row["resource_type"] == "history.lab_count")["data"]
+        == payload
+    )
+    assert (
+        LabNumericDisclosure.objects.filter(
+            created_by=context.field.batch.user, count_id=payload["count_id"]
+        ).count()
+        == 1
+    )
+    context.field.profile.permission_codes += ["recount.create"]
+    context.field.profile.save(update_fields=["permission_codes"])
+    assert (
+        eligibility_reason(
+            UploadActor(context.field.batch.user, context.actor.organization),
+            RecountRequest.objects.get(count_id=payload["count_id"]),
+            "second",
+        )
+        == "lab_recount_disclosed"
+    )
+    assert (
+        CourierChange.objects.filter(resource_type="history.lab_count").first().payload == payload
+    )
     command(
         context,
         "void_count",

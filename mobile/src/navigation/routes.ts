@@ -13,10 +13,14 @@ export type Route =
   | { readonly name: "ovitrapCapture" }
   | { readonly name: "ovitrapScanner"; readonly target: "ovitrap" | "bag" }
   | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }
+  | { readonly name: "closeShift" }
   | { readonly name: "openShift" }
+  | { readonly name: "supplyReceipt" }
+  | { readonly name: "fuel" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
-  | { readonly name: "settings" };
+  | { readonly name: "settings" }
+  | { readonly name: "stylePreview" };
 
 export type RouteName = Route["name"];
 

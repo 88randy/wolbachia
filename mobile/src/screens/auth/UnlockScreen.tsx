@@ -1,3 +1,4 @@
+import { BottomActions } from "../../ui/BottomActions.tsx";
 import { View } from "react-native";
 
 import type { AuthSnapshot } from "../../auth/auth-controller.ts";
@@ -16,7 +17,7 @@ export function UnlockScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) 
     <View style={styles.root}>
       <UnlockContent snapshot={snapshot} form={form} />
       {form.canUseBiometrics ? (
-        <View style={styles.footer}>
+        <BottomActions>
           <Button
             variant="outline"
             icon="fingerprint"
@@ -24,7 +25,7 @@ export function UnlockScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) 
             label={t("mobile.unlock.biometric")}
             onPress={form.biometric}
           />
-        </View>
+        </BottomActions>
       ) : null}
     </View>
   );

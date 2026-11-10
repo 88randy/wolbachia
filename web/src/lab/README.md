@@ -1,5 +1,7 @@
 # Laboratory egg counting (W35, #31)
 
+Technical choices are recorded in [decision 164](../../../docs/decisions.md).
+
 Routes: /lab/egg-counts (egg_count.create) and /lab/count-history
 (egg_count.read). The Lab home links only authorized actions. Filters, sorting
 and paging use the shared server-driven DataTable/FilterBar and URL state.
@@ -42,6 +44,8 @@ by its domain rule. No sample names, metrics or default scientific values.
   change cannot certify that integration.
 - LabCount exposes a void flag but no void author/time/reason. These details
   cannot be displayed by the list without a backend contract addition.
+  Global history and the correction dialog identify the target by the returned
+  Bag UUID; the count list does not provide a human Bag code.
 - A 409 has no counter/time. A caller with egg_count.read reads the current
   authorized count; a caller without it gets an explicit restricted-context note.
 - The server, not a client hard-coded parameter, decides whether confirmation is
@@ -53,5 +57,9 @@ W35Page.test.tsx and count-recovery.test.tsx cover keyboard/confirmation/advance
 replay, concurrent capture, access, states, English accessibility and immutable
 correction. count-value.test.ts owns pure integer edges; w-35.spec.ts owns the light/dark,
 es-MX/en, 30% expanded text and 320px layout/keyboard matrix.
-Runtime and browser layout checks require installed locked packages.
-The supplied checkout has no node_modules; no package installation is attempted.
+count-a11y.test.tsx protects the correction target identity, live failure feedback
+and distinct announcements for consecutive confirmed counts. The UI review against
+ui-ux-standards sections 15 and 16 found and fixed these regressions. Physical scanner,
+assistive-technology qualification and W4 consumer integration remain unverified.
+Runtime and browser layout checks use the locked workspace packages. Local
+verification and CI results are recorded in PR #320.

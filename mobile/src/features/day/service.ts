@@ -16,7 +16,7 @@ interface Dependencies {
   readonly kv: KvStore;
   readonly work: LocalWorkOverlay;
   readonly navigation: NavigationService;
-  readonly location: LocationSource;
+  readonly location: LocationSource & { stopAll?: () => void };
   readonly maps: MapPreparationSource;
   readonly inspect: MapFileInspector;
   readonly hasOpenShift: () => Promise<boolean>;
@@ -58,6 +58,9 @@ export class DayService {
   }
   clearSelection(): Promise<void> {
     return this.#deps.navigation.clear();
+  }
+  stopLocation(): void {
+    this.#deps.location.stopAll?.();
   }
   get location() {
     return this.#deps.location;

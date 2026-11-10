@@ -393,3 +393,10 @@ network calls. It is a separate Vite development entry excluded from the product
 Server-confirmed keyboard/scanner counting and append-only corrections are at
 `/lab/egg-counts` and `/lab/count-history`. See [the laboratory README](src/lab/README.md)
 for permissions, replay/session ownership, design deviations and API gaps.
+
+### Incident workspace (W6/W7, #33)
+
+`/incidents` and `/incidents/<code>` consume the generated reported facade,
+server-paged named metadata, immutable thread and revisioned commands. See
+[`src/incidents/README.md`](src/incidents/README.md) for session boundaries,
+evidence, criterion-to-test ownership and the remaining W4 integration.

@@ -69,7 +69,7 @@ export function quadrantBundleStatements(body: unknown): readonly SqlStatement[]
 export const clearDownloadedProjections: readonly SqlStatement[] = [
   {
     sql: `DELETE FROM lifecycle_courier_projection WHERE kind IN
-      ('ovitrap','sampling_point','history.review_decision','history.shift_validation','history.relocation_proposal','history.transfer_custody')`,
+      ('supply_assignment','ovitrap','sampling_point','history.review_decision','history.shift_validation','history.relocation_proposal','history.transfer_custody')`,
   },
   {
     sql: "UPDATE lifecycle_courier_projection SET body=json_set(body,'$._available',json('false')) WHERE kind IN ('quadrant','block')",

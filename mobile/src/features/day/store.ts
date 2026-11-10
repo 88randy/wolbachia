@@ -20,6 +20,7 @@ import { retainedHistoryStatements } from "../ovitrap-lifecycle/history-projecti
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
+import { readFuelCaptureContext } from "../fuel/capture-context.ts";
 import type { TaskOwner } from "./current-task.ts";
 import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
@@ -44,6 +45,14 @@ import {
   removeManifest,
 } from "./projection-statements.ts";
 import type { AssignedTask, BundleMeta, DayCache, MapManifest, ProjectionChange } from "./types.ts";
+import {
+  supplyBundleStatements,
+  supplyChangeStatements,
+  clearSupplyProjection,
+  invalidateSupplyProjection,
+  needsSupplyBootstrap,
+  readSupplyAssignments,
+} from "../supply-receipt/projection-state.ts";
 function assignmentStatement(change: ProjectionChange) {
   if (change.action === "remove") return { statement: removeTask(change), isUnreadable: false };
   const task = parseAssignment(change.data);
@@ -103,6 +112,15 @@ export class DayStore {
   currentTask(id: string, expected: TaskOwner) {
     return readCurrentTask(this.#db, id, expected);
   }
+  supplyAssignments(handle: CaptureTransportHandle) {
+    return readSupplyAssignments(this.#db, handle);
+  }
+  fuelCaptureContext(handle: CaptureTransportHandle) {
+    return readFuelCaptureContext(this.#db, handle);
+  }
+  needsSupplyBootstrap(): Promise<boolean> {
+    return needsSupplyBootstrap(this.#db);
+  }
   advanceCaptureTransport(
     handle: CaptureTransportHandle | null,
   ): Promise<CaptureTransportHandle | null> {
@@ -126,7 +144,11 @@ export class DayStore {
       ...bundle.manifests.map((manifest) => upsertManifest(manifest)),
       bundleMetadata(bundle.meta),
       ...courierBundleStatements(body),
+      ...supplyBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
+      isRecord(body) && Array.isArray(body.supplies)
+        ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
+        : removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       removeStatement(KV_KEYS.dayCompletionBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
@@ -149,6 +171,7 @@ export class DayStore {
       ...tasks.map((entry) => entry.statement),
       ...manifests,
       ...courierChangeStatements(body),
+      ...supplyChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
     statements.push(...changeMetadata(body, tasks.filter((entry) => entry.isUnreadable).length));
@@ -158,23 +181,30 @@ export class DayStore {
     await this.#db.runAtomically([
       setStatement("day_cleanup_pending", "true"),
       ...invalidateCaptureContext,
+      invalidateSupplyProjection,
       revokeCaptureScope(),
     ]);
   }
   /** Preserve caches and authored facts while a known-invalid cursor requires a new full body. */
   async suspendCaptureForRecovery(handle: CaptureTransportHandle | null): Promise<void> {
-    await this.#db.runAtomically([...captureRecoveryStatements(handle), INVALIDATE_ATTACHMENTS]);
+    await this.#db.runAtomically([
+      ...captureRecoveryStatements(handle),
+      invalidateSupplyProjection,
+      INVALIDATE_ATTACHMENTS,
+    ]);
   }
-  /** Older parsers may have discarded fields even while their ETag/cursor remain valid. */
+  /** Missing supply readiness also covers upgrades without changing released migrations. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {
     const rows = await this.#db.query(
       `SELECT 1 FROM kv WHERE key IN (?,?,?) AND value='true'
-        UNION ALL SELECT 1 WHERE ? AND NOT EXISTS(${CURRENT_CAPTURE_CONTEXT}) LIMIT 1`,
+        UNION ALL SELECT 1 WHERE ? AND (NOT EXISTS(${CURRENT_CAPTURE_CONTEXT})
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')) LIMIT 1`,
       [
         KV_KEYS.daySamplingPointsBootstrapPending,
         KV_KEYS.dayCompletionBootstrapPending,
         includeLifecycle ? LIFECYCLE_BOOTSTRAP_PENDING : KV_KEYS.dayCompletionBootstrapPending,
         includeLifecycle ? 1 : 0,
+        KV_KEYS.daySuppliesBootstrapReady,
       ],
     );
     return rows.length > 0;
@@ -190,6 +220,8 @@ export class DayStore {
       { sql: "DELETE FROM day_map_manifest" },
       { sql: "DELETE FROM day_bundle_meta" },
       ...clearDownloadedProjections,
+      removeStatement(KV_KEYS.daySuppliesBootstrapReady),
+      ...clearSupplyProjection,
       ...invalidateCaptureContext,
       revokeCaptureScope(),
       { sql: "DELETE FROM day_sampling_point" },

@@ -1,7 +1,10 @@
 import { LabHome } from "../lab/LabHome";
 import { W35Page } from "../lab/W35Page";
 import { W35HistoryPage } from "../lab/W35HistoryPage";
+import { W6Page } from "../incidents/W6Page";
+import { W7Page } from "../incidents/W7Page";
 import { InventoryHome } from "../inventory/InventoryHome";
+import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
 import { W10Page } from "../inventory/lots/W10Page";
@@ -100,29 +103,40 @@ const authenticatedRoute = createRoute({
   component: AppShell,
 });
 
-const areaRoutes = AREAS.map((area) =>
+const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
   createRoute({
     getParentRoute: () => authenticatedRoute,
     path: area.path,
-    ...(area.id === "quadrants" ? { validateSearch: tableSearchSchema } : {}),
+    ...(["quadrants", "incidents"].includes(area.id) ? { validateSearch: tableSearchSchema } : {}),
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "settings"
-        ? SettingsPage
-        : area.id === "fleet"
-          ? FleetHome
-          : area.id === "quadrants"
-            ? W22Page
-            : area.id === "lab"
-              ? LabHome
-              : area.id === "inventory"
-              ? InventoryHome
-              : () => <AreaPlaceholder areaId={area.id} />,
+      area.id === "incidents"
+        ? W6Page
+        : area.id === "settings"
+          ? SettingsPage
+          : area.id === "fleet"
+            ? FleetHome
+            : area.id === "quadrants"
+              ? W22Page
+              : area.id === "lab"
+                ? LabHome
+                : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+const incidentRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/incidents/$code",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("incidents", context.me, "incident.read");
+  },
+  component: W7Page,
+  errorComponent: AreaErrorState,
+});
 
 const quadrantVersionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -241,12 +255,28 @@ const catalogRoute = createRoute({
   component: CatalogsPage,
   errorComponent: AreaErrorState,
 });
+const inventoryLayout = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  id: "inventory-context",
+  component: InventoryScreen,
+});
+const inventoryHomeRoute = createRoute({
+  getParentRoute: () => inventoryLayout,
+  path: "/inventory",
+  beforeLoad: ({ context }) => {
+    const area = AREAS.find((entry) => entry.id === "inventory");
+    if (!area) throw new Error("Inventory area configuration unavailable");
+    requireAreaAccess(area, context.me);
+  },
+  component: InventoryHome,
+  errorComponent: AreaErrorState,
+});
 function inventoryRoute<const Path extends string>(
   path: Path,
   options: { permission: string; component: () => ReactElement },
 ) {
   return createRoute({
-    getParentRoute: () => authenticatedRoute,
+    getParentRoute: () => inventoryLayout,
     path,
     validateSearch: tableSearchSchema,
     beforeLoad: ({ context }) => {
@@ -272,7 +302,9 @@ const eggCountsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/lab/egg-counts",
   validateSearch: tableSearchSchema,
-  beforeLoad: ({ context }) => { requirePermission("lab", context.me, "egg_count.create"); },
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.create");
+  },
   component: W35Page,
   errorComponent: AreaErrorState,
 });
@@ -280,7 +312,9 @@ const eggCountHistoryRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/lab/count-history",
   validateSearch: tableSearchSchema,
-  beforeLoad: ({ context }) => { requirePermission("lab", context.me, "egg_count.read"); },
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.read");
+  },
   component: W35HistoryPage,
   errorComponent: AreaErrorState,
 });
@@ -292,10 +326,11 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
-    ...inventoryRoutes,
+    inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
     eggCountsRoute,
     eggCountHistoryRoute,
     quadrantVersionsRoute,
+    incidentRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,

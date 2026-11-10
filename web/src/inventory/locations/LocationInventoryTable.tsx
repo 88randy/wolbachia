@@ -3,12 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import type { Schemas } from "@wolbachia/api-client";
 import { FilterBar } from "../../data-table/FilterBar";
+import { SortSelect } from "../../data-table/SortSelect";
+import { FilterControls } from "../../data-table/FilterControls";
+import { FilterChips } from "../../data-table/FilterChips";
+import { IgnoredNotice } from "../../data-table/IgnoredNotice";
+import filterStyles from "../../data-table/filter-bar.module.css";
 import { DataTable } from "../../data-table/DataTable";
 import { pageTableData } from "../../data-table/table-data";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
 import { INVENTORY_PAGE_SIZE, STOCK_TABLE, MOVEMENT_TABLE } from "../inventory-table";
 import { buildTableController } from "../../data-table/table-controller";
 import { applyPatch } from "../../data-table/table-state";
+import type { TableController } from "../../data-table/table-types";
 import type { SearchPatch } from "../../data-table/table-types";
 import { inventoryStockOptions } from "../inventory-query";
 import { useInventoryContext } from "../use-inventory-context";
@@ -25,12 +31,40 @@ function useLocationTableUrl(movements: boolean) {
   const navigate = useNavigate();
   const parsed = {
     state: base.state,
-    ignored: base.ignored.filter((key) => !["view", "center"].includes(key)),
+    ignored: base.ignored.filter((key) => !["view", "center", "custody_location"].includes(key)),
   };
   const go = (patch: SearchPatch) => {
     void navigate({ to: ".", search: (previous) => applyPatch(previous, patch) });
   };
   return buildTableController(base.config, parsed, go);
+}
+/** Linked UUIDs remain removable chips, while the editable history control is the human code. */
+function LocationFilters({
+  controller,
+  movements,
+}: {
+  controller: TableController;
+  movements: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!movements) return <FilterBar controller={controller} />;
+  const controls = {
+    ...controller,
+    config: {
+      ...controller.config,
+      filters: controller.config.filters.filter((filter) => filter.key !== "lot"),
+    },
+  };
+  return (
+    <section className={filterStyles.bar} aria-label={t("table.filters.label")}>
+      <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
+      <div className={filterStyles.row}>
+        <FilterControls controller={controls} />
+        <SortSelect controller={controller} />
+      </div>
+      <FilterChips controller={controller} />
+    </section>
+  );
 }
 function useLocationTable({ location, movements }: Props) {
   const { t } = useTranslation();
@@ -54,7 +88,7 @@ export function LocationInventoryTable(props: Props) {
   return (
     <>
       <div className={styles.filters}>
-        <FilterBar controller={controller} />
+        <LocationFilters controller={controller} movements={props.movements} />
       </div>
       <DataTable<StockRow>
         embedded

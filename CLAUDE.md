@@ -38,13 +38,18 @@ El orquestador (sesión principal) planea, delega, revisa, integra y decide; no 
 1. `planner` parte el issue en tareas, interfaces y riesgos.
 2. El implementador trabaja en su propio git worktree y rama (`feat|fix|chore/<n>-<slug>`). Solo se paralelizan issues sin dependencias entre sí ni archivos compartidos.
 3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla y los criterios de aceptación. Nada de instrucciones vagas.
-4. Revisión, en paralelo: `code-reviewer` (siempre; incluye la auditoría de valor de las pruebas), `security-reviewer` (si toca datos, permisos, auth o entradas) y, en PRs con riesgo (sync, auth, permisos, migraciones, concurrencia), Codex (`/codex:adversarial-review`) desde la **primera** ronda, no al final. `qa` cuando falten pruebas de criterios. Las confirmaciones se piden al mismo revisor, que ya tiene contexto.
-   - Una sola ronda consolidada por vez: se juntan los hallazgos de todos los revisores antes de regresarla al implementador.
-   - Si un PR llega a 3 rondas por la misma clase de problema (carreras, sesión, orden), el orquestador cambia la regla de diseño (decisión nueva) en vez de seguir parchando casos.
+4. **Revisión según riesgo (desde 2026-11-09, para avanzar rápido):**
+   - **Riesgo alto** (sync, auth, permisos/aislamiento por organización, migraciones, concurrencia): `code-reviewer` + revisión adversarial de Codex, **máximo 2 rondas**. Después de la segunda, solo bloquea un hallazgo con reproducción concreta; lo demás se abre como issue de seguimiento y se mergea.
+   - **Riesgo normal** (pantallas web, UI móvil, docs, tooling): una sola revisión (`code-reviewer` o Codex), sin ronda adversarial.
+   - Una sola ronda consolidada por vez. Si la misma clase de problema aparece 2 veces, el orquestador fija una regla de diseño (decisión nueva) en vez de parchar casos.
+   - **Prohibida la ceremonia de evidencia** que no piden estas reglas: huellas SHA de archivos, "source freezes", manifiestos, paquetes de evidencia o bitácoras extensas. La evidencia es el PR (criterio → prueba) y el CI.
+   - **PRs chicos e independientes.** No apilar ramas salvo dependencia real; si un PR crece mucho, se parte.
+   - **Pruebas en dispositivo por hito** (APK de master cuando un flujo completo está listo), no por PR.
+   - **Prioridad a flujos completos y visibles** (vertical slices que el dueño puede recorrer de punta a punta) sobre backend aislado.
 5. Si algo no cumple, regresa al agente con observaciones concretas. Si un agente se atora dos veces en lo mismo: cambiar de enfoque o de modelo, o escalar al dueño con opciones.
 6. Tablero en el PR: tarea · agente · estado.
 
-**Definición de terminado:** criterios de aceptación cumplidos · pruebas · lint y formato limpios · reglas de `docs/engineering-rules.md` · documentación actualizada · CI en verde · revisión aprobada. Sin TODOs sueltos (lo que queda fuera se abre como issue con las 9 secciones y se liga en el PR), sin código muerto, cada dependencia nueva justificada en el PR.
+**Definición de terminado:** criterios de aceptación cumplidos · pruebas · lint y formato limpios · reglas de `docs/engineering-rules.md` · documentación actualizada · CI en verde · revisión aprobada (según riesgo, punto 4). Sin TODOs sueltos (lo que queda fuera se abre como issue con las 9 secciones y se liga en el PR), sin código muerto, cada dependencia nueva justificada en el PR.
 
 **Codex** (autorizado por el dueño el 2026-11-03; desde el 2026-11-04 también **implementador en paralelo** para ahorrar límites de sesión de Claude, con las mismas reglas vía `AGENTS.md`): segundo revisor, implementador por rol y apoyo en tareas acotadas (`/codex:review`, `/codex:adversarial-review`, `/codex:rescue`; CLI `codex exec` solo si el plugin no cubre la tarea). Nunca se le envían secretos, `.env`, llaves ni datos reales de personas. Si contradice a otro revisor, se resuelve con evidencia (prueba o documentación oficial) y se anota en el PR. Si no está disponible, se sigue sin él.
 

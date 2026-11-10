@@ -1,4 +1,5 @@
 import { lab } from "./lab.ts";
+import { incidents } from "./incidents.ts";
 import { inventory } from "./inventory.ts";
 import { ui } from "./ui.ts";
 import { analytics } from "./analytics.ts";
@@ -23,6 +24,7 @@ import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
   ...lab,
+  ...incidents,
   ...inventory,
   ...ui,
   ...analytics,

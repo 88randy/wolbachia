@@ -113,3 +113,7 @@ Both sync catalogs include six actual B10 result keys for inaccessible, blocked
 void, changed assignment, state conflict, missing evidence and unavailable transit.
 Existing inactive-reason/clock/final-upload codes are reused. Review messages retain
 the capture/signature; no text claims physical use or warehouse credit was applied.
+
+Issue #33 adds `incidents` workspace, state, severity, origin, event and evidence
+messages in both locales. Its explicit placeholders are listed in
+`test/messages.test.ts`; identifiers in API enums map to catalog keys in the web.

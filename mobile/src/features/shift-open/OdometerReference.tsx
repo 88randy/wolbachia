@@ -7,7 +7,7 @@ export function OdometerReference({ state }: { readonly state: ShiftSnapshot | n
   return (
     <>
       <AppText>{t("mobile.shiftOpen.lastOdometer")}</AppText>
-      <AppText>{state?.lastOdometer ?? t("mobile.shiftOpen.unknownOdometer")}</AppText>
+      <AppText isMonospace>{state?.lastOdometer ?? t("mobile.shiftOpen.unknownOdometer")}</AppText>
       {state?.hasOdometerWarning ? (
         <Notice tone="warning" icon="alert" message={t("mobile.shiftOpen.odometerWarning")} />
       ) : null}

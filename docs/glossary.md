@@ -257,6 +257,8 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 SupplyAssignment: explicit courier custodian/dated immutable plan, not a Location.
 OriginReleaseProof: genuine origin eligibility and reservation manifest, not receipt.
 SupplyReceipt: signed actual credited custody; zero differs from missing receipt.
+ReceiptDraft: retained owner-bound phone observation of original release lines;
+local signing and server credit/review are distinct facts.
 SupplyUse / SupplyShrinkage: explicit source/line deltas in the original declared unit.
 ReturnDeclaration: uncredited courier statement. ReturnAcceptance: separately signed
 warehouse custody transfer to the real destination. ReconciliationVersion: immutable
@@ -268,3 +270,20 @@ custody. BagDisposition: whole real Bag disposal preserving Lab/source/QA histor
 CourierTransitPolicyVersion: named authored evidence-review procedure, not a seeded
 scientific recipe or a storage certification. Material unavailable: actual disposed
 material cannot support another physical act even when its audit can be corrected.
+
+## Independent observations and physical paddle reuse (#115)
+
+RecountClaim: an authenticated counter's append-only second/third role claim for
+one actual RecountRequest and first-result frame. RecountAttempt: a genuine new
+independent observation, separate from the immutable first-pass population.
+RecountResolution: a reasoned selection of an exact first/second/third candidate,
+never an averaged or edited first value. LabQAPolicyVersion: the single authored
+tolerance/method configuration, with no inferred scientific verification.
+Numeric disclosure: a minimal actor/first-attempt publication receipt; no copied
+value and no certification of knowledge outside the system.
+EggPaddle: a forward proven physical identity for one actual inventory Piece.
+PaddleBagBinding: immutable Bag/Reading/source and issued-unit proof for one
+physical cycle. PaddleReuse: an authored verified-treatment fact retaining its
+current negative QA/material/rule frame. PaddleStockReturn: a concrete exactly-once
+same-Piece/lot/unit recovery backed by a genuine consumed debit and cycle; it never
+reverses SupplyUse or invents a facility transfer.

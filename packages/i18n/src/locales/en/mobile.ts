@@ -2,6 +2,92 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.shiftClose.refreshSupplies": "Refresh downloaded receipts",
+  "mobile.shiftClose.sourceFrame":
+    "Downloaded confirmed balance; additional declarations are shown below.",
+
+  "mobile.shiftClose.title": "Close shift",
+  "mobile.shiftClose.closedTitle": "Shift closed",
+  "mobile.shiftClose.phoneClosed": "Closed on the phone",
+  "mobile.shiftClose.serverReceived": "Server received the closing records",
+  "mobile.shiftClose.inReview": "Server received a record for review",
+  "mobile.shiftClose.rejected":
+    "A record was rejected. Check the inbox; the shift remains closed on the phone.",
+  "mobile.shiftClose.pending": "Pending points",
+  "mobile.shiftClose.noPending": "No pending points in the downloaded copy.",
+  "mobile.shiftClose.goNow": "Go to day view",
+  "mobile.shiftClose.leavePending": "Close without completing this point",
+  "mobile.shiftClose.leftPending": "Confirmed: point remains pending",
+  "mobile.shiftClose.planned": "Warehouse allocation",
+  "mobile.shiftClose.equation": "Received ? used ? returned ? shrinkage",
+  "mobile.shiftClose.difference": "Difference",
+  "mobile.shiftClose.unknown": "No confirmed value",
+  "mobile.shiftClose.supplies": "Supply reconciliation",
+  "mobile.shiftClose.differenceAllowed":
+    "Differences remain for review and do not prevent closure. A return is a declaration; the warehouse confirms receipt.",
+  "mobile.shiftClose.suppliesUnavailable":
+    "No downloaded receipt is linked to this shift. Balances and reconciliation remain unconfirmed; you can close.",
+  "mobile.shiftClose.returnQuantity": "Additional return quantity",
+  "mobile.shiftClose.returnDestination": "Return to the original warehouse",
+  "mobile.shiftClose.odometer": "Closing odometer (km)",
+  "mobile.shiftClose.note": "Closing note (optional)",
+  "mobile.shiftClose.lowOdometer":
+    "Odometer is below the opening reading. It will be retained for review; you can close on the phone.",
+  "mobile.shiftClose.confirmTitle": "Close this shift?",
+  "mobile.shiftClose.confirmHint":
+    "This phone will save the closure and stop capture and location collection for this shift. Pending points will not be completed.",
+  "mobile.shiftClose.close": "Close shift on the phone",
+  "mobile.shiftClose.continue": "Review and confirm closure",
+  "mobile.shiftClose.retryHint":
+    "Pending records retry when the session and connection return. Keep the app installed. Check the inbox for pending attachments and rejections.",
+  "mobile.shiftClose.reviewHistory": "Review history",
+  "mobile.shiftClose.notReviewed": "No downloaded supervisor decision.",
+  "mobile.shiftClose.observed": "Observed by supervisor",
+  "mobile.shiftClose.approved": "Current approval",
+  "mobile.shiftClose.staleApproval": "Earlier approval; new review required",
+  "mobile.shiftClose.noShift": "No local shift to close. Return home.",
+  "mobile.shiftClose.saveFailed":
+    "The change was not saved. Your input is retained. Check pending points, quantities and reasons, then retry; if it continues, check storage with your supervisor.",
+  "mobile.shiftClose.shrinkageQuantity": "Additional shrinkage quantity",
+  "mobile.shiftClose.reason": "Shrinkage reason (10 to 1000 characters)",
+  "mobile.shiftClose.photo": "Take shrinkage photo",
+  "mobile.shiftClose.photoRequired": "Shrinkage requires a photo and a catalog reason.",
+  "mobile.shiftClose.photoSaved": "Photo saved on phone; delivery pending",
+  "mobile.shiftOpen.closed": "This shift is closed on the phone. Open its summary.",
+
+  "mobile.unlock.greetingNeutral": "Hello",
+  "mobile.shiftOpen.severeSaved":
+    "You cannot depart with this motorcycle because of a severe fault. Contact your supervisor to arrange fleet clearance.",
+  "mobile.shiftOpen.receivedRejected": "Received by server · Opening rejected",
+  "mobile.shiftOpen.receivedInReview": "Received by server · In review",
+  "mobile.preview.title": "Style preview",
+  "mobile.preview.sample": "Sample",
+  "mobile.preview.intro":
+    "Interface examples without real data. They do not save changes or send records.",
+  "mobile.preview.themeHint": "Follow the phone or choose an appearance.",
+  "mobile.preview.textScaleHint": "To review 130% text, use the phone text-size setting.",
+  "mobile.preview.system": "System",
+  "mobile.preview.light": "Light",
+  "mobile.preview.dark": "Dark",
+  "mobile.preview.toggleTheme": "Change appearance",
+  "mobile.preview.primary": "Finish review",
+  "mobile.preview.data": "Sample data",
+  "mobile.preview.progress": "Points checked · daily target",
+  "mobile.preview.received": "Received",
+  "mobile.preview.onPhone": "On the phone",
+  "mobile.preview.problem": "Needs attention",
+  "mobile.preview.review": "In review",
+  "mobile.preview.inactive": "Inactive",
+  "mobile.preview.fields": "Capture",
+  "mobile.preview.code": "Sample code",
+  "mobile.preview.disabled": "Action unavailable",
+  "mobile.preview.disabledHint":
+    "Example: configuration is missing. Your supervisor can enable this action.",
+  "mobile.preview.loading": "Loading on the phone",
+  "mobile.preview.empty": "No records yet",
+  "mobile.preview.partial": "The rest stays available",
+  "mobile.preview.error": "This example could not update. Retry; what you entered is still here.",
+  "mobile.preview.retryResult": "Example retry completed. No server was contacted.",
   "mobile.lifecycle.replace": "Replace ovitrap",
   "mobile.lifecycle.relocate": "Propose relocation",
   "mobile.lifecycle.remove": "Remove ovitrap",
@@ -566,4 +652,164 @@ export const mobile: Record<keyof typeof source, string> = {
     "The draft is retained, but ownership is unproven for this session. Sign in with the original account or contact support.",
   "mobile.lifecycle.remoteProposal":
     "Downloaded server proposal; it is not an editable local capture.",
+  "mobile.supplyReceipt.title": "Receive supplies",
+  "mobile.supplyReceipt.subtitle": "Sign only for what you physically received",
+  "mobile.supplyReceipt.start": "Review this delivery",
+  "mobile.supplyReceipt.resume": "Open saved receipt",
+  "mobile.supplyReceipt.assignment": "Assignment",
+  "mobile.supplyReceipt.release": "Warehouse release",
+  "mobile.supplyReceipt.lot": "Lot",
+  "mobile.supplyReceipt.piece": "Piece",
+  "mobile.supplyReceipt.unit": "Declared unit",
+  "mobile.supplyReceipt.expected": "Expected quantity",
+  "mobile.supplyReceipt.actual": "Received quantity",
+  "mobile.supplyReceipt.declaredUnits":
+    "Use the unit declared in this delivery. Do not convert boxes to pieces. Codes and unit names are not available yet; check the identifiers with the warehouse.",
+  "mobile.supplyReceipt.noAssignments":
+    "No assigned deliveries are available in the downloaded copy. Refresh or return to your shift.",
+  "mobile.supplyReceipt.unavailable":
+    "A current authorized copy of your deliveries is unavailable. Refresh online or contact your supervisor. Your receipts are retained.",
+  "mobile.supplyReceipt.refresh": "Refresh deliveries",
+  "mobile.supplyReceipt.working": "Saving on the phone…",
+  "mobile.supplyReceipt.save": "Save signed receipt on the phone",
+  "mobile.supplyReceipt.saved":
+    "Signed receipt saved on the phone. This does not yet confirm server receipt.",
+  "mobile.supplyReceipt.serverReceived":
+    "Initial acknowledgement: the server received the receipt. Check any supervisor review separately.",
+  "mobile.supplyReceipt.review":
+    "Initial acknowledgement: the server received the receipt for review. What you signed is retained; this acknowledgement alone does not confirm credited inventory.",
+  "mobile.supplyReceipt.rejected":
+    "The server did not apply the receipt. Your capture and signature are retained; check the inbox or contact your supervisor.",
+  "mobile.supplyReceipt.pendingSignature":
+    "The signature is saved on the phone and its file is still waiting to upload. Check or retry in the inbox.",
+  "mobile.supplyReceipt.inbox": "Open sync inbox",
+  "mobile.supplyReceipt.scanLabel": "Lot QR code",
+  "mobile.supplyReceipt.scanHint":
+    "You can also paste the complete QR content or enter the lot UUID. A label code without confirmed identification is not added.",
+  "mobile.supplyReceipt.scan": "Validate lot QR",
+  "mobile.supplyReceipt.manual": "Validate lot UUID manually",
+  "mobile.supplyReceipt.duplicate": "This code is already recorded. Another piece was not added.",
+  "mobile.supplyReceipt.added":
+    "Code recognized. Review the quantity in its declared unit before signing.",
+  "mobile.supplyReceipt.invalid":
+    "We could not validate this code for your delivery. Nothing was added. Check the identifier with the warehouse or your supervisor.",
+  "mobile.supplyReceipt.discrepancy": "Explain any difference",
+  "mobile.supplyReceipt.missing": "Missing material",
+  "mobile.supplyReceipt.damaged": "Arrived damaged",
+  "mobile.supplyReceipt.other": "Other (specify)",
+  "mobile.supplyReceipt.discrepancyText": "Explanation of the difference",
+  "mobile.supplyReceipt.discrepancyHint":
+    "Sign the actual quantities. The server retains the difference for review; do not change quantities to make them match.",
+  "mobile.supplyReceipt.photo": "Photograph the damage",
+  "mobile.supplyReceipt.photoSaved":
+    "Damage photo retained only on the phone. It cannot be submitted with this receipt yet; contact your supervisor.",
+  "mobile.supplyReceipt.signatureTitle": "Receipt signature",
+  "mobile.supplyReceipt.signatureHint":
+    "Sign here with your finger or photograph your handwritten signature. The signature covers the quantities and differences shown above.",
+  "mobile.supplyReceipt.signatureCapture": "Keep this signature",
+  "mobile.supplyReceipt.signaturePhoto": "Photograph my handwritten signature",
+  "mobile.supplyReceipt.signatureSaved": "Signature retained on the phone",
+  "mobile.supplyReceipt.undo": "Undo last stroke",
+  "mobile.supplyReceipt.clear": "Start signature again",
+  "mobile.supplyReceipt.signatureRequired":
+    "Your signature is missing. Sign with your finger or photograph your handwritten signature before saving.",
+  "mobile.supplyReceipt.quantityInvalid":
+    "Check quantities in their declared unit. A piece accepts only zero or one; other quantities accept up to six decimals within the delivery.",
+  "mobile.supplyReceipt.discrepancyRequired":
+    "Declare the reason for the difference before signing the receipt.",
+  "mobile.supplyReceipt.otherRequired": "Write an explanation for Other before saving.",
+  "mobile.supplyReceipt.evidenceRequired":
+    "A damage photo is missing. Take it before signing; the rest of your capture is retained.",
+  "mobile.supplyReceipt.staleDraft":
+    "The capture changed while you were working. Review the retained receipt and try again.",
+  "mobile.supplyReceipt.shiftRequired":
+    "Open an authorized shift before receiving supplies. Your draft is retained.",
+  "mobile.supplyReceipt.configurationRequired":
+    "Downloaded catalogs or rules are missing. Refresh online before signing.",
+  "mobile.supplyReceipt.startScanner": "Scan QR with camera",
+  "mobile.supplyReceipt.scannerTitle": "Scan a lot in this delivery",
+  "mobile.supplyReceipt.scannerHint":
+    "Point at the lot QR code. The reader closes after each read; check the quantity before signing.",
+  "mobile.supplyReceipt.stopScanner": "Close reader and return to receipt",
+  "mobile.supplyReceipt.scannerPermission":
+    "Camera permission is unavailable. Enable it in Settings or enter the identifier manually.",
+  "mobile.supplyReceipt.scannerRetry":
+    "Unlock the phone and reopen the reader from this receipt. Manual identifier entry remains available.",
+  "mobile.supplyReceipt.scannerUnavailable":
+    "We could not open the camera. Retry or enter the identifier manually.",
+  "mobile.supplyReceipt.reviewedAccepted": "Later review: receipt accepted by the supervisor.",
+  "mobile.supplyReceipt.reviewedVoided":
+    "Later review: receipt voided by the supervisor. The signed capture is retained.",
+  "mobile.supplyReceipt.incidentOpen":
+    "Later review: an incident was opened. This does not accept or void the receipt.",
+  "mobile.fuel.title": "Add fuel",
+  "mobile.fuel.subtitle": "Offline capture · current shift motorcycle",
+  "mobile.fuel.motorcycle": "Motorcycle",
+  "mobile.fuel.motorcycleFixed":
+    "This motorcycle belongs to your open shift and cannot be changed here.",
+  "mobile.fuel.litres": "Litres (L)",
+  "mobile.fuel.amount": "Amount (MXN)",
+  "mobile.fuel.odometer": "Current odometer (km)",
+  "mobile.fuel.fullRefill": "Did you fill the tank?",
+  "mobile.fuel.fullRefillYes": "Yes · full tank",
+  "mobile.fuel.fullRefillNo": "No · partial fill",
+  "mobile.fuel.receipt": "Receipt photo",
+  "mobile.fuel.receiptPreview": "Private preview of this fuel receipt",
+  "mobile.fuel.receiptCheck":
+    "Check that the numbers are readable. If blurry, retake the photo with more light and hold still; your quantities are retained.",
+  "mobile.fuel.receiptSaved": "The original receipt photo is retained with this load.",
+  "mobile.fuel.noReceiptSaved":
+    "This load was saved without a receipt photo; its receipt remains pending.",
+  "mobile.fuel.noReceipt":
+    "No receipt photo. Retry the camera or save the load with its receipt pending.",
+  "mobile.fuel.takePhoto": "Take receipt photo",
+  "mobile.fuel.retake": "Retake receipt photo",
+  "mobile.fuel.previewUnavailable":
+    "We could not show the preview. Its reference is retained; check the photo before saving or take it again.",
+  "mobile.fuel.photoUnavailable":
+    "We could not open the camera. Retry; your quantities and previous photo are retained.",
+  "mobile.fuel.insufficient":
+    "Insufficient efficiency data: consecutive full fills with a known distance are required. You can save the load and close your shift.",
+  "mobile.fuel.unconfigured":
+    "Efficiency limits for this interval have not been downloaded. You can save; the server will review the load when received.",
+  "mobile.fuel.decreased":
+    "The odometer is below the previous reading. Check the number; you can keep it and save the load.",
+  "mobile.fuel.efficiencyOk": "Comparable-interval efficiency is within the advisory limits.",
+  "mobile.fuel.efficiencyReview":
+    "Efficiency is outside the advisory range. Check litres and odometer; you can save as entered and close your shift.",
+  "mobile.fuel.saved": "Saved on the phone · awaiting server receipt.",
+  "mobile.fuel.serverReceived": "Fuel load received by the server.",
+  "mobile.fuel.reviewPending":
+    "Received by the server · awaiting review. Your quantities are retained.",
+  "mobile.fuel.rejected":
+    "The server rejected this load. The capture is retained; check the inbox reason and contact your supervisor.",
+  "mobile.fuel.receiptPending":
+    "Receipt upload or verification pending; this is not a review of the fuel load.",
+  "mobile.fuel.receiptVerified":
+    "Receipt photo verified by the server; this is not a review of the fuel load.",
+  "mobile.fuel.reviewedAccepted": "Later review: fuel load accepted by the supervisor.",
+  "mobile.fuel.reviewedVoided": "Later review: fuel load voided. The original capture is retained.",
+  "mobile.fuel.incidentOpen":
+    "Later review: an incident was opened; the fuel load is neither accepted nor voided.",
+  "mobile.fuel.litresInvalid":
+    "Enter litres greater than zero with up to three decimal places and no thousands separators.",
+  "mobile.fuel.amountInvalid":
+    "Enter an amount greater than zero with up to two decimal places and no thousands separators.",
+  "mobile.fuel.odometerInvalid":
+    "Enter whole kilometres from 0 to 999999 without thousands separators.",
+  "mobile.fuel.unavailable":
+    "Your shift or downloaded context does not authorize this capture. Check your shift and retry; the draft is retained.",
+  "mobile.fuel.shiftRequired":
+    "Open an authorized shift before adding fuel. Your draft is retained.",
+  "mobile.fuel.staleDraft":
+    "The capture changed while you were working. Review the retained draft and retry.",
+  "mobile.fuel.draftSaved": "Draft on this phone · check the values before saving the load.",
+  "mobile.fuel.draftPending": "Changes still need saving on the phone. Retry before leaving.",
+  "mobile.fuel.empty": "There is no fuel entry yet. Start one for your current shift motorcycle.",
+  "mobile.fuel.begin": "Start fuel entry",
+  "mobile.fuel.beginAnother": "Capture another load",
+  "mobile.fuel.save": "Save fuel load",
+  "mobile.fuel.working": "Saving on the phone…",
+  "mobile.fuel.saveHint": "Save retains the load on this phone. Upload and review happen later.",
+  "mobile.fuel.inbox": "View upload and review in the inbox",
 };

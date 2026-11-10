@@ -22,6 +22,7 @@ interface ServiceDeps {
   readonly refreshCatalog?: () => Promise<void>;
 }
 export interface ShiftSnapshot extends StoredShift {
+  readonly locallyClosedAt?: string | null;
   readonly catalog: ChecklistCatalog | null;
   readonly map: MapPreparation | null;
   readonly gate: Gate | null;
@@ -48,6 +49,9 @@ export class ShiftOpenService {
       this.#listeners.delete(listener);
     };
   };
+  notifyLocalClose(): void {
+    for (const listener of this.#listeners) listener();
+  }
   async #saveMap(map: MapPreparation): Promise<void> {
     await this.#deps.store.saveMap(map);
     for (const listener of this.#listeners) listener();
@@ -62,16 +66,19 @@ export class ShiftOpenService {
   }
   async readWithGuard(): Promise<{ snapshot: ShiftSnapshot; guard: SqlStatement }> {
     const { store } = this.#deps;
-    const { catalog, map, guard, ...state } = await store.readGateFacts();
+    const { catalog, map, guard, locallyClosedAt, ...state } = await store.readGateFacts();
     const lastOdometer =
       state.draft === null ? null : await store.lastOdometer(state.draft.motorcycle_code);
-    const gate = outcomeGate(
-      state.opening,
-      state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
-    );
+    const gate = locallyClosedAt
+      ? "closed"
+      : outcomeGate(
+          state.opening,
+          state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
+        );
     return {
       snapshot: {
         ...state,
+        locallyClosedAt,
         catalog,
         map,
         gate,
