@@ -57,10 +57,24 @@ EXPECTED_COHORTS = {
         "tests/test_lab_history_114.py",
         "tests/test_lab_policy_114.py",
         "tests/test_lab_reception_114.py",
+    },
+    "regular-lab-2": {
         "tests/test_lab_recounts_114.py",
         "tests/test_lab_recounts_b_19.py",
         "tests/test_lab_samples_b_21.py",
         "tests/test_lab_shipment_samples_118.py",
+    },
+    "regular-auth": {
+        "tests/test_token_services.py",
+        "tests/test_rule_services.py",
+        "tests/test_rule_api.py",
+        "tests/test_password_reset.py",
+        "tests/test_login.py",
+        "tests/test_device_admin.py",
+        "tests/test_refresh_logout.py",
+        "tests/test_bearer_authentication.py",
+        "tests/test_token_retention.py",
+        "tests/test_accounts_b_02.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -158,8 +172,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 37
-        )  # Residual regular, ten migration owners and twenty-six complete ordinary modules.
+            validate_fragments(bundles, expected) == 47
+        )  # Residual regular, ten migration owners and thirty-six complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
