@@ -1,9 +1,22 @@
+import { Inbox } from "lucide-react-native";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Card } from "../../ui/Card.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import type { SettingsState } from "./settings-service.ts";
+
+function Count({ label, value }: { readonly label: string; readonly value: number }) {
+  return (
+    <View className="flex-1 items-center gap-1 rounded-2xl bg-surface-muted p-3">
+      <AppText variant="number">{value}</AppText>
+      <AppText variant="caption" tone="secondary" className="text-center">
+        {label}
+      </AppText>
+    </View>
+  );
+}
 
 export function PendingWorkCard({
   state,
@@ -14,16 +27,15 @@ export function PendingWorkCard({
 }) {
   const t = useT();
   return (
-    <Card>
-      <AppText variant="h2">{t("mobile.settings.pendingWork")}</AppText>
-      <AppText>{t("mobile.settings.events")}</AppText>
-      <AppText isMonospace>{state.pendingEvents}</AppText>
-      <AppText>{t("mobile.settings.files")}</AppText>
-      <AppText isMonospace>{state.pendingFiles}</AppText>
-      <AppText>{t("mobile.settings.drafts")}</AppText>
-      <AppText isMonospace>{state.drafts}</AppText>
-      <Notice tone="info" icon="lock" message={t("mobile.settings.lockHint")} />
-      <Button variant="outline" label={t("mobile.settings.viewUploads")} onPress={onInbox} />
-    </Card>
+    <>
+      <SectionTitle title={t("mobile.settings.pendingWork")} />
+      <View className="flex-row gap-2">
+        <Count label={t("mobile.settings.events")} value={state.pendingEvents} />
+        <Count label={t("mobile.settings.files")} value={state.pendingFiles} />
+        <Count label={t("mobile.settings.drafts")} value={state.drafts} />
+      </View>
+      <InfoNotice tone="info" message={t("mobile.settings.lockHint")} />
+      <SecondaryButton icon={Inbox} label={t("mobile.settings.viewUploads")} onPress={onInbox} />
+    </>
   );
 }

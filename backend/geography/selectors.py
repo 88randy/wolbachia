@@ -196,6 +196,31 @@ def build_quadrant_references(ctx: ProducerContext) -> list[dict[str, Any]]:
     ]
 
 
+def build_quadrant_zones(ctx: ProducerContext) -> list[dict[str, Any]]:
+    """Polygons of the quadrants inside the scope of the caller (latest version), for the field map."""
+    quadrants = filter_producer_rows(Quadrant.objects.all(), ctx, ("center_id", "pk"))
+    latest = (
+        QuadrantVersion.objects.filter(quadrant=OuterRef("quadrant_id"))
+        .order_by("-revision")
+        .values("pk")[:1]
+    )
+    versions = (
+        QuadrantVersion.objects.filter(
+            organization=ctx.organization, quadrant__in=quadrants, pk=Subquery(latest)
+        )
+        .select_related("quadrant")
+        .order_by("quadrant__code")
+    )
+    return [
+        {
+            "id": str(version.quadrant_id),
+            "code": version.quadrant.code,
+            "ring": version.geometry["coordinates"][0],
+        }
+        for version in versions
+    ]
+
+
 def build_sampling_points(ctx: ProducerContext) -> list[dict[str, Any]]:
     points = filter_producer_rows(SamplingPoint.objects.all(), ctx, POINT_LOOKUPS)
     latest = (

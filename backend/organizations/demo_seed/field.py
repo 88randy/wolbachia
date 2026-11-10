@@ -6,6 +6,7 @@ exactly like a phone would. Event ids are derived from stable names, so a rerun 
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from math import asin, cos, radians, sin, sqrt
 from typing import Any
 from uuid import UUID, uuid5
 
@@ -21,11 +22,11 @@ from geography.models import SamplingPoint
 from organizations.models import Organization
 
 NAMESPACE = UUID("6f0e2f3a-1d2b-4c5e-9a77-358358358358")
-PLACED_BLOCK = "Q-DEMO-01-B1"
+PLACED_BLOCK = "Q-MER-01-B1"
 CHECKED_COUNT = 3
 PLACED_COUNT = 4  # the clock-skew limit allows about four 90 s steps
 STEP_SECONDS = 90  # 130 m in 90 s is under 6 km/h, below the speed lock
-BAG_PREFIX = "B-DEMO-"
+BAG_PREFIX = "B-MER-"
 GPS_ACCURACY_M = 5
 
 
@@ -149,6 +150,26 @@ def catalog_for(organization: Organization, author: User) -> dict[str, Any]:
     ).content
 
 
+MAX_JUMP_KM = 5  # farther than this from the courier's last capture trips the speed lock
+
+
+def _is_far_from_last_capture(courier: User, point: SamplingPoint) -> bool:
+    """An organization seeded by the first demo version has captures in another city: the speed
+    lock would flag a placement here, so the live placement is skipped (the courier places the
+    points on the phone instead)."""
+    last = (
+        FieldEvent.objects.filter(created_by=courier, gps_lat__isnull=False, gps_lng__isnull=False)
+        .order_by("-device_time")
+        .first()
+    )
+    if last is None:
+        return False
+    lng, lat = point.versions.order_by("-version").get().location
+    d_lat, d_lng = radians(lat - last.gps_lat), radians(lng - last.gps_lng)
+    a = sin(d_lat / 2) ** 2 + cos(radians(lat)) * cos(radians(last.gps_lat)) * sin(d_lng / 2) ** 2
+    return 2 * 6371 * asin(sqrt(a)) > MAX_JUMP_KM
+
+
 def ensure_ovitraps(organization: Organization, courier: User) -> list[DemoOvitrap]:
     """Place every point of the first demo block; read the first few and bag them (writes).
 
@@ -163,7 +184,10 @@ def ensure_ovitraps(organization: Organization, courier: User) -> list[DemoOvitr
     )
     sender = Sender(batch, snapshot.version)
     points = SamplingPoint.objects.filter(organization=organization, block__code=PLACED_BLOCK)
-    items = []
+    items: list[DemoOvitrap] = []
+    first = points.order_by("code").first()
+    if first is None or _is_far_from_last_capture(courier, first):
+        return items
     for number, point in enumerate(points.order_by("code")[:PLACED_COUNT]):
         has_reading = number < CHECKED_COUNT
         bag = f"{BAG_PREFIX}{number + 1:03d}" if has_reading else None

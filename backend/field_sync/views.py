@@ -25,7 +25,9 @@ from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext, EventEnvelope
 from field_sync.exceptions import DeviceMismatchError, SyncInProgressError
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC, BodySizeWithinLimit
+from field_sync.selectors import producer_context
 from field_sync.serializers import (
+    FieldZoneSerializer,
     BootstrapSerializer,
     SyncBatchSerializer,
     SyncResponseSerializer,
@@ -223,3 +225,33 @@ class FieldBootstrapViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         if etag_matches(request, version):
             return Response(status=304, headers=headers)
         return Response(BootstrapSerializer(bundle).data, headers=headers)
+
+
+class FieldZonesViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
+    """Read-only quadrant polygons inside the assigned scope of the caller, for the offline map."""
+
+    authentication_classes = [DeviceBearerAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
+    required_permissions = {"list": FIELD_BOOTSTRAP}
+    serializer_class = FieldZoneSerializer
+    pagination_class = None
+    throttle_classes = [FieldSyncDeviceThrottle]
+    http_method_names = ["get", "options"]
+
+    @extend_schema(responses={200: FieldZoneSerializer(many=True)})
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        from geography.selectors import build_quadrant_zones
+
+        session, user = request.auth, request.user
+        if not isinstance(session, DeviceSession) or not isinstance(user, User):
+            raise NotAuthenticated
+        now = server_now()
+        batch = BatchContext(
+            organization=request.organization,  # type: ignore[attr-defined]
+            user=user,
+            device=session.device,
+            sent_at=now,
+            received_at=now,
+        )
+        ctx = producer_context(batch, FIELD_BOOTSTRAP)
+        return Response(FieldZoneSerializer(build_quadrant_zones(ctx), many=True).data)

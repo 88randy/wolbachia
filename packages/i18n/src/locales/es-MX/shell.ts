@@ -33,7 +33,7 @@ export const shell = {
   "shell.nav.fleet": "Flota",
   "shell.nav.lab": "Laboratorio",
   "shell.nav.people": "Personal",
-  "shell.nav.dashboards": "Tableros",
+  "shell.nav.dashboards": "Análisis",
   "shell.nav.regulatory": "Regulatorio",
   "shell.nav.settings": "Configuración",
 

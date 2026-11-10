@@ -21,6 +21,7 @@ import { closure } from "./closure.ts";
 import { inventory } from "./inventory.ts";
 import { ui } from "./ui.ts";
 import { analytics } from "./analytics.ts";
+import { discovery } from "./discovery.ts";
 import { refresh } from "./refresh.ts";
 import { orgAdmin } from "./orgAdmin.ts";
 import { geography } from "./geography.ts";
@@ -36,6 +37,8 @@ import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
+import { field } from "./field.ts";
+import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { rules } from "./rules.ts";
@@ -70,6 +73,7 @@ export const esMX = {
   ...inventory,
   ...ui,
   ...analytics,
+  ...discovery,
   ...refresh,
   ...orgAdmin,
   ...geography,
@@ -80,6 +84,8 @@ export const esMX = {
   ...errors,
   ...mobile,
   ...courier,
+  ...field,
+  ...courierFlow,
   ...shell,
   ...states,
   ...auth,

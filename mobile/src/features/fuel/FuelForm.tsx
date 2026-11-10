@@ -1,8 +1,6 @@
-import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
 import { FuelField } from "./FuelField.tsx";
-import { FuelRefillChoice } from "./FuelRefillChoice.tsx";
 import { FuelMotorcycle } from "./FuelMotorcycle.tsx";
+import { FuelRefillChoice } from "./FuelRefillChoice.tsx";
 import type { M11Model } from "./use-m-11.ts";
 
 const FIELDS = ["litres", "amount", "odometer"] as const;
@@ -17,7 +15,7 @@ export function FuelForm({ model }: { readonly model: M11Model }) {
   if (!draft) return null;
   const disabled = model.isBusy || !model.state?.ready || model.state.event !== null;
   return (
-    <Card>
+    <>
       <FuelMotorcycle code={draft.motorcycleCode} />
       {FIELDS.map((field) => (
         <FuelField
@@ -32,8 +30,7 @@ export function FuelForm({ model }: { readonly model: M11Model }) {
           }}
         />
       ))}
-      <AppText variant="caption">{draft.currency}</AppText>
       <FuelRefillChoice model={model} />
-    </Card>
+    </>
   );
 }

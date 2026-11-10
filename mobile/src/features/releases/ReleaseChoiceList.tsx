@@ -1,6 +1,6 @@
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { ReleaseChoiceOption } from "./ReleaseChoiceOption.tsx";
 
 interface Props {
@@ -19,8 +19,8 @@ export function ReleaseChoiceList(props: Props) {
   const t = useT();
   const keys = CHOICE_KEYS[props.kind];
   return (
-    <Card>
-      <AppText variant="button">{t(keys.title)}</AppText>
+    <>
+      <SectionTitle title={t(keys.title)} />
       {props.options.length ? (
         props.options.map((option) => (
           <ReleaseChoiceOption
@@ -32,9 +32,8 @@ export function ReleaseChoiceList(props: Props) {
           />
         ))
       ) : (
-        <AppText>{t(keys.empty)}</AppText>
+        <AppText variant="body">{t(keys.empty)}</AppText>
       )}
-      <AppText variant="caption">{t("mobile.release.selectionHint")}</AppText>
-    </Card>
+    </>
   );
 }

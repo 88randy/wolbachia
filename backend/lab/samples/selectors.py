@@ -108,6 +108,13 @@ def filter_samples(
     )
     if not values.get("include_voided", False):
         rows = rows.filter(event__voided_at__isnull=True)
+    if values.get("pending_result", False):
+        latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by(
+            "-revision"
+        )
+        rows = rows.annotate(latest_status=Subquery(latest.values("status")[:1])).filter(
+            Q(latest_status__isnull=True) | ~Q(latest_status="valid")
+        )
     return rows
 
 
