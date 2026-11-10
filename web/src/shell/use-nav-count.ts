@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { notificationOptions, visibleNotificationAnswer } from "../notifications/notification-query";
+import {
+  notificationOptions,
+  visibleNotificationAnswer,
+} from "../notifications/notification-query";
 import { useNotificationScope } from "../notifications/use-notification-scope";
 import type { AreaId } from "../router/areas";
 

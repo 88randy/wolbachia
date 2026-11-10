@@ -29,7 +29,7 @@ here. Import the component from its own file.
   Use only for irreversible/high-impact actions; Cancel receives initial focus.
   Async business flows own validation and submission outside this primitive.
 - `ToastProvider` wraps a shell. `useToast().showToast({ message, tone?, action?,
-  isBlocking? })` displays at most three notices. `action` is `{ label, onAction }`.
+isBlocking? })` displays at most three notices. `action` is `{ label, onAction }`.
   Additional notices queue until a visible slot opens; an active Undo is never
   evicted. Five-second timers start on visibility, pause during hover or focus,
   preserve their remaining time,
@@ -52,7 +52,6 @@ its first error. Existing `TextField` remains presentational and compatible with
 React Hook Form. Submission progress uses the shared `Button`.
 
 Compact card period selectors may use Select hideLabel; their accessible label remains present. DataTable embedded removes its outer frame when a parent Card already supplies the surface; it does not change table behavior.
-
 
 Issue #218 adds `Switch` (native keyboard behavior, visible label and announced checked state)
 and `DialogFooter` (equal-width Cancel/Save tracks, right aligned; stacked only at the shared compact breakpoint).

@@ -11,7 +11,13 @@ interface StateFrameProps {
 }
 
 /** Centered empty, error and blocked states: icon in a soft circle, one message, one action. */
-export function StateFrame({ icon: Icon, message, tone = "neutral", role, children }: StateFrameProps) {
+export function StateFrame({
+  icon: Icon,
+  message,
+  tone = "neutral",
+  role,
+  children,
+}: StateFrameProps) {
   return (
     <div
       role={role}

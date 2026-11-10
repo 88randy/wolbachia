@@ -128,4 +128,21 @@
   html {
     @apply font-sans antialiased;
   }
+  /* Preflight resets headings and text links; restore one consistent type scale. */
+  h1 {
+    @apply text-2xl leading-8 font-bold tracking-tight;
+  }
+  h2 {
+    @apply text-base leading-6 font-semibold tracking-tight;
+  }
+  h3 {
+    @apply text-sm leading-5 font-semibold;
+  }
+  p {
+    @apply my-0;
+  }
+  /* Text links (no class): brand color with a soft underline that firms up on hover. */
+  a:not([class]) {
+    @apply font-medium text-action-strong underline decoration-action/35 underline-offset-[3px] transition-colors hover:decoration-action;
+  }
 }

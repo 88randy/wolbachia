@@ -19,9 +19,7 @@ export function SidebarNavItem({ area, collapsed }: { area: Area; collapsed: boo
       {count !== undefined && (
         <span className={classNames(styles.count, collapsed && styles.countDot)}>
           <span aria-hidden="true">{count > 99 ? "99+" : count}</span>
-          <span className={utilities.srOnly}>
-            {t("notifications.inbox.total", { count })}
-          </span>
+          <span className={utilities.srOnly}>{t("notifications.inbox.total", { count })}</span>
         </span>
       )}
     </Link>
