@@ -30,10 +30,11 @@ from uploads.services import (
     receive_upload,
 )
 
-COURSE_CODE = "TR-DEMO-RELEASE"
-RELEASE_POINT = "Q-DEMO-01-REL-P1"
-RELEASE_BLOCK = "Q-DEMO-01-B2"
+COURSE_CODE = "TR-MER-RELEASE"
+RELEASE_POINT = "Q-MER-01-REL-P1"
+RELEASE_BLOCK = "Q-MER-01-B2"
 ACTION = "release.record"
+IDENTITY_KEYS = ("subject_id", "code", "action", "quadrant_id", "training_version_id")
 VALIDITY_DAYS = 90
 CERTIFICATION_DAYS = 60
 
@@ -50,7 +51,8 @@ def _write(actor: UploadActor, operation: str, values: dict[str, Any]) -> Any:  
     """One people command with a stable id; `_target` names the parent record, if any."""
     target = values.get("_target")
     values = {"expected_revision": 0, **{k: v for k, v in values.items() if k != "_target"}}
-    command_id = uuid5(NAMESPACE, f"people:{operation}:{target}:{values.get('subject_id')}")
+    identity = (values.get(key) for key in IDENTITY_KEYS)
+    command_id = uuid5(NAMESPACE, f"people:{operation}:{target}:{':'.join(map(str, identity))}")
     body = json.loads(json.dumps({"command_id": str(command_id), **values}, default=str))
     return write_people(PeopleWrite(actor, command_id, operation, values, body, target))
 
@@ -73,7 +75,9 @@ def _evidence(actor: UploadActor) -> UUID:
 def _ensure_course(actor: UploadActor) -> TrainingVersion:
     course = Training.objects.filter(organization=actor.organization, code=COURSE_CODE).first()
     if course is None:
-        created = _write(actor, "training.create", {"code": COURSE_CODE, "name": "Demo release"})
+        created = _write(
+            actor, "training.create", {"code": COURSE_CODE, "name": "Liberación de mosquitos"}
+        )
         course = Training.objects.get(pk=created["id"])
     existing = TrainingVersion.objects.filter(training=course).first()
     if existing is not None:
@@ -180,4 +184,4 @@ def ensure_release_task(actor: UploadActor, permit: Permit, courier: Membership)
 def ensure_release_points(actor: UploadActor, quadrant_numbers: range) -> None:
     """One release point in the second block of each given demo quadrant (writes)."""
     for number in quadrant_numbers:
-        _ensure_release_point(actor, f"Q-DEMO-{number:02d}-REL-P1", f"Q-DEMO-{number:02d}-B2")
+        _ensure_release_point(actor, f"Q-MER-{number:02d}-REL-P1", f"Q-MER-{number:02d}-B2")

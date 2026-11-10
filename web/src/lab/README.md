@@ -41,21 +41,21 @@ Existing libraries only: [TanStack Query](https://tanstack.com/query/latest/docs
 
 ### W34 criterion to test
 
-| Criterion or edge | Test |
-| --- | --- |
-| Twenty consecutive normalized keyboard submissions retain scanner focus | `reception.test.tsx`: 20 keyboard scans |
-| Actual scanner command, UUID, returned row, focus and URL-only W35 link | `e2e/lab-reception.spec.ts` |
-| No field egg count; boolean observations and no-paddle reception | `reception.test.tsx`: received details |
-| Duplicate/unknown codes and actual no-reading incident link | `reception.test.tsx`: duplicate scans |
-| Explicit missing reason and configuration-pending discrepancy | `reception.test.tsx`: expected missing observations |
-| W6/W7 links back to the actual bag's discrepancy view only with reception access | `incidents/linked-record.test.tsx` |
-| Enter-delimited FIFO, retained next input and manual recovery after uncertain writes | `reception.test.tsx`: Enter-delimited scans |
-| Live admission refusal retains the pending code and UUID | `reception.test.tsx`: unadmitted scan |
-| A queued scan resumes after reauthentication without waiting for an old response | `reception.test.tsx`: old-session response |
-| Expected-view placeholders never authorize a missing observation | `reception.test.tsx`: switching to expected |
-| Summary links and visible page use the actual server predicates/counts | `reception.test.tsx`: summary links |
-| Component-scoped read failure/Retry and denied deep links | `reception.test.tsx`: partial read errors / deep links |
-| Light/dark, es-MX/en, 320/1280 CSS pixels, +30% text and axe | `e2e/lab-reception.spec.ts` |
+| Criterion or edge                                                                    | Test                                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Twenty consecutive normalized keyboard submissions retain scanner focus              | `reception.test.tsx`: 20 keyboard scans                |
+| Actual scanner command, UUID, returned row, focus and URL-only W35 link              | `e2e/lab-reception.spec.ts`                            |
+| No field egg count; boolean observations and no-paddle reception                     | `reception.test.tsx`: received details                 |
+| Duplicate/unknown codes and actual no-reading incident link                          | `reception.test.tsx`: duplicate scans                  |
+| Explicit missing reason and configuration-pending discrepancy                        | `reception.test.tsx`: expected missing observations    |
+| W6/W7 links back to the actual bag's discrepancy view only with reception access     | `incidents/linked-record.test.tsx`                     |
+| Enter-delimited FIFO, retained next input and manual recovery after uncertain writes | `reception.test.tsx`: Enter-delimited scans            |
+| Live admission refusal retains the pending code and UUID                             | `reception.test.tsx`: unadmitted scan                  |
+| A queued scan resumes after reauthentication without waiting for an old response     | `reception.test.tsx`: old-session response             |
+| Expected-view placeholders never authorize a missing observation                     | `reception.test.tsx`: switching to expected            |
+| Summary links and visible page use the actual server predicates/counts               | `reception.test.tsx`: summary links                    |
+| Component-scoped read failure/Retry and denied deep links                            | `reception.test.tsx`: partial read errors / deep links |
+| Light/dark, es-MX/en, 320/1280 CSS pixels, +30% text and axe                         | `e2e/lab-reception.spec.ts`                            |
 
 The browser fixture uses synthetic data. It does not qualify a physical USB scanner,
 real reception-policy configuration or production data.

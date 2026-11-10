@@ -19,7 +19,6 @@ export const REVIEW_TABLE: TableQueryConfig = {
         { value: "rejected", labelKey: "reviews.workspace.rejected" },
       ],
     },
-    { kind: "text", key: "code", labelKey: "reviews.workspace.cause", maxLength: 120 },
     { kind: "text", key: "search", labelKey: "reviews.workspace.search", maxLength: 200 },
   ],
 };

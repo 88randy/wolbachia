@@ -17,6 +17,8 @@ export interface HomeDashboardProps {
    * Omit it until the profile has a real pending source: never show an invented "all done".
    */
   pending?: readonly HubCardItem[];
+  /** A band right under the header for the one thing that cannot wait (a critical item). */
+  alert?: ReactNode;
   /** Shown while the pending counts load for the first time. */
   isLoading?: boolean;
   /** KPIs, charts (each with its data table) or shortcuts below the pending cards. */
@@ -25,12 +27,13 @@ export interface HomeDashboardProps {
 
 /** Template 4 of 4, Home dashboard: greeting, pending-action cards, then the profile's widgets. */
 export function HomeDashboard(props: HomeDashboardProps) {
-  const { title, description, pending, isLoading = false, children } = props;
+  const { title, description, pending, alert, isLoading = false, children } = props;
   const { t } = useTranslation();
   useDocumentTitle(title);
   return (
     <PageFrame>
       <PageHeader title={title} description={description} />
+      {alert}
       {pending && (
         <section aria-labelledby="home-pending" className="flex flex-col gap-3">
           <h2 id="home-pending" className="m-0 text-base font-semibold">

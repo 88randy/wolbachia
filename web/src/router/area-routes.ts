@@ -5,6 +5,8 @@
  * adds one line here and its entry in `router/areas.ts`.
  */
 import { communityRoutes } from "../community/routes";
+import { dashboardsRoutes } from "../dashboards/routes";
+import { discoveryRoutes } from "../discovery/routes";
 import { fleetRoutes } from "../fleet/routes";
 import { homeRoutes } from "../home/routes";
 import { incidentRoutes } from "../incidents/routes";
@@ -15,14 +17,17 @@ import { operationRoutes } from "../operations/routes";
 import { peopleRoutes } from "../people/routes";
 import { quadrantRoutes } from "../quadrants/routes";
 import { releaseRoutes } from "../releases/routes";
+import { schedulingRoutes } from "../scheduling/routes";
 import { settingsRoutes } from "../settings/routes";
 import { placeholderRoutes } from "../states/placeholder-routes";
 
 export const areaRouteModules = [
   ...homeRoutes,
+  ...discoveryRoutes,
   ...notificationRoutes,
   ...incidentRoutes,
   ...operationRoutes,
+  ...schedulingRoutes,
   ...quadrantRoutes,
   ...releaseRoutes,
   ...communityRoutes,
@@ -30,6 +35,7 @@ export const areaRouteModules = [
   ...fleetRoutes,
   ...labRoutes,
   ...peopleRoutes,
+  ...dashboardsRoutes,
   ...settingsRoutes,
   ...placeholderRoutes,
 ];

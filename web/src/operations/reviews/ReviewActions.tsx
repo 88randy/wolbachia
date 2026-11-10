@@ -1,3 +1,4 @@
+import { Ban } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
@@ -22,7 +23,9 @@ export function ReviewActions(props: ReviewActionsProps) {
     <>
       <ReviewAccept {...props} />
       <Button
-        variant="secondary"
+        variant="destructive"
+        size="lg"
+        leadingIcon={<Ban aria-hidden="true" />}
         disabled={props.isBlocked}
         onClick={() => {
           setVoiding(true);

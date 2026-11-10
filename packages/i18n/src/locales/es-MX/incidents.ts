@@ -14,6 +14,7 @@ export const incidents = {
   "incidents.evidence.downloadFailed":
     "No se pudo descargar. Reintenta para verificar tu permiso actual.",
   "incidents.workspace.title": "Incidentes",
+  "incidents.workspace.purpose": "Lo que salió mal en campo y quién lo está atendiendo.",
   "incidents.workspace.views": "Vistas de incidentes",
   "incidents.workspace.mine": "Míos",
   "incidents.workspace.zone": "De mi zona",

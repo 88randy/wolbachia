@@ -13,6 +13,7 @@ class SampleQuerySerializer(serializers.Serializer[Any]):
     center = serializers.UUIDField(required=False)
     quadrant = serializers.UUIDField(required=False)
     include_voided = serializers.BooleanField(required=False, default=False)
+    pending_result = serializers.BooleanField(required=False, default=False)
 
 
 class SampleReceiptSerializer(serializers.Serializer[Any]):
