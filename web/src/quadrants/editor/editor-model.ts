@@ -2,28 +2,8 @@ import type { Schemas } from "@wolbachia/api-client";
 import type { Polygon } from "../geography/geometry";
 import { containsLocation } from "../geography/geometry";
 
-export type EditorTool = "browse" | "quadrant" | "sampling" | "release" | "move";
+export type EditorTool = "select" | "quadrant" | "sampling" | "release";
 export type PointKind = "sampling" | "release";
-
-export interface QuadrantDraft {
-  featureId: string;
-  polygon: Polygon;
-  isClosed: boolean;
-}
-
-export interface PointDraft {
-  featureId: string;
-  kind: PointKind;
-  location: number[];
-}
-
-/** What a Terra Draw feature stands for while the move tool edits a quadrant. */
-export interface EditTarget {
-  kind: "quadrant" | PointKind;
-  recordId: string;
-  revision: number;
-  original: number[] | Polygon;
-}
 
 export function geometryOf(item: { current_version: { geometry: Polygon } | null }) {
   return item.current_version?.geometry ?? null;

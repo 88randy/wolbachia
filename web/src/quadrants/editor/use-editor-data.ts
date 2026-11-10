@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
@@ -32,6 +33,15 @@ export function useEditorData(scope: GeographyScope) {
     isLoading: quadrants.isPending,
     isError: quadrants.isError,
     refetch: () => void quadrants.refetch(),
+    /** Reload everything the map draws (used after a save, before the draft lets go). */
+    refresh: async () => {
+      await Promise.all([
+        quadrants.refetch(),
+        blocks.refetch(),
+        points.refetch(),
+        releasePoints.refetch(),
+      ]);
+    },
     quadrants: quadrants.data ?? EMPTY,
     blocks: blocks.data ?? EMPTY,
     points: activePoints,

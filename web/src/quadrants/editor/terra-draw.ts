@@ -23,6 +23,7 @@ export const DRAW_MODES = {
 
 const hex = (value: string) => value as HexColor;
 const OUTLINE_WIDTH = 3;
+const SELECTED_WIDTH = 4;
 const POINT_WIDTH = 8;
 const VERTEX_WIDTH = 7;
 const FILL_OPACITY = 0.18;
@@ -60,10 +61,12 @@ export function createEditorDraw(map: MapLibreMap, colors: Colors): TerraDraw {
       new TerraDrawPolygonMode({ styles: polygonStyles, showCoordinatePoints: true }),
       new TerraDrawPointMode({ styles: pointStyles }),
       new TerraDrawSelectMode({
+        // Delete and the shortcuts belong to the editor, not to Terra Draw.
+        keyEvents: { deselect: "Escape", delete: null, rotate: null, scale: null },
         flags: {
           polygon: {
             feature: {
-              draggable: false,
+              draggable: true,
               coordinates: { draggable: true, midpoints: true, deletable: true },
             },
           },
@@ -72,7 +75,7 @@ export function createEditorDraw(map: MapLibreMap, colors: Colors): TerraDraw {
         styles: {
           selectedPolygonColor: hex(colors.action),
           selectedPolygonOutlineColor: hex(colors.actionStrong),
-          selectedPolygonOutlineWidth: OUTLINE_WIDTH,
+          selectedPolygonOutlineWidth: SELECTED_WIDTH,
           selectedPolygonFillOpacity: FILL_OPACITY,
           selectionPointColor: hex(colors.surface),
           selectionPointOutlineColor: hex(colors.actionStrong),

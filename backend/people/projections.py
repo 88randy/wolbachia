@@ -165,12 +165,11 @@ def _append_payload(ctx: ProducerContext, payload: dict[str, Any]) -> None:
 
 
 def _receipt(
-    batch: BatchContext, ctx: ProducerContext, assessment: dict[str, Any]
+    batch: BatchContext, ctx: ProducerContext, assessment: dict[str, Any], revision: str
 ) -> EligibilityAssessmentReceipt:
     if batch.observed_session_id is None or batch.observed_pair_id is None:
         raise ImproperlyConfigured("Bound authenticated publication required.")
     semantic = snapshot_hash(assessment)
-    revision = scope_revision(ctx)
     context = PeopleContext(
         UUID(assessment["center_id"]),
         None if assessment["quadrant_id"] is None else UUID(assessment["quadrant_id"]),
@@ -220,11 +219,14 @@ def prepare_eligibility_publication(batch: BatchContext, ctx: ProducerContext) -
         and batch.observed_pair_id is not None
         and not batch.is_final_upload
     )
+    # The scope revision is read from the caller's bound context: re-clocking `now` must not
+    # invalidate the prepared sample capture frame (it binds the original clock).
+    revision = scope_revision(ctx) if genuine else ""
     if genuine:
         require_courier_lock(batch)
     for action, context in _contexts(current):
         assessment = _assessment(current, action, context)
-        receipt = _receipt(batch, current, assessment) if genuine else None
+        receipt = _receipt(batch, current, assessment, revision) if genuine else None
         payload = _payload(current, assessment, receipt)
         if genuine:
             _append_payload(current, payload)
