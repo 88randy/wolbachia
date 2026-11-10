@@ -4,13 +4,14 @@ import { Button } from "../../ui/Button";
 import { ClosureDetails } from "./ClosureDetails";
 import type { ClosureModel } from "./use-closure-model";
 import type { Readiness } from "./closure-policy";
-import styles from "./closure.module.css";
+import { DetailPage } from "../../components/templates/DetailPage";
 export function ClosureScreen({ model, readiness }: { model: ClosureModel; readiness: Readiness }) {
   const { t } = useTranslation();
   return (
-    <div className={styles.page}>
-      <h1>{t("closure.page.title", { code: model.quadrant.code })}</h1>
-      <p>{t("closure.page.purpose")}</p>
+    <DetailPage
+      title={t("closure.page.title", { code: model.quadrant.code })}
+      description={t("closure.page.purpose")}
+    >
       <Card
         title={t("closure.readiness.title")}
         actions={
@@ -21,6 +22,6 @@ export function ClosureScreen({ model, readiness }: { model: ClosureModel; readi
       >
         <ClosureDetails model={model} readiness={readiness} />
       </Card>
-    </div>
+    </DetailPage>
   );
 }

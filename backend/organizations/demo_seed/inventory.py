@@ -85,7 +85,7 @@ def _supply_values(spec: SupplySpec) -> dict[str, Any]:
     if spec.biological:
         values["protocol"] = {
             "name": "demo-protocol",
-            "shelf_life_seconds": 30 * 86400,
+            "shelf_life_seconds": 120 * 86400,
             "expiry_basis": "laid_on",
             "temperature_min": Decimal("10"),
             "temperature_max": Decimal("20"),

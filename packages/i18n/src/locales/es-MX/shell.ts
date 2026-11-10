@@ -4,6 +4,7 @@ import type { AreaCatalog } from "../area.ts";
 export const shell = {
   "shell.nav.notifications": "Notificaciones",
   // Web shell: brand, skip link, sidebar, top bar
+  "shell.crumb.records": "Registros",
   "shell.brand.name": "AedesVision",
   "shell.brand.mark": "AV",
   "shell.a11y.skipToContent": "Saltar al contenido",
@@ -25,6 +26,7 @@ export const shell = {
   "shell.nav.home": "Inicio",
   "shell.nav.incidents": "Incidentes",
   "shell.nav.operations": "Supervisión",
+  "shell.nav.scheduling": "Programación",
   "shell.nav.quadrants": "Cuadrantes y muestreo",
   "shell.nav.releases": "Liberaciones",
   "shell.nav.community": "Comunidad",

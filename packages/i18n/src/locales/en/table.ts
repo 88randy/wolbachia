@@ -7,7 +7,7 @@ export const table: Record<keyof typeof source, string> = {
   "table.sort.descending": "Sorted by {column}, descending",
 
   // Result count and loading, announced to screen readers
-  "table.status.range": "Showing {from} to {to} of {total}",
+  "table.status.range": "{from}–{to} of {total}",
   "table.status.rangeCursor": "Results on this page: {count}",
   "table.status.loading": "Loading results",
 
@@ -26,6 +26,18 @@ export const table: Record<keyof typeof source, string> = {
   "table.filters.clear": "Clear filters",
   "table.filters.remove": "Remove filter {filter}: {value}",
   "table.filters.includeVoided": "Include voided",
+  "table.filters.button": "Filters",
+  "table.filters.search": "Search",
+  "table.filters.searchPlaceholder": "Search…",
+  "table.filters.dates": "Dates",
+  "table.filters.anyDate": "Any date",
+  "table.filters.dateFrom": "From {date}",
+  "table.filters.dateTo": "Until {date}",
+  "table.filters.applied": "applied",
+  "table.filters.default": "{value} (default)",
+  "table.filters.info": "More information",
+  "table.filters.quick": "Quick filter",
+  "table.filters.clearDates": "Clear dates",
   "table.filters.ignoredTitle": "We ignored part of the address",
   "table.filters.ignoredBody":
     "These parameters are not valid for this list and were not applied: {names}.",

@@ -4,6 +4,7 @@ import type { shell as source } from "../es-MX/shell.ts";
 export const shell: Record<keyof typeof source, string> = {
   "shell.nav.notifications": "Notifications",
   // Web shell: brand, skip link, sidebar, top bar
+  "shell.crumb.records": "Records",
   "shell.brand.name": "AedesVision",
   "shell.brand.mark": "AV",
   "shell.a11y.skipToContent": "Skip to content",
@@ -25,6 +26,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.home": "Home",
   "shell.nav.incidents": "Incidents",
   "shell.nav.operations": "Supervision",
+  "shell.nav.scheduling": "Planning",
   "shell.nav.quadrants": "Quadrants and sampling",
   "shell.nav.releases": "Releases",
   "shell.nav.community": "Community",

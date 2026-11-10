@@ -14,6 +14,8 @@ import { lab } from "./lab.ts";
 import { conditions } from "./conditions.ts";
 import { incidentTypes } from "./incidentTypes.ts";
 import { shift } from "./shift.ts";
+import { scheduling } from "./scheduling.ts";
+import { live } from "./live.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
 import { relocations } from "./relocations.ts";
@@ -65,6 +67,8 @@ export const esMX = {
   ...regulatory,
   ...portal,
   ...shift,
+  ...scheduling,
+  ...live,
   ...reviews,
   ...relocations,
   ...closure,

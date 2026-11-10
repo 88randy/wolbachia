@@ -20,8 +20,20 @@ export const RELOCATION_TABLE: TableQueryConfig = {
       ],
     },
     { kind: "text", key: "code", labelKey: "relocations.workspace.code", maxLength: 36 },
-    { kind: "text", key: "point", labelKey: "relocations.workspace.pointId", maxLength: 36 },
-    { kind: "text", key: "ovitrap", labelKey: "relocations.workspace.ovitrap", maxLength: 36 },
+    {
+      kind: "text",
+      key: "point",
+      labelKey: "relocations.workspace.pointId",
+      maxLength: 36,
+      input: "hidden",
+    },
+    {
+      kind: "text",
+      key: "ovitrap",
+      labelKey: "relocations.workspace.ovitrap",
+      maxLength: 36,
+      input: "hidden",
+    },
   ],
 };
 /** Only declared generated query fields leave the validated URL controller. */

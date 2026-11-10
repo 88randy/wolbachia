@@ -22,7 +22,7 @@ export function PortalSettingsPage() {
         description={t("regulatory.portal.description")}
       />
       {query.data ? (
-        <PortalSettingsForm key={String(query.data.updated_at)} initial={query.data} />
+        <PortalSettingsForm key={query.data.updated_at} initial={query.data} />
       ) : query.isError ? (
         <ErrorState
           message={t("regulatory.common.error")}

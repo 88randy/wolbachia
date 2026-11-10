@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 import { createRoute } from "@tanstack/react-router";
+import type { MessageKey } from "@wolbachia/i18n";
+import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
@@ -51,10 +53,12 @@ function listRoute<const Path extends string>(
   path: Path,
   permission: string,
   component: () => ReactElement,
+  crumb: MessageKey,
 ) {
   return createRoute({
     getParentRoute: () => authenticatedRoute,
     path,
+    staticData: { crumb },
     validateSearch: tableSearchSchema,
     beforeLoad: ({ context }) => {
       requirePermission("lab", context.me, permission);
@@ -66,6 +70,7 @@ function listRoute<const Path extends string>(
 const recountsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/lab/recounts",
+  staticData: { crumb: "lab.recounts.title" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     if (!can(context.me, "recount.create") && !can(context.me, "recount.adjudicate"))
@@ -74,10 +79,15 @@ const recountsRoute = createRoute({
   component: W36Page,
   errorComponent: AreaErrorState,
 });
-const paddlesRoute = listRoute("/lab/paddles", "egg_paddle.reuse", W37Page);
-const shipmentsRoute = listRoute("/lab/shipments", "shipment.read", W38Page);
-const resultsRoute = listRoute("/lab/results", "sample.read", W40Page);
-const materialsRoute = listRoute("/lab/material-requests", "material_request.read", W41Page);
+const paddlesRoute = listRoute("/lab/paddles", "egg_paddle.reuse", W37Page, "lab.paddles.title");
+const shipmentsRoute = listRoute("/lab/shipments", "shipment.read", W38Page, "lab.shipments.title");
+const resultsRoute = listRoute("/lab/results", "sample.read", W40Page, "lab.results.title");
+const materialsRoute = listRoute(
+  "/lab/material-requests",
+  "material_request.read",
+  W41Page,
+  "lab.materials.title",
+);
 
 /**
  * Lab area: home, W34 reception, W35 count and history, W36-W38, W40 and W41. W39 (`/lab/write-offs`) lives in
