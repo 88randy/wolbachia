@@ -37,7 +37,17 @@ export const AREAS = [
   },
   { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: ["motorcycle.read"] },
   { id: "lab", path: "/lab", group: "resources", requiredPermissions: PENDING },
-  { id: "people", path: "/people", group: "resources", requiredPermissions: PENDING },
+  {
+    id: "people",
+    path: "/people",
+    group: "resources",
+    requiredPermissions: [
+      "training.read",
+      "training.manage",
+      "evaluation.read",
+      "evaluation.create",
+    ],
+  },
   { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },
   { id: "regulatory", path: "/regulatory", group: "analysis", requiredPermissions: PENDING },
   {

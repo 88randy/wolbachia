@@ -1,5 +1,9 @@
 # web — Wolbachia back-office and public portal
 
+Issue #148 adds W50/W51 at `/people/trainings` and `/people/evaluations`.
+See [people workflows](src/people/README.md) for permission separation, retained
+rubric/certification provenance, test mapping and explicit B03 read gaps.
+
 Issue #160 adds the W30 review queue, W31 relocation decisions and W33 quadrant
 closure: `/operations/reviews`, `/operations/relocations`, and
 `/quadrants/<code>/closure`. See [operations](src/operations/README.md) for the

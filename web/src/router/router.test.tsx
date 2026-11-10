@@ -44,7 +44,8 @@ const OPERATIONS_ME = makeMe({
 describe("area routes", () => {
   test.each(
     AREAS.filter(
-      ({ id }) => !["quadrants", "settings", "inventory", "incidents", "operations"].includes(id),
+      ({ id }) =>
+        !["quadrants", "settings", "inventory", "incidents", "operations", "people"].includes(id),
     ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });

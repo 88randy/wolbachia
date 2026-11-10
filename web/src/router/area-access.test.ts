@@ -35,14 +35,7 @@ describe("canOpenArea", () => {
 describe("areas still waiting for a permission code", () => {
   // Each issue that builds an area replaces its "pending" with real codes and removes it here.
   test("are exactly these", () => {
-    expect(pendingAreaIds()).toEqual([
-      "releases",
-      "community",
-      "lab",
-      "people",
-      "dashboards",
-      "regulatory",
-    ]);
+    expect(pendingAreaIds()).toEqual(["releases", "community", "lab", "dashboards", "regulatory"]);
   });
 
   test("Home and Settings are never pending", () => {
