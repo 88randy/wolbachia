@@ -1686,6 +1686,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/home/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Home, search and history share one action permission; each type rechecks its own. */
+        get: operations["home_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/incident-types/": {
         parameters: {
             query?: never;
@@ -4180,6 +4197,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/records/{record_type}/{code}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Home, search and history share one action permission; each type rechecks its own. */
+        get: operations["records_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recount-requests/": {
         parameters: {
             query?: never;
@@ -5071,6 +5105,23 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["schedule_reassign_pending_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Home, search and history share one action permission; each type rechecks its own. */
+        get: operations["search_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7842,11 +7893,34 @@ export interface components {
             payload: unknown;
             effects: unknown;
         };
+        HistoryResponse: {
+            record: components["schemas"]["SearchHit"];
+            results: components["schemas"]["TimelineEntry"][];
+            next_cursor: string | null;
+        };
         HistorySubject: {
             /** Format: uuid */
             center_id: string | null;
             /** Format: uuid */
             quadrant_id: string | null;
+        };
+        HomeItem: {
+            type: components["schemas"]["TypeEnum"];
+            code: string;
+            severity: string;
+            /** Format: date-time */
+            deadline: string | null;
+        };
+        HomeSummary: {
+            /** Format: date-time */
+            cutoff: string;
+            cards: components["schemas"]["SummaryCard"][];
+            critical: components["schemas"]["HomeItem"][];
+            attention: components["schemas"]["HomeItem"][];
+            link_filters: {
+                [key: string]: components["schemas"]["LinkFilter"];
+            };
+            support: components["schemas"]["Support"] | null;
         };
         IdentifiedExtra: {
             /** Format: uuid */
@@ -8897,6 +8971,12 @@ export interface components {
             /** Format: uuid */
             document_reference?: string | null;
             notes?: string;
+        };
+        LinkFilter: {
+            resource: string;
+            filters: {
+                [key: string]: string;
+            };
         };
         Load: {
             /** Format: uuid */
@@ -12249,6 +12329,10 @@ export interface components {
             expected_revision: number;
             queue_context?: components["schemas"]["LabQueueQueryRequest"];
         };
+        RelatedRef: {
+            type: components["schemas"]["TypeEnum"];
+            code: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -13523,6 +13607,22 @@ export interface components {
             mode: components["schemas"]["ModeEnum"];
             ids: string[];
         };
+        SearchGroup: {
+            type: components["schemas"]["TypeEnum"];
+            count: number;
+            hits: components["schemas"]["SearchHit"][];
+        };
+        SearchHit: {
+            type: components["schemas"]["TypeEnum"];
+            /** Format: uuid */
+            id: string;
+            code: string;
+            is_voided: boolean;
+        };
+        SearchResponse: {
+            q: string;
+            groups: components["schemas"]["SearchGroup"][];
+        };
         /**
          * @description * `routine` - Routine
          *     * `repair` - Repair
@@ -13851,6 +13951,16 @@ export interface components {
             unit: string;
             source_ids: string[];
         };
+        SummaryCard: {
+            resource: string;
+            filters: {
+                [key: string]: string;
+            };
+            key: string;
+            value: number;
+            /** Format: date-time */
+            cutoff: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -14153,6 +14263,9 @@ export interface components {
             specification?: string;
             protocol?: components["schemas"]["ProtocolWriteRequest"];
         };
+        Support: {
+            contact: string;
+        };
         /**
          * @description The batch: who sends it, the phone's clock at send time, the pull cursor and the events.
          *
@@ -14230,6 +14343,23 @@ export interface components {
          * @enum {string}
          */
         TaskActionEnum: "place" | "check" | "release";
+        TimelineAuthor: {
+            username: string;
+        };
+        TimelineEntry: {
+            source_type: string;
+            /** Format: uuid */
+            source_id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            kind: string;
+            author: components["schemas"]["TimelineAuthor"] | null;
+            reason: string | null;
+            refs: components["schemas"]["RelatedRef"][];
+            params: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -14479,6 +14609,15 @@ export interface components {
             proof_roles: components["schemas"]["ProofRolesEnum"][];
             is_active: boolean;
         };
+        /**
+         * @description * `incident` - incident
+         *     * `motorcycle` - motorcycle
+         *     * `quadrant` - quadrant
+         *     * `sampling_point` - sampling_point
+         *     * `shipment` - shipment
+         * @enum {string}
+         */
+        TypeEnum: "incident" | "motorcycle" | "quadrant" | "sampling_point" | "shipment";
         /**
          * @description * `rule_context_unavailable` - rule_context_unavailable
          *     * `organization_context_unavailable` - organization_context_unavailable
@@ -17777,6 +17916,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    home_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSummary"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -22270,6 +22440,43 @@ export interface operations {
             };
         };
     };
+    records_history_retrieve: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                code: string;
+                record_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     recount_requests_list: {
         parameters: {
             query?: {
@@ -23864,6 +24071,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReassignResult"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    search_retrieve: {
+        parameters: {
+            query: {
+                include_voided?: boolean;
+                page?: number;
+                page_size?: number;
+                q: string;
+                /**
+                 * @description * `incident` - incident
+                 *     * `motorcycle` - motorcycle
+                 *     * `quadrant` - quadrant
+                 *     * `sampling_point` - sampling_point
+                 *     * `shipment` - shipment
+                 */
+                type?: "incident" | "motorcycle" | "quadrant" | "sampling_point" | "shipment";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

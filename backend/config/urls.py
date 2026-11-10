@@ -34,6 +34,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("ovitraps.urls")),
     path("", include("ovitraps.lifecycle.urls")),
     path("", include("scheduling.urls")),
+    path("", include("discovery.urls")),
 ]
 
 urlpatterns = [path("api/v1/", include(api_v1_patterns))]

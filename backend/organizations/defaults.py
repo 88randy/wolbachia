@@ -22,6 +22,7 @@ from catalogs.permissions import (
     CATALOG_READ,
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
+from discovery.permissions import HOME_READ
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from geography.permissions import (
@@ -90,6 +91,7 @@ READ_ONLY_CODES = (
     *NOTIFICATION_CODES,
 )
 ADMIN_CODES = (
+    HOME_READ,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
@@ -158,6 +160,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    HOME_READ,
     USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
@@ -195,6 +198,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
+        HOME_READ,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
         FIELD_UPLOAD,
@@ -213,6 +217,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        HOME_READ,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
@@ -228,6 +233,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_REASSIGN,
     ),
     "warehouse": (
+        HOME_READ,
         ALLOCATE,
         RECONCILE,
         WRITE_OFF,
