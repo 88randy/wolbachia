@@ -254,6 +254,193 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/arco-requests/:
+    get:
+      operationId: arco_requests_list
+      description: 'W58: register, track and resolve ARCO requests.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      tags:
+      - arco-requests
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedArcoRequestList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: arco_requests_create
+      description: 'W58: register, track and resolve ARCO requests.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - arco-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArcoCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArcoRequest'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/arco-requests/{id}/:
+    get:
+      operationId: arco_requests_retrieve
+      description: 'W58: register, track and resolve ARCO requests.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this arco request.
+        required: true
+      tags:
+      - arco-requests
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArcoRequest'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: arco_requests_partial_update
+      description: 'W58: register, track and resolve ARCO requests.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this arco request.
+        required: true
+      tags:
+      - arco-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedArcoUpdateRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArcoRequest'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/arco-requests/{id}/resolve/:
+    post:
+      operationId: arco_requests_resolve_create
+      description: 'W58: register, track and resolve ARCO requests.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this arco request.
+        required: true
+      tags:
+      - arco-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArcoResolveRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArcoRequest'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/attachments/{id}/download/:
     get:
       operationId: attachments_download_retrieve
@@ -2349,6 +2536,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/data-transfers/:
+    get:
+      operationId: data_transfers_list
+      description: 'W59: authorizations for personal data leaving the platform; revoke,
+        never edit.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      tags:
+      - data-transfers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransferAuthorizationList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: data_transfers_create
+      description: 'W59: authorizations for personal data leaving the platform; revoke,
+        never edit.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - data-transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferAuthorizationCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferAuthorization'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/data-transfers/{id}/:
+    get:
+      operationId: data_transfers_retrieve
+      description: 'W59: authorizations for personal data leaving the platform; revoke,
+        never edit.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this data transfer authorization.
+        required: true
+      tags:
+      - data-transfers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferAuthorization'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/data-transfers/{id}/revoke/:
+    post:
+      operationId: data_transfers_revoke_create
+      description: 'W59: authorizations for personal data leaving the platform; revoke,
+        never edit.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this data transfer authorization.
+        required: true
+      tags:
+      - data-transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRevocationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferAuthorization'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/devices/:
     get:
       operationId: devices_list
@@ -3936,6 +4274,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/PeopleReceipt'
           description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/export/:
+    get:
+      operationId: export_list
+      description: 'W57: official export; personal columns come out empty without
+        an authorization.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: dataset
+        schema:
+          enum:
+          - releases
+          - readings
+          - lab_results
+          type: string
+          minLength: 1
+        description: |-
+          * `releases` - releases
+          * `readings` - readings
+          * `lab_results` - lab_results
+        required: true
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        required: true
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        required: true
+      - in: query
+        name: file_format
+        schema:
+          enum:
+          - csv
+          - xlsx
+          type: string
+          default: csv
+          minLength: 1
+        description: |-
+          * `csv` - csv
+          * `xlsx` - xlsx
+      - in: query
+        name: recipient_institution
+        schema:
+          type: string
+          maxLength: 200
+      tags:
+      - export
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          description: CSV or XLSX file.
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
           content:
@@ -10151,6 +10558,159 @@ paths:
               schema:
                 type: string
                 format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal-settings/:
+    get:
+      operationId: portal_settings_list
+      description: 'Admin switch of the public portal: enabled or not, and which indicators.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - portal-settings
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PortalSettings'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal-settings/update/:
+    put:
+      operationId: portal_settings_update_update
+      description: 'Admin switch of the public portal: enabled or not, and which indicators.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - portal-settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortalSettingsRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalSettings'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal/{org_slug}/:
+    get:
+      operationId: portal_retrieve
+      description: Public, read-only, aggregates only. 404 when the organization has
+        the portal off.
+      parameters:
+      - in: path
+        name: org_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal/{org_slug}/coverage/:
+    get:
+      operationId: portal_coverage_retrieve
+      description: Public, read-only, aggregates only. 404 when the organization has
+        the portal off.
+      parameters:
+      - in: path
+        name: org_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal/{org_slug}/releases-by-week/:
+    get:
+      operationId: portal_releases_by_week_retrieve
+      description: Public, read-only, aggregates only. 404 when the organization has
+        the portal off.
+      parameters:
+      - in: path
+        name: org_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -16570,6 +17130,121 @@ components:
       - applied_by
       - id
       - risk_import
+    ArcoCreateRequest:
+      type: object
+      properties:
+        request_type:
+          $ref: '#/components/schemas/RequestTypeEnum'
+        requester_reference:
+          type: string
+          minLength: 1
+          maxLength: 200
+        received_on:
+          type: string
+          format: date
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - request_type
+      - requester_reference
+    ArcoRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        request_type:
+          allOf:
+          - $ref: '#/components/schemas/RequestTypeEnum'
+          readOnly: true
+        requester_reference:
+          type: string
+          readOnly: true
+        received_on:
+          type: string
+          format: date
+          readOnly: true
+        due_on:
+          type: string
+          format: date
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ArcoStatusEnum'
+          readOnly: true
+        owner_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        resolution_note:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        remaining_days:
+          type: integer
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - due_on
+      - id
+      - owner_id
+      - received_on
+      - remaining_days
+      - request_type
+      - requester_reference
+      - resolution_note
+      - resolved_at
+      - status
+    ArcoResolveOutcomeEnum:
+      enum:
+      - resolved
+      - rejected
+      type: string
+      description: |-
+        * `resolved` - resolved
+        * `rejected` - rejected
+    ArcoResolveRequest:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/ArcoResolveOutcomeEnum'
+        resolution_note:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required:
+      - outcome
+      - resolution_note
+    ArcoStatusEnum:
+      enum:
+      - received
+      - in_progress
+      - resolved
+      - rejected
+      type: string
+      description: |-
+        * `received` - Received
+        * `in_progress` - In Progress
+        * `resolved` - Resolved
+        * `rejected` - Rejected
+    ArcoUpdateStatusEnum:
+      enum:
+      - in_progress
+      type: string
+      description: '* `in_progress` - in_progress'
     Assignment:
       type: object
       properties:
@@ -21589,6 +22264,22 @@ components:
       - label
       - unit
       - value
+    IndicatorsEnum:
+      enum:
+      - releases_total
+      - quadrants_covered
+      - readings_total
+      - egg_positivity
+      - releases_by_week
+      - coverage
+      type: string
+      description: |-
+        * `releases_total` - releases_total
+        * `quadrants_covered` - quadrants_covered
+        * `readings_total` - readings_total
+        * `egg_positivity` - egg_positivity
+        * `releases_by_week` - releases_by_week
+        * `coverage` - coverage
     InspectionClearanceRead:
       type: object
       description: |-
@@ -25765,6 +26456,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AccessLog'
+    PaginatedArcoRequestList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArcoRequest'
     PaginatedAssignmentList:
       type: object
       required:
@@ -27559,6 +28269,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrainingVersionRead'
+    PaginatedTransferAuthorizationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferAuthorization'
     PaginatedTransferList:
       type: object
       required:
@@ -27637,6 +28366,15 @@ components:
           maxLength: 254
       required:
       - email
+    PatchedArcoUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ArcoUpdateStatusEnum'
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
     PatchedCatalogItemUpdateRequest:
       type: object
       description: '`code`, `is_other` and `is_active` are not editable here: unknown
@@ -28730,6 +29468,35 @@ components:
       required:
       - point
       - spacing_warnings
+    PortalSettings:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        indicators:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndicatorsEnum'
+          maxItems: 20
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - indicators
+      - updated_at
+    PortalSettingsRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        indicators:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndicatorsEnum'
+          maxItems: 20
+      required:
+      - indicators
     PrepareInventoryIntentRequest:
       required:
       - kind
@@ -29088,6 +29855,11 @@ components:
       - outboxed
       - pending_outbox
       type: string
+    PurposeEnum:
+      enum:
+      - uieb_shipment
+      type: string
+      description: '* `uieb_shipment` - uieb_shipment'
     QaStateEnum:
       enum:
       - not_requested
@@ -31464,6 +32236,18 @@ components:
       - timeline
       - type_snapshot
       - type_version
+    RequestTypeEnum:
+      enum:
+      - access
+      - rectification
+      - cancellation
+      - opposition
+      type: string
+      description: |-
+        * `access` - Access
+        * `rectification` - Rectification
+        * `cancellation` - Cancellation
+        * `opposition` - Opposition
     RequiredFieldsEnum:
       enum:
       - species
@@ -35340,6 +36124,106 @@ components:
       - outstanding
       - revision
       - state
+    TransferAuthorization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        recipient_institution:
+          type: string
+          readOnly: true
+        purpose:
+          allOf:
+          - $ref: '#/components/schemas/PurposeEnum'
+          readOnly: true
+        fields:
+          readOnly: true
+        center_id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date-time
+          readOnly: true
+        valid_until:
+          type: string
+          format: date-time
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        revoked_at:
+          readOnly: true
+        revocation_reason:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - center_id
+      - created_at
+      - fields
+      - id
+      - purpose
+      - quadrant_id
+      - recipient_institution
+      - reference
+      - revocation_reason
+      - revoked_at
+      - status
+      - valid_from
+      - valid_until
+    TransferAuthorizationCreateRequest:
+      type: object
+      properties:
+        recipient_institution:
+          type: string
+          minLength: 1
+          maxLength: 200
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        fields:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+          maxItems: 5
+      required:
+      - center_id
+      - recipient_institution
+      - reference
+      - valid_from
+      - valid_until
     TransferEvent:
       type: object
       description: |-
@@ -35683,6 +36567,15 @@ components:
       - origin_version_id
       - protocol_id
       - supply_version_id
+    TransferRevocationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
     TransferStateEnum:
       type: string
       enum:
