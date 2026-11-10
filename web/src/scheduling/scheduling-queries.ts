@@ -1,9 +1,25 @@
-import { unwrap } from "@wolbachia/api-client";
+import { ApiError, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
 
 export const MAX_PAGE = 200;
+
+const BUSY = 429;
+const MAX_BUSY_RETRIES = 5;
+const BASE_DELAY_MS = 400;
+const MAX_DELAY_MS = 4000;
+
+/**
+ * The server answers 429 while another reader or writer holds the planning lock (for example
+ * right after "Armar la semana", when two screens refetch at once). That is "try again in a
+ * moment", never an error screen, so those reads wait and retry with a growing pause.
+ */
+const WHEN_BUSY = {
+  retry: (failures: number, error: unknown) =>
+    error instanceof ApiError && error.status === BUSY && failures < MAX_BUSY_RETRIES,
+  retryDelay: (failures: number) => Math.min(MAX_DELAY_MS, BASE_DELAY_MS * 2 ** failures),
+};
 
 export interface ScheduleFilter {
   week: string;
@@ -14,7 +30,7 @@ export interface ScheduleFilter {
 
 /** Tasks of a week (or a day) with the load per courier. Server-side filters only. */
 export function scheduleOptions(client: ApiClient, identity: SessionIdentity, f: ScheduleFilter) {
-  return orgScopedQueryOptions(identity, {
+  const options = orgScopedQueryOptions(identity, {
     key: ["schedule", "list", f.week, f.day ?? "", f.courier ?? "", f.pageSize],
     queryFn: async ({ signal }) =>
       unwrap(
@@ -31,6 +47,7 @@ export function scheduleOptions(client: ApiClient, identity: SessionIdentity, f:
         }),
       ),
   });
+  return { ...options, ...WHEN_BUSY };
 }
 
 export function assignmentsOptions(client: ApiClient, identity: SessionIdentity) {
@@ -154,7 +171,7 @@ export function weekLoadsOptions(
   week: string,
   days: readonly string[],
 ) {
-  return orgScopedQueryOptions(identity, {
+  const options = orgScopedQueryOptions(identity, {
     key: ["schedule", "week-loads", week],
     queryFn: async ({ signal }) => {
       const result: DayLoad[] = [];
@@ -175,4 +192,6 @@ export function weekLoadsOptions(
       return result;
     },
   });
+  // Three screens read this at once; seven requests under a lock are worth reusing for a moment.
+  return { ...options, ...WHEN_BUSY, staleTime: 20_000 };
 }
