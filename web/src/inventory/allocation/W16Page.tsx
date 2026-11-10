@@ -5,7 +5,7 @@ import { useDocumentTitle } from "../../shell/use-document-title";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryContext } from "../use-inventory-context";
 import { ReconciliationList } from "./ReconciliationList";
-import page from "../../styles/page.module.css";
+import { PageFrame } from "../../components/templates/PageFrame";
 
 /** W16 daily reconciliation. A scope or session change remounts the list and drops old results. */
 export function W16Page() {
@@ -16,8 +16,8 @@ export function W16Page() {
   if (!hasCenterScope(me.scope))
     return <InlineNotice tone="warning">{t("allocation.page.denied")}</InlineNotice>;
   return (
-    <section className={page.page}>
+    <PageFrame>
       <ReconciliationList key={scope.context} scope={scope} />
-    </section>
+    </PageFrame>
   );
 }

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card } from "../../ui/Card";
-import { InlineNotice } from "../../ui/InlineNotice";
+import { ListPage } from "../../components/templates/ListPage";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
@@ -11,16 +10,24 @@ import { useFormatDateTime } from "../../format/use-format-date-time";
 import { TRANSFER_TABLE } from "./transfer-table";
 import { transferListOptions, TRANSFER_PAGE_SIZE } from "./transfer-query";
 import type { Transfer, TransferScope } from "./transfer-query";
+import { useLocationNames } from "../use-location-names";
 import { TransferStatus } from "./TransferStatus";
-import styles from "../inventory.module.css";
 function useColumns(): DataTableColumn<Transfer>[] {
   const format = useFormatDateTime();
+  const { t } = useTranslation();
+  const nameOf = useLocationNames();
   return [
     {
       id: "code",
       headerKey: "transfers.field.code",
       cell: (row) => row.code,
       link: (row) => ({ to: "/inventory/transfers/$code", params: { code: row.code } }),
+    },
+    {
+      id: "route",
+      headerKey: "transfers.field.route",
+      cell: (row) =>
+        `${nameOf(row.origin_id) ?? t("inventory.state.unconfigured")} → ${nameOf(row.destination_id) ?? t("inventory.state.unconfigured")}`,
     },
     {
       id: "state",
@@ -40,19 +47,15 @@ export function TransferList({ scope }: { scope: TransferScope }) {
   const query = useQuery(transferListOptions(scope, controller.state));
   const columns = useColumns();
   return (
-    <Card title={t("transfers.page.title")} headingLevel={1}>
-      <InlineNotice tone="info">{t("transfers.page.preparedOnly")}</InlineNotice>
-      <div className={styles.filters}>
-        <FilterBar controller={controller} />
-      </div>
+    <ListPage title={t("transfers.page.title")}>
+      <FilterBar controller={controller} />
       <DataTable
         caption={t("transfers.page.title")}
         columns={columns}
         controller={controller}
         getRowId={(row) => row.id}
         data={pageTableData(query, controller.state.page, TRANSFER_PAGE_SIZE)}
-        embedded
       />
-    </Card>
+    </ListPage>
   );
 }

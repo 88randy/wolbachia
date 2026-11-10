@@ -34,10 +34,6 @@ const base = {
   defaultOrdering: "code",
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
-  sortOptions: [
-    { value: "code", labelKey: "inventory.field.code" },
-    { value: "created_at", labelKey: "inventory.field.createdAt" },
-  ],
 } as const;
 export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
   supplies: {
@@ -61,7 +57,6 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
   lots: {
     ...base,
     sortableIds: ["code", "created_at", "expiry"],
-    sortOptions: [...base.sortOptions, { value: "expiry", labelKey: "inventory.field.expiry" }],
     filters: [
       text("search", "inventory.field.search"),
       text("supply", "inventory.field.supply"),
@@ -75,8 +70,6 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
       select("blocked_by", "inventory.field.blocker", Object.entries(blockerKeys)),
       text("expiry_from_date", "inventory.field.expiryFrom"),
       text("expiry_before_date", "inventory.field.expiryBefore"),
-      text("expiry_from", "inventory.field.expiryFromInstant"),
-      text("expiry_before", "inventory.field.expiryBeforeInstant"),
     ],
   },
   locations: {
@@ -97,21 +90,12 @@ export const STOCK_TABLE: TableQueryConfig = {
   ...base,
   defaultOrdering: "lot__code",
   sortableIds: ["lot__code", "piece_id"],
-  sortOptions: [
-    { value: "lot__code", labelKey: "inventory.field.code" },
-    { value: "piece_id", labelKey: "inventory.field.piece" },
-  ],
   filters: [text("lot", "inventory.field.code"), text("supply", "inventory.field.supply")],
 };
 export const MOVEMENT_TABLE: TableQueryConfig = {
   ...base,
   defaultOrdering: "-created_at",
   sortableIds: ["created_at", "lot_code", "quantity"],
-  sortOptions: [
-    { value: "created_at", labelKey: "inventory.field.createdAt" },
-    { value: "lot_code", labelKey: "inventory.field.code" },
-    { value: "quantity", labelKey: "inventory.field.movementQuantity" },
-  ],
   filters: [
     text("lot", "inventory.field.linkedLot"),
     ...STOCK_TABLE.filters.filter((filter) => filter.key !== "lot"),
