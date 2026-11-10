@@ -109,6 +109,8 @@ ADMIN_CODES = (
     "community_activity.void",
     *SUPPLY_ADMIN_CODES,
     *LAB_ADMIN_CODES,
+    "shipment.read",
+    "material_request.read",
     *PCR_CODES,
     *TRANSFER_ADMIN_CODES,
     RELOCATION_DECIDE,
