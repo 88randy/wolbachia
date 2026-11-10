@@ -33,6 +33,7 @@ import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
+import { field } from "./field.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { rules } from "./rules.ts";
@@ -74,6 +75,7 @@ export const esMX = {
   ...errors,
   ...mobile,
   ...courier,
+  ...field,
   ...shell,
   ...states,
   ...auth,
