@@ -29,7 +29,8 @@ jobs:
   tests:
     name: PostgreSQL (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Temporary #331 exception: each of these owners is already one whole module.
+    timeout-minutes: ${{ matrix.timeout || 15 }}
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +47,12 @@ jobs:
           - migrations-session-audit
           - migrations-people
           - regular-integration
+          - regular-lab
+        include:
+          - shard: migrations-field
+            timeout: 25
+          - shard: migrations-review
+            timeout: 25
     defaults:
       run:
         working-directory: backend
@@ -212,6 +219,11 @@ jobs:
         with:
           name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-regular-integration
           path: backend/.pytest_cache/ci-downloads/regular-integration
+      - name: Download current regular Lab evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-regular-lab
+          path: backend/.pytest_cache/ci-downloads/regular-lab
       - name: Complete inventory and combined coverage (existing 85 percent gate)
         run: uv run python -m ci.aggregate
       - name: Preserve the complete coverage result
