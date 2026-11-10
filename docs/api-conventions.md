@@ -32,6 +32,74 @@ the capture action at the actual selected/default location pair; the `/me/` acti
 union cannot infer that capability. Existing condition capture/history and
 incident writers retain their authorization and immutable audit contracts.
 
+## Regulatory permits and releases (#116 / B-20)
+
+All routes below use `/api/v1/`. Organization comes from the authenticated
+membership/device session. Every object action checks its current permission and
+actual center/quadrant pair; missing actions deny, and foreign references are
+indistinguishable from absent ones. Web commands retain session-cookie/CSRF checks;
+field sync retains pinned bearer-device authentication.
+
+| Method/path | Contract |
+| --- | --- |
+| GET/POST permit-types/ | `permit.manage`; creation requires one explicit organization-wide grant. Body: code, name, requirements containing exactly positive finite max_gps_accuracy_m. Immutable type identity is the requirements pin; no threshold is seeded. |
+| GET/POST permits/ | `permit.manage`. Creation: code, quadrant, type, number, authority, official_document, document_attestation, geometry, valid_from, valid_to. Center derives from the actual quadrant. |
+| GET permits/{id}/ | `permit.manage`; identity, revision, current version, suspension and coded blocked_by. |
+| POST permits/{id}/versions/ | `permit.manage` and `field.upload` on the pair. Complete version body without code/quadrant, plus expected_revision. Appends history. |
+| POST permits/{id}/suspend/ | `permit.suspend`; reason and expected_revision. Appends permanent suspension, author and server time for this permit identity. |
+| POST permits/{id}/schedule/ | Current `schedule.manage` and `permit.manage` on the pair; courier needs paired sync and bootstrap grants. Takes point_id, courier_id, due_date, expected_revision. Returns task_id, permit_version_id, due_date and courier_id. |
+| GET/POST release-devices/ | Read requires `release.read`; create requires paired `permit.manage`. Body: code, quadrant, source_lot. Returns immutable biological source lot/version and initial active status. |
+| GET release-devices/{id}/ | `release.read`; source lineage and coded blocked_by. |
+| POST release-devices/{id}/status/ | Paired `permit.manage`; status=active/inactive/retired, reason, expected_revision. Appends an authored status revision; retirement is terminal. |
+| GET releases/ and releases/{id}/ | `release.read`; original source UUID, permit/device/lot/training/task pins, physical quantity, GPS, both clocks and safety/stock provenance. |
+
+Permit/device/release lists use page-number paging, server ordering and
+center/quadrant filters. Coded resources support scoped exact `?code=`; types and
+permits/devices also expose their declared search/order fields in OpenAPI.
+Permit validity is aware `[valid_from, valid_to)`. Reasons and document attestations
+normalize to at least ten visible characters and at most 1000 stored characters.
+Structural errors use400 fields; state/revision conflicts use409 safe blocked_by;
+NOWAIT contention returns429 with Retry-After. No PATCH or DELETE is provided.
+
+`official_document` input is the actor's own verified unbound public upload UUID;
+the version retains the actual UploadVerification identity and authored review
+attestation. Current `field.upload` is independently required. **[ASSUMPTION]**
+the authorized reviewer attests that this verified JPEG/PNG scan is an official
+signed/reviewed permit document and that its polygon matches it. The image verifier
+does not authenticate a digital signature or accept arbitrary PDF bytes. Retained
+verification grants no attachment download or reparenting capability. Risk colors
+and courier-drawn polygons never grant regulatory authority.
+
+Release tasks are explicitly created through the permit action and bind the real
+permit version, sampling point, local due date and courier ownership. The general
+planner still derives only place/check tasks from risk/work history. An active
+release device, a risk label or a downloaded permit does not authorize a release.
+Device reads expose the latest status and revision; status CAS preserves the
+original equipment/lot identity. Inactive or retired equipment blocks ingestion
+and later acceptance. Task, permit-version binding and capture-time owner must
+already exist at device_time; current ownership must still match. Capture training
+uses only requirements, training and certification facts recorded by device_time,
+then independently checks current qualification. Later backdated facts cannot
+create capture authority. Review retains the exact original task/binding/owner pins.
+The existing assignments producer advances3 to4 to include action=release and its
+real completion state; the new permits producer is1. Root2/history7/supplies1
+remain unchanged. Older cursors require bootstrap recovery at the producer boundary.
+
+`release.record` rechecks capture-time and current permit validity/official zone,
+training, explicit task ownership, GPS quality, verified evidence and genuine
+courier lot custody. Invalid safety cannot be supervisor-approved. The existing
+manual_evidence_review transit policy can retain a source for authorized review;
+that acknowledgement preserves the exact original receipt/policy/evidence and
+revalidates every mandatory gate before one Release and its canonical stock debit.
+New in_review sources have no operational effects. See
+[the sync contract](sync.md#revalidated-releases-116--b-20) for result codes.
+
+Suspension publishes a scoped permits feed upsert in the same transaction and
+retains recipient-specific PermitSuspensionNotice facts for eligible courier/
+coordinator memberships. Their delivery_unavailable status records absent external
+transport, not a delivered notification. Source and effect/receipt history remain
+separate; physical consumption is retained when a void is refused.
+
 ## Training eligibility and private evaluations (#101)
 
 B03 adds `/trainings/`, `/trainings/{id}/versions/`, `/training-requirements/`,
@@ -630,12 +698,13 @@ fields only, 409 uses safe blocked_by, lock contention/deadlock is retryable
 NO KEY UPDATE locking precedes sorted courier try-locks and point locks; no network/storage/mail or account
 locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
-#22 owns review acceptance. Scheduling registers the assignments v3 bundle producer
+#22 owns review acceptance. Scheduling registers the assignments v4 bundle producer
 and atomically emits scoped allocation/task deltas through #110 delivery APIs.
 Accepted ovitrap placement/check and void also publish is_completed for the current
 authorized task owner (#212), using the same point/action/local-date completion
-projection as GET /schedule/. Reviewed events have no effect. Producer v3 changes
-the bundle schema boundary and requires bootstrap recovery for old cursors.
+projection as GET /schedule/. Reviewed events have no effect. Producer v3 introduced
+that completion boundary; v4 adds explicit release tasks (#116), requiring bootstrap
+recovery for old cursors without changing the older task branches.
 See scheduling/README.md and ADR 117 for lead decisions and lock ordering.
 
 Planning input dates use the same technical 2020-01-01..2100-01-01 window as

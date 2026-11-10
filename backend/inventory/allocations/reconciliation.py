@@ -40,7 +40,7 @@ from inventory.allocations.policy import (
 )
 from inventory.allocations.stock import SupplyStockLeg, append_supply_stock, assignment_balance
 from inventory.exceptions import InventoryConflictError
-from inventory.models import Location
+from inventory.models import Location, StockOperation
 from inventory.transactions import require_inventory_lock
 from inventory.transfers.policy import json_facts, stock_quantity
 from shifts.models import Shift
@@ -128,6 +128,9 @@ def _line_frame(line: SupplyAssignmentLine) -> dict[str, Any]:
     )
     credited = _sum(receipts) if receipts.exists() else None
     used = _sum(SupplyUse.objects.filter(receipt_line__in=receipts, event__void_audit__isnull=True))
+    used += StockOperation.objects.filter(release_receipt_line__in=receipts).aggregate(
+        total=Sum("release__quantity")
+    )["total"] or Decimal(0)
     shrinkage = _sum(
         SupplyShrinkage.objects.filter(receipt_line__in=receipts, event__void_audit__isnull=True)
     )
@@ -152,6 +155,9 @@ def receipt_remaining(line: SupplyReceiptLine) -> Decimal:
     if hasattr(line.receipt.event, "void_audit"):
         raise InventoryConflictError("supply_receipt_voided")
     used = _sum(line.uses.filter(event__void_audit__isnull=True))
+    used += StockOperation.objects.filter(release_receipt_line=line).aggregate(
+        total=Sum("release__quantity")
+    )["total"] or Decimal(0)
     lost = _sum(line.shrinkages.filter(event__void_audit__isnull=True))
     accepted = _sum(ReturnAcceptance.objects.filter(declaration__receipt_line=line))
     return line.quantity - used - lost - accepted

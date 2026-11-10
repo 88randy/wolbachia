@@ -78,6 +78,9 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     if data is None:
         return SubjectFacts()
     try:
+        selectors = {"release.record": release_subjects, "community.activity": _community_subject}
+        if selector := selectors.get(envelope.type):
+            return selector(organization, data)
         if envelope.type in {"supplies.receive", "supplies.reconcile"}:
             return _supply_subject(organization, envelope, data)
         if envelope.type in {"transfer.dispatch", "transfer.receive"}:
@@ -100,20 +103,6 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
                     {"transfer_action": envelope.type},
                 )
             )
-        if envelope.type == "community.activity":
-            from community.permissions import block_context
-            from geography.models import Block
-
-            block = (
-                Block.objects.filter(organization=organization, pk=data["zone_id"])
-                .select_related("quadrant")
-                .first()
-            )
-            return (
-                SubjectFacts()
-                if block is None
-                else SubjectFacts(True, (block_context(block),), "block", block.pk)
-            )
         if envelope.type.startswith("ovitrap."):
             return _point_subject(organization, data)
         if envelope.type == "record.void":
@@ -125,6 +114,50 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     except (Http404, ValidationError, ValueError, TypeError):
         return SubjectFacts()
     return SubjectFacts()
+
+
+def _community_subject(organization: Organization, values: dict[str, Any]) -> SubjectFacts:
+    from community.permissions import block_context
+    from geography.models import Block
+
+    block = (
+        Block.objects.filter(organization=organization, pk=values["zone_id"])
+        .select_related("quadrant")
+        .first()
+    )
+    return (
+        SubjectFacts()
+        if block is None
+        else SubjectFacts(True, (block_context(block),), "block", block.pk)
+    )
+
+
+def release_subjects(organization: Organization, values: dict[str, Any]) -> SubjectFacts:
+    """Resolve the real release vector; a declared UUID never establishes ownership."""
+    from inventory.models import Lot
+    from releases.models import Permit, ReleaseDevice
+    from scheduling.models import ScheduledTask
+
+    permit = Permit.objects.filter(organization=organization, pk=values["permit_id"]).first()
+    device = ReleaseDevice.objects.filter(
+        organization=organization, pk=values["release_device_id"], source_lot_id=values["lot_id"]
+    ).first()
+    lot = Lot.objects.filter(organization=organization, pk=values["lot_id"]).first()
+    task = (
+        ScheduledTask.objects.filter(organization=organization, pk=values["schedule_task_id"])
+        .select_related("point__block__quadrant")
+        .first()
+    )
+    if permit is None or device is None or lot is None or task is None:
+        return SubjectFacts()
+    contexts = tuple(
+        {
+            "center_id": str(row.center_id),
+            "quadrant_id": None if row.quadrant_id is None else str(row.quadrant_id),
+        }
+        for row in (permit, device, lot, task.point)
+    )
+    return SubjectFacts(True, contexts, "release", permit.pk)
 
 
 def _supply_subject(

@@ -156,7 +156,7 @@ class TaskSerializer(serializers.Serializer[Any]):
     organization_id = serializers.UUIDField(read_only=True)
     center_id = serializers.UUIDField()
     quadrant_id = serializers.UUIDField()
-    action = serializers.ChoiceField(choices=("place", "check"))
+    action = serializers.ChoiceField(choices=("place", "check", "release"))
     date = serializers.DateField()
     courier = serializers.UUIDField(allow_null=True)
     revision = serializers.IntegerField(

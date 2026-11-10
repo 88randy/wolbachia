@@ -155,4 +155,32 @@ export const sync = {
     "Falta evidencia verificada de materiales. Conserva la firma y los archivos pendientes para su revisión.",
   "sync.result.supplyTransitUnavailable":
     "Es necesario revisar el procedimiento de traslado o su evidencia. No se aplicó el uso sin verificar.",
+  "sync.result.releaseInaccessible":
+    "El permiso o alguna referencia no está disponible en tu alcance autorizado. Conserva la captura para consultar a tu supervisor.",
+  "sync.result.releasePermitExpired":
+    "El permiso no está vigente para esta captura. Conserva la evidencia y consulta a tu supervisor.",
+  "sync.result.releasePermitSuspended":
+    "El permiso está suspendido. Conserva la evidencia y consulta a tu supervisor.",
+  "sync.result.releaseZoneInvalid":
+    "La ubicación está fuera de la zona oficial autorizada. Conserva la evidencia y consulta a tu supervisor.",
+  "sync.result.releaseTrainingInvalid":
+    "La capacitación requerida no está vigente para esta captura. Consulta a tu supervisor.",
+  "sync.result.releaseScheduleInvalid":
+    "La captura no coincide con una tarea de liberación autorizada. Conserva la evidencia para su revisión.",
+  "sync.result.releaseLotBlocked":
+    "El lote no cumple las condiciones para la liberación. Conserva la evidencia y consulta a tu supervisor.",
+  "sync.result.releaseStockUnavailable":
+    "No hay existencias verificadas disponibles en tu custodia para esta captura. Conserva el recibo y consulta a tu supervisor.",
+  "sync.result.releaseGpsUnusable":
+    "Falta una ubicación con precisión suficiente. Conserva la captura y consulta a tu supervisor.",
+  "sync.result.releaseConfigurationUnavailable":
+    "Falta configuración vigente para validar la liberación. Conserva la captura y consulta a tu supervisor.",
+  "sync.result.releaseDeviceUnavailable":
+    "El dispositivo de liberación o su lote de origen no está disponible para esta captura. Consulta a tu supervisor.",
+  "sync.result.releaseEvidenceRequired":
+    "Falta evidencia verificada de la liberación. Conserva los archivos pendientes y consulta a tu supervisor.",
+  "sync.result.releaseVoidBlocked":
+    "El consumo físico debe conservarse. Consulta a tu supervisor para corregir el registro.",
+  "sync.result.releaseTransitReviewRequired":
+    "La evidencia del traslado requiere una revisión autorizada. La captura se conservó sin aplicar el consumo.",
 } as const satisfies AreaCatalog<"sync">;

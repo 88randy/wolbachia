@@ -8,6 +8,12 @@ See [incident type configuration](src/settings/incident-types/README.md) and
 [biological monitoring](src/inventory/conditions/README.md) for contract boundaries,
 design differences and criterion-to-test ownership.
 
+Issue #152 adds W12–W14 at `/inventory/transfers[/:code]` and
+`/inventory/discrepancies[/:code]`: verified signed dispatch of prepared transfers,
+manifest identity scanning, photo-backed reception and discrepancy resolution.
+See [signed transfers](src/inventory/transfers/README.md) for supported contracts,
+the preparation/physical-code gap tracked in #337 and criterion-to-test ownership.
+
 Issue #148 adds W50/W51 at `/people/trainings` and `/people/evaluations`.
 See [people workflows](src/people/README.md) for permission separation, retained
 rubric/certification provenance, test mapping and explicit B03 read gaps.
