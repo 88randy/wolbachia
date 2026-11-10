@@ -14,7 +14,7 @@ import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { renderApp } from "../test/render-app";
 import { renderWithI18n } from "../test/render-with-i18n";
-import { makeMe } from "../test/fake-api";
+import { createFakeApi, makeMe } from "../test/fake-api";
 import { AREAS } from "./areas";
 
 afterEach(() => {
@@ -73,15 +73,39 @@ describe("area routes", () => {
     expect(AREAS).toHaveLength(13);
   });
 
-  test("the laboratory home exposes only its permitted implemented workspace", async () => {
-    await renderApp({ path: "/lab", me: makeMe({ permissions: ["egg_count.read"] }) });
-
+  test.each([
+    { permission: "bag.receive", path: "/lab/bags" },
+    { permission: "egg_count.create", path: "/lab/egg-counts" },
+    { permission: "egg_count.read", path: "/lab/count-history" },
+  ])("the laboratory home exposes only the $permission workspace", async ({ permission, path }) => {
+    await renderApp({ path: "/lab", me: makeMe({ permissions: [permission] }) });
     expect(await screen.findByRole("heading", { level: 1, name: "Laboratorio" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Historial de conteos" }).getAttribute("href")).toBe(
-      "/lab/count-history",
-    );
-    expect(screen.queryByRole("link", { name: "Conteo de huevos" })).toBeNull();
+    const paths = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    for (const target of ["/lab/bags", "/lab/egg-counts", "/lab/count-history"]) {
+      expect(paths.includes(target)).toBe(target === path);
+    }
     expect(screen.queryByText("Esta sección todavía está en construcción.")).toBeNull();
+  });
+
+  test.each([
+    { permission: "bag.receive", path: "/lab/egg-counts" },
+    { permission: "bag.receive", path: "/lab/count-history" },
+    { permission: "egg_count.create", path: "/lab/bags" },
+    { permission: "egg_count.create", path: "/lab/count-history" },
+    { permission: "egg_count.read", path: "/lab/bags" },
+    { permission: "egg_count.read", path: "/lab/egg-counts" },
+  ])("$permission cannot open the distinct $path workflow", async ({ permission, path }) => {
+    const api = createFakeApi({
+      "GET /api/v1/me/": () => Response.json(makeMe({ permissions: [permission] })),
+    });
+    await renderApp({ path, fetch: api.fetch, language: "en" });
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "You don't have access to this section",
+      }),
+    ).toBeDefined();
+    expect(api.requests.map((request) => request.path)).toEqual(["/api/v1/me/"]);
   });
 
   test("an unknown address shows the not-found state with a way home", async () => {
@@ -167,7 +191,7 @@ describe("document title (WCAG 2.4.2)", () => {
   });
 
   test("navigating changes the title", async () => {
-    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
+    await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
     expect(document.title).toBe("Inicio · Wolbachia");
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));

@@ -43,6 +43,7 @@ describe("sidebar navigation", () => {
           "incident.read",
           "egg_count.read",
           "review_item.read",
+          "bag.receive",
         ],
       }),
     });
@@ -96,7 +97,7 @@ describe("sidebar navigation", () => {
   });
 
   test("navigating by keyboard changes the page", async () => {
-    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
+    await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
 
     screen.getByRole("link", { name: "Laboratorio" }).focus();
     await userEvent.keyboard("{Enter}");

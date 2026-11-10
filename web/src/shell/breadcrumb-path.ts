@@ -9,6 +9,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   roles: "orgAdmin.roles.title",
   motorcycles: "fleet.page.title",
   versions: "geography.history.title",
+  bags: "labReception.page.title",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   supplies: "inventory.page.supplies",
