@@ -29,12 +29,12 @@ export function AppText({
   style,
   ...rest
 }: AppTextProps) {
-  const { theme } = useTheme();
+  const { theme, textScale } = useTheme();
   const color = tone === "onChrome" ? ON_CHROME_COLOR : theme.color.text[tone];
   return (
     <Text
       {...rest}
-      style={[styles.tabular, textStyleFor(variant, isMonospace), { color }, style]}
+      style={[styles.tabular, textStyleFor(variant, isMonospace, textScale), { color }, style]}
     />
   );
 }

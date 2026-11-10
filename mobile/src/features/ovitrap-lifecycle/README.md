@@ -1,5 +1,28 @@
 # M-09 lifecycle capture (#138)
 
+## Configured training eligibility (#144)
+
+New M09 saves check the complete current eligibility snapshot for the exact event
+action, center and quadrant. A configured expired/blocked/unavailable requirement
+disables Save and retains the original draft/evidence. The original raw source
+guard joins the SAME outbox transaction; concurrent eligibility/scope changes roll
+back a stale insertion. Unreadable deltas invalidate readiness until full bootstrap.
+An explicit complete snapshot without a matching configured requirement preserves
+the existing capture behavior; it does not assert a new qualification.
+Draft editing, original receipts, correction/void and retry/final-upload paths are
+unchanged. This consumer covers M09 actions only; it introduces no release workflow.
+`m-09.test.ts` M15 cases cover exact expiry, invalidation, original UUID retry,
+unrelated policy and stale SQL publication. No native qualification is claimed.
+
+## History7 compatibility (#144)
+
+The common decoder also accepts genuine `lab_recount`, `lab_adjudication` and
+`lab_paddle_reuse` facts from the existing history7 producer. Original source,
+author, clocks and typed attempt/resolution/reuse identities remain separate;
+invalid bodies or mismatched envelope identities cannot settle a cursor. These
+read-only facts grant no capture authority. `lifecycle-contract.test.ts` protects
+the three current variants and malformed identity/field boundaries.
+
 ## Native acquisition composition (#253)
 
 The production root shares ONE native acquisition port between M08 and M09. M09
@@ -22,9 +45,10 @@ physical process restart, Q1/Q2 and both MO01 device profiles remain pending.
 
 ## Current M5 composition (local, not device qualification)
 
-The actual history6/B33 producer is fully decoded by the existing DayStore writer.
-The four lifecycle branches materialize; all five canonical Lab kinds, eight Supply
-kinds and aggregate Community history are validated before deliberate exclusion.
+The actual history7/B33 producer is fully decoded by the existing DayStore writer.
+All typed history branches now materialize for the P29 consumer (#144), including
+Lab, independent QA, Supply and aggregate Community facts; see
+[`../history/README.md`](../history/README.md) for readiness and visibility.
 Supply source-kind/material/provenance and Community archived type/revision/count
 fields retain the actual canonical producer contract; optional archived type IDs
 remain optional. No stock/community projection, capture authority or implicit grant

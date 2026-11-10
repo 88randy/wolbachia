@@ -101,4 +101,49 @@ export const trainings = {
     "No se enviará otro registro automáticamente. Revisa el historial y confirma antes de volver a guardar.",
   "trainings.eligibility.refreshRequired":
     "Se alcanzó un cambio de vigencia. Actualiza la consulta para confirmar la elegibilidad con el servidor.",
+  "trainings.mobile.title": "Capacitaciones y cédulas",
+  "trainings.mobile.qualification": "Elegibilidad descargada por acción",
+  "trainings.mobile.certificates": "Constancias descargadas",
+  "trainings.mobile.evaluations": "Cédulas de evaluación",
+  "trainings.mobile.eligible": "Capacitación vigente",
+  "trainings.mobile.blocked": "Capacitación pendiente",
+  "trainings.mobile.expired": "Vencida",
+  "trainings.mobile.unavailable":
+    "Necesitas sincronizar para consultar tu capacitación. No se puede confirmar la elegibilidad sin datos vigentes.",
+  "trainings.mobile.boundary":
+    "La capacitación no habilita esta acción. Pide a tu supervisor que revise tu vigencia y agenda de capacitación.",
+  "trainings.mobile.qualificationHint":
+    "La capacitación es un requisito. Los permisos y demás condiciones de cada captura se revisan por separado.",
+  "trainings.mobile.validUntil": "Vigencia hasta",
+  "trainings.mobile.validFrom": "Vigencia desde",
+  "trainings.mobile.revoked": "Revocada",
+  "trainings.mobile.future": "Aún no vigente",
+  "trainings.mobile.valid": "Vigente",
+  "trainings.mobile.pass": "Correcto",
+  "trainings.mobile.low": "Observación para mejorar",
+  "trainings.mobile.critical": "Requiere capacitación",
+  "trainings.mobile.incomplete": "Evaluación incompleta",
+  "trainings.mobile.voided": "Anulada; se conserva el original",
+  "trainings.mobile.refresh": "Actualizar con señal",
+  "trainings.mobile.refreshing": "Actualizando; conservamos la información descargada.",
+  "trainings.mobile.failed":
+    "No pudimos actualizar. Conservamos lo descargado; busca señal y vuelve a intentar.",
+  "trainings.mobile.localFailed":
+    "No pudimos leer la información del teléfono. Vuelve a intentar; tus registros y borradores se conservan.",
+  "trainings.mobile.empty":
+    "No hay registros en esta descarga. Actualiza con señal para revisar si hay cambios.",
+  "trainings.mobile.notDownloaded":
+    "Todavía no hay constancias o cédulas descargadas. Actualiza con señal.",
+  "trainings.mobile.privateDenied":
+    "Las cédulas privadas requieren autorización. Solicita a tu supervisor que revise tu acceso.",
+  "trainings.mobile.trainingDenied":
+    "Las constancias requieren autorización. Solicita a tu supervisor que revise tu acceso.",
+  "trainings.mobile.partial":
+    "Se muestran los primeros registros autorizados. Puede haber más historial en el servidor; consulta a tu supervisor.",
+  "trainings.mobile.downloadedAt": "Descarga de constancias y cédulas",
+  "trainings.mobile.author": "Autor",
+  "trainings.mobile.reason": "Motivo u observación",
+  "trainings.mobile.revision": "Revisión",
+  "trainings.mobile.source": "Registro original",
+  "trainings.mobile.context": "Centro y cuadrante",
 } satisfies AreaCatalog<"trainings">;

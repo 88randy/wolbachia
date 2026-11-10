@@ -17,6 +17,13 @@ import {
 } from "../ovitrap-lifecycle/context-sql.ts";
 import { clearDownloadedProjections } from "../ovitrap-lifecycle/quadrant-projections.ts";
 import { retainedHistoryStatements } from "../ovitrap-lifecycle/history-projections.ts";
+import {
+  trainingBundleStatements,
+  trainingChangeStatements,
+  invalidateTrainingProjection,
+  clearTrainingProjection,
+  needsTrainingBootstrap,
+} from "../training/projection-state.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
@@ -145,6 +152,7 @@ export class DayStore {
       bundleMetadata(bundle.meta),
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
+      ...trainingBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
       isRecord(body) && Array.isArray(body.supplies)
         ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
@@ -172,6 +180,7 @@ export class DayStore {
       ...manifests,
       ...courierChangeStatements(body),
       ...supplyChangeStatements(body, handle),
+      ...trainingChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
     statements.push(...changeMetadata(body, tasks.filter((entry) => entry.isUnreadable).length));
@@ -182,6 +191,7 @@ export class DayStore {
       setStatement("day_cleanup_pending", "true"),
       ...invalidateCaptureContext,
       invalidateSupplyProjection,
+      invalidateTrainingProjection,
       revokeCaptureScope(),
     ]);
   }
@@ -190,15 +200,18 @@ export class DayStore {
     await this.#db.runAtomically([
       ...captureRecoveryStatements(handle),
       invalidateSupplyProjection,
+      invalidateTrainingProjection,
       INVALIDATE_ATTACHMENTS,
     ]);
   }
   /** Missing supply readiness also covers upgrades without changing released migrations. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {
+    if (includeLifecycle && (await needsTrainingBootstrap(this.#db))) return true;
     const rows = await this.#db.query(
       `SELECT 1 FROM kv WHERE key IN (?,?,?) AND value='true'
         UNION ALL SELECT 1 WHERE ? AND (NOT EXISTS(${CURRENT_CAPTURE_CONTEXT})
-          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')) LIMIT 1`,
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key='history_projection_ready' AND value='true')) LIMIT 1`,
       [
         KV_KEYS.daySamplingPointsBootstrapPending,
         KV_KEYS.dayCompletionBootstrapPending,
@@ -222,6 +235,8 @@ export class DayStore {
       ...clearDownloadedProjections,
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
+      ...clearTrainingProjection,
+      removeStatement("history_projection_ready"),
       ...invalidateCaptureContext,
       revokeCaptureScope(),
       { sql: "DELETE FROM day_sampling_point" },

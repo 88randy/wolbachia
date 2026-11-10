@@ -10,7 +10,14 @@ export type ThemePreference = ColorScheme | "system";
 export interface Preferences {
   readonly scheme: ThemePreference;
   readonly locale: Locale;
+  readonly textSize: "system" | "large";
 }
+
+export const DEFAULT_PREFERENCES: Preferences = {
+  scheme: "system",
+  locale: defaultLocale,
+  textSize: "system",
+};
 
 const LOCALES: readonly Locale[] = ["es-MX", "en"];
 
@@ -35,5 +42,5 @@ export async function loadPreferences(kv: KvStore): Promise<Preferences> {
     kv.get(KV_KEYS.themePreference),
     kv.get(KV_KEYS.locale),
   ]);
-  return { scheme: parseScheme(scheme), locale: parseLocale(locale) };
+  return { scheme: parseScheme(scheme), locale: parseLocale(locale), textSize: "system" };
 }

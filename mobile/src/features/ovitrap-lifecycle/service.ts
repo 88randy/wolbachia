@@ -244,6 +244,21 @@ export class LifecycleService {
       throw error;
     }
   }
+  async #trainingBlocked(
+    state: StoredLifecycle,
+    turn: LifecycleSourceTurn | null,
+  ): Promise<boolean> {
+    if (!state.draft || state.event || !turn || !this.#deps.trainingGuards) return false;
+    try {
+      const request = requestFor(state);
+      const source = turn.source ?? (request ? await turn.resolve(request) : null);
+      await this.#deps.trainingGuards(state.draft, { ...turn, source });
+      return false;
+    } catch (error) {
+      if (error instanceof LifecycleGateError) return true;
+      throw error;
+    }
+  }
   async #snapshot(turn: LifecycleSourceTurn | null): Promise<Snapshot> {
     const state = await this.#deps.store.readOwned(turn);
     const config = turn
@@ -271,6 +286,7 @@ export class LifecycleService {
       limits: config.limits ?? null,
       frameState,
       now: this.#deps.now(),
+      isTrainingBlocked: await this.#trainingBlocked(state, turn),
     });
   }
   async read(): Promise<Snapshot> {
@@ -465,13 +481,15 @@ export class LifecycleService {
         throw new LifecycleGateError(gate ?? "scope");
       await this.#authorize(draft);
       const bindings = (await this.#deps.evidenceBindings?.(draft, turn)) ?? [];
-      await operation.admit(turn, () =>
-        this.#deps.engine.enqueue(lifecycleEvent(draft), [
+      await operation.admit(turn, async () => {
+        const training = (await this.#deps.trainingGuards?.(draft, turn)) ?? [];
+        return this.#deps.engine.enqueue(lifecycleEvent(draft), [
           ...lifecycleCommitGuards(turn.handle, turn.ownerFence),
           ...this.#deps.store.commitStatements(draft, state.draftVersion),
           ...bindings,
-        ]),
-      );
+          ...training,
+        ]);
+      });
       return this.#snapshot(turn);
     });
   }
@@ -525,6 +543,7 @@ interface SnapshotInput {
   shiftId: string;
   advisory: Awaited<ReturnType<typeof relocationSuggestion>> | AdvisoryView;
   isScopeBlocked: boolean;
+  isTrainingBlocked: boolean;
   canCapture: boolean;
   now: Date;
   limits?: import("@wolbachia/api-client").Schemas["MeLimits"] | null;
@@ -547,7 +566,11 @@ function snapshotModel(input: SnapshotInput): Snapshot {
     frameState: input.frameState,
     correctionReasons: input.config.catalog?.voidReasons ?? [],
     canStartCapture: Boolean(shiftId && input.canCapture && !state.recovery),
-    gate: state.draft ? saveGate(state.draft, input.now) : "draft",
+    gate: input.isTrainingBlocked
+      ? "training"
+      : state.draft
+        ? saveGate(state.draft, input.now)
+        : "draft",
     isScopeBlocked: input.isScopeBlocked,
     isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
     catalogChanged: configurationChanged(state.draft, input.config),
