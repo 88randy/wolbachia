@@ -398,6 +398,14 @@ See [capabilities and verification](../docs/web-ux-polish-218.md).
 The synthetic local review at `/harness/ux-preview.html` uses the real app routes with no API
 network calls. It is a separate Vite development entry excluded from the production build.
 
+## Shift validation W29 (#34)
+
+The operations entry links to the server-paged shift list and the real UUID detail.
+Existing shift.read/shift.validate codes gate reads and whole-shift decisions. Both
+commands require a reason and the reviewed revision; validation history remains
+separate from the open/closed lifecycle. See [operations README](src/operations/README.md)
+for session/command fences, criterion tests, route exception and the unavailable
+summary, GPS/map and per-point W4 API projections. No backend contract is changed.
 ### Incident workspace (W6/W7, #33)
 
 `/incidents` and `/incidents/<code>` consume the generated reported facade,

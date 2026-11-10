@@ -10,7 +10,10 @@ Each Enter freezes a separate code and UUID in a scanner FIFO. One command gate
 serializes writes; session revisions retire the active queue token and a session
 guard drops late results. Audit writes are never optimistic or automatically
 retried. An uncertain attempted head is removed and pauses the remaining,
-unattempted scans until an explicit current-state refresh. No old response can
+unattempted scans until an explicit current-state refresh. The queue removes a
+head only after synchronous live-gate admission; refused admission retains its
+original code and UUID. Review cancels earlier pending reads before refetching.
+No old response can
 unlock a newer queue token or replace its feedback.
 
 The received-bag, no-paddle, expected and discrepancy lists are server-paged. Their common
@@ -44,6 +47,7 @@ Existing libraries only: [TanStack Query](https://tanstack.com/query/latest/docs
 | Explicit missing reason and configuration-pending discrepancy | `reception.test.tsx`: expected missing observations |
 | W6/W7 links back to the actual bag's discrepancy view only with reception access | `incidents/linked-record.test.tsx` |
 | Enter-delimited FIFO, retained next input and manual recovery after uncertain writes | `reception.test.tsx`: Enter-delimited scans |
+| Live admission refusal retains the pending code and UUID | `reception.test.tsx`: unadmitted scan |
 | A queued scan resumes after reauthentication without waiting for an old response | `reception.test.tsx`: old-session response |
 | Expected-view placeholders never authorize a missing observation | `reception.test.tsx`: switching to expected |
 | Summary links and visible page use the actual server predicates/counts | `reception.test.tsx`: summary links |

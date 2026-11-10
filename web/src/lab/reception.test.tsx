@@ -5,7 +5,6 @@ import { renderApp } from "../test/render-app";
 import { renderWithI18n } from "../test/render-with-i18n";
 import { ReceptionScanner } from "./ReceptionScanner";
 import type { ReceptionActions } from "./use-reception-command";
-import type { ReceptionCommand } from "./reception-command";
 import { apiError } from "../test/fake-api";
 import { simulateLogin } from "../test/simulate-session";
 import {
@@ -19,8 +18,26 @@ import {
 } from "../test/lab-reception-fixtures";
 import { ID, incident } from "../test/incident-fixtures";
 
+async function reviewCurrentState(user: ReturnType<typeof userEvent.setup>) {
+  await vi.waitFor(() => {
+    expect(
+      screen.getByRole("button", { name: "Review current state" }).getAttribute("aria-disabled"),
+    ).not.toBe("true");
+  });
+  await user.click(screen.getByRole("button", { name: "Review current state" }));
+}
+async function waitForReceptionReads() {
+  await screen.findByText("There are no records here yet");
+  await vi.waitFor(() => {
+    expect(screen.getAllByRole("link", { name: "0" })).toHaveLength(2);
+  });
+}
+
 test("20 keyboard scans normalize framing, retain focus and never show a field egg count", async () => {
-  const submit = vi.fn<(command: ReceptionCommand) => Promise<boolean>>().mockResolvedValue(true);
+  const submit = vi.fn<ReceptionActions["submit"]>().mockImplementation((_command, onStarted) => {
+    onStarted?.();
+    return Promise.resolve(true);
+  });
   const actions: ReceptionActions = {
     submit,
     canSubmit: true,
@@ -57,6 +74,44 @@ test("20 keyboard scans normalize framing, retain focus and never show a field e
   expect(document.body.textContent).not.toMatch(/field eggs|field count/i);
 });
 
+test("an unadmitted scan keeps its code and command UUID until the live gate accepts it", async () => {
+  let canStart = false;
+  const admitted: string[] = [];
+  const submit = vi.fn<ReceptionActions["submit"]>().mockImplementation((command, onStarted) => {
+    if (canStart) {
+      onStarted?.();
+      if (command.kind === "bag") admitted.push(command.code);
+    }
+    return Promise.resolve(canStart);
+  });
+  const actions: ReceptionActions = {
+    submit,
+    canSubmit: true,
+    revision: 0,
+    isBusy: false,
+    result: null,
+    isReviewRequired: false,
+    setResult: vi.fn(),
+    review: vi.fn(),
+  };
+  await renderWithI18n(<ReceptionScanner actions={actions} />, "en");
+  const scan = screen.getByRole("textbox", { name: "Bag code" });
+  fireEvent.change(scan, { target: { value: "B-030" } });
+  const form = scan.closest("form");
+  if (!form) throw new Error("Scanner form missing");
+  fireEvent.submit(form);
+  expect(screen.getByText(/Scans waiting · 1/)).toBeDefined();
+  expect(admitted).toEqual([]);
+  canStart = true;
+  fireEvent.change(scan, { target: { value: "next draft" } });
+  await vi.waitFor(() => {
+    expect(admitted).toEqual(["B-030"]);
+  });
+  expect(submit.mock.calls).toHaveLength(2);
+  expect(submit.mock.calls[1]?.[0].command_id).toBe(submit.mock.calls[0]?.[0].command_id);
+  expect((scan as HTMLInputElement).value).toBe("next draft");
+});
+
 test("duplicate scans, unknown codes and no-reading incidents stay keyboard usable", async () => {
   const api = receptionApi(["bag.receive", "incident.read"]);
   const answers = [
@@ -90,6 +145,14 @@ test("duplicate scans, unknown codes and no-reading incidents stay keyboard usab
 
 test("Enter-delimited scans remain serialized and pause on uncertainty until explicit review", async () => {
   const api = receptionApi();
+  const heldReads: ((reply: Response) => void)[] = [];
+  api.setRoute(
+    "GET /api/v1/lab-receptions/",
+    () =>
+      new Promise<Response>((finish) => {
+        heldReads.push(finish);
+      }),
+  );
   let reject!: (error: Error) => void;
   api.setRoute(
     "POST /api/v1/bags/receive/",
@@ -113,18 +176,29 @@ test("Enter-delimited scans remain serialized and pause on uncertainty until exp
   expect((scan as HTMLInputElement).value).toBe("draft");
   await user.type(scan, "{Enter}");
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
-  api.setRoute("POST /api/v1/bags/receive/", (request) =>
-    receptionReply((request.body as { code: string }).code),
-  );
-  await user.click(screen.getByRole("button", { name: "Review current state" }));
-  await vi.waitFor(() => {
-    expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(3);
+  let finishDrain!: () => void;
+  const drained = new Promise<void>((finish) => {
+    finishDrain = finish;
   });
+  api.setRoute("GET /api/v1/lab-receptions/", page([]));
+  api.setRoute("POST /api/v1/bags/receive/", (request) => {
+    const { code } = request.body as { code: string };
+    if (code === "B-032") finishDrain();
+    return receptionReply(code);
+  });
+  await reviewCurrentState(user);
+  await drained;
   const codes = api.requests
     .filter((request) => request.method === "POST")
     .map((request) => (request.body as { code: string }).code);
   expect(codes).toEqual(["B-030", "B-031", "B-032"]);
   expect((scan as HTMLInputElement).value).toBe("draft");
+  await act(async () => {
+    heldReads.forEach((finish) => {
+      finish(page([]));
+    });
+    await Promise.resolve();
+  });
 });
 
 test("an old-session response cannot overwrite a queued scan resumed after explicit review", async () => {
@@ -137,18 +211,29 @@ test("an old-session response cannot overwrite a queued scan resumed after expli
         resolve = finish;
       }),
   );
-  await renderApp({ path: "/lab/bags", fetch: api.fetch, language: "en" });
+  const app = await renderApp({ path: "/lab/bags", fetch: api.fetch, language: "en" });
+  await waitForReceptionReads();
   const user = userEvent.setup();
   const scan = await screen.findByRole("textbox", { name: "Bag code" });
   await user.type(scan, "B-030{Enter}");
   await user.type(scan, "B-031{Enter}");
+  const readsBefore = api.requests.filter((request) => request.method === "GET").length;
   await act(async () => {
     simulateLogin();
     await Promise.resolve();
   });
   await screen.findByText(/could not confirm the result/);
+  // The shared session controller restarts reads before an explicit recovery can review them.
+  await vi.waitFor(() => {
+    expect(api.requests.filter((request) => request.method === "GET").length).toBeGreaterThan(
+      readsBefore,
+    );
+  });
+  await vi.waitFor(() => {
+    expect(app.queryClient.isFetching()).toBe(0);
+  });
   api.setRoute("POST /api/v1/bags/receive/", receptionReply("B-031"));
-  await user.click(screen.getByRole("button", { name: "Review current state" }));
+  await reviewCurrentState(user);
   await vi.waitFor(() => {
     expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(2);
   });

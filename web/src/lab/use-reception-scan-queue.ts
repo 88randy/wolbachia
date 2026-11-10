@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import type { ReceptionActions } from "./use-reception-command";
 import type { ReceptionCommand } from "./reception-command";
 type Scan = Extract<ReceptionCommand, { kind: "bag" }>;
@@ -16,20 +17,32 @@ function useScanQueueOwner(revision: number) {
   }, [revision]);
   return { running, isRunning, setRunning };
 }
-function startQueuedScan(
-  owner: ReturnType<typeof useScanQueueOwner>,
-  actions: ReceptionActions,
-  head: Scan,
-) {
+interface QueuedScanContext {
+  owner: ReturnType<typeof useScanQueueOwner>;
+  actions: ReceptionActions;
+  head: Scan;
+  setPending: Dispatch<SetStateAction<Scan[]>>;
+}
+function acceptQueuedScan(context: QueuedScanContext, token: symbol) {
+  context.owner.running.current = token;
+  context.owner.setRunning(true);
+  context.setPending((scans) =>
+    scans[0]?.command_id === context.head.command_id ? scans.slice(1) : scans,
+  );
+  context.actions.setResult(null);
+}
+function startQueuedScan(context: QueuedScanContext) {
+  const { owner, actions, head } = context;
   const token = Symbol();
-  owner.running.current = token;
-  owner.setRunning(true);
-  actions.setResult(null);
-  void actions.submit(head).finally(() => {
-    if (owner.running.current !== token) return;
-    owner.running.current = null;
-    owner.setRunning(false);
-  });
+  void actions
+    .submit(head, () => {
+      acceptQueuedScan(context, token);
+    })
+    .finally(() => {
+      if (owner.running.current !== token) return;
+      owner.running.current = null;
+      owner.setRunning(false);
+    });
 }
 export function useReceptionScanQueue(actions: ReceptionActions) {
   const [pending, setPending] = useState<Scan[]>([]);
@@ -44,8 +57,7 @@ export function useReceptionScanQueue(actions: ReceptionActions) {
       !actions.canSubmit
     )
       return;
-    setPending((scans) => scans.slice(1));
-    startQueuedScan(owner, actions, head);
+    startQueuedScan({ owner, actions, head, setPending });
   }, [pending, actions, owner]);
   const enqueue = (code: string) => {
     const scan: Scan = { kind: "bag", code, command_id: crypto.randomUUID() };

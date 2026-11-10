@@ -50,10 +50,12 @@ function publishFailure(
 export async function executeReception(
   context: ReceptionAttemptContext,
   command: ReceptionCommand,
+  onStarted?: () => void,
 ) {
   const attempt = startReception(context);
   if (!attempt) return false;
   try {
+    onStarted?.();
     const result = await postReception(context.scope.client, command, attempt.guard.signal);
     if (attempt.guard.isStale()) return false;
     context.publish({ ...result, subject: command.kind === "bag" ? command.code : command.id });
@@ -74,11 +76,13 @@ export async function executeReception(
 export async function reviewReception(context: ReceptionAttemptContext) {
   const attempt = startReception(context);
   if (!attempt) return;
+  const active = {
+    predicate: (query: { queryKey: readonly unknown[] }) => query.queryKey[3] === "lab-reception",
+    type: "active" as const,
+  };
   try {
-    await context.cache.refetchQueries(
-      { predicate: (query) => query.queryKey[3] === "lab-reception", type: "active" },
-      { throwOnError: true },
-    );
+    await context.cache.cancelQueries(active);
+    await context.cache.refetchQueries(active, { throwOnError: true });
     if (!attempt.guard.isStale()) context.publish(null);
   } catch (error) {
     if (!attempt.guard.isStale()) context.publish(receptionFailure(error));

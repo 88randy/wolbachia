@@ -1,4 +1,5 @@
 import { labReception } from "./labReception.ts";
+import { shift } from "./shift.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
 import { relocations } from "./relocations.ts";
@@ -28,6 +29,7 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const esMX = {
+  ...shift,
   ...reviews,
   ...relocations,
   ...closure,

@@ -10,6 +10,13 @@ function area(id: (typeof AREAS)[number]["id"]) {
 }
 
 describe("canOpenArea", () => {
+  test.each(["shift.read", "review_item.read", "relocation.read"])(
+    "operations navigation includes a member with only %s",
+    (permission) => {
+      expect(canOpenArea(makeMe({ permissions: [permission] }), area("operations"))).toBe(true);
+    },
+  );
+
   test("Home is open to every member, even with no permissions", () => {
     expect(canOpenArea(makeMe({ permissions: [] }), area("home"))).toBe(true);
   });

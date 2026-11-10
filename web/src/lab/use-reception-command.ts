@@ -15,8 +15,8 @@ export function useReceptionCommand(scope: ReceptionScope) {
   );
   const isReviewRequired = result !== null && requiresReceptionReview(result);
   const context = { scope, cache, begin, token, publish: setResult, setBusy };
-  const submit = (command: ReceptionCommand) =>
-    isReviewRequired ? Promise.resolve(false) : executeReception(context, command);
+  const submit = (command: ReceptionCommand, onStarted?: () => void) =>
+    isReviewRequired ? Promise.resolve(false) : executeReception(context, command, onStarted);
   return {
     canSubmit: scope.identity.isSettled,
     revision: scope.identity.revision,
