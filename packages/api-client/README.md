@@ -4,6 +4,16 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#100 adds page-number `/users/` personnel administration and the limited
+`/users/operational/` projection, plus cursor `/access-log/`. User detail/action
+paths use the shared User UUID; `personnel_id` and `membership_id` remain distinct.
+Create selects an existing same-org membership or an unused username with no
+password/profile/scope grant. PATCH/deactivate take `expected_revision`;
+`reveal-rfc` has its own permission and returns `{rfc}` only after a durable
+receipt, with no-store. Normal and operational reads expose no RFC envelope or
+evaluations. RFC values must never enter client caches or logs. See
+[accounts](../../backend/accounts/README.md#personnel-administration-and-protected-rfc-100--b02).
+
 #150 adds the owned notification inbox, signed cursor pages and unread totals,
 idempotent read/read-all actions, and per-type in-app/email preferences with
 required-channel policy. Object references are reauthorized on each read and
@@ -93,6 +103,13 @@ quantity is initial custody input, never a writable balance. Both current local
 reading slots are required. Unknown protocols/safety data remain nondispatchable.
 No transfer, stock writer, label or courier assignment contract is fabricated.
 See ../../backend/inventory/README.md for queries, codes and integration limits.
+
+#149 adds management-only named incident-type owner options, immutable versions
+and unconfigured catalog item discovery (including protected Other). #154 adds
+the exact lot condition-status frame: retained protocol, daily assessed slots and
+currently authorized unresolved incident links. Empty links never prove absence
+of a global hold. See ../../docs/api-conventions.md for permission and custody
+boundaries. Both artifacts remain generated from the owning backend apps.
 
 #270 adds paginated real movement provenance and action-scoped owner, placement
 and protocol incident-type version choices. Lot reads retain exact supply/location

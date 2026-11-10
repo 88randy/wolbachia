@@ -3,6 +3,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
+from accounts.personnel_views import AccessLogViewSet
 from accounts.views import (
     CsrfView,
     DeviceViewSet,
@@ -17,6 +18,7 @@ from accounts.views import (
 router = SimpleRouter()
 router.register("devices", DeviceViewSet, basename="device")
 router.register("users", UserViewSet, basename="user")
+router.register("access-log", AccessLogViewSet, basename="access-log")
 
 urlpatterns = [
     path("auth/csrf/", CsrfView.as_view(), name="auth-csrf"),

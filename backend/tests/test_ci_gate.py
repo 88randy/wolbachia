@@ -41,6 +41,14 @@ EXPECTED_COHORTS = {
         "tests/test_release_uuid_116.py",
         "tests/test_releases_b_20.py",
         "tests/test_releases_concurrency_116.py",
+        "tests/test_ovitraps_lifecycle_b_15.py",
+        "tests/test_seed_defaults.py",
+        "tests/test_shift_concurrency.py",
+        "tests/test_incidents_b_06.py",
+        "tests/test_reviews_b_17.py",
+        "tests/test_geography_decisions_b_33.py",
+        "tests/test_sync_locks.py",
+        "tests/test_inventory_transfers_106.py",
     },
     "regular-lab": {
         "tests/test_lab_api_114.py",
@@ -57,11 +65,9 @@ EXPECTED_COHORTS = {
         "tests/test_field_sync_b_13.py",
         "tests/test_geography_b_11.py",
         "tests/test_geography_decision_policy_b_33.py",
-        "tests/test_geography_decisions_b_33.py",
         "tests/test_ovitrap_advisory_contract_287.py",
         "tests/test_ovitrap_advisory_read_287.py",
         "tests/test_ovitraps_b_14.py",
-        "tests/test_ovitraps_lifecycle_b_15.py",
         "tests/test_removal_resolution_217.py",
         "tests/test_sync_api.py",
         "tests/test_sync_changes.py",
@@ -69,7 +75,6 @@ EXPECTED_COHORTS = {
         "tests/test_sync_hardening.py",
         "tests/test_sync_idempotency.py",
         "tests/test_sync_ingest.py",
-        "tests/test_sync_locks.py",
         "tests/test_sync_quota_time.py",
         "tests/test_sync_registry.py",
         "tests/test_sync_rejection_quota.py",
@@ -173,8 +178,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 50
-        )  # Residual regular, ten migration owners and thirty-nine complete ordinary modules.
+            validate_fragments(bundles, expected) == 55
+        )  # Residual regular, ten migration owners and forty-four complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)

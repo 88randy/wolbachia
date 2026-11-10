@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from core.models import OrgScopedModel
+from core.models import ImmutableMixin, OrgScopedModel
 
 TOKEN_HASH_LENGTH = 64  # hex SHA-256
 
@@ -231,3 +231,76 @@ class TokenPair(OrgScopedModel):
 
     def __str__(self) -> str:
         return str(self.pk)
+
+
+class Personnel(OrgScopedModel):
+    """Organization-private personnel state; the shared login identity is never edited here."""
+
+    membership = models.OneToOneField(
+        "organizations.Membership", on_delete=models.PROTECT, related_name="personnel"
+    )
+    center = models.ForeignKey("organizations.Center", on_delete=models.PROTECT, related_name="+")
+    quadrant = models.ForeignKey(
+        "geography.Quadrant", on_delete=models.PROTECT, related_name="+", null=True, blank=True
+    )
+    display_name = models.CharField(max_length=200)
+    work_email = models.EmailField(blank=True)
+    work_phone = models.CharField(max_length=40, blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    rfc_ciphertext = models.BinaryField(default=bytes, blank=True)
+    rfc_nonce = models.BinaryField(default=bytes, blank=True)
+    rfc_wrapped_key = models.BinaryField(default=bytes, blank=True)
+    rfc_key_version = models.CharField(max_length=2048, blank=True)
+    rfc_fingerprint = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "rfc_fingerprint"],
+                condition=~models.Q(rfc_fingerprint=""),
+                name="personnel_unique_org_rfc",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(created_by__isnull=False), name="personnel_real_author"
+            ),
+        ]
+
+
+class AccessLog(ImmutableMixin, OrgScopedModel):
+    """Durable, closed-vocabulary receipts: never RFC, contact data, URLs or request bodies."""
+
+    class Action(models.TextChoices):
+        CREATE = "user.create"
+        UPDATE = "user.update"
+        DEACTIVATE = "user.deactivate"
+        REVEAL_RFC = "user.reveal_rfc"
+        ROTATE_RFC = "user.rotate_rfc"
+
+    class Origin(models.TextChoices):
+        WEB = "web"
+        DEVICE = "device"
+        INTERNAL = "internal"
+
+    class Result(models.TextChoices):
+        SUCCESS = "success", "Success"
+        RFC_REJECTED = "rfc_rejected", "RFC rejected"
+
+    target = models.ForeignKey(
+        Personnel, on_delete=models.PROTECT, related_name="access_receipts", null=True, blank=True
+    )
+    center = models.ForeignKey("organizations.Center", on_delete=models.PROTECT, related_name="+")
+    quadrant = models.ForeignKey(
+        "geography.Quadrant", on_delete=models.PROTECT, related_name="+", null=True, blank=True
+    )
+    action = models.CharField(max_length=32, choices=Action.choices)
+    origin = models.CharField(max_length=16, choices=Origin.choices)
+    result = models.CharField(max_length=32, choices=Result.choices, default=Result.SUCCESS)
+    revision = models.PositiveIntegerField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(created_by__isnull=False), name="accesslog_real_actor"
+            ),
+        ]
+        indexes = [models.Index(fields=["organization", "-created_at", "id"])]

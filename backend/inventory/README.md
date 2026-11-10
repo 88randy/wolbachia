@@ -302,6 +302,39 @@ Movement GET exposes source_kind=paddle_return and that real stock-return UUID;
 the original nullable source_supply/source_transfer fields and all location/lot
 read filters, balances, scope and paging remain unchanged.
 
+## Biological monitoring status (W18 / #154)
+
+`GET /lots/{id}/condition-status/` requires current `lot.read` at the same
+default initial or explicit `location_id` pair used by condition history. Current
+lot metadata additionally requires original lot authority or actual positive
+custody at the selected site, reusing the existing lot selector. A readable site
+alone does not reveal a guessed lot's global pins or blockers. It is
+one unpaginated monitoring frame: `lot_id`, exact `lot_version_id`, `protocol_id`,
+`location_id`, `evaluated_at`, organization-local `local_date`/`timezone`, exact
+retained `protocol` or null, `is_protocol_configured`, `slots`, current `status`,
+`blocked_by` reason codes and permitted `blocking_incidents`.
+`can_create_condition` independently checks the current `condition.create`
+grant at that actual default/explicit site pair; a permission code held only at
+another center never enables capture here. Read-only status remains available.
+
+Both slot entries contain `slot`, configured minute `window` or null,
+`is_complete` and the latest qualifying `reading_id` or null. Only assessed
+readings matching the exact protocol, current organization timezone/local day
+and actual capture location qualify. Duplicate readings cannot fill another
+slot; reading-history pagination cannot change completeness. A null lot protocol
+never inherits the nested supply protocol, and old readings keep their own pin.
+
+Global unresolved biological holds remain authoritative across all lot locations.
+Only linked incidents currently covered by both `lot.read` and `incident.read`
+at their actual center/applicable-quadrant pair expose `{id,code}`. Missing or
+inaccessible links contribute no identity or pending-count disclosure; an empty
+link list does not clear `condition_breach`. Normal later readings never clear
+an owned hold. No grants, model, migration, write or sync contract is added.
+
+`tests/test_inventory_condition_status.py` owns distinct-slot completeness,
+exact/null/unassessed pins, current timezone, cross-location blocker discovery,
+redaction and the HTTP tenant/scope boundary.
+
 ## External material delivery (#118)
 
 The real Lab DeliveryReceipt is a typed, one-to-one source in StockOperation.

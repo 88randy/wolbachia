@@ -4,6 +4,49 @@ info:
   version: 1.0.0
   description: Single API for the mobile app and the web (see docs/api-conventions.md).
 paths:
+  /api/v1/access-log/:
+    get:
+      operationId: access_log_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      tags:
+      - access-log
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccessLogList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/attachments/{id}/download/:
     get:
       operationId: attachments_download_retrieve
@@ -4381,6 +4424,172 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incident-types/{id}/versions/:
+    get:
+      operationId: incident_types_versions_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this incident type version.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - incident-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentTypeHistoryList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incident-types/owner-options/:
+    get:
+      operationId: incident_types_owner_options_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: membership_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 200
+      tags:
+      - incident-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentTypeConfigurationOwnerOptionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incident-types/unconfigured-items/:
+    get:
+      operationId: incident_types_unconfigured_items_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+      tags:
+      - incident-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentTypeUnconfiguredItemList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/incidents/:
     get:
       operationId: incidents_list
@@ -7147,6 +7356,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Lot'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lots/{id}/condition-status/:
+    get:
+      operationId: lots_condition_status_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lot version.
+        required: true
+      - in: query
+        name: location_id
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConditionStatus'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -14581,6 +14839,268 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/:
+    get:
+      operationId: users_list
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: display_name, created_at. Prefix with
+          - for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: display_name, work_email, work_phone.'
+        schema:
+          type: string
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPersonnelList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: users_create
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonnelWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Personnel'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this personnel.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Personnel'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: users_partial_update
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this personnel.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPersonnelWriteRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Personnel'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/{id}/deactivate/:
+    post:
+      operationId: users_deactivate_create
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this personnel.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonnelRevisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Personnel'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/{id}/reveal-rfc/:
+    post:
+      operationId: users_reveal_rfc_create
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this personnel.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RfcReveal'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -14600,7 +15120,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this user.
+        description: A UUID string identifying this personnel.
         required: true
       tags:
       - users
@@ -14945,6 +15465,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/operational/:
+    get:
+      operationId: users_operational_list
+      description: Membership-private personnel plus the existing scoped device-session
+        revocation.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOperationalPersonnelList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/write-offs/:
     get:
       operationId: write_offs_list
@@ -15123,6 +15699,100 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    AccessLog:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        actor_id:
+          type: string
+          format: uuid
+          readOnly: true
+        target_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        center_id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        action:
+          allOf:
+          - $ref: '#/components/schemas/AccessLogActionEnum'
+          readOnly: true
+        origin:
+          allOf:
+          - $ref: '#/components/schemas/AccessLogOriginEnum'
+          readOnly: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/AccessLogResultEnum'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor_id
+      - center_id
+      - created_at
+      - id
+      - origin
+      - quadrant_id
+      - result
+      - revision
+      - target_id
+    AccessLogActionEnum:
+      enum:
+      - user.create
+      - user.update
+      - user.deactivate
+      - user.reveal_rfc
+      - user.rotate_rfc
+      type: string
+      description: |-
+        * `user.create` - Create
+        * `user.update` - Update
+        * `user.deactivate` - Deactivate
+        * `user.reveal_rfc` - Reveal Rfc
+        * `user.rotate_rfc` - Rotate Rfc
+    AccessLogOriginEnum:
+      enum:
+      - web
+      - device
+      - internal
+      type: string
+      description: |-
+        * `web` - Web
+        * `device` - Device
+        * `internal` - Internal
+    AccessLogResultEnum:
+      enum:
+      - success
+      - rfc_rejected
+      type: string
+      description: |-
+        * `success` - Success
+        * `rfc_rejected` - RFC rejected
     AcknowledgeMissing:
       type: object
       properties:
@@ -17253,10 +17923,108 @@ components:
       - slot
       - temperature_c
       - timezone
+    ConditionBlockingIncident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+      required:
+      - code
+      - id
     ConditionCaptureRequestRequest:
       oneOf:
       - $ref: '#/components/schemas/ConditionWriteRequest'
       - $ref: '#/components/schemas/ExplicitConditionWriteRequest'
+    ConditionSlot:
+      type: object
+      properties:
+        slot:
+          $ref: '#/components/schemas/SlotEnum'
+        window:
+          type: array
+          items:
+            type: integer
+            maximum: 1440
+            minimum: 0
+          nullable: true
+          maxItems: 2
+          minItems: 2
+        is_complete:
+          type: boolean
+        reading_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - is_complete
+      - reading_id
+      - slot
+      - window
+    ConditionStatus:
+      type: object
+      properties:
+        lot_id:
+          type: string
+          format: uuid
+        lot_version_id:
+          type: string
+          format: uuid
+        protocol_id:
+          type: string
+          format: uuid
+          nullable: true
+        location_id:
+          type: string
+          format: uuid
+          nullable: true
+        evaluated_at:
+          type: string
+          format: date-time
+        local_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+        protocol:
+          allOf:
+          - $ref: '#/components/schemas/Protocol'
+          nullable: true
+        is_protocol_configured:
+          type: boolean
+        can_create_condition:
+          type: boolean
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConditionSlot'
+        status:
+          $ref: '#/components/schemas/InventoryLotStatusEnum'
+        blocked_by:
+          type: array
+          items:
+            type: string
+        blocking_incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConditionBlockingIncident'
+      required:
+      - blocked_by
+      - blocking_incidents
+      - can_create_condition
+      - evaluated_at
+      - is_protocol_configured
+      - local_date
+      - location_id
+      - lot_id
+      - lot_version_id
+      - protocol
+      - protocol_id
+      - slots
+      - status
+      - timezone
     ConditionWriteRequest:
       type: object
       properties:
@@ -19618,11 +20386,24 @@ components:
           readOnly: true
         blocker_kinds:
           readOnly: true
+        supervisor_display:
+          type: string
+          nullable: true
+          readOnly: true
+        coordinator_display:
+          type: string
+          nullable: true
+          readOnly: true
+        terminal_display:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - blocker_kinds
       - close_evidence_min
       - code
       - coordinator
+      - coordinator_display
       - coordinator_sla_seconds
       - current_version_id
       - icon
@@ -19634,8 +20415,136 @@ components:
       - revision
       - severity
       - supervisor
+      - supervisor_display
       - supervisor_sla_seconds
       - terminal
+      - terminal_display
+    IncidentTypeConfigurationOwnerOption:
+      type: object
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        is_terminal_eligible:
+          type: boolean
+      required:
+      - is_terminal_eligible
+      - label
+      - membership_id
+    IncidentTypeHistory:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        icon:
+          type: string
+          readOnly: true
+        is_other:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        supervisor:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        coordinator:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        terminal:
+          type: string
+          format: uuid
+          readOnly: true
+        supervisor_sla_seconds:
+          type: integer
+          readOnly: true
+        coordinator_sla_seconds:
+          type: integer
+          readOnly: true
+        report_evidence_min:
+          type: integer
+          readOnly: true
+        close_evidence_min:
+          type: integer
+          readOnly: true
+        blocker_kinds:
+          readOnly: true
+        supervisor_display:
+          type: string
+          nullable: true
+          readOnly: true
+        coordinator_display:
+          type: string
+          nullable: true
+          readOnly: true
+        terminal_display:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - blocker_kinds
+      - close_evidence_min
+      - code
+      - coordinator
+      - coordinator_display
+      - coordinator_sla_seconds
+      - created_at
+      - created_by
+      - current_version_id
+      - icon
+      - id
+      - is_active
+      - is_other
+      - label
+      - report_evidence_min
+      - revision
+      - severity
+      - supervisor
+      - supervisor_display
+      - supervisor_sla_seconds
+      - terminal
+      - terminal_display
     IncidentTypeSnapshot:
       type: object
       properties:
@@ -19664,6 +20573,38 @@ components:
       - is_other
       - label
       - report_evidence_min
+    IncidentTypeUnconfiguredItem:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        icon:
+          type: string
+          readOnly: true
+        is_other:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - icon
+      - id
+      - is_other
+      - label
     IncidentVoidRequest:
       type: object
       properties:
@@ -19977,11 +20918,15 @@ components:
         * `warehouse` - warehouse
         * `center` - center
     InventoryLotStatusEnum:
-      type: string
       enum:
       - draft
       - available
       - blocked
+      type: string
+      description: |-
+        * `draft` - draft
+        * `available` - available
+        * `blocked` - blocked
     InventoryRevisionRequest:
       type: object
       properties:
@@ -23107,6 +24052,83 @@ components:
     NullEnum:
       enum:
       - null
+    OperationalDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+      required:
+      - id
+      - label
+    OperationalPersonnel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        work_email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        work_phone:
+          type: string
+        is_active:
+          type: boolean
+        profiles:
+          type: array
+          items:
+            type: string
+        trainings:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationalTraining'
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationalDevice'
+      required:
+      - center_id
+      - devices
+      - display_name
+      - id
+      - is_active
+      - profiles
+      - quadrant_id
+      - trainings
+      - work_email
+      - work_phone
+    OperationalTraining:
+      type: object
+      properties:
+        training_code:
+          type: string
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        is_revoked:
+          type: boolean
+      required:
+      - is_revoked
+      - training_code
+      - valid_from
+      - valid_to
     OrderingEnum:
       enum:
       - created_at
@@ -23851,6 +24873,25 @@ components:
       - method_version
       - source_movement_id
       - washed_at
+    PaginatedAccessLogList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessLog'
     PaginatedAssignmentList:
       type: object
       required:
@@ -24265,6 +25306,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentOwnerOption'
+    PaginatedIncidentTypeConfigurationOwnerOptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentTypeConfigurationOwnerOption'
+    PaginatedIncidentTypeHistoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentTypeHistory'
     PaginatedIncidentTypeList:
       type: object
       required:
@@ -24288,6 +25375,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentType'
+    PaginatedIncidentTypeUnconfiguredItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentTypeUnconfiguredItem'
     PaginatedInterventionList:
       type: object
       required:
@@ -24633,6 +25743,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NoticePolicyRead'
+    PaginatedOperationalPersonnelList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationalPersonnel'
     PaginatedOvitrapList:
       type: object
       required:
@@ -24771,6 +25904,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PermitType'
+    PaginatedPersonnelList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Personnel'
     PaginatedPlacementOptionList:
       type: object
       required:
@@ -25766,6 +26922,46 @@ components:
         support_contact:
           type: string
           maxLength: 200
+    PatchedPersonnelWriteRequest:
+      type: object
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[\w.@+-]+$
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        work_email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        work_phone:
+          type: string
+          maxLength: 40
+        rfc:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 32
+        expected_revision:
+          type: integer
+          minimum: 1
     PatchedReviseAssignmentRequest:
       type: object
       properties:
@@ -26371,6 +27567,119 @@ components:
       - type
       - valid_from
       - valid_to
+    Personnel:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        personnel_id:
+          type: string
+          format: uuid
+          readOnly: true
+        membership_id:
+          type: string
+          format: uuid
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        center_id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        work_email:
+          type: string
+          format: email
+          readOnly: true
+        work_phone:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        has_rfc:
+          type: boolean
+          readOnly: true
+      required:
+      - center_id
+      - display_name
+      - has_rfc
+      - id
+      - is_active
+      - membership_id
+      - personnel_id
+      - quadrant_id
+      - revision
+      - work_email
+      - work_phone
+    PersonnelRevisionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - expected_revision
+    PersonnelWriteRequest:
+      type: object
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[\w.@+-]+$
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        work_email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        work_phone:
+          type: string
+          maxLength: 40
+        rfc:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 32
+        expected_revision:
+          type: integer
+          minimum: 1
+      required:
+      - center_id
+      - display_name
     PhaseEnum:
       enum:
       - dispatch
@@ -30085,6 +31394,13 @@ components:
           type: integer
       required:
       - revoked_sessions
+    RfcReveal:
+      type: object
+      properties:
+        rfc:
+          type: string
+      required:
+      - rfc
     Risk:
       type: object
       description: |-
@@ -31174,6 +32490,14 @@ components:
       required:
       - cutoff
       - source_ids
+    SlotEnum:
+      enum:
+      - 0
+      - 1
+      type: integer
+      description: |-
+        * `0` - 0
+        * `1` - 1
     SnapshotCatalog:
       type: object
       properties:

@@ -17,22 +17,23 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
-- `regular-integration`: complete B10 supplies, B04 private uploads and all six #116
-  permit/release test modules.
+- `regular-integration`: sixteen complete ordinary modules: B10 supplies, B04
+  private uploads, all six #116 permit/release modules and eight more modules
+  covering field, defaults, shifts, incidents, reviews, geography and inventory.
 - `regular-lab`: all eight ordinary Lab test modules (API, concurrency, counts,
   history, policy, reception and both recount modules).
-- `regular-field`: all 23 explicitly registered ordinary field-sync, QR,
+- `regular-field`: all 20 explicitly registered ordinary field-sync, QR,
   ovitrap/lifecycle, geography/decision and task-completion modules.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration`, `regular-lab` and
-`regular-field` cohorts
-are excluded from that derived migration-only subset. No second module registry
-exists. Every migration cohort contains exactly one whole module. Integration and
-Lab each retain eight whole modules; field retains 23. No module can belong to two
-cohorts. Each selection retains its original collected
-order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
+`regular-field` cohorts are excluded from that derived migration-only subset. No
+second module registry exists. Every migration cohort contains exactly one whole
+module. Integration retains sixteen whole modules, Lab eight and field twenty:
+forty-four ordinary modules in total. No module can belong to two cohorts. Each
+selection retains its original collected order. Upgrade, raw-SQL, protected reverse
+and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
 xdist, skipped/xfail success or automatic retry is accepted. Adding a new owner
@@ -55,7 +56,7 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except adding the Lab, Community, People and Release domains: 19 configured apps,
+unchanged except adding the Lab, Community, People, Release, Privacy and Notification domains: 21 configured apps,
 migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
@@ -106,16 +107,22 @@ helper tests or run a second full suite just to check partition arithmetic.
 In [run 42784308028](https://github.com/88randy/wolbachia/actions/runs/42784308028),
 attempt 2, residual `regular` reported all 2256 tests passed but its job was
 cancelled at 906 seconds during publication. Its existing complete session receipt
-contains 6768 successful phases. The 23 ordinary field modules now registered in
-`regular-field` retain 472 cases with 217.702 seconds of measured phases: setup
-38.170s, call 111.531s and teardown 68.001s. None is a MigrationExecutor owner.
-The remaining 1784 cases retain their collected order in `regular`.
+contains 6768 successful phases. The initial 23-module field selection contained
+472 cases with 217.702 seconds of measured phases: setup 38.170s, call 111.531s
+and teardown 68.001s. None was a MigrationExecutor owner. The remaining 1784 cases
+belonged to residual `regular` in that measured configuration.
 
 The first case's 179.690s database setup stays in residual `regular` and is not
 counted as a saving. Subtracting the observed field phases from that job's wall
 time gives 688.298s and an indicative 211.702s margin to 900s. That arithmetic does
 not qualify future performance: fixture locality and duplicated database setup
-can change execution costs. One additional standard PostgreSQL runner/service
+can change execution costs. After the #149/#154 rebalance, the complete lifecycle,
+geography-decision and sync-lock modules remain solely in `regular-integration`.
+The other twenty measured modules form `regular-field`: their same historical
+receipt records 385 cases and 138.139s of phases (setup 27.544s, call 71.542s,
+teardown 39.053s). The earlier 23-module margin does not describe this merged
+configuration; fresh CI must measure the actual inventories and headroom.
+One additional standard PostgreSQL runner/service
 increases setup and runner-minutes. Measure the fresh final-head fourteen-fragment
 run; no test, assertion, owner boundary, budget, provenance rule or coverage gate
 is removed or weakened. This uses decision 172's existing ordinary-cohort split
@@ -163,8 +170,9 @@ The original 15-minute capacity target remains unqualified for the two exception
 Matrix include/timeout syntax follows the
 [GitHub Actions reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstrategymatrixinclude).
 
-The sections below describe historical configurations and measurements; their
-job counts and blanket 900-second statements predate this #331 exception.
+The #107, #314, #101 and #116 sections below describe historical configurations
+and measurements; their job counts and blanket 900-second statements predate
+this #331 exception.
 
 ## Eighth whole migration owner (#107)
 
@@ -257,3 +265,49 @@ remain intact, following the existing review113 pattern. Whole-module ownership,
 all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
 PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
 improvement is predicted.
+
+## Ordinary capacity rebalance (#149/#154)
+
+After merging #331, the two measured Lab modules remain solely in `regular-lab`;
+the other eight measured modules join `regular-integration`. That rebalance kept
+sixteen and eight whole modules respectively. With the separate twenty-module
+`regular-field` cohort above, the current ordinary cohorts contain forty-four
+disjoint whole modules. Adjacent progress intervals guided selection, not guaranteed
+savings; initial database setup remains. All fourteen current fragments, the
+existing decision 172 timeouts and the combined 85% gate remain mandatory.
+No test or assertion is removed; fresh CI must qualify the merged balance.
+
+## Personnel integration capacity and measurement (#100)
+
+Run 42761104367 cancelled residual `regular` at the unchanged 15-minute limit after
+94% of its selection. Run 42756081997's successful regular session recorded 2307
+nodes and 702.92s of setup/call/teardown phases; its integration session recorded 111
+nodes and 391.58s. These are measured phase totals, not a promise about later wall
+times. The first database-setup owner of each partition stays in place.
+
+The initial #100 qualification moved 203 existing cases across seven complete modules into the existing
+ordinary integration cohort: `test_lab_recounts_b_19.py`,
+`test_lab_concurrency_114.py`, `test_ovitraps_lifecycle_b_15.py`,
+`test_shift_concurrency.py`, `test_seed_defaults.py`, `test_sync_locks.py` and
+`test_reviews_b_17.py`. Their prior phase total was 187.38s. Run 42767499787 passed
+all twelve partitions and the combined gate: regular 8:12, integration 9:21,
+field 6:55 and review 9:14. Those observations qualify that configuration only.
+
+At the #348 integration checkpoint, its thirteen-shard registry, temporary
+field/review limits and cohort layout were retained verbatim: the two Lab modules
+belonged solely to `regular-lab`, and the other five returned to residual `regular`.
+The subsequent #149/#154 rebalance above places those five back in the existing
+integration cohort while preserving Lab ownership. The residual remains the exact
+ordered complement. All fourteen fresh fragments, migration-owner boundaries,
+cases, assertions and the 85% combined gate are retained.
+
+CI selects Coverage 7.17.1's documented `sysmon` core on Python 3.13 for the existing
+statement-only/threaded configuration. Sources, omissions and aggregation remain
+unchanged. Pytest treats `CoverageWarning` as an error, including startup core
+fallback, so unsupported measurement cannot silently pass. Harness qualification
+compares nonempty threaded executed-line sets against `ctrace` and verifies
+startup and later warning failures with durable child-exit receipts. Fresh full
+CI is still required to qualify wall time and the complete coverage union.
+
+References: [Coverage core configuration](https://coverage.readthedocs.io/en/7.17.1/config.html#run-core),
+[pytest warning filters](https://docs.pytest.org/en/stable/how-to/capture-warnings.html).

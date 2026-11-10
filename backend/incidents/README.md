@@ -1,5 +1,44 @@
 # Scoped incidents (B-06)
 
+## Incident type configuration (W64 / #149)
+
+The type collection admits `incident.manage_type` as well as the existing
+`incident.read` capture contract. Configuration is organization-wide; it does not
+borrow a center grant from an unrelated action. Every explicit collection order
+keeps protected Other last and an id tie-breaker. Exact `?code=` and standard
+server paging remain available.
+
+`GET /incident-types/unconfigured-items/` requires `incident.manage_type` and
+pages real incident-type catalog identities with no existing version: `id`,
+`code`, `label`, `icon` and `is_other`. Optional `?code=` resolves the exact human
+code independently of the current page; unknown/foreign codes both return an empty
+page, and blank codes reject. Protected Other is last. This includes
+first-time seeded Other without granting `catalog.read` or inventing owners,
+severity or SLA values. Initial `PATCH /incident-types/{id}/` uses
+`expected_revision:0` and explicitly supplied configuration; protected label/icon
+must be omitted. Successfully configured identities leave the discovery list.
+
+`GET /incident-types/owner-options/` requires `incident.manage_type` and returns
+paged `membership_id`, minimal `label` and `is_terminal_eligible`. Optional
+`search` and exact `membership_id` narrow the same eligible roster before paging.
+Membership, user, organization and assigned profiles must be active; government
+clamps and paired effective scope apply. Read and close must share some possible
+center, matching the configuration writer. Terminal eligibility also requires
+the existing administrative permissions. These are current options, and writes
+revalidate the actual selected names under the existing Organization arbiter.
+An unchanged retired intermediate remains a retained reference when editing other
+configuration; operational escalation still skips it. An explicitly selected
+intermediate must be currently eligible, and the terminal is always revalidated.
+
+`GET /incident-types/{id}/versions/` identifies the stable CatalogItem, requires
+`incident.manage_type` and pages the retained versions newest first. Unknown,
+foreign and version UUIDs receive the same 404. History adds real creation time
+and author UUID to the existing exact configuration snapshot. Current and past
+types add nullable `supervisor_display`, `coordinator_display` and
+`terminal_display`; names are current identity labels, not immutable name
+snapshots, and are redacted without current management authority. Original
+configuration UUIDs, values and incident pins are never rewritten.
+
 ## Reported workspace reads (#304)
 
 `GET /incidents/?kind=reported` adds `assigned_to_me`, `overdue`, `escalated`

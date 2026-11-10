@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useSearch } from "@tanstack/react-router";
 import type { Schemas } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../ui/Card";
@@ -10,6 +11,7 @@ import styles from "../inventory.module.css";
 import { ProtocolFacts } from "../ProtocolFacts";
 import { lotProtocolOf } from "../inventory-protocol";
 import { useInventoryContext } from "../use-inventory-context";
+import { conditionReturnSearch } from "../conditions/condition-return-search";
 type Lot = Schemas["Lot"];
 function Requirements({ lot }: { lot: Lot }) {
   const { t } = useTranslation();
@@ -84,7 +86,18 @@ export function LotSafetySummary({ lot }: { lot: Lot }) {
         {protocol && <ProtocolFacts protocol={protocol} />}
         {lot.admission_id && <p>{t("inventory.state.immutable")}</p>}
         <DispatchRequirements lot={lot} />
+        <ConditionsLink lot={lot} />
       </div>
     </Card>
+  );
+}
+function ConditionsLink({ lot }: { lot: Lot }) {
+  const { t } = useTranslation();
+  const { readContext } = useInventoryContext();
+  const search = conditionReturnSearch(readContext, useSearch({ strict: false }));
+  return (
+    <Link to="/inventory/lots/$code/conditions" params={{ code: lot.code }} search={search}>
+      {t("conditions.page.title")}
+    </Link>
   );
 }

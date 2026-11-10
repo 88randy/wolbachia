@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, cast
 
 from django.contrib.auth import login, logout
 from django.db.models import QuerySet
@@ -27,10 +27,13 @@ from accounts.exceptions import (
     DeviceRevokedError,
     InvalidCredentialsError,
 )
-from accounts.models import Device, DeviceSession, RevokeReason, User
+from accounts.models import Device, DeviceSession, Personnel, RevokeReason, User
 from accounts.permissions import DEVICE_READ, DEVICE_REVOKE, USER_REVOKE_DEVICE_SESSIONS
+from accounts.personnel_selectors import scoped_personnel
+from accounts.personnel_services import revoke_scoped_personnel_sessions
+from accounts.personnel_views import PersonnelViewSet
 from accounts.request_context import organization_header
-from accounts.revocation import Revocation, revoke_device, revoke_session, revoke_user_sessions
+from accounts.revocation import Revocation, revoke_device, revoke_session
 from accounts.selectors import list_devices, users_of_organization, with_searchable_device_user
 from accounts.serializers import (
     DeviceFilterSerializer,
@@ -64,6 +67,8 @@ from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
 from organizations.selectors import get_me_context, resolve_active_membership
+from organizations.services import effective_scope
+from uploads.access import actor_from_request
 
 logger = logging.getLogger("accounts.auth")
 
@@ -364,18 +369,38 @@ class DeviceViewSet(
         return Response(self.get_serializer(device).data)
 
 
-class UserViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
-    """Only the device-session revocation lives here for now; the user CRUD arrives with #37."""
+class UserViewSet(PersonnelViewSet):
+    """Membership-private personnel plus the existing scoped device-session revocation."""
 
-    queryset = User.objects.all()
-    serializer_class = RevokedSessionsSerializer
-    http_method_names = ["post", "options"]
-    required_permissions = {"revoke_device_sessions": USER_REVOKE_DEVICE_SESSIONS}
+    required_permissions = {
+        **PersonnelViewSet.required_permissions,
+        "revoke_device_sessions": USER_REVOKE_DEVICE_SESSIONS,
+    }
 
-    def get_queryset(self) -> QuerySet[User]:
-        # Users are not org-scoped rows: the scope is "has a membership in this organization",
-        # so a user of another organization is a 404.
-        return users_of_organization(self.request.organization)  # type: ignore[attr-defined]
+    def get_queryset(self) -> QuerySet[Any]:
+        if self.action != "revoke_device_sessions":
+            return super().get_queryset()
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
+        membership = self.request.membership  # type: ignore[attr-defined]
+        rows = users_of_organization(membership.organization)
+        # Missing historical personnel context requires an explicit org-wide grant.
+        if any(
+            USER_REVOKE_DEVICE_SESSIONS in codes
+            and scope["centers"]["mode"] == scope["quadrants"]["mode"] == "all"
+            for codes, scope in effective_scope(membership).grants
+        ):
+            return rows
+        return rows.filter(
+            pk__in=scoped_personnel(membership, USER_REVOKE_DEVICE_SESSIONS).values(
+                "membership__user_id"
+            )
+        )
+
+    def get_object(self) -> User | Personnel:
+        if self.action == "revoke_device_sessions":
+            self.lookup_field = "pk"
+        return super().get_object()
 
     @extend_schema(request=RevokeRequestSerializer, responses=RevokedSessionsSerializer)
     @action(detail=True, methods=["post"], url_path="revoke-device-sessions")
@@ -386,14 +411,16 @@ class UserViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         """
         payload = RevokeRequestSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        target = self.get_object()
+        target = cast(User, self.get_object())
         organization = request.organization  # type: ignore[attr-defined]
         revocation = Revocation(
             RevokeReason.ADMIN_REVOKE,
             revoked_by=request.user,  # type: ignore[arg-type]
             allow_final_upload=payload.validated_data["allow_final_upload"],
         )
-        count = revoke_user_sessions(target, revocation, organization=organization)
+        count = revoke_scoped_personnel_sessions(
+            actor_from_request(request), target.pk, revocation.allow_final_upload
+        )
         log_auth_event(
             AuthEvent.SESSIONS_REVOKED,
             AuditContext(organization_id=organization.pk, user_id=target.pk, ip=client_ip(request)),
