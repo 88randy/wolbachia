@@ -21,7 +21,9 @@ export function TrainingVersionsField(props: TrainingFieldProps) {
   return (
     <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
       <legend className="mb-1 text-[13px] font-semibold text-ink">{t(field.label)}</legend>
-      {course === "" && <p className="m-0 text-sm text-ink-2">{t("trainings.field.pickCourseFirst")}</p>}
+      {course === "" && (
+        <p className="m-0 text-sm text-ink-2">{t("trainings.field.pickCourseFirst")}</p>
+      )}
       {(query.data?.results ?? []).map((version) => (
         <label key={version.id} className="flex items-center gap-2 text-sm text-ink">
           <Checkbox
