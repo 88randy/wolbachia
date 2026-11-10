@@ -73,7 +73,7 @@ export function W49PersonPage({ id }: { id: string }) {
               canReveal={can("user.reveal_rfc")}
             />
           </Fact>
-          <Fact label={t("users.column.profiles")}>{profiles || "—"}</Fact>
+          {lookups.hasProfiles && <Fact label={t("users.column.profiles")}>{profiles || "—"}</Fact>}
           <Fact label={t("users.column.center")}>{lookups.centerName(person.center_id)}</Fact>
           <Fact label={t("users.record.email")}>{person.work_email || "—"}</Fact>
           <Fact label={t("users.record.phone")}>{person.work_phone || "—"}</Fact>

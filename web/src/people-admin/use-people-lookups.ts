@@ -35,6 +35,8 @@ export function usePeopleLookups() {
     const byMembership = new Map((memberships.data ?? []).map((item) => [item.id, item.profiles]));
     const centerOf = new Map((centers.data ?? []).map((item) => [item.id, item.name]));
     return {
+      /** Memberships may be out of the reader's scope; then the profile column is hidden. */
+      hasProfiles: byMembership.size > 0,
       profilesOf: (membership: string) =>
         (byMembership.get(membership) ?? []).map((code) => labelOf.get(code) ?? code).join(" · "),
       centerName: (center: string) => centerOf.get(center) ?? "—",

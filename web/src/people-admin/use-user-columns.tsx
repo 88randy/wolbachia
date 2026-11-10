@@ -11,8 +11,8 @@ import type { PeopleLookups } from "./use-people-lookups";
 /** W48 columns: name (opens W49), profiles, center, masked RFC and status. */
 export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn<Person>[] {
   const { t } = useTranslation();
-  return useMemo(
-    () => [
+  return useMemo(() => {
+    const columns: DataTableColumn<Person>[] = [
       {
         id: "display_name",
         headerKey: "users.column.name",
@@ -58,7 +58,7 @@ export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn
           </StatusPill>
         ),
       },
-    ],
-    [t, lookups],
-  );
+    ];
+    return lookups.hasProfiles ? columns : columns.filter((column) => column.id !== "profiles");
+  }, [t, lookups]);
 }
