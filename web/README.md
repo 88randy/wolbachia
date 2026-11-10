@@ -1,5 +1,10 @@
 # web — Wolbachia back-office and public portal
 
+Issue #160 adds the W30 review queue, W31 relocation decisions and W33 quadrant
+closure: `/operations/reviews`, `/operations/relocations`, and
+`/quadrants/<code>/closure`. See [operations](src/operations/README.md) for the
+generated-contract boundaries, explicit scope gates and criterion-to-test maps.
+
 React web client of the Wolbachia platform. It talks only to the single Django + DRF API in `backend/` through `packages/api-client` and uses the shared `packages/tokens` and `packages/i18n` packages.
 
 > Items marked **[ASSUMPTION]** or **[PENDING]** are not decided yet. Do not treat them as fact; resolve them in the related issue.

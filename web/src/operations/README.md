@@ -1,4 +1,16 @@
-# Shift validation (W29, #34)
+# Operations (W29/W30/W31/W33, #34, #160)
+
+`/operations` links only to granted shift-validation, review and relocation
+workspaces. The review and relocation lists use server filtering, ordering and
+paging. `/quadrants/<code>/closure` resolves the exact scoped human quadrant code
+before reading readiness by UUID.
+
+See [reviews](reviews/README.md), [relocations](relocations/README.md) and
+[closure](closure/README.md) for commands, scope/session isolation and explicit
+contract/design limits. All writes are deliberate guarded attempts, never
+automatically replayed after reauthentication. No backend contract is changed.
+
+## Shift validation (W29, #34)
 
 Routes: /operations links to /operations/shifts?status=closed. The entry list
 uses shared server-paged DataTable/FilterBar; explicit status and page belong to
@@ -6,7 +18,7 @@ the URL. No unsupported ordering, client filtering or full-table scan is sent.
 The command palette exposes the same permission-gated entry. W28 live tracking
 and W30 source review are outside this feature.
 
-## Existing contract
+### Existing contract
 
 Only packages/api-client is used:
 
@@ -22,9 +34,9 @@ Only packages/api-client is used:
 The contract has no human shift code. The detail route temporarily uses the real
 UUID (/operations/shifts/{id}); displayed courier/author UUIDs are labeled as
 references. No names, point identities, totals or record links are synthesized.
-See decision 165.
+See decision 166.
 
-## Session and command rule
+### Session and command rule
 
 Queries use orgScopedQueryOptions. The record subtree remounts on user,
 organization, authorization context or target changes. A denied detail read
@@ -50,7 +62,7 @@ when that owner is retired; audit text is not persisted in browser storage.
 Approvals are never optimistic. Success invalidates shifts and shows only
 server-returned history, not a fabricated local decision.
 
-## API and design gaps (not implemented or claimed complete)
+### API and design gaps (not implemented or claimed complete)
 
 Compared with design/web/screens/W29-validate-shift.png and B17-Operacion.dc.html:
 
@@ -71,7 +83,7 @@ Compared with design/web/screens/W29-validate-shift.png and B17-Operacion.dc.htm
 
 No backend changes, API generation, new dependencies or grants are included.
 
-## Criterion and regression tests
+### Criterion and regression tests
 
 | Requirement | Test in W29Page.test.tsx / shift-validation.test.ts | Limit |
 | --- | --- | --- |
@@ -96,3 +108,8 @@ The W29 browser journey is `web/e2e/shifts.spec.ts`, run with one worker. It che
 both themes/languages, 320 px, keyboard dialogs, error draft retention, real
 server-fixture history and expanded text. Browser fixtures are synthetic; they
 do not qualify real API transport, backend concurrency or the unavailable map/W4.
+
+Accessibility audits wait for finite UI animations to settle before sampling
+contrast; infinite skeleton/spinner motion does not block the audit. The
+same-identity regression lets the shell own its read restart and observes the
+current revision's successful idle query before explicitly reopening a decision.

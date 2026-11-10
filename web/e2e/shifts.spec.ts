@@ -209,9 +209,9 @@ for (const { theme, language } of variants) {
     await page.screenshot({ path: testInfo.outputPath("W29-detail.png"), fullPage: true });
 
     const firstObservation = await openDecision(page, language, "observe");
+    await expectNoAxeViolations(page);
     await checkFocusTrap(page, firstObservation.dialog, language);
     await firstObservation.dialog.getByRole("textbox").fill(OBSERVATION_REASON);
-    await expectNoAxeViolations(page);
     await page.screenshot({ path: testInfo.outputPath("W29-observe-dialog.png"), fullPage: true });
     await page.setViewportSize(COMPACT);
     await expectNoHorizontalScroll(page);

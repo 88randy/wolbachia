@@ -4,6 +4,16 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#101 adds training/requirement versions, evidence-backed certifications,
+evaluation rubrics/attempts/revisions/voids, pending notice-policy routing and
+qualification reads. Commands use immutable UUID receipts plus CAS; private
+history is paginated and currently scoped. `training.read` summaries omit issuer
+proof and evaluations. The existing eligibility section becomes typed own
+qualification with genuine capture receipts and semantic expiry, preserving
+root2/history7/supplies1. A real Certification private-image parent reuses B04;
+qualification is not release permission, software certification or notification
+delivery. See [people](../../backend/people/README.md).
+
 #304 adds reported incident workspace reads: assigned_to_me/overdue/escalated,
 stable type family and persisted origin filters, reported critical-first order,
 archived type/current authorized parent/evidence/action projections, and paged

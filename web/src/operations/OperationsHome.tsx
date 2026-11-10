@@ -1,24 +1,32 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useCan } from "../session/use-can";
-import { AreaPlaceholder } from "../states/AreaPlaceholder";
 import { Card } from "../ui/Card";
-import page from "../styles/page.module.css";
+import { useDocumentTitle } from "../shell/use-document-title";
+
 export function OperationsHome() {
   const { t } = useTranslation();
   const can = useCan();
+  useDocumentTitle(t("reviews.workspace.operations"));
   return (
-    <>
-      <AreaPlaceholder areaId="operations" />
-      {can("shift.read") && (
-        <div className={page.page}>
-          <Card title={t("shift.page.title")}>
-            <Link to="/operations/shifts" search={{ status: "closed" }}>
-              {t("shift.page.title")}
-            </Link>
-          </Card>
-        </div>
+    <Card title={t("reviews.workspace.operations")} headingLevel={1}>
+      {can("review_item.read") && (
+        <p>
+          <Link to="/operations/reviews">{t("reviews.workspace.title")}</Link>
+        </p>
       )}
-    </>
+      {can("relocation.read") && (
+        <p>
+          <Link to="/operations/relocations">{t("relocations.workspace.title")}</Link>
+        </p>
+      )}
+      {can("shift.read") && (
+        <p>
+          <Link to="/operations/shifts" search={{ status: "closed" }}>
+            {t("shift.page.title")}
+          </Link>
+        </p>
+      )}
+    </Card>
   );
 }

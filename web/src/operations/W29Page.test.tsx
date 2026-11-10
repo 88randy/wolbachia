@@ -1,6 +1,5 @@
 import { axe } from "jest-axe";
-import { bumpEpoch } from "../session/session-revision";
-import { restartOrgScoped } from "../session/org-scoped-query";
+import { bumpEpoch, currentRevision } from "../session/session-revision";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
@@ -357,12 +356,30 @@ test("same-identity reauthentication retires a hung attempt without losing its d
   await waitFor(() => {
     expect(app.api.requests.some((request) => request.method === "POST")).toBe(true);
   });
-  await act(async () => {
+  const readsBeforeReauthentication = app.api.requests.filter(
+    (request) => request.method === "GET" && request.path === DETAIL,
+  ).length;
+  act(() => {
     bumpEpoch();
-    await restartOrgScoped(app.queryClient);
   });
   await user.click(dialog.getByRole("button", { name: "Cancelar" }));
   expect(screen.queryByRole("dialog")).toBeNull();
+  await waitFor(() => {
+    expect(
+      app.api.requests.filter((request) => request.method === "GET" && request.path === DETAIL)
+        .length,
+    ).toBeGreaterThan(readsBeforeReauthentication);
+    const currentQuery = app.queryClient.getQueryCache().findAll({
+      predicate: (query) =>
+        query.isActive() && query.queryKey.includes("shifts") && query.queryKey.includes("detail"),
+    })[0];
+    expect(currentQuery?.meta?.["revision"]).toBe(currentRevision());
+    expect(currentQuery?.state.status).toBe("success");
+    expect(currentQuery?.state.fetchStatus).toBe("idle");
+    expect(
+      screen.getByRole("button", { name: "Enviar observación" }).getAttribute("aria-disabled"),
+    ).toBe("false");
+  });
   app.api.setRoute("POST " + DETAIL + "observe/", () => newReply.promise);
   await user.click(screen.getByRole("button", { name: "Enviar observación" }));
   const reopened = within(screen.getByRole("dialog"));

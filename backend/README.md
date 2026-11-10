@@ -26,6 +26,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
 | `community/` | Aggregate community activities at real Block identities, immutable cross-transport command receipts, complaint links and void-aware scoped totals (B34; see its README) |
+| `people/` | Evidence-backed training/certification, private immutable evaluations, current qualification and durable notice intents (B03; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |

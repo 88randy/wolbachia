@@ -1,0 +1,30 @@
+.page,
+.actions {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.page {
+  padding: var(--space-3);
+}
+.facts {
+  display: grid;
+  gap: var(--space-1);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+}
+.snapshot {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+}
+.voided {
+  text-decoration: line-through;
+}
+.page summary {
+  padding-block: var(--space-1);
+  cursor: pointer;
+}
