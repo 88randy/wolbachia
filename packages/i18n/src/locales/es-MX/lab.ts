@@ -170,4 +170,6 @@ export const lab = {
   "lab.materials.blocked": "No se puede entregar hasta registrar el aviso a CENAPRECE.",
   "lab.materials.voided": "Anulada",
   "lab.list.error": "No se pudo cargar la lista.",
+  "lab.count.intro": "Escanea o escribe la bolsa, captura el número de huevos y presiona Enter.",
+  "lab.count.enterKey": "⏎",
 } as const satisfies AreaCatalog<"lab">;

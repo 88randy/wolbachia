@@ -169,4 +169,6 @@ export const lab: Record<keyof typeof esLab, string> = {
   "lab.materials.blocked": "Cannot be delivered until the CENAPRECE notice is recorded.",
   "lab.materials.voided": "Voided",
   "lab.list.error": "The list could not be loaded.",
+  "lab.count.intro": "Scan or type the bag, enter the egg number and press Enter.",
+  "lab.count.enterKey": "⏎",
 };

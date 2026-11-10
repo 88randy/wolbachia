@@ -7,6 +7,8 @@ export function CountFormActions({ form }: { form: ReturnType<typeof useCountFor
   if (kind === "confirm" || kind === "uncertain")
     return (
       <Button
+        size="xl"
+        className="w-full text-base"
         onClick={() => {
           void form.submit(kind === "confirm");
         }}
@@ -16,8 +18,14 @@ export function CountFormActions({ form }: { form: ReturnType<typeof useCountFor
       </Button>
     );
   return (
-    <Button type="submit" loading={form.write.isBusy} aria-disabled={kind === "conflict"}>
-      {t("lab.count.save")}
+    <Button
+      type="submit"
+      size="xl"
+      className="w-full text-base"
+      loading={form.write.isBusy}
+      aria-disabled={kind === "conflict"}
+    >
+      {t("lab.count.save")} <kbd aria-hidden="true">{t("lab.count.enterKey")}</kbd>
     </Button>
   );
 }
