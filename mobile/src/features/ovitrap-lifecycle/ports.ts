@@ -16,6 +16,10 @@ export interface Dependencies {
   readonly uuid: () => string;
   readonly gps: GpsPort;
   readonly evidence: CapturedEvidencePort;
+  readonly trainingGuards?: (
+    draft: LifecycleDraft,
+    turn: LifecycleSourceTurn,
+  ) => Promise<readonly SqlStatement[]>;
   readonly evidenceBindings?: (
     draft: LifecycleDraft,
     turn: LifecycleSourceTurn,

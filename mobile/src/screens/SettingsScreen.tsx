@@ -8,10 +8,11 @@ import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
 import { useT } from "../i18n/I18nProvider.tsx";
 import { useStyles } from "../theme/ThemeProvider.tsx";
 import { ScreenHeader } from "../ui/ScreenHeader.tsx";
-import { DarkModeRow } from "./settings/DarkModeRow.tsx";
 import { DevToolsSection } from "./settings/DevToolsSection.tsx";
-import { LanguageRow } from "./settings/LanguageRow.tsx";
 import { ServerSection } from "./settings/ServerSection.tsx";
+import { SettingsPreferences } from "./settings/SettingsPreferences.tsx";
+import { PersonalScreensRow } from "./settings/PersonalScreensRow.tsx";
+import { SafetySection } from "./settings/SafetySection.tsx";
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
@@ -19,20 +20,21 @@ const createStyles = (theme: Theme) =>
     content: { padding: spacing[2], gap: spacing[2] },
   });
 
-/** Settings (P31, partial): the pieces this issue needs. The rest of P31 belongs to #11. */
+/** P31: durable preferences, own history/training and truthful recovery/support state. */
 export function SettingsScreen() {
   const styles = useStyles(createStyles);
   const t = useT();
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root}>
-      <ScreenHeader title={t("mobile.settings.title")} />
+      <ScreenHeader largeTargets title={t("mobile.settings.title")} />
       <AppScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[2] }]}
       >
-        <LanguageRow />
-        <DarkModeRow />
+        <PersonalScreensRow />
+        <SettingsPreferences />
         <ServerSection />
+        <SafetySection />
         {DEV_TOOLS_ENABLED ? <DevToolsSection /> : null}
       </AppScrollView>
     </View>

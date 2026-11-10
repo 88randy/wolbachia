@@ -23,6 +23,12 @@ import { AttachmentStore } from "../src/attachments/attachment-store.ts";
 import { acceptedEvidenceOwner } from "../src/attachments/accepted-owner.ts";
 import { CredentialStore, EMPTY_CREDENTIALS } from "../src/auth/credential-store.ts";
 import { memorySecrets, deferred } from "./support/auth-fakes.ts";
+import { lifecycleTrainingGuards } from "../src/features/ovitrap-lifecycle/training-guard.ts";
+import {
+  trainingBundleStatements,
+  trainingChangeStatements,
+} from "../src/features/training/projection-state.ts";
+import { trainingEligibility } from "./training-fixtures.ts";
 
 const SOURCE = "44444444-4444-4444-8444-444444444444";
 const PHOTO = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: "file:///capture.jpg" };
@@ -33,6 +39,107 @@ const reason = (code: string) => ({
   is_other: code === "other",
   requires_photo: true,
 });
+async function publishTraining(h: Awaited<ReturnType<typeof harness>>, validUntil: string) {
+  await h.bundle.captureLifecycleSource()({ kind: "new", ovitrapId: SOURCE }, async (turn) => {
+    assert.ok(turn.source);
+    const eligibility = {
+      ...trainingEligibility(),
+      action: "ovitrap.replace",
+      center_id: turn.source.point.centerId,
+      quadrant_id: turn.source.point.quadrantId,
+      valid_from: "2026-01-01T00:00:00Z",
+      valid_until: validUntil,
+      next_change_at: validUntil,
+    };
+    const body = {
+      ...fixtureBundle(ASSIGNMENT),
+      capture_context: turn.source.context,
+      scope_revision: turn.source.context.scope_revision,
+      eligibility: [eligibility],
+    };
+    await turn.write(() => h.db.runAtomically(trainingBundleStatements(body, turn.handle)));
+  });
+}
+async function unreadableTraining(h: Awaited<ReturnType<typeof harness>>) {
+  await h.bundle.captureLifecycleSource()({ kind: "new", ovitrapId: SOURCE }, async (turn) => {
+    assert.ok(turn.source);
+    const body = {
+      capture_context: turn.source.context,
+      eligibility: [
+        {
+          action: "upsert",
+          resource_type: "training_eligibility",
+          resource_id: trainingEligibility().id,
+          resource_version: "unreadable-successor",
+          sequence: 1,
+          data: { training_eligible: "bad" },
+        },
+      ],
+    };
+    await turn.write(() => h.db.runAtomically(trainingChangeStatements(body, turn.handle)));
+  });
+}
+void test("M15 expired configured training disables new M09 save without losing the draft or original retry UUID", async () => {
+  const h = await harness();
+  let now = FIXED_NOW;
+  const service = new LifecycleService({
+    ...h.deps,
+    now: () => now,
+    trainingGuards: (draft, turn) => lifecycleTrainingGuards(h.db, { draft, turn, now }),
+  });
+  const current = { ...h, service };
+  const draft = await begin(current, "replace");
+  await complete(current, draft);
+  await publishTraining(h, "2026-01-15T12:01:00Z");
+  assert.equal((await service.read()).gate, null);
+  const original = await h.db.query("SELECT draft FROM lifecycle_draft");
+  now = new Date("2026-01-15T12:01:00Z");
+  assert.equal((await service.read()).gate, "training");
+  await assert.rejects(service.save(draft.eventId), /training/);
+  await unreadableTraining(h);
+  await assert.rejects(service.save(draft.eventId), /training/);
+  assert.deepEqual(await h.db.query("SELECT draft FROM lifecycle_draft"), original);
+  assert.equal((await h.db.query("SELECT id FROM outbox_event")).length, 0);
+  await publishTraining(h, "2026-01-16T00:00:00Z");
+  await service.save(draft.eventId);
+  await service.save(draft.eventId);
+  assert.deepEqual(
+    (await h.db.query("SELECT id FROM outbox_event")).map((row) => row.id),
+    [draft.eventId],
+  );
+});
+
+void test("M15 qualification SQL fences a changed requirement while unrelated policies retain existing capture behavior", async () => {
+  const h = await harness();
+  const draft = await begin(h, "remove");
+  await complete(h, draft);
+  await publishTraining(h, "2026-01-01T00:00:00Z");
+  const guards = await h.bundle.captureLifecycleSource()(
+    { kind: "new", ovitrapId: SOURCE },
+    (turn) => lifecycleTrainingGuards(h.db, { draft, turn, now: FIXED_NOW }),
+  );
+  assert.equal(guards.length, 1, "an unrelated replacement rule is no removal qualification grant");
+  await publishTraining(h, "2026-01-16T00:00:00Z");
+  await assert.rejects(
+    h.outbox.enqueue(
+      {
+        id: draft.eventId,
+        type: "test.guard",
+        schema_version: 1,
+        device_time: FIXED_NOW.toISOString(),
+        payload: {},
+        rules_version: "r",
+        catalog_version: "c",
+        manual_capture: false,
+      },
+      guards,
+    ),
+    /could not be saved/,
+  );
+  assert.equal((await h.db.query("SELECT id FROM outbox_event")).length, 0);
+  assert.equal((await h.store.read()).draft?.eventId, draft.eventId);
+});
+
 let sequence = 0;
 async function harness(local?: TestStores) {
   const stores = local ?? (await createStores());

@@ -69,6 +69,9 @@ class PermitVersion(ReleaseRecord):
         constraints = [
             *ReleaseRecord.Meta.constraints,
             models.UniqueConstraint(fields=["permit", "revision"], name="releases_permit_version"),
+            models.UniqueConstraint(
+                fields=["official_document"], name="releases_permit_version_document"
+            ),
             models.CheckConstraint(condition=Q(revision__gt=0), name="releases_permit_revision"),
             models.CheckConstraint(
                 condition=Q(valid_to__gt=models.F("valid_from")), name="releases_permit_validity"

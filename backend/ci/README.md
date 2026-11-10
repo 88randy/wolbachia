@@ -17,17 +17,20 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
-- `regular-integration`: eighteen complete ordinary modules: B10 supplies, B04
-  private uploads, all six #116 permit/release modules and ten more modules
-  covering Lab, field, defaults, shifts, incidents, reviews, geography and inventory.
+- `regular-integration`: sixteen complete ordinary modules: B10 supplies, B04
+  private uploads, all six #116 permit/release modules and eight more modules
+  covering field, defaults, shifts, incidents, reviews, geography and inventory.
+- `regular-lab`: all eight ordinary Lab test modules (API, concurrency, counts,
+  history, policy, reception and both recount modules).
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
-detector; the explicitly ordinary `regular-integration` cohort is excluded from that
-derived migration-only subset. No second module registry exists. Every migration
-cohort contains exactly one whole module; the ordinary cohort retains all eighteen whole
-modules. No module can belong to two cohorts. Each selection retains its original collected
-order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
+detector; the explicitly ordinary `regular-integration` and `regular-lab` cohorts
+are excluded from that derived migration-only subset. No second module registry
+exists. Every migration cohort contains exactly one whole module; the two ordinary
+cohorts retain twenty-four whole modules in total. No module can belong to two
+cohorts. Each selection retains its original collected order. Upgrade, raw-SQL,
+protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
 xdist, skipped/xfail success or automatic retry is accepted. Adding a new owner
@@ -50,14 +53,14 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except adding the Lab, Community, People and Release domains: 19 configured apps,
+unchanged except adding the Lab, Community, People, Release and Privacy domains: 20 configured apps,
 migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all twelve matrix results to succeed. It runs
+The original `checks` job first requires all thirteen matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-twelve exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+thirteen exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -71,7 +74,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all twelve fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all thirteen fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -81,12 +84,14 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All twelve test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The twelve PostgreSQL test services and final drift service duplicate setup work and can
-increase runner-minutes/storage. Session-audit181 adds one complete upgrade-owner
-cohort to the canonical ten-partition workflow, including its own setup/service;
-tests still execute exactly once. The target is at least three minutes' headroom per
-job, to be measured in actual changed-head CI. Historic adjacent log intervals are
+Eleven test jobs and final `checks` keep their 15-minute timeout and standard runner.
+Only `migrations-field` and `migrations-review` temporarily allow 25 minutes (#331,
+decision 172): each already owns exactly one complete module. The thirteen
+PostgreSQL services and final drift service duplicate setup work and can increase
+runner-minutes/storage; tests still execute exactly once. The operational target
+remains at least three minutes' measured headroom per job. The temporary exception
+unblocks merges; it does not certify that the original 900-second target was met.
+Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.
 
 Tests: `tests/test_ci_gate.py` owns grouped evidence/partition/coverage/exit regressions
@@ -100,6 +105,45 @@ Verified interfaces: [pytest collection hooks](https://docs.pytest.org/en/stable
 [coverage 7.17.1 public data](https://github.com/coveragepy/coveragepy/blob/7.17.1/coverage/sqldata.py),
 [artifact upload v7.0.2](https://github.com/actions/upload-artifact/tree/cf430e030ddbb5b0abf93d22962f4752f3646cd9),
 [artifact download v8.0.1](https://github.com/actions/download-artifact/tree/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c).
+
+## Merge-unblocking headroom (#331)
+
+The orchestrator explicitly prioritizes unblocking PRs #341/#344 while preserving
+every test/assertion, whole migration-owner modules, disjoint exactly-once ordered
+inventories and the combined 85% gate. This decision supersedes the issue's original
+blanket 900-second restriction only for an already singleton owner that times out.
+
+In [run 42757560383](https://github.com/88randy/wolbachia/actions/runs/42757560383),
+attempt 2, `regular` took 736s wall (164s margin to 900s). Its retained session
+records 45 ordinary Lab cases with 117.893s summed setup/call/teardown. Those eight
+complete modules now form `regular-lab`; all other ordinary modules remain in their
+original cohort or the residual complement. The first regular case's 117.475s
+setup is retained startup work, not a promised saving. One additional standard
+runner/service/setup increases compute use.
+
+The singleton [field owner](https://github.com/88randy/wolbachia/actions/runs/42757560383/job/129644429392)
+was cancelled at 917s wall (890s runner step). The singleton
+[review owner](https://github.com/88randy/wolbachia/actions/runs/42757560383/job/129644429310)
+was cancelled at 906s wall (881s runner step), after pytest reported one passed case
+in 874.48s: setup 152.78s, call 711.33s and teardown 1.39s. Finalization still needs
+time to validate/seal the existing fragment. Splitting either module would violate
+owner boundaries, so only these two jobs receive the authorized temporary 25-minute
+limit. Restore 15 minutes when whole-owner execution plus finalization fits with
+measured headroom; no SQL/host cause or future speedup is inferred.
+
+The workflow matrix and downloads require thirteen fresh same-attempt fragments.
+The existing runner choices and aggregate derive from the same registry; migration
+AST detection, phase/provenance validation, coverage inputs/union and 85% threshold
+remain mandatory. No tests, assertions, dependencies, retries, paid runners or
+repository settings change. One complete measured PR CI run qualifies the change;
+report every job's wall time and margin, including any missed headroom target.
+The original 15-minute capacity target remains unqualified for the two exceptions.
+Matrix include/timeout syntax follows the
+[GitHub Actions reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstrategymatrixinclude).
+
+The #107, #314, #101 and #116 sections below describe historical configurations
+and measurements; their job counts and blanket 900-second statements predate
+this #331 exception.
 
 ## Eighth whole migration owner (#107)
 
@@ -195,9 +239,10 @@ improvement is predicted.
 
 ## Ordinary capacity rebalance (#149/#154)
 
-Two regular jobs exhausted 900s while the existing integration cohort had capacity.
-Ten complete ordinary modules move there without changing their tests or the
-ordered inventory/coverage union. Adjacent progress intervals suggest roughly
-300s of movable work; they are not individual test durations or guaranteed savings.
-Initial database setup remains in each cohort. Twelve jobs, 900s budgets, all
-assertions and the combined 85% gate remain; fresh CI must qualify the new balance.
+After merging #331, the two measured Lab modules remain solely in `regular-lab`;
+the other eight measured modules join `regular-integration`. The final cohorts
+contain sixteen and eight whole modules respectively, twenty-four ordinary
+modules in total. Adjacent progress intervals guided selection, not guaranteed
+savings; initial database setup remains. All thirteen current fragments, the
+existing decision 172 timeouts and the combined 85% gate remain mandatory.
+No test or assertion is removed; fresh CI must qualify the merged balance.

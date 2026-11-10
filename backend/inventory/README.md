@@ -334,3 +334,20 @@ an owned hold. No grants, model, migration, write or sync contract is added.
 `tests/test_inventory_condition_status.py` owns distinct-slot completeness,
 exact/null/unassessed pins, current timezone, cross-location blocker discovery,
 redaction and the HTTP tenant/scope boundary.
+
+## External material delivery (#118)
+
+The real Lab DeliveryReceipt is a typed, one-to-one source in StockOperation.
+`append_material_delivery_stock` appends exactly one negative movement at the
+request's real location, with its exact lot, optional piece and unit version.
+It requires the existing inventory arbiter, current material_request.deliver and
+lot.read authority at that location, current site safety and spendable stock after
+B10 reservations. The delivery owner retains notification/signature/revision and
+command replay gates; it commits the receipt and debit together. No external
+institution is represented as a storage Location or courier assignment.
+
+SQL requires the authentic receipt/hash/author and one exact negative movement.
+The existing shared balance/reservation guard covers this source too. Every old
+admission, transfer, courier and paddle-return source branch remains explicit.
+Receipt replay returns its saved result without another movement. Shipment source
+snapshots are descriptive provenance and do not themselves move material.

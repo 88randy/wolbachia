@@ -1,6 +1,7 @@
 import type { SqlStatement } from "../../db/sql.ts";
 import { CourierContractError, readNonempty, readRecord } from "./contract-readers.ts";
 import {
+  HISTORY_KINDS,
   LIFECYCLE_HISTORY_KINDS,
   readHistoryChange,
   readHistoryEntry,
@@ -14,7 +15,8 @@ import {
 } from "./projection-record.ts";
 import type { CourierProjection } from "./projection-record.ts";
 
-const HISTORY_TYPES = LIFECYCLE_HISTORY_KINDS.map((kind) => `history.${kind}`);
+const HISTORY_TYPES = HISTORY_KINDS.map((kind) => `history.${kind}`);
+const LIFECYCLE_TYPES = LIFECYCLE_HISTORY_KINDS.map((kind) => `history.${kind}`);
 function historyProjection(value: unknown): CourierProjection | null {
   try {
     const row = readHistoryChange(value);
@@ -29,8 +31,8 @@ function historyProjection(value: unknown): CourierProjection | null {
   } catch (error) {
     if (!(error instanceof CourierContractError) || error.boundary !== "body") throw error;
     const resourceType = readRecord(value).resource_type;
-    if (!HISTORY_TYPES.some((kind) => kind === resourceType)) throw error;
-    return knownInvalidation(value, HISTORY_TYPES);
+    if (!LIFECYCLE_TYPES.some((kind) => kind === resourceType)) throw error;
+    return knownInvalidation(value, LIFECYCLE_TYPES);
   }
 }
 /** Read the accepted row after its guarded upsert, never the unaccepted incoming DTO. */
@@ -58,17 +60,21 @@ export function historyChangeStatements(body: unknown): readonly SqlStatement[] 
 }
 export function historyBundleStatements(body: unknown): readonly SqlStatement[] {
   const rows = courierSection(body, "history");
-  if (rows.length === 0) return [];
-  const version = readNonempty(readRecord(body).bundle_version);
   const projections = rows.map(readHistoryEntry).map((entry) => ({
     kind: `history.${entry.kind}`,
     id: entry.id,
-    version,
+    version: readNonempty(readRecord(body).bundle_version),
     sequence: 0,
     body: entry,
   }));
   requireDistinctProjections(projections);
-  return projections.filter((row) => HISTORY_TYPES.includes(row.kind)).map(projectionStatement);
+  return [
+    ...projections.map(projectionStatement),
+    {
+      sql: "INSERT INTO kv(key,value) VALUES('history_projection_ready',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      params: [Array.isArray(readRecord(body).history) ? "true" : "false"],
+    },
+  ];
 }
 export function retainedHistoryStatements(): readonly SqlStatement[] {
   return [retainTerminalProposal];
