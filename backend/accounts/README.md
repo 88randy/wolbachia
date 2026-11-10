@@ -25,6 +25,9 @@ with no profiles and default-deny scope. This is not an invitation or credential
 delivery flow. Existing identities can only be selected through a membership in
 the active organization; role/scope grants stay in the membership API. Foreign
 membership, center, quadrant and out-of-scope target references answer opaque404.
+Attaching a membership without a Personnel file requires an explicit `user.create`
+grant with `all` centers and `all` quadrants. Later mutations also cover the
+membership's whole effective paired scope, in addition to its work context.
 One paired action/center/applicable-quadrant grant must cover each target. Admin
 lists use page-number paging, `center`, `quadrant`, `is_active`, work-field search
 and `display_name`/`created_at` ordering with a stable id tie.
@@ -54,6 +57,15 @@ locks, then freshly checks identity, permission, context and unchanged revision
 under locks. Its success receipt commits in a durable transaction **before**
 plaintext is returned; an enclosing transaction is refused. Key/ciphertext,
 authorization, revision, storage or commit failure returns no plaintext.
+
+RFC reveal adds a per-user `THROTTLE_RFC_REVEAL_RATE` budget (default `30/hour`)
+and create/PATCH bodies containing `rfc` share `THROTTLE_RFC_WRITE_RATE` (default
+`10/hour`), in addition to global limits. Failed attempts consume the budget;
+exhaustion returns429 `throttled` with `Retry-After`. Other work edits do not
+consume it. Duplicate rejections durably append `rfc_rejected` receipts before
+returning `rfc: rejected`; only current reveal authority receives `rfc: duplicate`.
+Rejected creation receipts have a null target because no file was created. The
+receipt retains actor/action/work context and never the candidate or matching file.
 
 ### External key configuration
 

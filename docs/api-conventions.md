@@ -28,7 +28,11 @@ with `display_name`, `center_id`, optional nullable `quadrant_id`, `work_email`,
 and a no-profile/default-deny Membership; it cannot attach a foreign shared
 identity. Role/scope delegation remains in the membership API. PATCH requires
 `expected_revision`, cannot change username/membership and authorizes both old and
-new contexts. Deactivate takes `{expected_revision}`. Stale CAS returns409
+new contexts. Attaching an existing membership without a Personnel file requires
+an explicit action grant with `all` centers and `all` quadrants. Personnel
+mutations also require authority over the membership's whole effective scope;
+the supplied work center cannot narrow that scope. Deactivate takes
+`{expected_revision}`. Stale CAS returns409
 `stale_revision`; organization/account contention returns429
 `administration_in_progress` with `Retry-After: 1`.
 
@@ -52,6 +56,22 @@ fails closed on key/ciphertext, permission, revision, storage or commit failure.
 Missing key configuration or unavailable/corrupt cryptographic material returns
 503 `rfc_key_unavailable`. Logs never contain RFC, envelope, contact content,
 request bodies, URLs or caller-supplied origin text.
+
+Protected RFC requests add per-user `ScopedRateThrottle` budgets to the global
+API limits: reveal uses `THROTTLE_RFC_REVEAL_RATE` (default `30/hour`) and create
+or PATCH bodies containing `rfc` share `THROTTLE_RFC_WRITE_RATE` (default
+`10/hour`). Budgets span targets, organizations, sessions and client addresses;
+authorized attempts consume them even when subsequent validation or duplicate
+checking rejects the write. Writes without `rfc` do not consume the RFC write
+budget. Exhaustion returns429 `throttled` with `Retry-After` before the operation
+runs.
+
+Every normalized RFC duplicate rejection appends an immutable AccessLog receipt
+with result `rfc_rejected`. The rejected RFC, fingerprint and matching file are
+never logged. A rejected create retains action/actor/context with a null target
+because no Personnel file was created. The field error is `rfc: duplicate` only
+when the caller's current `user.reveal_rfc` grant covers the attempted context;
+other callers receive `rfc: rejected`.
 
 `/access-log/` is cursor-paged under current scope and returns immutable actor,
 private target UUID, action, original center/quadrant, revision, server timestamp,

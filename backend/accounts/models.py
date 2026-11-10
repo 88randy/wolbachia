@@ -281,14 +281,20 @@ class AccessLog(ImmutableMixin, OrgScopedModel):
         DEVICE = "device"
         INTERNAL = "internal"
 
-    target = models.ForeignKey(Personnel, on_delete=models.PROTECT, related_name="access_receipts")
+    class Result(models.TextChoices):
+        SUCCESS = "success", "Success"
+        RFC_REJECTED = "rfc_rejected", "RFC rejected"
+
+    target = models.ForeignKey(
+        Personnel, on_delete=models.PROTECT, related_name="access_receipts", null=True, blank=True
+    )
     center = models.ForeignKey("organizations.Center", on_delete=models.PROTECT, related_name="+")
     quadrant = models.ForeignKey(
         "geography.Quadrant", on_delete=models.PROTECT, related_name="+", null=True, blank=True
     )
     action = models.CharField(max_length=32, choices=Action.choices)
     origin = models.CharField(max_length=16, choices=Origin.choices)
-    result = models.CharField(max_length=32, choices=[("success", "Success")], default="success")
+    result = models.CharField(max_length=32, choices=Result.choices, default=Result.SUCCESS)
     revision = models.PositiveIntegerField()
 
     class Meta(ImmutableMixin.Meta):

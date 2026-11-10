@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, NoReturn
 from uuid import UUID, uuid4
 
 from django.db import DatabaseError, IntegrityError, transaction
@@ -10,6 +10,7 @@ from django.views.decorators.debug import sensitive_variables
 from rest_framework.exceptions import NotFound
 
 from accounts.models import AccessLog, Device, DeviceSession, Personnel, RevokeReason, User
+from accounts.personnel_scope import authorize_membership_scope
 from accounts.revocation import Revocation, revoke_active
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc, encrypt_rfc, rotate_rfc
 from core.exceptions import FieldValidationError
@@ -98,7 +99,18 @@ def _locked_person(actor: UploadActor, user_id: UUID, permission: str) -> Person
     if person is None:
         raise NotFound
     authorize_personnel(actor, permission, person.center_id, person.quadrant_id)
+    authorize_membership_scope(actor, permission, person.membership)
     return person
+
+
+def _origin(actor: UploadActor) -> str:
+    return (
+        AccessLog.Origin.DEVICE
+        if actor.session_id
+        else AccessLog.Origin.WEB
+        if actor.web_session_key
+        else AccessLog.Origin.INTERNAL
+    )
 
 
 def _receipt(actor: UploadActor, person: Personnel, action: str) -> None:
@@ -109,13 +121,7 @@ def _receipt(actor: UploadActor, person: Personnel, action: str) -> None:
         center_id=person.center_id,
         quadrant_id=person.quadrant_id,
         action=action,
-        origin=(
-            AccessLog.Origin.DEVICE
-            if actor.session_id
-            else AccessLog.Origin.WEB
-            if actor.web_session_key
-            else AccessLog.Origin.INTERNAL
-        ),
+        origin=_origin(actor),
         revision=person.revision,
     )
 
@@ -140,6 +146,57 @@ def _check_revision(person: Personnel, expected_revision: int) -> None:
         raise StaleRevisionError
 
 
+def _duplicate_code(
+    actor: UploadActor, context: Mapping[str, Any], membership: Membership | None
+) -> str:
+    try:
+        _context(actor, "user.reveal_rfc", context)
+        if membership is not None:
+            authorize_membership_scope(actor, "user.reveal_rfc", membership)
+    except NotFound:
+        return "rejected"
+    return "duplicate"
+
+
+@sensitive_variables()
+def _reject_duplicate_rfc(
+    actor: UploadActor, fields: Mapping[str, Any], user_id: UUID | None = None
+) -> NoReturn:
+    """Commit a safe attempt receipt after the failed write has fully rolled back."""
+    with personnel_transaction(actor, user_id, durable=True):
+        person = None if user_id is None else _locked_person(actor, user_id, "user.update")
+        context = {
+            "center_id": fields["center_id"]
+            if person is None
+            else fields.get("center_id", person.center_id),
+            "quadrant_id": fields.get("quadrant_id")
+            if person is None
+            else fields.get("quadrant_id", person.quadrant_id),
+        }
+        _context(actor, "user.create" if person is None else "user.update", context)
+        membership = None if person is None else person.membership
+        if person is None and fields.get("membership_id") is not None:
+            membership = Membership.objects.filter(
+                pk=fields["membership_id"], organization=actor.organization
+            ).first()
+            if membership is None:
+                raise NotFound
+            authorize_membership_scope(actor, "user.create", membership)
+        code = _duplicate_code(actor, context, membership)
+        AccessLog.objects.create(
+            organization=actor.organization,
+            created_by=actor.user,
+            target=person,
+            center_id=context["center_id"] if person is None else person.center_id,
+            quadrant_id=context.get("quadrant_id") if person is None else person.quadrant_id,
+            action=AccessLog.Action.CREATE if person is None else AccessLog.Action.UPDATE,
+            origin=_origin(actor),
+            result=AccessLog.Result.RFC_REJECTED,
+            revision=1 if person is None else person.revision,
+        )
+    raise FieldValidationError("rfc", code) from None
+
+
 @sensitive_variables()
 def create_personnel(actor: UploadActor, fields: Mapping[str, Any]) -> Personnel:
     """Create an org-private file for an existing membership or a new unprivileged identity.
@@ -156,6 +213,7 @@ def create_personnel(actor: UploadActor, fields: Mapping[str, Any]) -> Personnel
         ).first()
         if membership is None:
             raise NotFound
+        authorize_membership_scope(actor, "user.create", membership)
     identifier = uuid4()
     envelope = (
         encrypt_rfc(actor.organization.pk, identifier, fields["rfc"]) if fields.get("rfc") else None
@@ -163,6 +221,8 @@ def create_personnel(actor: UploadActor, fields: Mapping[str, Any]) -> Personnel
     try:
         with personnel_transaction(actor, None if membership is None else membership.user_id):
             _context(actor, "user.create", fields)
+            if membership is not None:
+                authorize_membership_scope(actor, "user.create", membership)
             if membership is None:
                 if (
                     not fields.get("username")
@@ -199,7 +259,7 @@ def create_personnel(actor: UploadActor, fields: Mapping[str, Any]) -> Personnel
     except IntegrityError as error:
         constraint = getattr(getattr(error.__cause__, "diag", None), "constraint_name", "")
         if constraint == "personnel_unique_org_rfc":
-            raise FieldValidationError("rfc", "duplicate") from None
+            _reject_duplicate_rfc(actor, fields)
         if constraint in {"accounts_user_username_key", "accounts_personnel_membership_id_key"}:
             raise FieldValidationError("membership_id", "unavailable") from None
         raise
@@ -215,6 +275,7 @@ def update_personnel(actor: UploadActor, user_id: UUID, fields: Mapping[str, Any
     if before is None:
         raise NotFound
     authorize_personnel(actor, "user.update", before.center_id, before.quadrant_id)
+    authorize_membership_scope(actor, "user.update", before.membership)
     envelope = (
         encrypt_rfc(actor.organization.pk, before.pk, fields["rfc"]) if "rfc" in fields else None
     )
@@ -240,7 +301,7 @@ def update_personnel(actor: UploadActor, user_id: UUID, fields: Mapping[str, Any
             getattr(getattr(error.__cause__, "diag", None), "constraint_name", "")
             == "personnel_unique_org_rfc"
         ):
-            raise FieldValidationError("rfc", "duplicate") from None
+            _reject_duplicate_rfc(actor, fields, user_id)
         raise
     return person
 
@@ -276,21 +337,12 @@ def revoke_scoped_personnel_sessions(
         target = Membership.objects.filter(organization=actor.organization, user_id=user_id).first()
         if target is None:
             raise NotFound
+        authorize_membership_scope(actor, permission, target)
         person = Personnel.objects.filter(
             membership=target, organization=actor.organization
         ).first()
         if person is not None:
             authorize_personnel(actor, permission, person.center_id, person.quadrant_id)
-        else:
-            member = Membership.objects.select_related("user", "organization").get(
-                organization=actor.organization, user_id=actor.user.pk
-            )
-            if not any(
-                permission in codes
-                and scope["centers"]["mode"] == scope["quadrants"]["mode"] == "all"
-                for codes, scope in effective_scope(member).grants
-            ):
-                raise NotFound
         return revoke_active(
             DeviceSession.objects.filter(user_id=user_id, organization=actor.organization),
             Revocation(RevokeReason.ADMIN_REVOKE, actor.user, allow_final_upload),
@@ -306,6 +358,7 @@ def reveal_personnel_rfc(actor: UploadActor, user_id: UUID) -> str:
     if before is None or not before.rfc_ciphertext:
         raise NotFound
     authorize_personnel(actor, "user.reveal_rfc", before.center_id, before.quadrant_id)
+    authorize_membership_scope(actor, "user.reveal_rfc", before.membership)
     plaintext = decrypt_rfc(actor.organization.pk, before.pk, _envelope(before))
     with personnel_transaction(actor, user_id, durable=True):
         person = _locked_person(actor, user_id, "user.reveal_rfc")
@@ -323,6 +376,7 @@ def rotate_personnel_rfc(actor: UploadActor, user_id: UUID, expected_revision: i
     if before is None or not before.rfc_ciphertext:
         raise NotFound
     authorize_personnel(actor, "user.reveal_rfc", before.center_id, before.quadrant_id)
+    authorize_membership_scope(actor, "user.reveal_rfc", before.membership)
     _check_revision(before, expected_revision)
     envelope = rotate_rfc(actor.organization.pk, before.pk, _envelope(before))
     with personnel_transaction(actor, user_id):

@@ -106,7 +106,7 @@ class PersonnelFilterSerializer(serializers.Serializer[Any]):
 
 class AccessLogSerializer(OrgScopedModelSerializer):
     actor_id = serializers.UUIDField(source="created_by_id", read_only=True)
-    target_id = serializers.UUIDField(read_only=True)
+    target_id = serializers.UUIDField(read_only=True, allow_null=True)
     center_id = serializers.UUIDField(read_only=True)
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
 

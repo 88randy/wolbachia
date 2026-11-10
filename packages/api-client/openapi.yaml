@@ -13981,6 +13981,7 @@ components:
           type: string
           format: uuid
           readOnly: true
+          nullable: true
         center_id:
           type: string
           format: uuid
@@ -14047,8 +14048,11 @@ components:
     AccessLogResultEnum:
       enum:
       - success
+      - rfc_rejected
       type: string
-      description: '* `success` - Success'
+      description: |-
+        * `success` - Success
+        * `rfc_rejected` - RFC rejected
     AcknowledgeMissing:
       type: object
       properties:

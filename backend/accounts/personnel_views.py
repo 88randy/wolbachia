@@ -1,5 +1,6 @@
 """B02 personnel endpoints; actions remain thin and individually authorized."""
 
+from collections.abc import Mapping
 from typing import Any
 
 from django.db.models import QuerySet
@@ -11,6 +12,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 
 from accounts.models import AccessLog, Personnel
 from accounts.personnel_selectors import operational_projection, scoped_access_log, scoped_personnel
@@ -48,6 +50,7 @@ class PersonnelViewSet(
     search_fields = ["display_name", "work_email", "work_phone"]
     ordering_fields = ["display_name", "created_at"]
     ordering = ["display_name"]
+    throttle_scope: str | None = None
     required_permissions = {
         "list": "user.read",
         "retrieve": "user.read",
@@ -57,6 +60,19 @@ class PersonnelViewSet(
         "reveal_rfc": "user.reveal_rfc",
         "operational": "user.operational_read",
     }
+
+    def get_throttles(self) -> list[BaseThrottle]:
+        """Share each protected-RFC budget by user while retaining global limits."""
+        self.throttle_scope = None
+        if self.action == "reveal_rfc":
+            self.throttle_scope = "rfc_reveal"
+        elif (
+            self.action in {"create", "partial_update"}
+            and isinstance(self.request.data, Mapping)
+            and "rfc" in self.request.data
+        ):
+            self.throttle_scope = "rfc_write"
+        return [*super().get_throttles(), ScopedRateThrottle()]
 
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):

@@ -5229,7 +5229,7 @@ export interface components {
             /** Format: uuid */
             readonly actor_id: string;
             /** Format: uuid */
-            readonly target_id: string;
+            readonly target_id: string | null;
             /** Format: uuid */
             readonly center_id: string;
             /** Format: uuid */
@@ -5259,9 +5259,10 @@ export interface components {
         AccessLogOriginEnum: "web" | "device" | "internal";
         /**
          * @description * `success` - Success
+         *     * `rfc_rejected` - RFC rejected
          * @enum {string}
          */
-        AccessLogResultEnum: "success";
+        AccessLogResultEnum: "success" | "rfc_rejected";
         AcknowledgeMissing: {
             /** Format: uuid */
             line_id: string;

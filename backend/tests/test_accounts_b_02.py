@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from django.db import DatabaseError, connection, transaction
+from django.db.models.signals import post_save
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 from rest_framework.test import APIClient
@@ -140,6 +141,7 @@ def test_deactivation_ends_scoped_sessions_and_pending_uploads_without_erasing_a
     assert AccessLog.objects.filter(target=person, action=AccessLog.Action.DEACTIVATE).count() == 1
 
 
+@pytest.mark.django_db(transaction=True)
 def test_normalized_duplicate_is_org_scoped_and_rotation_preserves_duplicate_identity(
     setup, settings
 ):
@@ -152,7 +154,7 @@ def test_normalized_duplicate_is_org_scoped_and_rotation_preserves_duplicate_ide
 
     assert duplicate.value.fields == {"rfc": [{"code": "duplicate", "params": {}}]}
     assert Personnel.objects.filter(organization=setup.actor.organization).count() == 1
-    assert AccessLog.objects.count() == before
+    assert AccessLog.objects.count() == before + 1
     other = OrganizationFactory()
     foreign_actor, _, _ = make_actor(other)
     foreign_center = Center.objects.create(organization=other, code="OTHER", name="Synthetic other")
@@ -167,6 +169,91 @@ def test_normalized_duplicate_is_org_scoped_and_rotation_preserves_duplicate_ide
     assert person.rfc_key_version == "wrap-v2"
     assert bytes(person.rfc_ciphertext) != ciphertext
     assert AccessLog.objects.filter(target=person, action=AccessLog.Action.ROTATE_RFC).count() == 1
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("action", ["create", "patch"])
+@pytest.mark.parametrize("can_reveal", [False, True])
+def test_duplicate_rfc_rejection_is_receipted_without_disclosing_to_work_editors(
+    setup, action, can_reveal
+):
+    make_person(setup.actor, setup.center, rfc=SYNTHETIC_RFC)
+    target, member = make_person(setup.actor, setup.center)
+    codes = ["user.create", "user.update"] + (["user.reveal_rfc"] if can_reveal else [])
+    editor, _, _ = make_actor(setup.actor.organization, codes)
+    client = APIClient()
+    client.force_authenticate(editor.user)
+    before = AccessLog.objects.count()
+    committed = []
+
+    def observe_receipt(sender, instance, created, **kwargs):
+        if created and instance.created_by_id == editor.user.pk:
+            transaction.on_commit(lambda: committed.append(instance.pk))
+
+    post_save.connect(observe_receipt, sender=AccessLog)
+    try:
+        if action == "create":
+            response = client.post(
+                "/api/v1/users/",
+                {
+                    "username": "synthetic-rejected-rfc",
+                    "center_id": str(setup.center.pk),
+                    "display_name": "Synthetic rejected employee",
+                    "rfc": SYNTHETIC_RFC,
+                },
+                format="json",
+            )
+        else:
+            response = client.patch(
+                f"/api/v1/users/{member.user_id}/",
+                {"expected_revision": target.revision, "rfc": SYNTHETIC_RFC},
+                format="json",
+            )
+    finally:
+        post_save.disconnect(observe_receipt, sender=AccessLog)
+
+    code = "duplicate" if can_reveal else "rejected"
+    assert response.status_code == 400
+    assert response.data["fields"] == {"rfc": [{"code": code, "params": {}}]}
+    assert AccessLog.objects.count() == before + 1
+    receipt = AccessLog.objects.get(created_by=editor.user)
+    assert committed == [receipt.pk]
+    assert receipt.result == "rfc_rejected"
+    assert receipt.action == (
+        AccessLog.Action.CREATE if action == "create" else AccessLog.Action.UPDATE
+    )
+    assert receipt.target_id == (None if action == "create" else target.pk)
+    assert receipt.center_id == setup.center.pk
+    assert receipt.origin == AccessLog.Origin.INTERNAL
+    assert SYNTHETIC_RFC not in str(receipt.__dict__)
+    assert not User.objects.filter(username="synthetic-rejected-rfc").exists()
+    target.refresh_from_db()
+    assert target.revision == 1
+    assert not target.rfc_ciphertext
+
+
+@pytest.mark.parametrize(
+    ("action", "result"),
+    [
+        ("user.create", "success"),
+        ("user.update", "rfc_rejected"),
+        ("user.reveal_rfc", "rfc_rejected"),
+    ],
+)
+def test_only_rejected_creation_receipts_can_omit_the_private_file(setup, action, result):
+    with pytest.raises(DatabaseError), transaction.atomic():
+        AccessLog.objects.create(
+            organization=setup.actor.organization,
+            created_by=setup.actor.user,
+            center=setup.center,
+            target=None,
+            action=action,
+            origin=AccessLog.Origin.INTERNAL,
+            result=result,
+            revision=1,
+        )
+
+    assert not AccessLog.objects.exists()
 
 
 def test_normal_and_operational_reads_expose_only_their_documented_personnel_projection(
