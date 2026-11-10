@@ -11,6 +11,16 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   motorcycles: "fleet.page.title",
   versions: "geography.history.title",
   bags: "labReception.page.title",
+  "permit-types": "permits.types.title",
+  permits: "permits.list.title",
+  trainings: "trainings.workspace.title",
+  evaluations: "evaluations.page.title",
+  reviews: "reviews.workspace.title",
+  relocations: "relocations.workspace.title",
+  closure: "closure.page.title",
+  "write-offs": "allocation.lab.title",
+  "egg-counts": "lab.count.title",
+  "count-history": "lab.history.title",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   transfers: "transfers.page.title",
@@ -18,6 +28,9 @@ const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   supplies: "inventory.page.supplies",
   lots: "inventory.page.lots",
   locations: "inventory.page.locations",
+  assignments: "allocation.assignment.title",
+  reconciliations: "allocation.reconciliation.title",
+  "write-offs": "allocation.writeOff.title",
 };
 function resourceKey(parts: string[], index: number): MessageKey | undefined {
   if (parts[0] !== "inventory") return RESOURCE_LABELS[parts[index] ?? ""];
