@@ -201,6 +201,12 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="release_operations",
     )
+    material_delivery = models.OneToOneField(
+        "lab.DeliveryReceipt",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
     source_kind = models.CharField(
         max_length=24,
         choices=[
@@ -217,6 +223,7 @@ class StockOperation(InventoryRecord):
                 "supply_compensation",
                 "paddle_return",
                 "release_record",
+                "material_delivery",
             )
         ],
     )
@@ -235,6 +242,7 @@ class StockOperation(InventoryRecord):
                         paddle_return__isnull=True,
                         release__isnull=True,
                         release_receipt_line__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -248,6 +256,7 @@ class StockOperation(InventoryRecord):
                         paddle_return__isnull=True,
                         release__isnull=True,
                         release_receipt_line__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -263,6 +272,7 @@ class StockOperation(InventoryRecord):
                         paddle_return__isnull=True,
                         release__isnull=True,
                         release_receipt_line__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind="paddle_return",
@@ -272,6 +282,7 @@ class StockOperation(InventoryRecord):
                         paddle_return__isnull=False,
                         release__isnull=True,
                         release_receipt_line__isnull=True,
+                        material_delivery__isnull=True,
                     )
                     | models.Q(
                         source_kind="release_record",
@@ -281,6 +292,17 @@ class StockOperation(InventoryRecord):
                         paddle_return__isnull=True,
                         release__isnull=False,
                         release_receipt_line__isnull=False,
+                        material_delivery__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind="material_delivery",
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                        paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
+                        material_delivery__isnull=False,
                     )
                 ),
                 name="stock_exact_source_branch",
