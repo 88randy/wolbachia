@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { ResolutionHistory } from "./ResolutionHistory";
-export function useHistoryColumns(): DataTableColumn<Schemas["QuadrantVersion"]>[] {
+export function useHistoryColumns(
+  pointCode: (id: string) => string,
+): DataTableColumn<Schemas["QuadrantVersion"]>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
   return [
@@ -26,7 +28,7 @@ export function useHistoryColumns(): DataTableColumn<Schemas["QuadrantVersion"]>
     {
       id: "geometry",
       headerKey: "geography.field.geometry",
-      cell: (row) => <ResolutionHistory version={row} />,
+      cell: (row) => <ResolutionHistory version={row} pointCode={pointCode} />,
     },
   ];
 }

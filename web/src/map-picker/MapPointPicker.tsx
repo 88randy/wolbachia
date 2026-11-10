@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
