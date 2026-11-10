@@ -31,7 +31,7 @@ test("typing in shell search transfers the first character into the palette", as
 });
 
 test("palette navigation leaves focus on destination main; Escape returns it to the invoker", async () => {
-  await renderApp();
+  await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
   const search = screen.getByRole("searchbox", { name: "Buscar" });
   search.focus();
   await userEvent.keyboard("{Control>}k{/Control}");

@@ -17,13 +17,14 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
-- `regular-integration`: complete B10 supplies and B04 private-upload test modules.
+- `regular-integration`: complete B10 supplies, B04 private uploads and all six #116
+  permit/release test modules.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration` cohort is excluded from that
 derived migration-only subset. No second module registry exists. Every migration
-cohort contains exactly one whole module; the ordinary cohort retains both whole
+cohort contains exactly one whole module; the ordinary cohort retains all eight whole
 modules. No module can belong to two cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
@@ -155,3 +156,24 @@ returned ProjectState and wraps only the expected failing reverse in a PostgreSQ
 transaction, verifying that its applied-migration recorder is unchanged. This
 avoids rebuilding partially unapplied dependencies after the rejection; no
 case, assertion, whole-module boundary, durability setting or budget is removed.
+
+## Release integration capacity (#116)
+
+Run 42739240917's residual `regular` job 129575926133 hit the existing 15-minute
+limit (15m17s reported job duration). Pytest began at 01:56:49 UTC and was cancelled
+at 02:11:28. It reached the release safety module at 02:10:30, finished release
+concurrency at 02:10:41 and reached seed concurrency at 02:11:14, with 75% of the
+inventory processed. Those log intervals establish capacity exhaustion; they do
+not identify individual test durations or predict a saved wall time. The existing
+`regular-integration` cohort passed in 4m4s in the prior full run.
+
+Move the six complete new modules into the existing `regular-integration` cohort:
+`test_permit_api_116.py`, `test_release_guards_116.py`, `test_release_stock_116.py`,
+`test_release_uuid_116.py`, `test_releases_b_20.py` and
+`test_releases_concurrency_116.py`. The existing B10/B04 modules remain there. The
+residual cohort is still the exact ordered complement, and all ten complete
+migration owners retain their own cohorts. The independent gate fixture requires
+all eight ordinary modules and rejects a missing release owner. No matrix job,
+service, timeout, assertion, retry or skip changes; twelve fresh same-attempt
+fragments and the combined 85% coverage threshold remain mandatory. Measure actual
+changed-head job times and the existing 180-second headroom target in CI.
