@@ -85,6 +85,8 @@ for (const theme of THEMES) {
           exact: true,
         }),
       ).toBeFocused();
+      // Dialog appearance fades opacity; measure its settled foreground/background contrast.
+      await expect(dialog).toHaveCSS("opacity", "1");
       await expectNoAxeViolations(page);
       await page.keyboard.press("Escape");
       await expect(close).toBeFocused();

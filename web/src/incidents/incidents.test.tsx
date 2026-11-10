@@ -2,7 +2,6 @@ import { ID, PROOF, event, incident } from "../test/incident-fixtures";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { invalidateOrgScoped } from "../session/org-scoped-query";
 import { createFakeApi, makeMe, apiError } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
@@ -156,35 +155,43 @@ describe("W7 incident detail", () => {
   });
   test("keeps in-memory drafts and evidence after a failed refresh until retry succeeds", async () => {
     const { api, app } = await open("/incidents/I-0033");
-    await screen.findByRole("heading", { name: /I-0033/ });
+    const view = within(app.container);
+    await view.findByRole("heading", { name: /I-0033/ });
     const storageRead = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
       throw new Error("Storage denied");
     });
-    const comment = screen.getByRole("textbox", { name: "Comentario" });
+    const comment = view.getByRole("textbox", { name: "Comentario" });
     await userEvent.type(comment, "Keep the in-memory draft");
     const file = new File(["synthetic"], "retained.png", { type: "image/png" });
-    const input = screen.getByLabelText<HTMLInputElement>("Foto de evidencia");
+    const input = view.getByLabelText<HTMLInputElement>("Foto de evidencia");
     await userEvent.upload(input, file);
     api.setRoute(DETAIL, apiError(503, "unavailable"));
-    await act(() => invalidateOrgScoped(app.queryClient, "incidents"));
-    await screen.findByRole("alert");
-    expect(screen.getByRole("heading", { name: /I-0033/ })).toBeDefined();
-    expect(screen.getByRole("textbox", { name: "Comentario" })).toBe(comment);
+    await act(() =>
+      app.queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          queryKey[3] === "incidents" && queryKey[4] === "detail" && queryKey[5] === "I-0033",
+      }),
+    );
+    await view.findByRole("alert");
+    expect(view.getByRole("heading", { name: /I-0033/ })).toBeDefined();
+    expect(view.getByRole("textbox", { name: "Comentario" })).toBe(comment);
     expect(comment).toHaveProperty("value", "Keep the in-memory draft");
-    expect(screen.getByLabelText("Foto de evidencia")).toBe(input);
+    expect(view.getByLabelText("Foto de evidencia")).toBe(input);
     expect(input.files?.[0]).toBe(file);
     expect(
-      screen.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
+      view.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
     ).toBe("true");
     api.setRoute(DETAIL, Response.json(incident()));
-    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    await userEvent.click(
+      within(view.getByRole("alert")).getByRole("button", { name: "Reintentar" }),
+    );
     await waitFor(() => {
-      expect(screen.queryByRole("alert")).toBeNull();
+      expect(view.queryByRole("alert")).toBeNull();
     });
     expect(comment).toHaveProperty("value", "Keep the in-memory draft");
     expect(input.files?.[0]).toBe(file);
     expect(
-      screen.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
+      view.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
     ).toBe("false");
     storageRead.mockRestore();
   });
@@ -287,7 +294,12 @@ test("keeps URL filters and supported sorting on the server", async () => {
   const { api, app } = await open();
   await screen.findByRole("link", { name: "I-0033" });
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Severidad" }), "high");
-  await userEvent.click(within(screen.getByRole("table")).getByRole("button", { name: "Número" }));
+  await waitFor(() => {
+    expect(app.router.state.location.search["severity"]).toBe("high");
+  });
+  await userEvent.click(
+    within(await screen.findByRole("table")).getByRole("button", { name: "Número" }),
+  );
   await waitFor(() => {
     expect(
       api.requests.some(
