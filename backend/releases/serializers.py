@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from django.db.models import Count
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -125,7 +126,25 @@ class PermitVersionSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+class PermitNoticeSummarySerializer(serializers.Serializer[Any]):
+    kind = serializers.CharField()
+    status = serializers.CharField()
+    count = serializers.IntegerField()
+
+
 class PermitSuspensionSerializer(OrgScopedModelSerializer):
+    notices = serializers.SerializerMethodField()
+
+    @extend_schema_field(PermitNoticeSummarySerializer(many=True))
+    def get_notices(self, row: PermitSuspension) -> list[dict[str, Any]]:
+        """Recorded recipients by kind and delivery outcome; never recipient identities."""
+        rows = (
+            row.notices.values("kind", "status")
+            .annotate(count=Count("id"))
+            .order_by("kind", "status")
+        )
+        return [dict(item) for item in rows]
+
     class Meta:
         model = PermitSuspension
         fields = [
@@ -134,6 +153,7 @@ class PermitSuspensionSerializer(OrgScopedModelSerializer):
             "revision",
             "reason",
             "effective_from",
+            "notices",
             "created_by",
             "created_at",
         ]
@@ -150,7 +170,14 @@ class PermitSerializer(OrgScopedModelSerializer):
     current_version = serializers.SerializerMethodField()
     revision = serializers.SerializerMethodField()
     blocked_by = serializers.SerializerMethodField()
-    suspension = PermitSuspensionSerializer(read_only=True)
+    suspension = PermitSuspensionSerializer(read_only=True, allow_null=True)
+    center_code = serializers.CharField(source="center.code", read_only=True)
+    quadrant_code = serializers.CharField(source="quadrant.code", read_only=True)
+    type_name = serializers.SerializerMethodField()
+
+    def get_type_name(self, row: Permit) -> str | None:
+        version = current_permit_version(row)
+        return None if version is None else str(version.type.name)
 
     @extend_schema_field(PermitVersionSerializer(allow_null=True))
     def get_current_version(self, row: Permit) -> dict[str, Any] | None:
@@ -170,7 +197,10 @@ class PermitSerializer(OrgScopedModelSerializer):
             "id",
             "code",
             "center",
+            "center_code",
             "quadrant",
+            "quadrant_code",
+            "type_name",
             "revision",
             "current_version",
             "suspension",

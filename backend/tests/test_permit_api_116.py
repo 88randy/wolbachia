@@ -352,3 +352,25 @@ def test_official_document_requires_permit_permission(permits, api_client, make_
     api_client.force_authenticate(reader)
     answer = api_client.get(f"/api/v1/permits/{permits.permit.pk}/versions/1/document/")
     assert answer.status_code == 403
+
+
+@pytest.mark.django_db(transaction=True)
+def test_permit_read_exposes_codes_type_name_and_notice_outcome_counts(permits, api_client):
+    api_client.force_authenticate(permits.user)
+    before = api_client.get(f"/api/v1/permits/{permits.permit.pk}/")
+    assert before.status_code == 200, before.data
+    assert before.data["center_code"] == "C-116"
+    assert before.data["quadrant_code"] == "Q-116"
+    assert before.data["type_name"] == permits.kind.name
+    assert before.data["suspension"] is None
+    answer = api_client.post(
+        f"/api/v1/permits/{permits.permit.pk}/suspend/",
+        {"reason": "Official scoped suspension notice", "expected_revision": 1},
+        format="json",
+    )
+    assert answer.status_code == 200, answer.data
+    after = api_client.get(f"/api/v1/permits/{permits.permit.pk}/").data
+    assert after["suspension"]["notices"] == [
+        {"kind": "coordinator", "status": "delivery_unavailable", "count": 1}
+    ]
+    assert not any("recipient" in key for key in after["suspension"])
