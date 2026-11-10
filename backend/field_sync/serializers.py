@@ -23,6 +23,7 @@ from field_sync.projection_serializers import (
 )
 from inventory.allocations.serializers import SupplyBundleSerializer
 from organizations.serializers import MeScopeSerializer
+from people.serializers import EligibilityBundleSerializer, EligibilityChangeSerializer
 from reviews.history_serializers import CourierHistoryEntrySerializer
 from reviews.models import ReviewKind
 
@@ -202,7 +203,7 @@ class ChangesSerializer(serializers.Serializer[Any]):
     assignments = ProducerChangeSerializer(many=True)
     supplies = SupplyChangeSerializer(many=True)
     permits = ProducerChangeSerializer(many=True)
-    eligibility = ProducerChangeSerializer(many=True)
+    eligibility = EligibilityChangeSerializer(many=True)
     history = HistoryChangeSerializer(many=True)
     map_manifests = ProducerChangeSerializer(many=True)
     quadrants = QuadrantChangeSerializer(many=True)
@@ -230,7 +231,7 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     assignments = serializers.ListField(child=serializers.DictField())
     supplies = SupplyBundleSerializer(many=True)
     permits = serializers.ListField(child=serializers.DictField())
-    eligibility = serializers.ListField(child=serializers.DictField())
+    eligibility = EligibilityBundleSerializer(many=True)
     history = CourierHistoryEntrySerializer(many=True)
     map_manifests = MapManifestSerializer(many=True)
     quadrants = QuadrantReferenceSerializer(many=True)

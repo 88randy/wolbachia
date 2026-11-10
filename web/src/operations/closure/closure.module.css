@@ -1,0 +1,34 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.page h1,
+.page h2,
+.page p {
+  margin: 0;
+}
+.page h1 {
+  font-size: var(--web-type-title-font-size);
+}
+.page h2 {
+  font-size: var(--web-type-title-font-size);
+}
+.blockers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+  padding: 0;
+  list-style: none;
+}
+.blockers p {
+  margin-top: var(--space-1);
+}
+.reference {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: var(--font-variant-numeric);
+}

@@ -444,8 +444,62 @@ def test_lab_rejection_consumes_real_verified_bytes_and_exact_void_only_parent_a
 
 
 @pytest.mark.django_db(transaction=True)
+def test_certification_uses_real_unbound_bytes_and_current_private_read_before_and_after_io(
+    org_a, make_member, monkeypatch, settings, tmp_path
+):
+    from organizations.models import all_scope
+    from tests.people_support import (
+        certify,
+        people_context,
+        training_version,
+        verified_training_evidence,
+    )
+
+    context = people_context(org_a, make_member, monkeypatch, settings, tmp_path)
+    version = training_version(context)
+    identifier = verified_training_evidence(context)
+    with pytest.raises(Http404):
+        download_attachment(context.actor, identifier)
+    certificate = certify(context, version, evidence=identifier)
+    assert AttachmentLink.objects.get(upload__public_id=identifier).certification_id == UUID(
+        certificate["id"]
+    )
+    assert (
+        finalize_upload(
+            context.actor, identifier, AttachmentTarget("certification", UUID(certificate["id"]))
+        )["state"]
+        == "verified"
+    )
+    user, member = make_member(org_a, ["training.manage"])
+    member.scope = all_scope()
+    member.save(update_fields=["scope"])
+    profile = member.profiles.get()
+    profile.scope = all_scope()
+    profile.save(update_fields=["scope"])
+    reader = UploadActor(user, org_a)
+    content, mime = download_attachment(reader, identifier)
+    assert mime == "image/png"
+    assert Image.open(BytesIO(content)).size == (3, 2)
+    import uploads.services as upload_services
+
+    read = upload_services.read_object
+
+    def revoke_during_read(key):
+        content = read(key)
+        profile.permission_codes = ["training.read"]
+        profile.save(update_fields=["permission_codes"])
+        return content
+
+    monkeypatch.setattr(upload_services, "read_object", revoke_during_read)
+    with pytest.raises(Http404):
+        download_attachment(reader, identifier)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_inventory_intent_binds_real_signature_once_and_download_uses_current_action(
-    allocation, tmp_path, settings
+    allocation,  # noqa: F811 -- pytest injects the explicitly re-exported fixture.
+    tmp_path,
+    settings,
 ):
     from inventory.allocations.commands import IntentExecution
     from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent

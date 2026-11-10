@@ -21,7 +21,7 @@ describe("canOpenArea", () => {
   });
 
   test("a pending area is visible to every member until its issue defines a code", () => {
-    expect(canOpenArea(makeMe({ permissions: [] }), area("operations"))).toBe(true);
+    expect(canOpenArea(makeMe({ permissions: [] }), area("releases"))).toBe(true);
   });
 });
 
@@ -29,7 +29,6 @@ describe("areas still waiting for a permission code", () => {
   // Each issue that builds an area replaces its "pending" with real codes and removes it here.
   test("are exactly these", () => {
     expect(pendingAreaIds()).toEqual([
-      "operations",
       "releases",
       "community",
       "people",

@@ -4,6 +4,23 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 
 ## Request
 
+The reserved eligibility section now has one typed version1 producer (#101).
+It exposes only self qualification/action/real pair, minimal pins, coded blockers,
+validity/next_change_at and an opaque genuine assessment receipt, without scores,
+evaluation reasons, HR or evidence. Both field.bootstrap and field_event.sync
+cover the same context before feed LIMIT/count/hash. This is qualification, not
+release permission, scientific certification or proof that physical work occurred.
+Root2/history7/supplies1 and every old history branch remain unchanged.
+
+Only genuine DeviceBearer views propagate server-owned publication context and
+observed session/pair into the prepared writer. Current account authority precedes
+Org/courier locks and304. Cookie/forced/unbound and final/no-pull mint no receipts.
+One per-context semantic cache supplies both builders; selectors/producers neither
+write nor acquire late locks. Due expiry refreshes actual bootstrap/changes without
+another business write; next_change_at takes the earliest rule/qualification boundary,
+without request-time/token-only churn. Historical pair IDs are scalar, and retained
+subject/provenance does not reconstruct a dissociated Session.user.
+
 `POST /api/v1/field/sync/` with `Authorization: Bearer <access>` only (a web session cookie is `401`). Permission `field_event.sync` (courier). The organization is the one the token is pinned to.
 
 ```json

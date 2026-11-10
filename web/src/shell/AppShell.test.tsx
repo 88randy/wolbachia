@@ -42,6 +42,7 @@ describe("sidebar navigation", () => {
           "supply_type.read",
           "incident.read",
           "egg_count.read",
+          "review_item.read",
         ],
       }),
     });
@@ -68,7 +69,8 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/inventory");
     expect(hrefs).not.toContain("/incidents");
     expect(hrefs).not.toContain("/lab");
-    expect(hrefs).toHaveLength(7);
+    expect(hrefs).not.toContain("/operations");
+    expect(hrefs).toHaveLength(6);
   });
 
   test("groups the areas under headings", async () => {
@@ -80,7 +82,7 @@ describe("sidebar navigation", () => {
   });
 
   test("marks only the current page with aria-current", async () => {
-    await renderApp({ path: "/operations" });
+    await renderApp({ path: "/operations", me: makeMe({ permissions: ["review_item.read"] }) });
 
     const current = screen.getAllByRole("link", { current: "page" });
 
@@ -200,7 +202,7 @@ describe("collapse button", () => {
   });
 
   test("collapsing keeps every link named and remembers the choice", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["review_item.read"] }) });
 
     await userEvent.click(screen.getByRole("button", { name: "Colapsar menú" }));
 
@@ -238,7 +240,7 @@ describe("compact viewport", () => {
   test("below the breakpoint the toggle is hidden and every link stays named", async () => {
     setCompact(true);
 
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["review_item.read"] }) });
 
     expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
     expect(screen.getByRole("link", { name: "Supervisión" })).toBeDefined();
@@ -293,7 +295,7 @@ describe("compact viewport focus", () => {
 
 describe("top bar", () => {
   test("switches language without reload and updates <html lang>", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["review_item.read"] }) });
 
     await userEvent.click(screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }));
 

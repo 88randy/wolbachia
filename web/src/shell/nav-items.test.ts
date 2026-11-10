@@ -13,6 +13,7 @@ describe("visibleNavGroups", () => {
         makeMe({
           permissions: [
             "incident.read",
+            "review_item.read",
             "rule_parameter.read",
             "motorcycle.read",
             "quadrant.read",
@@ -31,6 +32,7 @@ describe("visibleNavGroups", () => {
     expect(ids).not.toContain("lab");
     expect(ids).not.toContain("settings");
     expect(ids).not.toContain("inventory");
+    expect(ids).not.toContain("operations");
   });
 
   test("any one of the Settings codes opens Settings", () => {

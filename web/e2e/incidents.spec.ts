@@ -85,7 +85,7 @@ for (const theme of THEMES) {
           exact: true,
         }),
       ).toBeFocused();
-      // Measure the final colors after the dialog and overlay finish their shared fade.
+      // Dialog appearance fades opacity; measure its settled foreground/background contrast.
       await expect(dialog).toHaveCSS("opacity", "1");
       await expectNoAxeViolations(page);
       await page.keyboard.press("Escape");

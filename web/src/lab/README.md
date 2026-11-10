@@ -1,6 +1,6 @@
 # Laboratory egg counting (W35, #31)
 
-Technical choices are recorded in [decision 165](../../../docs/decisions.md).
+Technical choices are recorded in [decision 166](../../../docs/decisions.md).
 
 Routes: /lab/egg-counts (egg_count.create) and /lab/count-history
 (egg_count.read). The Lab home links only authorized actions. Filters, sorting

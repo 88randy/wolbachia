@@ -187,6 +187,7 @@ class BatchContext:
     is_final_upload: bool = False
     observed_session_id: uuid.UUID | None = None
     observed_pair_id: uuid.UUID | None = None
+    publication_authenticated: bool = False
 
 
 @dataclass(frozen=True)

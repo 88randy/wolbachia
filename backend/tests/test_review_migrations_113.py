@@ -36,8 +36,9 @@ def test_reviews_upgrade_preserves_legacy_source_and_binding_and_guards_new_audi
     executor = MigrationExecutor(connection)
     leaves = executor.loader.graph.leaf_nodes()
     previous = [("reviews", "0001_initial"), ("uploads", "0002_incident_attachment_parent")]
+    head_state = None
     try:
-        executor.migrate(previous)
+        legacy_state = executor.migrate(previous)
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT field_event_id, upload_id FROM uploads_attachmentlink WHERE id=%s",
@@ -45,7 +46,7 @@ def test_reviews_upgrade_preserves_legacy_source_and_binding_and_guards_new_audi
             )
             assert cursor.fetchone() == (legacy.pk, upload.pk)
         executor = MigrationExecutor(connection)
-        executor.migrate(leaves)
+        head_state = executor.migrate(leaves, state=legacy_state)
         legacy.refresh_from_db()
         binding.refresh_from_db()
         assert original == (
@@ -84,9 +85,15 @@ def test_reviews_upgrade_preserves_legacy_source_and_binding_and_guards_new_audi
             )
             connection.check_constraints()
         assert not ReviewDecision.objects.filter(review_item=item).exists()
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate(previous)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        # The real rejected reverse must roll back dependent DDL and its recorder too.
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate(previous)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert FieldEvent.objects.filter(pk=source.pk, status="in_review").exists()
         assert ReviewSourceSnapshot.objects.filter(source_event=source).exists()
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)

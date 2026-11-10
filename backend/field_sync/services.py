@@ -296,7 +296,11 @@ def sync_batch(
                     )
                 )
             _lock_prepared_sources(batch, prepared)
-            if prepared.retains_organization:
+            from people.projections import requires_publication_arbiter
+
+            if prepared.retains_organization or (
+                cursor is not None and requires_publication_arbiter(batch)
+            ):
                 batch = replace(
                     batch,
                     organization=Organization.objects.select_for_update(
@@ -312,6 +316,10 @@ def sync_batch(
                 if cursor.scope_revision is not None and cursor.scope_revision != revision:
                     raise InvalidCursorError
             results = ingest_batch(batch, envelopes)
+            if cursor is not None and ctx is not None:
+                from people.projections import prepare_eligibility_publication
+
+                ctx = prepare_eligibility_publication(batch, ctx)
             changes = (
                 Changes() if cursor is None or ctx is None else build_changes(batch, cursor, ctx)
             )
@@ -836,9 +844,33 @@ def bootstrap_bundle(batch: BatchContext) -> dict[str, Any]:
     """Read bootstrap and its feed boundary in one try-locked transaction; no external I/O."""
     try:
         with transaction.atomic():
-            lock_courier_batches(batch)
             set_batch_lock_timeout()
-            return build_bootstrap(batch)
+            if batch.publication_authenticated:
+                from uploads.access import UploadActor, lock_actor
+
+                lock_sync_users((batch.user.pk,))
+                lock_actor(
+                    UploadActor(
+                        batch.user,
+                        batch.organization,
+                        batch.device.pk,
+                        batch.observed_session_id,
+                        batch.observed_pair_id,
+                    )
+                )
+                from people.projections import requires_publication_arbiter
+
+                if requires_publication_arbiter(batch):
+                    Organization.objects.select_for_update(nowait=True, no_key=True).get(
+                        pk=batch.organization.pk
+                    )
+            lock_courier_batches(batch)
+            from people.projections import prepare_eligibility_publication
+
+            ctx = prepare_eligibility_publication(batch, producer_context(batch, FIELD_BOOTSTRAP))
+            bundle = build_bootstrap(batch, ctx)
+            check_deferred_constraints_now()
+            return bundle
     except OperationalError as error:
         if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
             raise SyncInProgressError from None
