@@ -13,6 +13,12 @@ from ._env import BASE_DIR, load_dotenv
 load_dotenv()  # optional backend/.env (untracked); real environment variables always win
 env = environ.Env()
 
+# External key identities only; credentials come from the deployment's AWS identity.
+# Missing configuration leaves protected RFC operations unavailable.
+RFC_KMS_KEY_ID = env("RFC_KMS_KEY_ID", default="")
+RFC_KMS_HMAC_KEY_ID = env("RFC_KMS_HMAC_KEY_ID", default="")
+RFC_KMS_REGION = env("RFC_KMS_REGION", default="")
+
 DEBUG = False
 
 INSTALLED_APPS = [
@@ -96,6 +102,8 @@ API_PAGE_SIZE = env.int("API_PAGE_SIZE", default=50)
 API_CURSOR_PAGE_SIZE = env.int("API_CURSOR_PAGE_SIZE", default=100)
 THROTTLE_ANON_RATE = env("THROTTLE_ANON_RATE", default="60/min")
 THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
+THROTTLE_RFC_REVEAL_RATE = env("THROTTLE_RFC_REVEAL_RATE", default="30/hour")
+THROTTLE_RFC_WRITE_RATE = env("THROTTLE_RFC_WRITE_RATE", default="10/hour")
 
 # Authentication (#4). Token lifetimes, grace windows and lockout thresholds are global (the
 # organization is unknown before login), env-configurable defaults [PENDING client].
@@ -210,6 +218,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": THROTTLE_ANON_RATE,
         "user": THROTTLE_USER_RATE,
+        "rfc_reveal": THROTTLE_RFC_REVEAL_RATE,
+        "rfc_write": THROTTLE_RFC_WRITE_RATE,
         "login_user_ip": THROTTLE_LOGIN_USER_IP_RATE,
         "login_ip": THROTTLE_LOGIN_IP_RATE,
         "refresh": THROTTLE_REFRESH_RATE,
