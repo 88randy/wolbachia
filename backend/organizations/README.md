@@ -51,6 +51,18 @@ broader grant. No center rows are fabricated from legacy ids.
 
 ## Administration and audit
 
+Personnel administration (#100) keeps private work/RFC data in `accounts.Personnel`,
+linked to this app's Membership. Its deactivation helper shares Organization
+arbitration, CAS, ConfigurationRevision and the last-administrator/terminal-owner
+guards; the caller holds account locks first and checks `user.deactivate` for the
+actual personnel context. It changes neither profiles/scope nor shared User
+activity. Scoped device-session revocation and pending-final-upload withdrawal
+commit with the membership change. The existing membership/role API retains its
+own authorization contract. New personnel usernames receive no profile or scope
+grant. Admin personnel codes and supervisor/coordinator `user.operational_read`
+use the existing seed-once tracking, preserving explicit revocations and custom
+profiles. See [accounts](../accounts/README.md#personnel-administration-and-protected-rfc-100--b02).
+
 - `GET/PATCH /organization/`: current settings, revision and `expected_revision`.
   Settings include name, timezone, languages, epi_week, label_phone and work
   support_contact. Slug, country and organization identity are not tenant selectors.

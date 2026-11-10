@@ -7,7 +7,7 @@ from django.db import DatabaseError, connection, transaction
 from django.db.migrations.exceptions import IrreversibleError
 from django.db.migrations.executor import MigrationExecutor
 
-from tests.factories import DeviceFactory, UserFactory, WidgetFactory
+from tests.factories import DeviceFactory, MembershipFactory, UserFactory, WidgetFactory
 
 
 @pytest.mark.django_db(transaction=True)
@@ -113,3 +113,43 @@ def test_session_audit_upgrade_keeps_unknown_end_honest_and_cannot_restore_peopl
         executor = MigrationExecutor(connection)
         plan = executor.migration_plan(leaves)
         executor.migrate(leaves, plan=plan, state=head_state if not plan else None)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_personnel_guards_cannot_be_reversed_after_private_facts_are_stored(org_a, make_member):
+    from accounts.models import AccessLog, Personnel
+    from organizations.models import Center
+
+    actor, _ = make_member(org_a)
+    member = MembershipFactory(organization=org_a)
+    center = Center.objects.create(
+        organization=org_a, created_by=actor, code="SYNTHETIC", name="Synthetic center"
+    )
+    person = Personnel.objects.create(
+        organization=org_a,
+        created_by=actor,
+        membership=member,
+        center=center,
+        display_name="Synthetic retained employee",
+    )
+    receipt = AccessLog.objects.create(
+        organization=org_a,
+        created_by=actor,
+        target=person,
+        center=center,
+        action=AccessLog.Action.CREATE,
+        origin=AccessLog.Origin.INTERNAL,
+        revision=person.revision,
+    )
+    retained_person = Personnel.objects.filter(pk=person.pk).values().get()
+    retained_receipt = AccessLog.objects.filter(pk=receipt.pk).values().get()
+    leaves = MigrationExecutor(connection).loader.graph.leaf_nodes()
+    try:
+        with pytest.raises(IrreversibleError, match="Retain personnel"):
+            MigrationExecutor(connection).migrate(
+                [("accounts", "0004_personnel_accesslog_and_more")]
+            )
+        assert Personnel.objects.filter(pk=person.pk).values().get() == retained_person
+        assert AccessLog.objects.filter(pk=receipt.pk).values().get() == retained_receipt
+    finally:
+        MigrationExecutor(connection).migrate(leaves)

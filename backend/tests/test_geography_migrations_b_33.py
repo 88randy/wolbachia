@@ -107,6 +107,7 @@ def test_additive_upgrade_keeps_legacy_decision_unknown_audit_and_protects_new_p
             )
         executor = MigrationExecutor(connection)
         applied = set(executor.recorder.applied_migrations())
+        # A protected reverse rolls back preceding dependent DDL and recorder writes.
         with (
             pytest.raises(DatabaseError, match="retained B33 relocation audit"),
             transaction.atomic(),

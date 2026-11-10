@@ -473,6 +473,37 @@ def update_membership(membership: Membership, change: MembershipChange) -> Membe
     return locked
 
 
+def deactivate_personnel_membership(
+    membership: Membership, actor: User, expected_revision: int
+) -> Membership:
+    """Deactivate and audit one membership without changing shared identity or assignments.
+
+    The personnel caller locks the authentic account/session closure and authorizes its
+    actual personnel context first. This helper takes no account locks after Organization.
+    The same arbiter and guard also serialize role/scope removals from other entry points.
+    """
+    with lock_organization_configuration(membership.organization_id) as organization:
+        _actor_scope(actor, organization, "user.deactivate")
+        locked = (
+            Membership.objects.select_for_update()
+            .filter(pk=membership.pk, organization=organization, user_id=membership.user_id)
+            .first()
+        )
+        if locked is None:
+            raise NotFound
+        _check_revision(locked.revision, expected_revision)
+        if not locked.is_active:
+            return locked
+        had_admin = _has_administrator(organization)
+        _ensure_original_revision(locked, "membership", _membership_snapshot(locked))
+        locked.is_active = False
+        locked.revision += 1
+        locked.save(update_fields=["is_active", "revision"])
+        _preserve_administrator(organization, had_admin)
+        _append_revision(locked, "membership", _membership_snapshot(locked), actor)
+    return locked
+
+
 def create_managed_membership(
     user: User, organization: Organization, change: MembershipChange
 ) -> Membership:

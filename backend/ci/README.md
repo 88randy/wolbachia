@@ -51,7 +51,7 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except adding the Lab, Community, People and Release domains: 19 configured apps,
+unchanged except adding the Lab, Community, People, Release, Privacy and Notification domains: 21 configured apps,
 migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
@@ -233,3 +233,36 @@ remain intact, following the existing review113 pattern. Whole-module ownership,
 all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
 PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
 improvement is predicted.
+
+## Personnel integration capacity and measurement (#100)
+
+Run 42761104367 cancelled residual `regular` at the unchanged 15-minute limit after
+94% of its selection. Run 42756081997's successful regular session recorded 2307
+nodes and 702.92s of setup/call/teardown phases; its integration session recorded 111
+nodes and 391.58s. These are measured phase totals, not a promise about later wall
+times. The first database-setup owner of each partition stays in place.
+
+The initial #100 qualification moved 203 existing cases across seven complete modules into the existing
+ordinary integration cohort: `test_lab_recounts_b_19.py`,
+`test_lab_concurrency_114.py`, `test_ovitraps_lifecycle_b_15.py`,
+`test_shift_concurrency.py`, `test_seed_defaults.py`, `test_sync_locks.py` and
+`test_reviews_b_17.py`. Their prior phase total was 187.38s. Run 42767499787 passed
+all twelve partitions and the combined gate: regular 8:12, integration 9:21,
+field 6:55 and review 9:14. Those observations qualify that configuration only.
+
+Normal integration of #348 preserves its thirteen-shard registry and temporary
+field/review limits, taking its cohort layout verbatim. The two Lab modules now
+belong solely to `regular-lab`; the other five return to residual `regular`. The residual remains
+the exact ordered complement. All thirteen fresh fragments, migration-owner
+boundaries, cases, assertions and the 85% combined gate are retained.
+
+CI selects Coverage 7.17.1's documented `sysmon` core on Python 3.13 for the existing
+statement-only/threaded configuration. Sources, omissions and aggregation remain
+unchanged. Pytest treats `CoverageWarning` as an error, including startup core
+fallback, so unsupported measurement cannot silently pass. Harness qualification
+compares nonempty threaded executed-line sets against `ctrace` and verifies
+startup and later warning failures with durable child-exit receipts. Fresh full
+CI is still required to qualify wall time and the complete coverage union.
+
+References: [Coverage core configuration](https://coverage.readthedocs.io/en/7.17.1/config.html#run-core),
+[pytest warning filters](https://docs.pytest.org/en/stable/how-to/capture-warnings.html).

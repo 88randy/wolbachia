@@ -320,11 +320,12 @@ def test_confirm_revokes_device_sessions_in_every_organization(
     api_client: APIClient, org_a: Organization, org_b: Organization, make_member: MemberFactory
 ) -> None:
     user = account()
+    make_member(org_a, [], user=user)
+    make_member(org_b, [], user=user)
     in_a = start_device_session(user, org_a, DeviceInfo(device_id=uuid.uuid4()))
     in_b = start_device_session(user, org_b, DeviceInfo(device_id=uuid.uuid4()))
-    bystander = start_device_session(
-        account("b@example.test"), org_a, DeviceInfo(device_id=uuid.uuid4())
-    )
+    bystander_user, _ = make_member(org_a, [], user=account("b@example.test"))
+    bystander = start_device_session(bystander_user, org_a, DeviceInfo(device_id=uuid.uuid4()))
 
     confirm(api_client, user)
 
@@ -496,6 +497,7 @@ def test_confirm_withdraws_pending_final_uploads_of_already_revoked_sessions(
     api_client: APIClient, org_a: Organization
 ) -> None:
     user = account()
+    MembershipFactory(user=user, organization=org_a)
     issued = start_device_session(user, org_a, DeviceInfo(device_id=uuid.uuid4()))
     revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True))
     issued.session.refresh_from_db()
@@ -558,6 +560,7 @@ def test_confirm_does_not_touch_sessions_of_other_devices_of_other_users(
     api_client: APIClient, org_a: Organization
 ) -> None:
     user, other = account(), account("other@example.test")
+    MembershipFactory(user=other, organization=org_a)
     keep = start_device_session(other, org_a, DeviceInfo(device_id=uuid.uuid4()))
 
     confirm(api_client, user)
