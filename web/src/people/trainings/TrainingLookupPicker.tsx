@@ -4,11 +4,11 @@ import { OptionPicker } from "../../forms/OptionPicker";
 import type { PickerOption } from "../../forms/OptionPicker";
 import { useTrainingScope } from "./use-training-scope";
 import { trainingLookupsOptions } from "./training-lookups";
-import type { TrainingLookups } from "./training-lookups";
+import type { ListName } from "./training-lookups";
 import type { TrainingFieldProps } from "./use-training-field-control";
 
 /** Which lookup list feeds each field that used to take a pasted id. */
-export const LOOKUP_OF_FIELD: Record<string, keyof TrainingLookups> = {
+export const LOOKUP_OF_FIELD: Record<string, ListName> = {
   subject: "people",
   center: "centers",
   quadrant: "quadrants",

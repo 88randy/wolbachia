@@ -4,11 +4,11 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { OptionPicker } from "../../forms/OptionPicker";
 import type { PickerOption } from "../../forms/OptionPicker";
 import { trainingLookupsOptions } from "../trainings/training-lookups";
-import type { TrainingLookups } from "../trainings/training-lookups";
+import type { ListName } from "../trainings/training-lookups";
 import { useTrainingScope } from "../trainings/use-training-scope";
 
 /** Which lookup list names each evaluation field that holds a record. */
-export const PICKER_LISTS: Record<string, keyof TrainingLookups> = {
+export const PICKER_LISTS: Record<string, ListName> = {
   subject: "people",
   center: "centers",
   quadrant: "quadrants",

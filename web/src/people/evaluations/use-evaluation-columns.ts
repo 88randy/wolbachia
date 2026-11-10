@@ -3,12 +3,13 @@ import type { TFunction } from "i18next";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { OUTCOME_KEYS } from "./evaluation-labels";
+import { useTrainingLabels } from "../trainings/use-training-labels";
 import type { Evaluation } from "./evaluation-query";
 function identityColumn(t: TFunction): DataTableColumn<Evaluation> {
   return {
     id: "id",
     headerKey: "evaluations.history.id",
-    cell: (row) => `${t("evaluations.history.open")} ${row.id}`,
+    cell: () => t("evaluations.history.open"),
     link: (row) => ({
       to: "/people/evaluations",
       search: (previous) => ({ ...previous, item: row.id }),
@@ -30,10 +31,14 @@ function scoreColumn(t: TFunction): DataTableColumn<Evaluation> {
 export function useEvaluationColumns(): DataTableColumn<Evaluation>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
+  const labels = useTrainingLabels();
   return [
     identityColumn(t),
-    { id: "subject", headerKey: "evaluations.field.subject", cell: (row) => row.subject_id },
-    { id: "rubric", headerKey: "evaluations.rubric.version", cell: (row) => row.rubric_version_id },
+    {
+      id: "subject",
+      headerKey: "evaluations.field.subject",
+      cell: (row) => labels.person(row.subject_id),
+    },
     {
       id: "outcome",
       headerKey: "evaluations.result.title",

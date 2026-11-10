@@ -12,6 +12,8 @@ export interface TrainingLookups {
   courses: PickerOption[];
   /** Same courses, valued by their current version (what a certificate is issued against). */
   courseVersions: PickerOption[];
+  /** Every course version id to its readable name: course and version number. */
+  versionNames: Readonly<Record<string, string>>;
 }
 
 /** An unreadable list (no permission) is an empty picker, never a broken form. */
@@ -44,7 +46,21 @@ export function trainingLookupsOptions(scope: TrainingScope) {
         rows(client.GET("/api/v1/quadrants/", { params: { query: page }, signal })),
         rows(client.GET("/api/v1/trainings/", { params: { query: page }, signal })),
       ]);
+      const versions = await Promise.all(
+        courses.map(async (course) => {
+          const list = await rows(
+            client.GET("/api/v1/trainings/{id}/versions/", {
+              params: { path: { id: course.id }, query: { page_size: LOOKUP_PAGE_SIZE } },
+              signal,
+            }),
+          );
+          return list.map(
+            (item) => [item.id, `${course.name} · v${String(item.version)}`] as const,
+          );
+        }),
+      );
       return {
+        versionNames: Object.fromEntries(versions.flat()),
         people: people.map((row) => ({
           value: row.id,
           label: row.display_name,
@@ -62,3 +78,6 @@ export function trainingLookupsOptions(scope: TrainingScope) {
     },
   });
 }
+
+/** The lookup lists that hold picker options (not the id-to-name map). */
+export type ListName = Exclude<keyof TrainingLookups, "versionNames">;
