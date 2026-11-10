@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
+import { nameOrDash } from "../../lookups/use-reference-names";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { RelocationTaskReceipt } from "./RelocationTaskReceipt";
 import { useFormatDateTime } from "../../format/use-format-date-time";
@@ -29,7 +30,7 @@ function receiptFields(
 ): [MessageKey, string | null][] {
   return [
     ["relocations.workspace.decisionReason", receipt.decision.reason],
-    ["relocations.workspace.author", receipt.decision.created_by],
+    ["relocations.workspace.author", nameOrDash(receipt.decision.created_by_name)],
     [
       "relocations.workspace.decidedAt",
       receipt.decision.decided_at ? format(receipt.decision.decided_at) : null,

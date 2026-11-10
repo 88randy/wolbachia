@@ -9,6 +9,7 @@ import type { IncidentScope } from "./incidents-query";
 interface DownloadContext {
   scope: IncidentScope;
   id: string;
+  name: string;
   begin: ReturnType<typeof useSessionGuard>;
   cache: ReturnType<typeof useQueryClient>;
   pending: { current: boolean };
@@ -33,7 +34,7 @@ async function download(context: DownloadContext) {
     context.url.current = URL.createObjectURL(bytes);
     const link = document.createElement("a");
     link.href = context.url.current;
-    link.download = context.id;
+    link.download = context.name;
     link.click();
     context.setFailed(false);
   } catch (error) {
@@ -46,7 +47,15 @@ async function download(context: DownloadContext) {
   }
 }
 /** A readable audit reference is a hint; each download asks B04 for current byte authorization. */
-export function IncidentEvidenceDownload({ scope, id }: { scope: IncidentScope; id: string }) {
+export function IncidentEvidenceDownload({
+  scope,
+  id,
+  name,
+}: {
+  scope: IncidentScope;
+  id: string;
+  name: string;
+}) {
   const { t } = useTranslation();
   const begin = useSessionGuard();
   const cache = useQueryClient();
@@ -64,10 +73,10 @@ export function IncidentEvidenceDownload({ scope, id }: { scope: IncidentScope; 
       <Button
         variant="secondary"
         onClick={() => {
-          void download({ scope, id, begin, cache, pending, url, setFailed });
+          void download({ scope, id, name, begin, cache, pending, url, setFailed });
         }}
       >
-        {t("incidents.evidence.download", { id })}
+        {t("incidents.evidence.download", { id: name })}
       </Button>
       {hasFailed && <p role="alert">{t("incidents.evidence.downloadFailed")}</p>}
     </>

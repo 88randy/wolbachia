@@ -7,6 +7,7 @@ from drf_spectacular.extensions import OpenApiSerializerExtension
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from inventory.allocations.permissions import INTENT_KINDS
 from inventory.allocations.policy import validate_supply_note
 from ovitraps.payloads import StrictPayloadSerializer
@@ -432,7 +433,7 @@ class JustificationOutcomeSerializer(serializers.Serializer[Any]):
     justification = SupplyJustificationSerializer()
 
 
-class WriteOffAuditSerializer(serializers.Serializer[Any]):
+class WriteOffAuditSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     owner_id = serializers.UUIDField()
     date = serializers.DateField()
     reason_code = serializers.CharField()

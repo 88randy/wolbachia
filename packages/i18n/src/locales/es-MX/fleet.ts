@@ -149,4 +149,12 @@ export const fleet = {
   "fleet.create.invalidPlate": "La placa puede tener hasta 20 caracteres.",
   "fleet.create.failure": "No pudimos registrar la moto",
   "fleet.create.busy": "Guardando…",
+  "fleet.history.record": "Registro",
+  "fleet.history.openRecord": "Ver registro",
+  "fleet.history.fieldReport": "Reporte del repartidor",
+  "fleet.history.referenceShown": "Mostrando el registro seleccionado.",
+  "fleet.fuel.previousLoad": "Ver la carga anterior",
+  "fleet.fuel.receiptAttached": "Comprobante adjunto",
+  "fleet.clear.evidenceItem": "Evidencia {number}",
+  "fleet.clear.reviewedBy": "Revisó",
 } as const satisfies AreaCatalog<"fleet">;

@@ -2,10 +2,12 @@ import type { Schemas } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { useCouriers } from "../scheduling/use-directories";
 import { StatusPill } from "../ui/StatusPill";
 export function useShiftColumns(): readonly DataTableColumn<Schemas["Shift"]>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
+  const courierName = useCouriers([]).nameOf;
   return [
     {
       id: "opened_at_device",
@@ -18,7 +20,11 @@ export function useShiftColumns(): readonly DataTableColumn<Schemas["Shift"]>[] 
       headerKey: "shift.field.motorcycle",
       cell: (shift) => shift.motorcycle_code,
     },
-    { id: "courier", headerKey: "shift.field.courier", cell: (shift) => shift.courier },
+    {
+      id: "courier",
+      headerKey: "shift.field.courier",
+      cell: (shift) => courierName(shift.courier),
+    },
     {
       id: "status",
       headerKey: "shift.field.lifecycle",

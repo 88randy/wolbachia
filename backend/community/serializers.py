@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from community.models import CommunityActivity
 from community.payloads import CommunityActivityPayload
+from core.author_names import AuthorNamesMixin
 from core.serializers import OrgScopedModelSerializer
 from core.void_reason import VoidSerializer
 from organizations.scope import EffectiveScope
@@ -47,7 +48,7 @@ class CommunityIncidentReferenceSerializer(serializers.Serializer[Any]):
     state = serializers.ChoiceField(choices=["open", "closed", "voided"])
 
 
-class CommunityEventSerializer(serializers.Serializer[Any]):
+class CommunityEventSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     revision = serializers.IntegerField()
     action = serializers.ChoiceField(choices=["create", "void"])

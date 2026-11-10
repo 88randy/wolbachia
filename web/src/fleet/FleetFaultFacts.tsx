@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { nameOrDash } from "../lookups/use-reference-names";
 import { Button } from "../ui/Button";
 import type { HistoryActions } from "./fleet-history-columns";
 import { FleetEvidenceDownload } from "./FleetEvidenceDownload";
@@ -17,15 +18,14 @@ function ClearanceAudit({ fault, actions }: FaultProps) {
       <summary>{t("fleet.clear.proof")}</summary>
       <FleetFactList
         facts={[
-          ["fleet.history.id", proof.id],
           ["fleet.history.created", format(proof.created_at)],
-          ["fleet.clear.reviewer", proof.reviewer],
+          ["fleet.clear.reviewedBy", nameOrDash(proof.reviewer_name)],
           ["fleet.clear.reason", proof.reason],
         ]}
       />
-      {proof.evidence_ids.map((id) => (
+      {proof.evidence_ids.map((id, index) => (
         <p key={id}>
-          {id}
+          {t("fleet.clear.evidenceItem", { number: index + 1 })}
           <FleetEvidenceDownload id={id} scope={actions.scope} />
         </p>
       ))}

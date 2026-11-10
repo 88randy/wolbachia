@@ -2,7 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Select } from "../../forms/Select";
 import { TextField } from "../../forms/TextField";
-import { shortId } from "./allocation-labels";
+import { NO_NAME } from "../../lookups/use-reference-names";
 import type { WriteOffForm } from "./use-write-off-form";
 
 function locationOptions(form: WriteOffForm) {
@@ -12,7 +12,7 @@ function locationOptions(form: WriteOffForm) {
   }));
   const isKnown = known.some((item) => item.value === form.locationId);
   return form.locationId && !isKnown
-    ? [...known, { value: form.locationId, label: shortId(form.locationId) }]
+    ? [...known, { value: form.locationId, label: NO_NAME }]
     : known;
 }
 

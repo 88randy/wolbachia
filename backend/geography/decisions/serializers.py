@@ -5,6 +5,7 @@ from uuid import UUID
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from geography.decisions.models import (
     QuadrantClosure,
     ThirdPartyIntervention,
@@ -21,7 +22,9 @@ class RelocationDecisionRequestSerializer(RevisionRequestSerializer):
     reason = serializers.CharField(max_length=1000, trim_whitespace=False)
 
 
-class RelocationDecisionSerializer(serializers.ModelSerializer[RelocationDecision]):
+class RelocationDecisionSerializer(
+    AuthorNamesMixin, serializers.ModelSerializer[RelocationDecision]
+):
     class Meta:
         model = RelocationDecision
         fields = [
@@ -52,7 +55,7 @@ class RelocationDecisionResultSerializer(serializers.Serializer[Any]):
     warnings = serializers.ListField(child=serializers.DictField())
 
 
-class QuadrantClosureSerializer(serializers.ModelSerializer[QuadrantClosure]):
+class QuadrantClosureSerializer(AuthorNamesMixin, serializers.ModelSerializer[QuadrantClosure]):
     revision = serializers.IntegerField(source="quadrant_version.revision", read_only=True)
 
     class Meta:
@@ -97,7 +100,7 @@ class InterventionRequestSerializer(serializers.Serializer[Any]):
     )
 
 
-class InterventionSerializer(serializers.ModelSerializer[ThirdPartyIntervention]):
+class InterventionSerializer(AuthorNamesMixin, serializers.ModelSerializer[ThirdPartyIntervention]):
     blocks = serializers.SerializerMethodField()
 
     def get_blocks(self, obj: ThirdPartyIntervention) -> list[UUID]:

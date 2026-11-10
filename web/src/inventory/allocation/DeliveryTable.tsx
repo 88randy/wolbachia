@@ -4,7 +4,7 @@ import type { MessageKey } from "@wolbachia/i18n";
 import type { Schemas } from "@wolbachia/api-client";
 import { useLanguage } from "../../i18n/use-language";
 import { formatInventoryQuantity } from "../format-inventory-quantity";
-import { shortId } from "./allocation-labels";
+import { NO_NAME } from "../../lookups/use-reference-names";
 import type { DeliveryRow } from "./delivery-compare";
 import styles from "../inventory.module.css";
 
@@ -19,7 +19,7 @@ type Lots = readonly Schemas["Lot"][] | undefined;
 
 function materialLabel(lots: Lots, supplyVersionId: string) {
   const lot = lots?.find((item) => item.supply_version_id === supplyVersionId);
-  return lot?.supply_version.label ?? shortId(supplyVersionId);
+  return lot?.supply_version.label ?? NO_NAME;
 }
 
 function DeliveryLine({ row, lots }: { row: DeliveryRow; lots: Lots }) {

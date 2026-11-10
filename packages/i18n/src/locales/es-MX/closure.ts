@@ -37,4 +37,5 @@ export const closure = {
   "closure.blocker.removalReviewPending": "Retiro pendiente de revisión",
   "closure.blocker.relocationReviewPending": "Reubicación pendiente de revisión",
   "closure.blocker.incidentQuadrantClosure": "Incidente que bloquea el cierre",
+  "closure.receipt.recorded": "Cierre registrado.",
 } as const;

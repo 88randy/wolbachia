@@ -18401,6 +18401,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - catalog_version
       - code
@@ -18512,6 +18516,10 @@ components:
         dependency_proof:
           type: object
           additionalProperties: {}
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - bag_id
       - collector_id
@@ -18570,6 +18578,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -18730,7 +18742,6 @@ components:
       - block
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - geometry
       - id
@@ -19058,6 +19069,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - catalog_version
       - code
@@ -19245,6 +19260,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - certification_id
       - created_at
@@ -19753,6 +19772,10 @@ components:
           - $ref: '#/components/schemas/CommunityIncidentReference'
           nullable: true
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - activity_date
       - agreements
@@ -19831,6 +19854,10 @@ components:
           type: string
         reason_code:
           type: string
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - action
       - command_id
@@ -20154,6 +20181,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - capture_location_id
       - capture_mode
@@ -20772,6 +20803,10 @@ components:
         expected_revision:
           type: integer
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - command_id
       - created_at
@@ -20915,6 +20950,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -21249,6 +21288,10 @@ components:
           type: integer
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - completion_sequence
       - created_at
@@ -21499,6 +21542,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - attempt_id
       - created_at
@@ -21654,7 +21701,6 @@ components:
       required:
       - created_at
       - created_by
-      - created_by_name
       - decision
       - evidence
       - id
@@ -21963,6 +22009,10 @@ components:
         catalog_version:
           type: string
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - amount
       - baseline
@@ -22131,6 +22181,10 @@ components:
           nullable: true
         payload: {}
         effects: {}
+        author_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - author
       - catalog_version
@@ -22368,6 +22422,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - applied_at
       - created_at
@@ -22426,6 +22484,10 @@ components:
         clearance:
           allOf:
           - $ref: '#/components/schemas/InspectionClearanceRead'
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -22607,6 +22669,14 @@ components:
           type: string
           nullable: true
           readOnly: true
+        owner_display:
+          type: string
+          nullable: true
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - action
       - actor_kind
@@ -22666,6 +22736,9 @@ components:
           nullable: true
         size_bytes:
           type: integer
+          nullable: true
+        filename:
+          type: string
           nullable: true
       required:
       - content_type
@@ -22997,6 +23070,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocker_kinds
       - close_evidence_min
@@ -23286,6 +23363,10 @@ components:
             type: string
             format: uuid
           readOnly: true
+        reviewer_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - evidence_ids
@@ -23340,6 +23421,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocks
       - created_at
@@ -23571,6 +23656,10 @@ components:
           minimum: 1
         is_current:
           type: boolean
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - bag_id
       - created_at
@@ -23800,6 +23889,10 @@ components:
         created_by:
           type: string
           format: uuid
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - candidate_kind
       - created_at
@@ -23875,6 +23968,10 @@ components:
         created_by:
           type: string
           format: uuid
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - candidate_kind
       - created_at
@@ -23931,6 +24028,10 @@ components:
         created_by:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -24023,6 +24124,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - content_hash
       - created_at
@@ -24105,6 +24210,10 @@ components:
         created_by:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -24446,6 +24555,9 @@ components:
           type: string
           format: uuid
           nullable: true
+        bag_code:
+          type: string
+          nullable: true
         kind:
           $ref: '#/components/schemas/LabReceiptKindEnum'
         created_at:
@@ -24454,6 +24566,10 @@ components:
         created_by:
           type: string
           format: uuid
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - bag_id
       - created_at
@@ -24550,6 +24666,10 @@ components:
           minimum: 1
         is_current:
           type: boolean
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - bag_id
       - created_at
@@ -24877,6 +24997,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - center
       - code
@@ -25142,6 +25266,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - admission_id
       - blocked_by
@@ -25313,6 +25441,10 @@ components:
         unit_version_id:
           type: string
           format: uuid
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -25758,6 +25890,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        user_display_name:
+          type: string
+          readOnly: true
+          nullable: true
         profiles:
           type: array
           items:
@@ -25781,6 +25917,10 @@ components:
         created_by:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -25973,6 +26113,14 @@ components:
         void_reason_code:
           type: string
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        voided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocked_reason
       - center
@@ -26080,6 +26228,14 @@ components:
           allOf:
           - $ref: '#/components/schemas/MotorcycleMetrics'
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        voided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocked_reason
       - center
@@ -26270,6 +26426,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -26331,6 +26491,10 @@ components:
           type: string
           format: uuid
           readOnly: true
+        recipient_name:
+          type: string
+          readOnly: true
+          nullable: true
         revision:
           type: integer
           maximum: 2147483647
@@ -26936,6 +27100,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - catalog_version
       - code
@@ -29853,6 +30021,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocked_by
       - center
@@ -30006,6 +30178,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -30059,6 +30235,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -30141,6 +30321,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - authority
       - created_at
@@ -30685,7 +30869,6 @@ components:
       required:
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - id
       - is_retired
@@ -31002,6 +31185,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -31213,6 +31400,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - center
       - code
@@ -31270,6 +31461,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - closed_at
       - created_at
@@ -31512,7 +31707,6 @@ components:
       required:
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - geometry
       - id
@@ -31696,6 +31890,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - bag_code
       - bag_id
@@ -31965,6 +32163,10 @@ components:
         created_by:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -32471,6 +32673,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocked_by
       - created_at
@@ -32796,6 +33002,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - blocked_by
       - center
@@ -32848,6 +33058,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -32941,6 +33155,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -33010,6 +33228,10 @@ components:
         created_by:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -33178,6 +33400,9 @@ components:
         point_code:
           type: string
           readOnly: true
+        ovitrap_code:
+          type: string
+          readOnly: true
         point_version:
           type: string
           format: uuid
@@ -33256,6 +33481,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - catalog_version
       - code
@@ -33330,6 +33559,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -33527,6 +33760,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -33671,6 +33908,10 @@ components:
           - $ref: '#/components/schemas/IncidentActionPrerequisites'
           nullable: true
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - action_permissions
       - action_prerequisites
@@ -33686,7 +33927,6 @@ components:
       - id
       - linked_record
       - origin
-      - owner_display
       - owner_id
       - publication_state
       - quadrant
@@ -33901,6 +34141,14 @@ components:
         notes:
           type: string
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        voided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - courier
       - created_at
@@ -34091,9 +34339,17 @@ components:
           type: string
           nullable: true
           readOnly: true
+        incident_code:
+          type: string
+          nullable: true
+          readOnly: true
         effect_receipt:
           allOf:
           - $ref: '#/components/schemas/ReviewEffectReceipt'
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
           readOnly: true
           nullable: true
       required:
@@ -34207,6 +34463,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - authority_proofs
       - created_at
@@ -34310,6 +34570,10 @@ components:
           nullable: true
         approval_current:
           type: boolean
+          nullable: true
+        decided_by_name:
+          type: string
+          readOnly: true
           nullable: true
       required:
       - approval_current
@@ -34513,6 +34777,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - attest_safe_now
       - created_at
@@ -34659,6 +34927,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - block
       - category
@@ -34912,6 +35184,14 @@ components:
         void_reason_code:
           type: string
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        voided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -35412,6 +35692,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        block_code:
+          type: string
+          readOnly: true
         current_version:
           allOf:
           - $ref: '#/components/schemas/PointVersion'
@@ -35426,6 +35709,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - block
       - code
@@ -35714,6 +36001,14 @@ components:
           nullable: true
         due_metric_provenance:
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        voided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - created_at
       - created_by
@@ -35925,6 +36220,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - closed_event
       - created_at
@@ -36490,6 +36789,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -37396,6 +37699,10 @@ components:
         params:
           type: object
           additionalProperties: {}
+        author_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - author
       - kind
@@ -37575,6 +37882,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - code
       - created_at
@@ -37650,7 +37961,6 @@ components:
       - center_id
       - center_name
       - created_at
-      - created_by_name
       - fields
       - id
       - purpose
@@ -37768,6 +38078,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
       required:
       - command_id
       - created_at
@@ -37866,6 +38180,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        lot_code:
+          type: string
+          readOnly: true
         location_id:
           type: string
           format: uuid
@@ -37883,6 +38200,7 @@ components:
       required:
       - id
       - location_id
+      - lot_code
       - lot_id
       - piece_id
       - resolution_id
@@ -37903,6 +38221,9 @@ components:
         lot_id:
           type: string
           format: uuid
+          readOnly: true
+        lot_code:
+          type: string
           readOnly: true
         piece_id:
           type: string
@@ -37929,6 +38250,7 @@ components:
       required:
       - destination_version_id
       - id
+      - lot_code
       - lot_id
       - origin_version_id
       - piece_id

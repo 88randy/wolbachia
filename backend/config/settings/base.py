@@ -325,6 +325,7 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "core.schema.add_error_envelope",
+        "core.schema_hooks.optional_author_names",
     ],
 }
 

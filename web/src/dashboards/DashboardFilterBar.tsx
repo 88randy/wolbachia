@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
+import { NO_NAME } from "../lookups/use-reference-names";
 import { centersOptions } from "../centers/centers-query";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { Button } from "../ui/Button";
@@ -58,7 +59,7 @@ export function DashboardFilterBar({ filters, defaultPeriod, onChange }: Dashboa
   ];
   const quadrantOptions = [all, ...(quadrants.data ?? [])];
   const labelOf = (options: readonly { value: string; label: string }[], value: string) =>
-    options.find((option) => option.value === value)?.label ?? value;
+    options.find((option) => option.value === value)?.label ?? NO_NAME;
   const set = (patch: Partial<DashboardFilters>) => {
     onChange({ ...filters, ...patch });
   };

@@ -36,4 +36,5 @@ export const closure = {
   "closure.blocker.removalReviewPending": "Removal awaiting review",
   "closure.blocker.relocationReviewPending": "Relocation awaiting review",
   "closure.blocker.incidentQuadrantClosure": "Incident blocking closure",
+  "closure.receipt.recorded": "Closure recorded.",
 } as const satisfies Record<keyof typeof Spanish, string>;

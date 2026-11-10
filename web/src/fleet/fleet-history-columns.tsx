@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { nameOrDash } from "../lookups/use-reference-names";
+import { useCouriers } from "../scheduling/use-directories";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useFormatDateTime } from "../format/use-format-date-time";
@@ -59,12 +61,17 @@ function serviceColumns(format: (date: string) => string): Column[] {
     },
   ];
 }
-function letterColumns(format: (date: string) => string): Column[] {
+function letterColumns(
+  format: (date: string) => string,
+  courierName: (id: string | null) => string,
+): Column[] {
   return [
     scalar("issued_at", "fleet.letter.date", (row) =>
       "issued_at" in row ? format(row.issued_at) : null,
     ),
-    scalar("courier", "fleet.history.courier", (row) => ("courier" in row ? row.courier : null)),
+    scalar("courier", "fleet.history.courier", (row) =>
+      "courier" in row ? courierName(row.courier) : null,
+    ),
     scalar("document", "fleet.history.opaqueDocument", (row) =>
       "document_reference" in row ? row.document_reference : null,
     ),
@@ -122,28 +129,27 @@ interface ColumnContext {
   format: (date: string) => string;
   calendar: (date: string) => string;
   t: (key: MessageKey) => string;
+  courierName: (id: string | null) => string;
 }
 function identityColumns({ tab, code, format, t }: ColumnContext): Column[] {
   return [
     {
       id: "id",
-      headerKey: "fleet.history.id",
+      headerKey: "fleet.history.record",
       cell: (row) => (
         <FleetSourceLink code={code} target={{ tab, id: row.id }}>
-          {row.id}
+          {t("fleet.history.openRecord")}
         </FleetSourceLink>
       ),
     },
     { id: "created_at", headerKey: "fleet.history.created", cell: (row) => format(row.created_at) },
-    scalar(
-      "created_by",
-      "fleet.history.author",
-      (row) => row.created_by ?? t("fleet.summary.system"),
+    scalar("created_by", "fleet.history.author", (row) =>
+      row.created_by ? nameOrDash(row.created_by_name) : t("fleet.summary.system"),
     ),
   ];
 }
 function contentColumns(context: ColumnContext): Column[] {
-  const { tab, code, calendar, format, t } = context;
+  const { tab, code, calendar, format, t, courierName } = context;
   if (tab === "services")
     return [
       {
@@ -153,11 +159,11 @@ function contentColumns(context: ColumnContext): Column[] {
       },
       ...serviceColumns(calendar),
     ];
-  if (tab === "responsibility") return letterColumns(format);
+  if (tab === "responsibility") return letterColumns(format, courierName);
   if (tab === "fuel") return fuelColumns(code, format);
   return [
     scalar("source", "fleet.history.event", (row) =>
-      "field_event" in row ? row.field_event : null,
+      "field_event" in row && row.field_event ? t("fleet.history.fieldReport") : null,
     ),
   ];
 }
@@ -170,7 +176,8 @@ export function useFleetHistoryColumns(
   const format = useFormatDateTime();
   const calendar = useFormatCalendarDate();
   const search = useSearch({ strict: false });
-  const context = { tab, code, format, calendar, t };
+  const courierName = useCouriers([]).nameOf;
+  const context = { tab, code, format, calendar, t, courierName };
   const columns = [...identityColumns(context), ...contentColumns(context)];
   if (tab !== "fuel" && tab !== "incidents")
     columns.push(

@@ -18,7 +18,7 @@ export function TransferHistory({ transfer }: { transfer: Transfer }) {
         </Fact>
       </FactGrid>
       {transfer.events.map((event) => (
-        <TransferEventHistory key={event.id} event={event} />
+        <TransferEventHistory key={event.id} event={event} lines={transfer.lines} />
       ))}
     </section>
   );

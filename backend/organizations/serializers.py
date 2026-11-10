@@ -4,6 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNameField
 from core.serializers import OrgScopedModelSerializer
 from organizations.models import Center, Membership, Organization, Profile
 from organizations.validators import validate_permission_code, validate_timezone
@@ -134,12 +135,14 @@ class ProfilePermissionSerializer(serializers.Serializer[Any]):
 
 class MembershipSerializer(OrgScopedModelSerializer):
     scope = MeScopeSerializer(read_only=True)
+    user_display_name = AuthorNameField("user")
 
     class Meta:
         model = Membership
         fields = [
             "id",
             "user",
+            "user_display_name",
             "profiles",
             "scope",
             "is_active",
