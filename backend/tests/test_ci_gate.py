@@ -33,13 +33,6 @@ EXPECTED_COHORTS = {
     "migrations-session-audit": {"tests/test_session_audit_migrations_181.py"},
     "migrations-people": {"tests/test_people_migrations_101.py"},
     "regular-integration": {
-        "tests/test_lab_recounts_b_19.py",
-        "tests/test_lab_concurrency_114.py",
-        "tests/test_ovitraps_lifecycle_b_15.py",
-        "tests/test_shift_concurrency.py",
-        "tests/test_seed_defaults.py",
-        "tests/test_sync_locks.py",
-        "tests/test_reviews_b_17.py",
         "tests/test_inventory_allocations_b_10.py",
         "tests/test_uploads_b_04.py",
         "tests/test_permit_api_116.py",
@@ -48,6 +41,16 @@ EXPECTED_COHORTS = {
         "tests/test_release_uuid_116.py",
         "tests/test_releases_b_20.py",
         "tests/test_releases_concurrency_116.py",
+    },
+    "regular-lab": {
+        "tests/test_lab_api_114.py",
+        "tests/test_lab_concurrency_114.py",
+        "tests/test_lab_counts_114.py",
+        "tests/test_lab_history_114.py",
+        "tests/test_lab_policy_114.py",
+        "tests/test_lab_reception_114.py",
+        "tests/test_lab_recounts_114.py",
+        "tests/test_lab_recounts_b_19.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -145,8 +148,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 26
-        )  # Residual regular, ten migration owners and fifteen complete ordinary modules.
+            validate_fragments(bundles, expected) == 27
+        )  # Residual regular, ten migration owners and sixteen complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -163,8 +166,10 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     nodes = [
         *collected[:2],
         "tests/test_uploads_b_04.py::test_earlier_case",
+        "tests/test_lab_counts_114.py::test_earlier_case",
         *collected[2:],
         "tests/test_inventory_allocations_b_10.py::test_later_case",
+        "tests/test_lab_counts_114.py::test_later_case",
     ]
     parts = partition_nodes(nodes)
     assert tuple(parts) == EXPECTED_PARTITIONS
@@ -176,12 +181,18 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         "tests/test_uploads_b_04.py",
         "tests/test_inventory_allocations_migrations_107.py",
         "tests/test_release_stock_116.py",
+        "tests/test_lab_recounts_b_19.py",
     ):
         with pytest.raises(ValueError, match="CI evidence"):
             partition_nodes([node for node in nodes if node.split("::")[0] != absent])
     for malformed in (
         {**EXPECTED_COHORTS, "migrations-foundation": set()},
         {**EXPECTED_COHORTS, "regular-integration": set()},
+        {**EXPECTED_COHORTS, "regular-lab": set()},
+        {
+            **EXPECTED_COHORTS,
+            "regular-lab": EXPECTED_COHORTS["regular-lab"] | EXPECTED_COHORTS["migrations-lab"],
+        },
         {
             **EXPECTED_COHORTS,
             "regular-integration": EXPECTED_COHORTS["regular-integration"]
@@ -210,7 +221,7 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         frozenset(
             module
             for name, modules in EXPECTED_COHORTS.items()
-            if name != "regular-integration"
+            if name.startswith("migrations-")
             for module in modules
         )
         == MIGRATION_MODULES
@@ -255,7 +266,12 @@ def assert_partition_workflow():
     jobs = workflow["jobs"]
     assert jobs["tests"]["strategy"]["matrix"]["shard"] == list(EXPECTED_PARTITIONS)
     assert jobs["tests"]["strategy"]["fail-fast"] is False
-    assert jobs["tests"]["timeout-minutes"] == jobs["checks"]["timeout-minutes"] == 15
+    assert jobs["tests"]["timeout-minutes"] == "${{ matrix.timeout || 15 }}"
+    assert jobs["tests"]["strategy"]["matrix"]["include"] == [
+        {"shard": "migrations-field", "timeout": 25},
+        {"shard": "migrations-review", "timeout": 25},
+    ]
+    assert jobs["checks"]["timeout-minutes"] == 15
     rollup = jobs["migration_status"]
     assert rollup["name"] == "PostgreSQL (migrations)"
     assert rollup["needs"] == ["tests"]

@@ -5,7 +5,7 @@ import re
 from collections import Counter
 from typing import Any
 
-INTEGRATION_PARTITION = "regular-integration"
+ORDINARY_PARTITIONS = frozenset({"regular-integration", "regular-lab"})
 MODULE_PARTITIONS = {
     "migrations-foundation": frozenset({"tests/test_inventory_migrations_105.py"}),
     "migrations-field": frozenset({"tests/test_geography_migrations_b_33.py"}),
@@ -17,12 +17,9 @@ MODULE_PARTITIONS = {
     "migrations-supplies": frozenset({"tests/test_inventory_allocations_migrations_107.py"}),
     "migrations-session-audit": frozenset({"tests/test_session_audit_migrations_181.py"}),
     "migrations-people": frozenset({"tests/test_people_migrations_101.py"}),
-    INTEGRATION_PARTITION: frozenset(
+    "regular-integration": frozenset(
         {
             "tests/test_inventory_allocations_b_10.py",
-            "tests/test_lab_concurrency_114.py",
-            "tests/test_lab_recounts_b_19.py",
-            "tests/test_ovitraps_lifecycle_b_15.py",
             "tests/test_uploads_b_04.py",
             "tests/test_permit_api_116.py",
             "tests/test_release_guards_116.py",
@@ -30,10 +27,18 @@ MODULE_PARTITIONS = {
             "tests/test_release_uuid_116.py",
             "tests/test_releases_b_20.py",
             "tests/test_releases_concurrency_116.py",
-            "tests/test_reviews_b_17.py",
-            "tests/test_seed_defaults.py",
-            "tests/test_shift_concurrency.py",
-            "tests/test_sync_locks.py",
+        }
+    ),
+    "regular-lab": frozenset(
+        {
+            "tests/test_lab_api_114.py",
+            "tests/test_lab_concurrency_114.py",
+            "tests/test_lab_counts_114.py",
+            "tests/test_lab_history_114.py",
+            "tests/test_lab_policy_114.py",
+            "tests/test_lab_reception_114.py",
+            "tests/test_lab_recounts_114.py",
+            "tests/test_lab_recounts_b_19.py",
         }
     ),
 }
@@ -41,7 +46,7 @@ PARTITION_NAMES = ("regular", *MODULE_PARTITIONS)
 MIGRATION_MODULES = frozenset(
     module
     for name, modules in MODULE_PARTITIONS.items()
-    if name != INTEGRATION_PARTITION
+    if name not in ORDINARY_PARTITIONS
     for module in modules
 )
 
@@ -59,13 +64,13 @@ def partition_nodes(nodes: list[str]) -> dict[str, list[str]]:
     migration_modules = {
         module
         for name, cohort in MODULE_PARTITIONS.items()
-        if name != INTEGRATION_PARTITION
+        if name not in ORDINARY_PARTITIONS
         for module in cohort
     }
     require(
-        INTEGRATION_PARTITION in MODULE_PARTITIONS
+        MODULE_PARTITIONS.keys() >= ORDINARY_PARTITIONS
         and all(
-            cohort and (name == INTEGRATION_PARTITION or len(cohort) == 1)
+            cohort and (name in ORDINARY_PARTITIONS or len(cohort) == 1)
             for name, cohort in MODULE_PARTITIONS.items()
         )
         and len(modules) == len(set(modules))
