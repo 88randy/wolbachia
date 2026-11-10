@@ -45,7 +45,15 @@ describe("area routes", () => {
   test.each(
     AREAS.filter(
       ({ id }) =>
-        !["quadrants", "settings", "inventory", "incidents", "operations", "lab"].includes(id),
+        ![
+          "quadrants",
+          "settings",
+          "inventory",
+          "incidents",
+          "operations",
+          "people",
+          "lab",
+        ].includes(id),
     ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });

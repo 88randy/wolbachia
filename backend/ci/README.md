@@ -177,3 +177,17 @@ all eight ordinary modules and rejects a missing release owner. No matrix job,
 service, timeout, assertion, retry or skip changes; twelve fresh same-attempt
 fragments and the combined 85% coverage threshold remain mandatory. Measure actual
 changed-head job times and the existing 180-second headroom target in CI.
+
+Run 42745079885 passed the executed tests, but `migrations-material` job129595116293
+was cancelled at15m9s before sealing its artifact. Its complete transfer migration
+module reported1 passed in874.12s (setup163.38s, call699.80s); the run remains
+unqualified without that fresh sealed fragment. Residual `regular` passed in12m21s,
+leaving159s,21s below the180s target; `regular-integration` passed in7m43s.
+The transfer106 owner now reuses MigrationExecutor's returned ProjectState and
+wraps only the expected failing populated reverse in an atomic transaction,
+asserting that the applied-migration recorder is unchanged. Legacy upgrade, raw
+guards, empty reverse, populated refusal and final migration-plan restoration
+remain intact, following the existing review113 pattern. Whole-module ownership,
+all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
+PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
+improvement is predicted.
