@@ -78,6 +78,10 @@ svg {
   flex-shrink: 0;
 }
 /* Existing native dialog logic is unchanged; this shared surface also covers future dialogs. */
+/* Tailwind preflight resets every margin; native dialogs keep the browser centering. */
+dialog {
+  margin: auto;
+}
 dialog[open] {
   max-height: calc(100dvh - var(--space-6));
   overflow: auto;

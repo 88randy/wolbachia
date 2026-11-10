@@ -57,3 +57,16 @@ Issue #218 adds `Switch` (native keyboard behavior, visible label and announced 
 and `DialogFooter` (equal-width Cancel/Save tracks, right aligned; stacked only at the shared compact breakpoint).
 Use the footer in create, scope, reauthentication, void and irreversible confirmation dialogs.
 The shell now mounts the existing ToastProvider so reversible actions can expose guarded Undo.
+
+## Design foundation (2026-11-10)
+
+- Styling: Tailwind CSS 4 + shadcn/ui (`web/src/components/ui`, CLI 4.23.0) mapped to `packages/tokens` in
+  `web/src/styles/tailwind.css` (`bg-action`, `text-ink-2`, `bg-success-bg`, `border-line`, `shadow-card`...).
+  CSS modules are unlayered and win over Tailwind utilities; when mixing both on one element use `utility!`.
+- Shared controls: `ui/SelectMenu` (the one dropdown; `forms/Select` and the table filters use it),
+  native checkboxes/radios/selects get the same look from `styles/global.css`, `ui/StateFrame` for empty/error states.
+- Page templates in `web/src/components/templates`: `ListPage`, `DetailPage`, `WizardPage` ("Paso X de N"),
+  `HomeDashboard` (pending-action cards), plus `HubPage`/`HubGrid`/`HubCard` for area homes and `PageHeader`.
+- Routes: each area owns `web/src/<area>/routes.tsx` exporting `<area>Routes`, parented on `authenticatedRoute`
+  (`router/base-routes.tsx`); `router/area-routes.ts` lists the modules once. `hidden: true` in `router/areas.ts`
+  keeps an area without screens out of the sidebar and Home.

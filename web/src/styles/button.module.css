@@ -2,7 +2,7 @@
   position: relative;
   min-width: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   display: inline-flex;
   align-items: center;
   justify-content: center;

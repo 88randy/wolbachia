@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 export const buttonVariants = cva(
   [
     "relative inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-transparent",
-    "px-4 text-[13px] leading-5 font-semibold whitespace-normal no-underline [overflow-wrap:anywhere]",
+    "px-4 text-[13px] leading-5 font-semibold whitespace-normal no-underline [overflow-wrap:break-word]",
     "transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out select-none",
     "active:not-disabled:not-aria-disabled:translate-y-px",
     "disabled:cursor-not-allowed disabled:bg-[var(--color-disabled-background)] disabled:text-ink-2 disabled:shadow-none",
