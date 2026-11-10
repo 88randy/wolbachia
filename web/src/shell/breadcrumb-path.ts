@@ -19,7 +19,6 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   bags: "labReception.page.title",
   "permit-types": "permits.types.title",
   permits: "permits.list.title",
-  records: "releases.records.title",
   devices: "releases.devices.title",
   trainings: "trainings.workspace.title",
   evaluations: "evaluations.page.title",

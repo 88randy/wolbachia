@@ -2,6 +2,8 @@
 import type { community as source } from "../es-MX/community.ts";
 
 export const community: Record<keyof typeof source, string> = {
+  "community.filter.dateFrom": "From",
+  "community.filter.dateTo": "To",
   "community.title": "Community",
   "community.caption": "Community activities",
   "community.create": "New activity",

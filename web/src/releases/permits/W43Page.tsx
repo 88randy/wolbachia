@@ -27,11 +27,11 @@ export function W43Page() {
     </Button>
   );
   return (
-    <ListPage title={t("permits.types.title")} actions={screen.isFirstUse ? undefined : create}>
+    <ListPage title={t("permits.types.title")}>
       {screen.isFirstUse ? (
         <EmptyState kind="noData" message={t("permits.types.emptyHint")} action={create} />
       ) : (
-        <PermitTypesTable screen={screen} />
+        <PermitTypesTable screen={screen} actions={create} />
       )}
       {dialog.isOpen && <PermitTypeDialog onClose={dialog.close} onCreated={dialog.close} />}
     </ListPage>

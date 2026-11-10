@@ -1,6 +1,7 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient, Schemas } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
+import { CENTER_LOOKUP, QUADRANT_LOOKUP } from "../lookups/lookup-sources";
 import { toFilterParams } from "../data-table/table-state";
 import type { TableQueryConfig, TableState } from "../data-table/table-types";
 import { invalidateOrgScoped, orgScopedQueryOptions } from "../session/org-scoped-query";
@@ -22,7 +23,40 @@ export const COMMUNITY_TABLE: TableQueryConfig = {
   defaultOrdering: "-activity_date",
   sortableIds: ["activity_date", "attendance"],
   supportsVoided: true,
-  filters: [],
+  filters: [
+    {
+      kind: "text",
+      key: "date_from",
+      labelKey: "community.filter.dateFrom",
+      maxLength: 10,
+      input: "date-from",
+      dateFormat: "date",
+    },
+    {
+      kind: "text",
+      key: "date_before",
+      labelKey: "community.filter.dateTo",
+      maxLength: 10,
+      input: "date-to",
+      dateFormat: "date",
+    },
+    {
+      kind: "text",
+      key: "center",
+      labelKey: "releases.filter.center",
+      maxLength: 36,
+      input: "lookup",
+      lookup: CENTER_LOOKUP,
+    },
+    {
+      kind: "text",
+      key: "quadrant",
+      labelKey: "releases.filter.quadrant",
+      maxLength: 36,
+      input: "lookup",
+      lookup: QUADRANT_LOOKUP,
+    },
+  ],
 };
 
 export function activitiesOptions(client: ApiClient, identity: SessionIdentity, state: TableState) {

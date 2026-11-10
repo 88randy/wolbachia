@@ -18,8 +18,8 @@ export function W52Page() {
   const canCreate = useCan()(COMMUNITY_CREATE);
   const [voiding, setVoiding] = useState<CommunityActivity>();
   return (
-    <ListPage title={t("community.title")} actions={<NewActivityDialog canCreate={canCreate} />}>
-      <ActivitiesTable onVoid={setVoiding} />
+    <ListPage title={t("community.title")}>
+      <ActivitiesTable onVoid={setVoiding} actions={<NewActivityDialog canCreate={canCreate} />} />
       {voiding !== undefined && (
         <ActivityVoidDialog
           activity={voiding}

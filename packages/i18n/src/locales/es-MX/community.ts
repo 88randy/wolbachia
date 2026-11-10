@@ -2,6 +2,8 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const community = {
+  "community.filter.dateFrom": "Desde",
+  "community.filter.dateTo": "Hasta",
   "community.title": "Comunidad",
   "community.caption": "Actividades con la comunidad",
   "community.create": "Nueva actividad",

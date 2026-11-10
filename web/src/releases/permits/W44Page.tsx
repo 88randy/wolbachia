@@ -32,8 +32,8 @@ export function W44Page() {
     </>
   );
   return (
-    <ListPage title={t("permits.list.title")} actions={actions}>
-      <PermitsTable controller={controller} query={query} />
+    <ListPage title={t("permits.list.title")}>
+      <PermitsTable controller={controller} query={query} actions={actions} />
       {dialog.isOpen && <PermitDialog onClose={dialog.close} onSaved={dialog.close} />}
     </ListPage>
   );

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
@@ -24,7 +25,12 @@ import { useActivityColumns } from "./use-activity-columns";
 const getActivityId = (row: CommunityActivity): string => row.id;
 
 /** Totals, filter bar and the server-paged table of activities, with a Void row action. */
-export function ActivitiesTable({ onVoid }: { onVoid: (row: CommunityActivity) => void }) {
+interface Props {
+  onVoid: (row: CommunityActivity) => void;
+  actions: ReactNode;
+}
+
+export function ActivitiesTable({ onVoid, actions }: Props) {
   const { t } = useTranslation();
   const canVoid = useCan()(COMMUNITY_VOID);
   const controller = useTableUrlState(COMMUNITY_TABLE);
@@ -35,7 +41,7 @@ export function ActivitiesTable({ onVoid }: { onVoid: (row: CommunityActivity) =
   return (
     <>
       <ActivityTotals totals={query.data?.totals} />
-      <FilterBar controller={controller} />
+      <FilterBar controller={controller} actions={actions} />
       <DataTable
         caption={t("community.caption")}
         columns={useActivityColumns()}

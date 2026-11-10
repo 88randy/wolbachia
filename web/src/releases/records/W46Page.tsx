@@ -7,6 +7,7 @@ import { FilterBar } from "../../data-table/FilterBar";
 import { pageTableData } from "../../data-table/table-data";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
 import { useSessionIdentity } from "../../session/use-session-identity";
+import { ReleasesInReview } from "./ReleasesInReview";
 import { ReleasesActions } from "./ReleasesActions";
 import { RELEASES_PAGE_SIZE, RELEASES_TABLE, releasesOptions } from "./releases-query";
 import type { Release } from "./releases-query";
@@ -23,8 +24,9 @@ export function W46Page() {
   const controller = useTableUrlState(RELEASES_TABLE);
   const query = useQuery(releasesOptions(useApiClient(), useSessionIdentity(), controller.state));
   return (
-    <ListPage title={t("releases.records.title")} actions={<ReleasesActions />}>
-      <FilterBar controller={controller} />
+    <ListPage title={t("releases.records.title")}>
+      <ReleasesInReview />
+      <FilterBar controller={controller} actions={<ReleasesActions />} />
       <DataTable
         caption={t("releases.records.caption")}
         columns={useReleaseColumns()}
