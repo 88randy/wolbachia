@@ -219,4 +219,22 @@ export default defineConfig([
       "i18next/no-literal-string": ["error", { mode: "jsx-text-only" }],
     },
   },
+
+  // shadcn/ui components are vendored from the registry (CLI 4.23.0): keep them close to upstream.
+  // They are presentational only; user copy still comes in through props from packages/i18n.
+  {
+    files: ["web/src/components/ui/**"],
+    rules: {
+      "max-lines-per-function": "off",
+      "react/prop-types": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "jsx-a11y/heading-has-content": "off",
+      "jsx-a11y/anchor-has-content": "off",
+    },
+  },
 ]);
