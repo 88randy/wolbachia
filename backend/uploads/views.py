@@ -17,7 +17,7 @@ from core.authentication import ApiSessionAuthentication
 from core.exceptions import FieldValidationError
 from core.views import OrgScopedViewSetMixin
 from uploads.access import actor_from_request
-from uploads.limits import FIELD_UPLOAD
+from uploads.limits import FIELD_UPLOAD, PDF_CONTENT_TYPE
 from uploads.models import Upload
 from uploads.serializers import (
     EvidenceUploadRequestSerializer,
@@ -98,7 +98,11 @@ class UploadViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         )
 
     @extend_schema(
-        request={"image/jpeg": OpenApiTypes.BINARY, "image/png": OpenApiTypes.BINARY},
+        request={
+            "image/jpeg": OpenApiTypes.BINARY,
+            "image/png": OpenApiTypes.BINARY,
+            "application/pdf": OpenApiTypes.BINARY,
+        },
         parameters=[
             OpenApiParameter(LEASE_HEADER, OpenApiTypes.STR, OpenApiParameter.HEADER, required=True)
         ],
@@ -131,6 +135,7 @@ class AttachmentViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         responses={
             (200, "image/jpeg"): OpenApiTypes.BINARY,
             (200, "image/png"): OpenApiTypes.BINARY,
+            (200, "application/pdf"): OpenApiTypes.BINARY,
         }
     )
     @action(detail=True, methods=["get"])
@@ -140,5 +145,7 @@ class AttachmentViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         response["Cache-Control"] = "private, no-store"
         response["Pragma"] = "no-cache"
         response["X-Content-Type-Options"] = "nosniff"
-        response["Content-Disposition"] = "inline"
+        # PDFs may carry active content: never render them inline.
+        disposition = "attachment" if content_type == PDF_CONTENT_TYPE else "inline"
+        response["Content-Disposition"] = disposition
         return response

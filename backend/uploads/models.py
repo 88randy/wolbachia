@@ -1,12 +1,14 @@
 """Append-only transport, immutable byte receipts and one authorized evidence parent."""
 
 import uuid
+from typing import Any
 
 from django.conf import settings
 from django.db import models
 
+from core.exceptions import FieldValidationError
 from core.models import ImmutableMixin, OrgScopedModel
-from uploads.limits import CONTENT_TYPES, MAX_UPLOAD_BYTES
+from uploads.limits import CONTENT_TYPES, MAX_UPLOAD_BYTES, PDF_CONTENT_TYPE
 
 
 class EvidenceRecord(ImmutableMixin, OrgScopedModel):
@@ -107,6 +109,12 @@ class AttachmentLink(EvidenceRecord):
     material_request = models.ForeignKey(
         "lab.MaterialRequest", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+
+    def save(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        # PDFs are official documents (unbound, consumed by permits), never parent evidence.
+        if self._state.adding and self.upload.content_type == PDF_CONTENT_TYPE:
+            raise FieldValidationError("file", "upload_type_not_allowed")
+        super().save(*args, **kwargs)
 
     class Meta(EvidenceRecord.Meta):
         constraints = [

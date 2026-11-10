@@ -198,6 +198,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
 | `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | A consumed refresh token presented again inside this window (and before any later token was used) is accepted once more; otherwise the session is revoked |
 | `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin revoke that allows it; `0` disables it [PENDING client] |
+| `UPLOAD_MAX_BYTES` | `10485760` | Per-file limit for `uploads` (10 MiB); a higher value is capped at the 10 MiB SQL ceiling (#350) |
 | `AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR` | `3` | Reset emails sent to one address per hour (anyone who knows the address can use the quota: trade-off in decision 58) |
 | `DRF_NUM_PROXIES` | `0` (**required in prod**) | Trusted reverse proxies in front of the API |
 | `AUTH_LOGIN_MAX_FAILURES` / `AUTH_LOGIN_LOCKOUT_MINUTES` | `5` / `15` | Lockout of a username + address pair [PENDING client] |

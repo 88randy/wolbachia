@@ -5,7 +5,7 @@ from typing import Any
 from rest_framework import serializers
 
 from ovitraps.payloads import StrictPayloadSerializer
-from uploads.limits import CONTENT_TYPES, MAX_UPLOAD_BYTES
+from uploads.limits import CONTENT_TYPES, max_upload_bytes
 
 
 class AttachmentTargetSerializer(StrictPayloadSerializer):
@@ -27,12 +27,22 @@ class AttachmentTargetSerializer(StrictPayloadSerializer):
 
 
 class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
-    content_type = serializers.ChoiceField(choices=CONTENT_TYPES)
-    size_bytes = serializers.IntegerField(min_value=1, max_value=MAX_UPLOAD_BYTES)
+    content_type = serializers.CharField()
+    size_bytes = serializers.IntegerField(min_value=1)
     sha256 = serializers.RegexField(r"^[0-9a-fA-F]{64}$")
     client_id = serializers.UUIDField(required=False)
     # DRF removes declared fields from the class; this is not its internal context property.
     context = AttachmentTargetSerializer(required=False)  # type: ignore[assignment]
+
+    def validate_content_type(self, value: str) -> str:
+        if value not in CONTENT_TYPES:
+            raise serializers.ValidationError("Type not allowed.", code="upload_type_not_allowed")
+        return value
+
+    def validate_size_bytes(self, value: int) -> int:
+        if value > max_upload_bytes():
+            raise serializers.ValidationError("File too large.", code="upload_too_large")
+        return value
 
     def validate_sha256(self, value: str) -> str:
         return value.lower()

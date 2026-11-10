@@ -244,9 +244,7 @@ be `application/pdf`, `image/jpeg` or `image/png` (scans); any other type is rej
 permit version: reuse is 409 `permit_document_already_bound` (unique constraint as
 backstop). **[ASSUMPTION]** the authorized reviewer attests that this verified document
 is an official signed/reviewed permit and that its polygon matches it. **[DECISION #343]**
-PDF, JPEG and PNG are all accepted because the generic `uploads` app only accepts images
-today (real PDF support in `uploads` is a separate follow-up; decision 171 already covers
-the review attestation). The verifier does not authenticate a digital
+PDF, JPEG and PNG are all accepted (real PDF support in `uploads`: #350). The verifier does not authenticate a digital
 signature. Release `provenance` exposes regulatory ids only (permit version, type,
 document, lot version, schedule task, transit policy/mode, quantity), never courier,
 certification, reviewer, assignment or receipt ids. Retained

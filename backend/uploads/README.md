@@ -1,5 +1,19 @@
 # Private evidence (B-04 / #102)
 
+## PDF official documents (#350)
+
+`application/pdf` joins JPEG/PNG. A PDF is verified structurally, with no new
+dependency and no parsing or rendering: `%PDF-` magic (else `upload_content_mismatch`,
+also for an image declared type whose bytes are a PDF), a `startxref`/`%%EOF` trailer in
+the last 1 KiB whose offset reaches an `xref` or `N G obj` section (else
+`upload_invalid_pdf`) and no `/Encrypt` in that final section (else
+`upload_pdf_encrypted`). Bytes are stored unchanged (no sanitizer; width/height are 0)
+and downloaded as `Content-Disposition: attachment` with `nosniff`; images stay inline.
+Active content (JavaScript) is therefore stored but never rendered by the API. The
+check is a heuristic gate, not malware scanning. `/Encrypt` is searched in the whole file with `#xx` name escapes decoded, and `startxref` must land on an `xref` table or a `/Type /XRef` object. A PDF is never parent evidence: `AttachmentLink` creation, explicit binding and sync linkage refuse or skip it (`upload_type_not_allowed`); only document consumers such as permits use it, unbound. Declared types outside the allowlist
+return `upload_type_not_allowed`; sizes above `UPLOAD_MAX_BYTES` (default 10 MiB, capped
+by the SQL ceiling) return `upload_too_large`.
+
 ## Third-party material delivery (#118)
 
 `material_request` is an additional concrete AttachmentLink parent. Notification

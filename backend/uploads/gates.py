@@ -12,6 +12,7 @@ from fleet.exceptions import FleetConflictError
 from ovitraps.codes import EVIDENCE_REQUIRED
 from shifts.models import MotorcycleBlockEvent
 from uploads.access import UploadActor, require_upload_permission
+from uploads.limits import PDF_CONTENT_TYPE
 from uploads.models import AttachmentLink, Upload, UploadVerification
 from uploads.targets import has_event_upload_scope
 
@@ -66,6 +67,8 @@ def require_event_evidence(ctx: EventContext, references: list[str]) -> None:
 
 
 def _ready_for_event(upload: Upload, event_id: UUID) -> bool:
+    if upload.content_type == PDF_CONTENT_TYPE:
+        return False
     if not UploadVerification.objects.filter(upload=upload).exists():
         return False
     link = AttachmentLink.objects.filter(upload=upload).first()

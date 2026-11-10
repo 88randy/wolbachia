@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from field_sync.models import FieldEvent
 from uploads.access import UploadActor, require_upload_permission
+from uploads.limits import PDF_CONTENT_TYPE
 from uploads.models import AttachmentLink, Upload
 from uploads.targets import AttachmentTarget, authorize_target, declared_upload_ids
 
@@ -41,6 +42,8 @@ def record_event_links(event: FieldEvent) -> None:
 
 
 def _link_declared(actor: UploadActor, upload: Upload, event_id: UUID) -> bool:
+    if upload.content_type == PDF_CONTENT_TYPE:
+        return False  # official documents are never field evidence; the declaration stays unlinked
     try:
         parent = authorize_target(actor, AttachmentTarget("field_event", event_id), upload)
     except (Http404, PermissionDenied):

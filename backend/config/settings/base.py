@@ -91,6 +91,8 @@ USE_TZ = True
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 UPLOADS_PRIVATE_ROOT = BASE_DIR / "private_uploads"
+# Per-file upload limit; values above the 10 MiB SQL ceiling in uploads.limits are capped.
+UPLOAD_MAX_BYTES = env.int("UPLOAD_MAX_BYTES", default=10 * 1024 * 1024)
 
 # Cookies: the web uses the Django session cookie + CSRF token (decision 9).
 SESSION_COOKIE_HTTPONLY = True

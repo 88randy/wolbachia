@@ -89,6 +89,10 @@ paths:
               schema:
                 type: string
                 format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -4032,6 +4036,10 @@ paths:
               type: string
               format: binary
           image/png:
+            schema:
+              type: string
+              format: binary
+          application/pdf:
             schema:
               type: string
               format: binary
@@ -18270,14 +18278,6 @@ components:
       - device_time
       - humidity_pct
       - temperature_c
-    ContentTypeEnum:
-      enum:
-      - image/jpeg
-      - image/png
-      type: string
-      description: |-
-        * `image/jpeg` - image/jpeg
-        * `image/png` - image/png
     CorrectionOutcome:
       type: object
       properties:
@@ -19489,10 +19489,10 @@ components:
       type: object
       properties:
         content_type:
-          $ref: '#/components/schemas/ContentTypeEnum'
+          type: string
+          minLength: 1
         size_bytes:
           type: integer
-          maximum: 10485760
           minimum: 1
         sha256:
           type: string
