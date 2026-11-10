@@ -16,5 +16,10 @@ export function chartReadings(rows: readonly Schemas["Condition"][], metric: Con
       );
     })
     .slice()
-    .sort((left, right) => left.device_time.localeCompare(right.device_time));
+    .sort(
+      (left, right) =>
+        Date.parse(left.device_time) - Date.parse(right.device_time) ||
+        Date.parse(left.server_received_at) - Date.parse(right.server_received_at) ||
+        left.id.localeCompare(right.id),
+    );
 }

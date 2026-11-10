@@ -7,12 +7,13 @@ import { ProtocolFacts } from "../ProtocolFacts";
 import { ConditionSlots } from "./ConditionSlots";
 import { ConditionBlockers } from "./ConditionBlockers";
 import styles from "../inventory.module.css";
+import conditionStyles from "./conditions.module.css";
 
 export function ConditionSummary({ status }: { status: Schemas["ConditionStatus"] }) {
   const { t } = useTranslation();
   return (
     <Card title={t("conditions.section.today")}>
-      <div className={styles.notes}>
+      <div className={[styles.notes, conditionStyles.summary].join(" ")}>
         <p>
           {status.local_date} · {status.timezone}
         </p>

@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures/test";
 import type { Page } from "@playwright/test";
+import type { Schemas } from "@wolbachia/api-client";
 import { mockApi } from "./fixtures/mock-api";
 import { makeMe } from "../src/test/fake-api";
 import {
@@ -15,6 +16,10 @@ import {
   expectNoHorizontalScroll,
 } from "./fixtures/a11y";
 async function setup(page: Page) {
+  let current = W64_TYPE;
+  let versions: Schemas["IncidentTypeHistory"][] = [
+    { ...W64_TYPE, created_at: "2026-11-01T12:00:00Z", created_by: null },
+  ];
   await mockApi(page, { me: makeMe({ permissions: ["incident.manage_type"] }) });
   await page.route("**/api/v1/incident-types/**", async (route) => {
     const request = route.request();
@@ -31,25 +36,43 @@ async function setup(page: Page) {
       return;
     }
     if (url.pathname.endsWith("versions/")) {
-      await route.fulfill({
-        json: incidentTypePage([
-          { ...W64_TYPE, created_at: "2026-11-01T12:00:00Z", created_by: null },
-        ]),
-      });
+      await route.fulfill({ json: incidentTypePage(versions) });
+      return;
+    }
+    if (request.method() === "PATCH") {
+      const patch = request.postDataJSON() as Schemas["PatchedTypeConfigurationRequest"];
+      expect(patch.expected_revision).toBe(current.revision);
+      current = {
+        ...current,
+        close_evidence_min: patch.close_evidence_min ?? current.close_evidence_min,
+        revision: current.revision + 1,
+        current_version_id: "00000000-0000-4000-8000-000000000003",
+      };
+      versions = [
+        { ...current, created_at: "2026-11-09T12:00:00Z", created_by: null },
+        ...versions,
+      ];
+      await route.fulfill({ json: current });
       return;
     }
     await route.fulfill({
-      json:
-        request.method() === "PATCH" ? { ...W64_TYPE, revision: 3 } : incidentTypePage([W64_TYPE]),
+      json: incidentTypePage([current]),
     });
   });
 }
 async function expandText(page: Page) {
   await page.evaluate(() => {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const root = document.querySelector("main");
+    if (!root) throw new Error("Missing main content");
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      if (node.textContent?.trim() && !node.parentElement?.closest("script,style"))
+      if (
+        node.textContent?.trim() &&
+        !node.parentElement?.closest(
+          "script,style,a,button,label,legend,option,code,time,td,dd,output",
+        )
+      )
         node.textContent += ".".repeat(Math.ceil(node.textContent.length * 0.3));
     }
   });
@@ -58,10 +81,10 @@ for (const language of LANGUAGES) {
   for (const theme of THEMES) {
     test(`W64 keyboard, captured rules, history and phone reflow: ${language}, ${theme}`, async ({
       page,
-    }) => {
+    }, testInfo) => {
       await rememberPreferences(page, theme, language);
       await setup(page);
-      await page.setViewportSize({ width: 320, height: 800 });
+      await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto("/settings/incident-types");
       const row = page.getByRole("button", { name: W64_TYPE.label });
       await row.focus();
@@ -91,7 +114,12 @@ for (const language of LANGUAGES) {
       });
       await history.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByRole("dialog")).toBeVisible();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      const versions = dialog.getByRole("listitem");
+      await expect(versions).toHaveCount(2);
+      await expect(versions.nth(0).locator("dd").filter({ hasText: /^3$/ })).toHaveCount(1);
+      await expect(versions.nth(1).locator("dd").filter({ hasText: /^2$/ })).toHaveCount(1);
       await expectNoAxeViolations(page);
       await page.keyboard.press("Escape");
       await expect(history).toBeFocused();
@@ -101,9 +129,16 @@ for (const language of LANGUAGES) {
       await expect(row).toBeFocused();
       await row.click();
       await expect(terminal).toHaveValue(W64_TYPE.terminal);
+      await expect(evidence).toHaveValue("3");
+      await page.getByRole("main").evaluate((main) => {
+        main.scrollTop = 0;
+      });
+      await page.screenshot({ path: testInfo.outputPath("W64-1280.png"), fullPage: true });
+      await page.setViewportSize({ width: 320, height: 800 });
       await expandText(page);
       await expectNoHorizontalScroll(page);
       await expect(save).toBeVisible();
+      await expectNoAxeViolations(page);
     });
   }
 }

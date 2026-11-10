@@ -17,7 +17,7 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 test.beforeEach(async ({ page }) => {
   await mockApi(page, {
     me: makeMe({
-      permissions: ["review_item.read"],
+      permissions: ["review_item.read", "bag.receive"],
       scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
     }),
   });

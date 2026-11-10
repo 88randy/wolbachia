@@ -22,6 +22,9 @@ units. Historical limit lines replace the design's single constant filled band,
 so changed protocol ranges are represented truthfully with existing shared charts.
 No seven-day completeness is inferred from a page.
 
+Chart order compares actual observation instants, then receipt instants and stable
+ids. Equivalent instants with different UTC offsets never use textual ISO ordering.
+
 Capture requires `condition.create`, connectivity and a fresh accepted status.
 The status frame's `can_create_condition` also checks that action's actual location
 pair; an action code granted at another site never reveals capture controls here.

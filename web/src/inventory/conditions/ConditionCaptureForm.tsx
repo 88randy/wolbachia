@@ -5,6 +5,7 @@ import { InlineNotice } from "../../ui/InlineNotice";
 import { ConditionCaptureFields } from "./ConditionCaptureFields";
 import type { useConditionCapture } from "./use-condition-capture";
 import styles from "../inventory.module.css";
+import conditionStyles from "./conditions.module.css";
 interface Props {
   capture: ReturnType<typeof useConditionCapture>;
   status: Schemas["ConditionStatus"];
@@ -13,13 +14,14 @@ interface Props {
 }
 export function ConditionCaptureForm({ capture, status, ready, online }: Props) {
   const { t } = useTranslation();
+  const className = [styles.form, conditionStyles.captureForm].join(" ");
   const disabled = !online || !ready || capture.state.busy || capture.state.uncertain;
   function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!disabled) void capture.submit(status);
   }
   return (
-    <form className={styles.form} onSubmit={submit}>
+    <form className={className} onSubmit={submit}>
       <p>
         {status.timezone} · {t("conditions.field.timeHint")}
       </p>

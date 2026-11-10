@@ -7,6 +7,14 @@
   margin: 0;
   border: 0;
 }
+.summary p,
+.summary ul,
+.captureForm > p {
+  margin: 0;
+}
+.summary ul {
+  padding-inline-start: var(--space-3);
+}
 .captureFields legend {
   padding: 0;
   margin-bottom: var(--space-2);
