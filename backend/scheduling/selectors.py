@@ -231,6 +231,13 @@ def _task_projection(
     )
 
 
+def tasks_with_completion(
+    tasks: QuerySet[ScheduledTask], organization: Organization
+) -> QuerySet[ScheduledTask]:
+    """Any task window with the `is_completed` projection (same rule as the weekly plan)."""
+    return cast("QuerySet[ScheduledTask]", _task_projection(tasks, organization, date.min))
+
+
 def filtered_tasks(
     membership: Membership, query: dict[str, Any], permission: str = SCHEDULE_READ
 ) -> QuerySet[ScheduledTask]:

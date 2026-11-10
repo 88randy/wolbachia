@@ -47,6 +47,213 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/analytics/entomology/:
+    get:
+      operationId: analytics_entomology_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: granularity
+        schema:
+          enum:
+          - day
+          - week
+          type: string
+          default: week
+          minLength: 1
+        description: |-
+          * `day` - day
+          * `week` - week
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - analytics
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/analytics/operations/:
+    get:
+      operationId: analytics_operations_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: granularity
+        schema:
+          enum:
+          - day
+          - week
+          type: string
+          default: week
+          minLength: 1
+        description: |-
+          * `day` - day
+          * `week` - week
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - analytics
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/analytics/wolbachia-prevalence/:
+    get:
+      operationId: analytics_wolbachia_prevalence_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: granularity
+        schema:
+          enum:
+          - day
+          - week
+          type: string
+          default: week
+          minLength: 1
+        description: |-
+          * `day` - day
+          * `week` - week
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - analytics
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/attachments/{id}/download/:
     get:
       operationId: attachments_download_retrieve
@@ -17721,6 +17928,38 @@ components:
       - rules_version
       - sampling_points
       - supplies
+    Chart:
+      type: object
+      properties:
+        key:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ChartKindEnum'
+        label:
+          $ref: '#/components/schemas/Label'
+        unit:
+          type: string
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/Series'
+        table:
+          $ref: '#/components/schemas/Table'
+      required:
+      - key
+      - kind
+      - label
+      - series
+      - table
+      - unit
+    ChartKindEnum:
+      enum:
+      - bar
+      - line
+      type: string
+      description: |-
+        * `bar` - bar
+        * `line` - line
     CheckResultEnum:
       enum:
       - ok
@@ -17863,6 +18102,16 @@ components:
       - incident_conflict
       type: string
       description: '* `incident_conflict` - incident_conflict'
+    Column:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          $ref: '#/components/schemas/Label'
+      required:
+      - key
+      - label
     CommentRequest:
       type: object
       properties:
@@ -18849,6 +19098,57 @@ components:
       - severity
       - supervisor_sla_seconds
       - terminal_id
+    Dashboard:
+      type: object
+      properties:
+        cutoff:
+          type: string
+          format: date-time
+        filters:
+          $ref: '#/components/schemas/DashboardFilters'
+        indicators:
+          type: array
+          items:
+            $ref: '#/components/schemas/Indicator'
+        charts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chart'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+      required:
+      - charts
+      - cutoff
+      - filters
+      - indicators
+      - notes
+    DashboardFilters:
+      type: object
+      properties:
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        granularity:
+          $ref: '#/components/schemas/GranularityEnum'
+        center:
+          type: string
+          format: uuid
+          nullable: true
+        quadrant:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - center
+      - date_from
+      - date_to
+      - granularity
+      - quadrant
     DecisionEnum:
       enum:
       - keep
@@ -20101,6 +20401,14 @@ components:
       required:
       - lat
       - lng
+    GranularityEnum:
+      enum:
+      - day
+      - week
+      type: string
+      description: |-
+        * `day` - day
+        * `week` - week
     Health:
       type: object
       properties:
@@ -21262,6 +21570,24 @@ components:
       - expected_revision
       - method_version
       - request_id
+      - value
+    Indicator:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          $ref: '#/components/schemas/Label'
+        value:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          type: string
+      required:
+      - key
+      - label
+      - unit
       - value
     InspectionClearanceRead:
       type: object
@@ -22725,6 +23051,17 @@ components:
       - expected_revision
       - reason
       - reason_code
+    Label:
+      type: object
+      properties:
+        code:
+          type: string
+        params:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - params
     LanguagesEnum:
       enum:
       - es-MX
@@ -33037,6 +33374,22 @@ components:
       required:
       - groups
       - q
+    Series:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          $ref: '#/components/schemas/Label'
+        points:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - key
+      - label
+      - points
     ServiceKindEnum:
       enum:
       - routine
@@ -34661,6 +35014,21 @@ components:
       - changes
       - results
       - server_time
+    Table:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - columns
+      - rows
     Task:
       type: object
       properties:

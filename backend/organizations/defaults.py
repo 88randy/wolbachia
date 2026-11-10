@@ -14,6 +14,7 @@ from accounts.permissions import (
     ADMIN_PERSONNEL_PERMISSION_CODES,
     USER_OPERATIONAL_READ,
 )
+from analytics import permissions as analytics_permissions
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -92,6 +93,7 @@ READ_ONLY_CODES = (
 )
 ADMIN_CODES = (
     HOME_READ,
+    *analytics_permissions.ADMIN_CODES,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
@@ -161,6 +163,7 @@ COURIER_CODES = (
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     HOME_READ,
+    *analytics_permissions.SUPERVISOR_CODES,
     USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
@@ -199,6 +202,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
         HOME_READ,
+        *analytics_permissions.ENTOMOLOGIST_CODES,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
         FIELD_UPLOAD,
@@ -218,6 +222,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "admin": ADMIN_CODES,
     "coordinator": (
         HOME_READ,
+        *analytics_permissions.COORDINATOR_CODES,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,

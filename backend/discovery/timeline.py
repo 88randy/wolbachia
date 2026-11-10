@@ -321,16 +321,29 @@ def _shipment_sources(record: UiebShipment, visible: QuerySet[Any]) -> list[RowS
     ]
 
 
-def sources_for(
+def sources_for(  # noqa: PLR0913 -- record, visible rows and the permission probe
     record_type: str,
     record: Any,  # noqa: ANN401 -- the resolved, already authorized record
     visible: QuerySet[Any],
+    can_read: Callable[[str], bool] = lambda _code: False,
 ) -> list[RowSource]:
+    """`can_read` answers whether the caller holds a permission for this record's center/quadrant."""
+    from discovery import timeline_extra
+
     builders: dict[str, Callable[[], list[RowSource]]] = {
         "incident": lambda: _incident_sources(record),
-        "motorcycle": lambda: _motorcycle_sources(record),
-        "quadrant": lambda: _quadrant_sources(record),
-        "sampling_point": lambda: _point_sources(record),
+        "motorcycle": lambda: [
+            *_motorcycle_sources(record),
+            *timeline_extra.motorcycle_extra_sources(record),
+        ],
+        "quadrant": lambda: [
+            *_quadrant_sources(record),
+            *timeline_extra.quadrant_extra_sources(record),
+        ],
+        "sampling_point": lambda: [
+            *_point_sources(record),
+            *timeline_extra.point_extra_sources(record, can_read),
+        ],
         "shipment": lambda: _shipment_sources(record, visible),
     }
     return builders[record_type]()
