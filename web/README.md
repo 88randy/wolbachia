@@ -399,6 +399,14 @@ Server-confirmed keyboard/scanner counting and append-only corrections are at
 `/lab/egg-counts` and `/lab/count-history`. See [the laboratory README](src/lab/README.md)
 for permissions, replay/session ownership, design deviations and API gaps.
 
+## Shift validation W29 (#34)
+
+The operations entry links to the server-paged shift list and the real UUID detail.
+Existing shift.read/shift.validate codes gate reads and whole-shift decisions. Both
+commands require a reason and the reviewed revision; validation history remains
+separate from the open/closed lifecycle. See [operations README](src/operations/README.md)
+for session/command fences, criterion tests, route exception and the unavailable
+summary, GPS/map and per-point W4 API projections. No backend contract is changed.
 ### Incident workspace (W6/W7, #33)
 
 `/incidents` and `/incidents/<code>` consume the generated reported facade,

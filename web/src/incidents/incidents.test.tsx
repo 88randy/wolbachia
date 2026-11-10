@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createFakeApi, makeMe, apiError } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
+import type { Query, QueryClient } from "@tanstack/react-query";
 beforeEach(() => {
   window.sessionStorage.clear();
 });
@@ -43,6 +44,25 @@ async function open(path = "/incidents", overrides: FakeApiRoutes = {}, allowed 
   });
   const app = await renderApp({ path, fetch: api.fetch });
   return { api, app };
+}
+function acceptIncidentRetry(client: QueryClient) {
+  return new Promise<void>((resolve, reject) => {
+    const unsubscribe = client.getQueryCache().subscribe(({ query }: { query: Query }) => {
+      if (
+        !query.isActive() ||
+        query.queryKey[3] !== "incidents" ||
+        query.queryKey[4] !== "detail" ||
+        query.queryKey[5] !== "I-0033" ||
+        query.state.fetchStatus !== "idle"
+      )
+        return;
+      if (query.state.status === "pending") return;
+      unsubscribe();
+      if (query.state.status === "error")
+        reject(new Error("Incident retry read failed", { cause: query.state.error }));
+      else resolve();
+    });
+  });
 }
 describe("W6 incident tray", () => {
   test("loads with a skeleton and keeps available rows when one count fails", async () => {
@@ -181,10 +201,29 @@ describe("W7 incident detail", () => {
     expect(
       view.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
     ).toBe("true");
-    api.setRoute(DETAIL, Response.json(incident()));
-    await userEvent.click(
-      within(view.getByRole("alert")).getByRole("button", { name: "Reintentar" }),
-    );
+    let markRequested: () => void = () => undefined;
+    let releaseRetry: (reply: Response) => void = () => undefined;
+    const requested = new Promise<void>((resolve) => {
+      markRequested = resolve;
+    });
+    const reply = new Promise<Response>((resolve) => {
+      releaseRetry = resolve;
+    });
+    api.setRoute(DETAIL, () => {
+      markRequested();
+      return reply;
+    });
+    await act(async () => {
+      await userEvent.click(
+        within(view.getByRole("alert")).getByRole("button", { name: "Reintentar" }),
+      );
+      await requested;
+    });
+    const accepted = acceptIncidentRetry(app.queryClient);
+    await act(async () => {
+      releaseRetry(Response.json(incident()));
+      await accepted;
+    });
     await waitFor(() => {
       expect(view.queryByRole("alert")).toBeNull();
     });

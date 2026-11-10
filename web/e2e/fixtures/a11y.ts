@@ -25,6 +25,17 @@ export async function rememberPreferences(
 
 /** axe against WCAG 2.0, 2.1 and 2.2 level A and AA. */
 export async function expectNoAxeViolations(page: Page): Promise<void> {
+  // Sample final rendered colors, not intermediate dialog/backdrop opacity.
+  // Infinite skeleton/spinner motion must not prevent an accessibility audit.
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== "running" ||
+          animation.effect?.getComputedTiming().iterations === Infinity,
+      ),
+  );
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations).toEqual([]);
 }

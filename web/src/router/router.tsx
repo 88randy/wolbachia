@@ -1,9 +1,11 @@
 import { LabHome } from "../lab/LabHome";
 import { W35Page } from "../lab/W35Page";
 import { W35HistoryPage } from "../lab/W35HistoryPage";
+import { OperationsHome } from "../operations/OperationsHome";
+import { ShiftsPage } from "../operations/ShiftsPage";
+import { W29Page } from "../operations/W29Page";
 import { W6Page } from "../incidents/W6Page";
 import { W7Page } from "../incidents/W7Page";
-import { OperationsHome } from "../operations/OperationsHome";
 import { W30Page } from "../operations/reviews/W30Page";
 import { W31Page } from "../operations/relocations/W31Page";
 import { W33Page } from "../operations/closure/W33Page";
@@ -116,12 +118,12 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "incidents"
-        ? W6Page
-        : area.id === "settings"
-          ? SettingsPage
-          : area.id === "operations"
-            ? OperationsHome
+      area.id === "operations"
+        ? OperationsHome
+        : area.id === "incidents"
+          ? W6Page
+          : area.id === "settings"
+            ? SettingsPage
             : area.id === "fleet"
               ? FleetHome
               : area.id === "quadrants"
@@ -359,6 +361,25 @@ const eggCountHistoryRoute = createRoute({
   component: W35HistoryPage,
   errorComponent: AreaErrorState,
 });
+const shiftsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/shifts",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("operations", context.me, "shift.read");
+  },
+  component: ShiftsPage,
+  errorComponent: AreaErrorState,
+});
+const shiftRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/shifts/$id",
+  beforeLoad: ({ context }) => {
+    requirePermission("operations", context.me, "shift.read");
+  },
+  component: W29Page,
+  errorComponent: AreaErrorState,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -370,6 +391,8 @@ const routeTree = rootRoute.addChildren([
     inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
     eggCountsRoute,
     eggCountHistoryRoute,
+    shiftsRoute,
+    shiftRoute,
     quadrantVersionsRoute,
     incidentRoute,
     reviewsRoute,
