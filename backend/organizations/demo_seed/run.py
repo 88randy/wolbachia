@@ -16,6 +16,7 @@ from organizations.demo_seed import (
     operations,
     people,
     releases,
+    samples_history,
     training,
 )
 from organizations.models import Center, Membership, Organization
@@ -66,6 +67,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     operations.ensure_schedule(organization, admin)
     ovitraps = field.ensure_ovitraps(organization, members["demo-courier-1"].user)
     _seed_stock_and_releases(organization, members, quadrants)
+    samples_history.ensure_samples(organization, members, device, catalog)
     incidents_history.ensure_incidents(organization, members, quadrants)
     lab_history.ensure_lab_history(
         organization, UploadActor(members["demo-entomologist"].user, organization)
@@ -81,12 +83,20 @@ def _seed_stock_and_releases(
     stock = inventory.ensure_stock(actor, home, members["demo-warehouse"])
     inventory.ensure_transit_policies(actor)
     inventory.ensure_courier_plan(actor, members["demo-courier-1"], stock)
+    for name in people.COURIER_USERNAMES[1:]:
+        inventory.ensure_courier_plan(actor, members[name], stock, biological=False)
     permit = releases.ensure_permit(organization, actor, home)
-    for number in range(2, 5):
-        code = f"PERMIT-DEMO-{number:02d}"
-        releases.ensure_permit(organization, actor, quadrants[f"Q-DEMO-{number:02d}"], code)
+    for number in range(2, 7):
+        code = f"PERMIT-MER-{number:02d}"
+        releases.ensure_permit(organization, actor, quadrants[f"Q-MER-{number:02d}"], code)
     training.ensure_release_points(actor, range(2, 7))
-    releases.ensure_release_device(organization, actor, stock.lots["S-DEMO-WOLB"])
+    for number in range(2, 7):
+        lot = inventory.ensure_quadrant_lot(
+            actor, quadrants[f"Q-MER-{number:02d}"], members["demo-warehouse"], number
+        )
+        code = f"RD-MER-{number:02d}"
+        releases.ensure_release_device(organization, actor, lot, code)
+    releases.ensure_release_device(organization, actor, stock.lots["S-MER-WOLB"])
     couriers = [members[name] for name in people.COURIER_USERNAMES]
     training.ensure_certifications(actor, home, couriers)
     training.ensure_release_task(actor, permit, couriers[0])
