@@ -13,6 +13,8 @@ export class IdleLock {
   #cancelWarning: (() => void) | null = null;
   #cancelLock: (() => void) | null = null;
   #minutes: number | null = null;
+  #leftAt: number | null = null;
+  #cancelGrace: (() => void) | null = null;
   constructor(deps: IdleLockDeps) {
     this.#deps = deps;
   }
@@ -36,6 +38,27 @@ export class IdleLock {
     }, this.#minutes * MINUTE_MS);
   }
 
+  /**
+   * The app left the foreground (camera, permission dialog, Settings, home button).
+   * It locks only if it stays away longer than the grace period; the idle timer keeps running.
+   */
+  leaveForeground(nowMs: number, graceMs: number): void {
+    if (this.#leftAt !== null) return;
+    this.#leftAt = nowMs;
+    this.#cancelGrace = this.#deps.schedule(() => {
+      this.#leftAt = null;
+      this.#cancelGrace = null;
+      this.background();
+    }, graceMs);
+  }
+  /** Back in the foreground: lock only when the wall-clock time away exceeded the grace period. */
+  returnToForeground(nowMs: number, graceMs: number): void {
+    const leftAt = this.#leftAt;
+    this.#cancelGrace?.();
+    this.#cancelGrace = null;
+    this.#leftAt = null;
+    if (leftAt !== null && nowMs - leftAt >= graceMs) this.background();
+  }
   background(): void {
     this.stop();
     this.#deps.lock();

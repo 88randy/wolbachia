@@ -61,19 +61,15 @@ const VARIANTS: Readonly<Record<TextVariant, VariantSpec>> = {
   overline: {
     size: "caption",
     weight: "semibold",
-    mono: "semibold",
     lineHeight: 1.4,
-    uppercase: true,
   },
-  code: { size: "body", weight: "regular", mono: "regular", lineHeight: 1.5 },
+  code: { size: "body", weight: "semibold", lineHeight: 1.5 },
   status: {
     size: "caption",
     weight: "semibold",
-    mono: "semibold",
     lineHeight: 1.4,
-    uppercase: true,
   },
-  number: { size: "number", weight: "bold", mono: "semibold", lineHeight: 1.3 },
+  number: { size: "number", weight: "bold", lineHeight: 1.3 },
 };
 
 /**
@@ -83,7 +79,7 @@ const VARIANTS: Readonly<Record<TextVariant, VariantSpec>> = {
  */
 export function textStyleFor(
   variant: TextVariant,
-  isMonospace = false,
+  _isMonospace = false,
   textScale = 1,
 ): TextStyleSpec {
   const spec = VARIANTS[variant];
@@ -91,10 +87,8 @@ export function textStyleFor(
   return {
     fontSize,
     lineHeight: Math.round(fontSize * spec.lineHeight),
-    fontFamily:
-      spec.mono === undefined && !isMonospace
-        ? FONT_FAMILY[spec.weight]
-        : MONO_FONT_FAMILY[spec.mono ?? "regular"],
+    // One family everywhere (owner request): no monospace fallback, tabular figures keep columns aligned.
+    fontFamily: FONT_FAMILY[spec.weight],
     ...(spec.uppercase === true
       ? { letterSpacing: fontSize * OVERLINE_TRACKING_EM, textTransform: "uppercase" as const }
       : {}),

@@ -64,7 +64,10 @@ function useShiftSnapshot(buffer: DraftBuffer, setError: (key: MessageKey | null
   const refresh = useCallback(
     () =>
       reader.refresh(shiftOpen, (saved) => {
-        setState(saved);
+        // Same content: keep the previous object so nothing re-renders or blinks.
+        setState((current) =>
+          current !== null && JSON.stringify(current) === JSON.stringify(saved) ? current : saved,
+        );
         setError(null);
       }),
     [reader, shiftOpen, setError],
