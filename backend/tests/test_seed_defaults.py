@@ -270,6 +270,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         rule_codes.RULE_PARAMETER_READ,
         "organization.read",
         "center.read",
+        "notification.read",
+        "notification_preference.update",
     }
     assert by_slug["courier"] == {
         "community_activity.read",
@@ -390,6 +392,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "notification.read",
+        "notification_preference.update",
         "training.read",
         "training.manage",
         "evaluation.create",
@@ -513,6 +517,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
         "incident.create",
         "incident.read",
         "motorcycle.read",
+        "notification.read",
+        "notification_preference.update",
         "organization.read",
         "rule_parameter.read",
         "supply_assignment.receive",
@@ -541,6 +547,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
         "incident.create",
         "incident.read",
         "motorcycle.read",
+        "notification.read",
+        "notification_preference.update",
         "organization.read",
         "rule_parameter.read",
         "supply_assignment.receive",
@@ -586,6 +594,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
             "rule_parameter.read",
             "organization.read",
             "center.read",
+            "notification.read",
+            "notification_preference.update",
             FIELD_EVENT_SYNC,
             FIELD_BOOTSTRAP,
             MOTORCYCLE_READ,

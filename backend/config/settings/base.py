@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "lab.apps.LabConfig",
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -235,6 +236,13 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "NotificationKindEnum": [
+            ("critical", "Critical"),
+            ("incident", "Incident"),
+            ("training", "Training"),
+            ("system", "System"),
+        ],
+        "NotificationObjectKindEnum": ["incident", "motorcycle", "review_item"],
         "OutcomeEnum": ["recovered_later", "written_off"],
         "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],
         "ResourceTypeEnum": ["quadrant", "block"],

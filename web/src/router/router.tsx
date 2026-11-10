@@ -1,4 +1,5 @@
 import { LabHome } from "../lab/LabHome";
+import { W5Page } from "../notifications/W5Page";
 import { W35Page } from "../lab/W35Page";
 import { W35HistoryPage } from "../lab/W35HistoryPage";
 import { OperationsHome } from "../operations/OperationsHome";
@@ -114,24 +115,28 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
   createRoute({
     getParentRoute: () => authenticatedRoute,
     path: area.path,
-    ...(["quadrants", "incidents"].includes(area.id) ? { validateSearch: tableSearchSchema } : {}),
+    ...(["quadrants", "incidents", "notifications"].includes(area.id)
+      ? { validateSearch: tableSearchSchema }
+      : {}),
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "operations"
-        ? OperationsHome
-        : area.id === "incidents"
-          ? W6Page
-          : area.id === "settings"
-            ? SettingsPage
-            : area.id === "fleet"
-              ? FleetHome
-              : area.id === "quadrants"
-                ? W22Page
-                : area.id === "lab"
-                  ? LabHome
-                  : () => <AreaPlaceholder areaId={area.id} />,
+      area.id === "notifications"
+        ? W5Page
+        : area.id === "operations"
+          ? OperationsHome
+          : area.id === "incidents"
+            ? W6Page
+            : area.id === "settings"
+              ? SettingsPage
+              : area.id === "fleet"
+                ? FleetHome
+                : area.id === "quadrants"
+                  ? W22Page
+                  : area.id === "lab"
+                    ? LabHome
+                    : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );

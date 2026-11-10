@@ -27,6 +27,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
 | `community/` | Aggregate community activities at real Block identities, immutable cross-transport command receipts, complaint links and void-aware scoped totals (B34; see its README) |
 | `people/` | Evidence-backed training/certification, private immutable evaluations, current qualification and durable notice intents (B03; see its README) |
+| `notifications/` | Owner-scoped durable inbox, read receipts and required-channel preferences for W5 (#150; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |
@@ -133,9 +134,9 @@ B10/B04 modules, and nine singleton complete migration-module cohorts. The
 original `checks` job validates all eleven
 current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
-original test assertions and coverage omit policy are unchanged; Community is added
-to the configured statement denominator (17 configured
-apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
+original test assertions and coverage omit policy are unchanged. Notifications is
+included in the configured statement denominator; `shifts` remains outside that
+historical list. See [`ci/README.md`](ci/README.md)
 for exact-attempt conservation, failure handling, timing evidence and compute costs.
 
 ## Settings and environment

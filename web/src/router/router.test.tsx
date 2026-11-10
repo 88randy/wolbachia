@@ -23,6 +23,7 @@ afterEach(() => {
 
 const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
   home: "Inicio",
+  notifications: "Notificaciones",
   incidents: "Incidentes",
   operations: "Supervisión",
   quadrants: "Cuadrantes y muestreo",
@@ -45,7 +46,15 @@ describe("area routes", () => {
   test.each(
     AREAS.filter(
       ({ id }) =>
-        !["quadrants", "settings", "inventory", "incidents", "operations", "lab"].includes(id),
+        ![
+          "quadrants",
+          "settings",
+          "inventory",
+          "incidents",
+          "operations",
+          "lab",
+          "notifications",
+        ].includes(id),
     ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
@@ -70,7 +79,7 @@ describe("area routes", () => {
     const paths = AREAS.map((area) => area.path);
 
     expect(new Set(paths).size).toBe(AREAS.length);
-    expect(AREAS).toHaveLength(13);
+    expect(AREAS).toHaveLength(14);
   });
 
   test.each([

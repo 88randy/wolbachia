@@ -1,30 +1,9 @@
-import { Bell } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import utilities from "../styles/utilities.module.css";
-import styles from "./TopBar.module.css";
+import { NotificationOverlay } from "../notifications/NotificationOverlay";
+import { useNotificationBell } from "../notifications/use-notification-bell";
 
-const NOTIFICATIONS_HINT_ID = "notifications-hint";
-
-/**
- * Place of the notifications panel (W5). Announced as unavailable (aria-disabled) and kept
- * focusable so keyboard users find it; no unread count and no panel until the API exists.
- */
+/** W5 durable badge and panel, restricted by the current settled session scope. */
 export function NotificationsSlot() {
-  const { t } = useTranslation();
-  return (
-    <>
-      <button
-        type="button"
-        className={styles.iconButton}
-        aria-label={t("shell.topBar.notifications")}
-        aria-disabled="true"
-        aria-describedby={NOTIFICATIONS_HINT_ID}
-      >
-        <Bell aria-hidden="true" className={styles.icon} />
-      </button>
-      <span id={NOTIFICATIONS_HINT_ID} className={utilities.srOnly}>
-        {t("shell.topBar.notificationsSoon")}
-      </span>
-    </>
-  );
+  const model = useNotificationBell();
+  if (!model.scope.isAllowed || !model.scope.identity.isSettled) return null;
+  return <NotificationOverlay model={model} />;
 }

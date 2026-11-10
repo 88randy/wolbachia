@@ -67,7 +67,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 # Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
-known-first-party = ["accounts", "catalogs", "ci", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "ovitraps", "organizations", "people", "reviews", "rules", "scheduling", "shifts", "tests", "uploads"]
+known-first-party = ["accounts", "catalogs", "ci", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "notifications", "ovitraps", "organizations", "people", "reviews", "rules", "scheduling", "shifts", "tests", "uploads"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -126,7 +126,7 @@ python_files = ["test_*.py"]
 addopts = "--strict-markers"
 
 [tool.coverage.run]
-source = ["accounts", "catalogs", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "ovitraps", "organizations", "people", "reviews", "rules", "scheduling", "uploads"]
+source = ["accounts", "catalogs", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "notifications", "ovitraps", "organizations", "people", "reviews", "rules", "scheduling", "uploads"]
 omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
 
 [tool.coverage.report]

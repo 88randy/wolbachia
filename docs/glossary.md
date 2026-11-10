@@ -46,6 +46,14 @@ Rules:
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
 
 
+## Notifications (#150)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| notificación | notification | `Notification`, `/notifications/` | Immutable organization- and recipient-owned coded inbox content; no user-facing text. |
+| acuse de lectura | notification read | `NotificationRead`, `read_at` | One immutable receipt per notification; repeated reads preserve the original instant. |
+| preferencia de canal | notification preference | `PreferenceVersion`, `/me/notification-preferences/` | Immutable per-kind in-app/email choices, with required channels enforced by the backend. |
+
 ## Configuration
 
 | Spanish | English name in code | API / field form | Notes |
