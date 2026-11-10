@@ -2,8 +2,8 @@
 import { Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
 import { Button } from "../../ui/Button";
-import { Facts } from "../Facts";
 import { zoneLabel } from "./timezones";
 import type { OrganizationDraft } from "./wizard-draft";
 
@@ -44,7 +44,7 @@ export function StepReview({ draft, onEdit }: ReviewProps) {
   return (
     <div className="flex flex-col gap-4">
       <Section title={t("platform.review.organization")} step={1} onEdit={onEdit}>
-        <Facts
+        <DescriptionGrid
           items={[
             { label: t("platform.field.name"), value: draft.name },
             { label: t("platform.field.slug"), value: draft.slug },
@@ -52,7 +52,7 @@ export function StepReview({ draft, onEdit }: ReviewProps) {
         />
       </Section>
       <Section title={t("platform.review.region")} step={2} onEdit={onEdit}>
-        <Facts
+        <DescriptionGrid
           items={[
             {
               label: t("platform.field.country"),
@@ -89,7 +89,7 @@ export function StepReview({ draft, onEdit }: ReviewProps) {
         </ul>
       </Section>
       <Section title={t("platform.review.admin")} step={4} onEdit={onEdit}>
-        <Facts
+        <DescriptionGrid
           items={[
             { label: t("platform.field.firstName"), value: `${draft.firstName} ${draft.lastName}` },
             { label: t("platform.field.username"), value: draft.username },

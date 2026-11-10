@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { prepareLogo } from "../settings/organization/branding";
 import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
+import { DetailSection } from "../components/templates/DetailSection";
 import { InlineNotice } from "../ui/InlineNotice";
 import type { PlatformOrganizationDetail } from "./platform-queries";
 import { usePlatformAction, usePlatformScope } from "./use-platform";
@@ -77,9 +77,8 @@ export function LogoCard({
     ? t("platform.action.changeLogo")
     : t("platform.action.uploadLogo");
   return (
-    <Card
+    <DetailSection
       title={t("platform.detail.logo")}
-      className={highlight ? "ring-2 ring-action" : undefined}
       actions={
         <Button
           size="sm"
@@ -129,6 +128,6 @@ export function LogoCard({
           <InlineNotice tone="critical">{t("platform.logo.invalid")}</InlineNotice>
         )}
       </div>
-    </Card>
+    </DetailSection>
   );
 }

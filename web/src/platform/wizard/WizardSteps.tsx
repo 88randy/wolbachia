@@ -1,8 +1,10 @@
 /* eslint-disable max-lines-per-function -- presentational JSX of the wizard steps. */
 import { Plus, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { TextField } from "../../forms/TextField";
-import { Combobox } from "../../regulatory/Combobox";
+import { FormField, FormGrid } from "../../components/templates/FormGrid";
+import { Combobox } from "../../ui/Combobox";
 import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { ChoiceCards } from "../ChoiceCards";
@@ -17,7 +19,17 @@ export interface StepProps {
 }
 
 const LANGUAGES: readonly Language[] = ["es-MX", "en"];
-const GRID = "grid gap-4 sm:grid-cols-2";
+function PickerField(props: { id: string; label: string; error?: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={props.id} className="text-xs font-semibold text-ink-2">
+        {props.label}
+      </label>
+      {props.children}
+      {props.error && <p className="m-0 text-xs text-critical-fg">{props.error}</p>}
+    </div>
+  );
+}
 
 function useError(errors: DraftErrors) {
   const { t } = useTranslation();
@@ -31,8 +43,8 @@ export function StepData({ draft, errors, onChange }: StepProps) {
   const { t } = useTranslation();
   const error = useError(errors);
   return (
-    <div className={GRID}>
-      <div className="sm:col-span-2">
+    <FormGrid>
+      <FormField width="full">
         <TextField
           id="platform-name"
           label={t("platform.field.name")}
@@ -45,21 +57,23 @@ export function StepData({ draft, errors, onChange }: StepProps) {
             onChange(draft.isSlugEdited ? { name } : { name, slug: slugify(name) });
           }}
         />
-      </div>
-      <TextField
-        id="platform-slug"
-        label={t("platform.field.slug")}
-        hint={t("platform.field.slugHint")}
-        value={draft.slug}
-        maxLength={64}
-        autoCapitalize="none"
-        spellCheck={false}
-        error={error("slug")}
-        onChange={(event) => {
-          onChange({ slug: event.target.value.toLowerCase(), isSlugEdited: true });
-        }}
-      />
-    </div>
+      </FormField>
+      <FormField>
+        <TextField
+          id="platform-slug"
+          label={t("platform.field.slug")}
+          hint={t("platform.field.slugHint")}
+          value={draft.slug}
+          maxLength={64}
+          autoCapitalize="none"
+          spellCheck={false}
+          error={error("slug")}
+          onChange={(event) => {
+            onChange({ slug: event.target.value.toLowerCase(), isSlugEdited: true });
+          }}
+        />
+      </FormField>
+    </FormGrid>
   );
 }
 
@@ -73,29 +87,39 @@ export function StepRegion({ draft, errors, onChange }: StepProps) {
   const zones = zonesOf(draft.country).map((zone) => ({ value: zone, label: zoneLabel(zone) }));
   return (
     <div className="flex flex-col gap-5">
-      <div className={GRID}>
-        <Combobox
-          label={t("platform.field.country")}
-          value={draft.country}
-          options={countries}
-          placeholder={t("platform.field.country")}
-          onChange={(country) => {
-            if (country) onChange({ country, timezone: defaultTimezone(country) });
-          }}
-        />
-        <div className="flex flex-col gap-1">
-          <Combobox
+      <FormGrid>
+        <FormField>
+          <PickerField id="platform-country" label={t("platform.field.country")}>
+            <Combobox
+              id="platform-country"
+              value={draft.country}
+              options={countries}
+              placeholder={t("platform.field.country")}
+              onValueChange={(country) => {
+                if (country) onChange({ country, timezone: defaultTimezone(country) });
+              }}
+            />
+          </PickerField>
+        </FormField>
+        <FormField>
+          <PickerField
+            id="platform-timezone"
             label={t("platform.field.timezone")}
-            value={draft.timezone}
-            options={zones}
-            placeholder={t("platform.field.timezone")}
-            onChange={(timezone) => {
-              if (timezone) onChange({ timezone });
-            }}
-          />
-          {error("timezone") && <p className="m-0 text-xs text-critical-fg">{error("timezone")}</p>}
-        </div>
-      </div>
+            error={error("timezone")}
+          >
+            <Combobox
+              id="platform-timezone"
+              value={draft.timezone}
+              options={zones}
+              invalid={error("timezone") !== undefined}
+              placeholder={t("platform.field.timezone")}
+              onValueChange={(timezone) => {
+                if (timezone) onChange({ timezone });
+              }}
+            />
+          </PickerField>
+        </FormField>
+      </FormGrid>
       <ChoiceCards
         name="epi-week"
         legend={t("platform.field.epiWeek")}
@@ -208,7 +232,7 @@ export function StepAdmin({ draft, errors, onChange }: StepProps) {
   const error = useError(errors);
   return (
     <div className="flex flex-col gap-5">
-      <div className={GRID}>
+      <FormGrid>
         <TextField
           id="admin-first-name"
           label={t("platform.field.firstName")}
@@ -257,7 +281,7 @@ export function StepAdmin({ draft, errors, onChange }: StepProps) {
             onChange({ email: event.target.value.trim() });
           }}
         />
-      </div>
+      </FormGrid>
       <ChoiceCards
         name="delivery"
         legend={t("platform.field.delivery")}

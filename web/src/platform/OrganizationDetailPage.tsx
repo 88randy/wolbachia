@@ -1,23 +1,16 @@
 /* eslint-disable max-lines-per-function -- presentational JSX of the organization record. */
 import { useQuery } from "@tanstack/react-query";
 import { unwrap } from "@wolbachia/api-client";
-import { Ellipsis, ListRestart, ShieldCheck } from "lucide-react";
+import { ListRestart, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DescriptionGrid } from "../components/templates/DescriptionGrid";
 import { DetailPage } from "../components/templates/DetailPage";
 import { useFormatDate } from "../format/use-formatters";
 import { useBreadcrumbLabel } from "../shell/breadcrumb-labels";
-import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
+import { DetailSection } from "../components/templates/DetailSection";
 import { ErrorState } from "../ui/ErrorState";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { StatusPill } from "../ui/StatusPill";
-import { Facts } from "./Facts";
 import { LogoCard } from "./LogoCard";
 import { AddAdminDialog, AddCenterDialog, SuspendDialog } from "./OrganizationDialogs";
 import { OrganizationStatus } from "./OrganizationStatus";
@@ -78,36 +71,24 @@ export function OrganizationDetailPage({
       title={organization.name}
       code={organization.slug}
       status={<OrganizationStatus isActive={organization.is_active} />}
-      description={t("platform.detail.isolation")}
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <SuspendDialog organization={organization} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                aria-label={t("platform.action.more")}
-                leadingIcon={<Ellipsis aria-hidden="true" />}
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                disabled={defaults.isBusy}
-                onSelect={() => {
-                  defaults.submit(undefined);
-                }}
-              >
-                <ListRestart aria-hidden="true" />
-                {t("platform.action.applyDefaults")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      }
+      subtitle={t("platform.detail.isolation")}
+      back={{ label: t("platform.list.title"), link: { to: "/platform" } }}
+      actions={<SuspendDialog organization={organization} />}
+      moreActions={[
+        {
+          id: "defaults",
+          label: t("platform.action.applyDefaults"),
+          icon: <ListRestart aria-hidden="true" />,
+          disabled: defaults.isBusy,
+          onSelect: () => {
+            defaults.submit(undefined);
+          },
+        },
+      ]}
       aside={
         <>
           <LogoCard organization={organization} highlight={highlightLogo} />
-          <Card title={t("platform.detail.history")}>
+          <DetailSection title={t("platform.detail.history")}>
             {organization.history.length === 0 ? (
               <p className="m-0 text-sm text-ink-3">{t("platform.detail.noHistory")}</p>
             ) : (
@@ -128,12 +109,12 @@ export function OrganizationDetailPage({
                 ))}
               </ol>
             )}
-          </Card>
+          </DetailSection>
         </>
       }
     >
-      <Card title={t("platform.detail.summary")}>
-        <Facts
+      <DetailSection title={t("platform.detail.summary")}>
+        <DescriptionGrid
           items={[
             { label: t("platform.detail.country"), value: country },
             { label: t("platform.detail.timezone"), value: zoneLabel(organization.timezone) },
@@ -157,8 +138,8 @@ export function OrganizationDetailPage({
             { label: t("platform.detail.created"), value: formatDate(organization.created_at) },
           ]}
         />
-      </Card>
-      <Card
+      </DetailSection>
+      <DetailSection
         title={t("platform.detail.centers")}
         actions={<AddCenterDialog organization={organization} />}
       >
@@ -181,8 +162,8 @@ export function OrganizationDetailPage({
             ))}
           </ul>
         )}
-      </Card>
-      <Card
+      </DetailSection>
+      <DetailSection
         title={t("platform.detail.admins")}
         actions={<AddAdminDialog organization={organization} />}
       >
@@ -213,7 +194,7 @@ export function OrganizationDetailPage({
             ))}
           </ul>
         )}
-      </Card>
+      </DetailSection>
     </DetailPage>
   );
 }

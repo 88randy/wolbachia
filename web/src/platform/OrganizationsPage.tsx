@@ -1,7 +1,7 @@
 /* eslint-disable max-lines-per-function -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Building2, Plus } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Building2, ExternalLink, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../components/templates/ListPage";
 import { DataTable } from "../data-table/DataTable";
@@ -20,6 +20,7 @@ import { usePlatformScope } from "./use-platform";
 export function OrganizationsPage() {
   const { t } = useTranslation();
   const scope = usePlatformScope();
+  const navigate = useNavigate();
   const formatDate = useFormatDate();
   const formatNumber = useFormatNumber();
   const controller = useTableUrlState(PLATFORM_TABLE);
@@ -32,11 +33,7 @@ export function OrganizationsPage() {
       id: "name",
       headerKey: "platform.col.name",
       cell: (row) => (
-        <Link
-          to="/platform/$slug"
-          params={{ slug: row.slug }}
-          className="flex items-center gap-3 font-semibold text-ink no-underline hover:text-action"
-        >
+        <span className="flex items-center gap-3 font-semibold text-ink">
           <span className="flex size-9 flex-none items-center justify-center rounded-xl bg-tint text-action">
             <Building2 aria-hidden="true" className="size-4" />
           </span>
@@ -44,7 +41,7 @@ export function OrganizationsPage() {
             <span className="truncate">{row.name}</span>
             <span className="text-xs font-normal text-ink-3">{row.slug}</span>
           </span>
-        </Link>
+        </span>
       ),
     },
     {
@@ -85,6 +82,17 @@ export function OrganizationsPage() {
         caption={t("platform.list.caption")}
         columns={columns}
         getRowId={(row) => row.slug}
+        rowLink={(row) => ({ to: "/platform/$slug", params: { slug: row.slug } })}
+        rowMenu={(row) => [
+          {
+            id: "open",
+            label: t("platform.action.open"),
+            icon: <ExternalLink aria-hidden="true" />,
+            onSelect: () => {
+              void navigate({ to: "/platform/$slug", params: { slug: row.slug } });
+            },
+          },
+        ]}
         controller={controller}
         data={pageTableData(query, controller.state.page, PLATFORM_PAGE_SIZE)}
       />
