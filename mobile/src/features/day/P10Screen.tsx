@@ -1,33 +1,45 @@
-import { DayRefreshStatus } from "./DayRefreshStatus.tsx";
+import { useMemo } from "react";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { ScreenHeader } from "../../ui/ScreenHeader.tsx";
+import { useFieldZones } from "../../maps/use-field-zones.ts";
+import { MapView } from "../../maps/MapView.tsx";
+import { AppHeader } from "../../ui/AppHeader.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
+import { toMapPoints } from "./map-points.ts";
+import { RouteProblems } from "./RouteProblems.tsx";
 import { useM06 } from "./use-m-06.ts";
-import { createDayStyles } from "./styles.ts";
-import { DayToggle } from "./DayToggle.tsx";
-import { DayNotices } from "./DayNotices.tsx";
-import { LocationNotice } from "./LocationNotice.tsx";
-import { DayMap } from "./DayMap.tsx";
-import { MapSelectedPoint } from "./MapSelectedPoint.tsx";
-/** Full-screen map: no ScrollView/FlatList here or above MapRenderer. */
+
+/** Day map: every point of the route with its state; tap one, then "Cómo llegar". No scrolling here. */
 export function P10Screen() {
   const model = useM06();
   const t = useT();
-  const styles = useStyles(createDayStyles);
+  const points = useMemo(() => toMapPoints(model.tasks, t), [model.tasks, t]);
+  const zones = useFieldZones();
+  const hasMissingLocation = model.tasks.length > points.length;
   return (
-    <View style={styles.root}>
-      <ScreenHeader title={t("mobile.day.title")} />
-      <DayToggle isMap />
-      <DayRefreshStatus model={model} />
-      <DayNotices model={model} />
-      {model.state === null ? null : <LocationNotice model={model} />}
-      <DayMap model={model} />
-      <AppText variant="caption" style={styles.attribution}>
-        {t("mobile.day.attribution")}
-      </AppText>
-      <MapSelectedPoint model={model} />
-    </View>
+    <ScreenScaffold
+      tab="map"
+      isScrollable={false}
+      header={<AppHeader title={t("field.map.title")} onBack={null} />}
+    >
+      <View className="gap-3 px-4 pt-3">
+        <RouteProblems model={model} />
+        {hasMissingLocation ? (
+          <InfoNotice tone="info" message={t("field.map.someWithoutLocation")} />
+        ) : null}
+      </View>
+      <View className="flex-1">
+        <MapView
+          points={points}
+          zones={zones}
+          selectedId={model.selected?.task.id ?? null}
+          onSelectPoint={(id) => {
+            const row = model.tasks.find((candidate) => candidate.task.id === id);
+            if (row !== undefined) void model.select(row.task);
+          }}
+        />
+      </View>
+    </ScreenScaffold>
   );
 }

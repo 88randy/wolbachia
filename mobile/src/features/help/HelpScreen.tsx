@@ -1,4 +1,12 @@
-import { GraduationCap, History, Inbox, Settings, Siren, TriangleAlert } from "lucide-react-native";
+import {
+  GraduationCap,
+  Users,
+  History,
+  Inbox,
+  Settings,
+  Siren,
+  TriangleAlert,
+} from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import type { MessageKey } from "@wolbachia/i18n";
 
@@ -13,6 +21,11 @@ import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
 
 const TILES: readonly { icon: LucideIcon; labelKey: MessageKey; route: Route }[] = [
   { icon: TriangleAlert, labelKey: "courier.help.incident", route: { name: "incidents" } },
+  {
+    icon: Users,
+    labelKey: "courier.flow.community.tile",
+    route: { name: "communityActivity" },
+  },
   { icon: Inbox, labelKey: "courier.help.inbox", route: { name: "inbox" } },
   { icon: GraduationCap, labelKey: "courier.help.training", route: { name: "training" } },
   { icon: History, labelKey: "courier.help.history", route: { name: "history" } },

@@ -1,36 +1,24 @@
-import { AppScrollView } from "../ui/AppScrollView.tsx";
-import { spacing } from "@wolbachia/tokens";
-import type { Theme } from "@wolbachia/tokens";
-import { StyleSheet, View } from "react-native";
-import { BottomActions } from "../ui/BottomActions.tsx";
-
+import { RotateCw } from "lucide-react-native";
 import { useLocale, useT } from "../i18n/I18nProvider.tsx";
 import { useOutboxAction } from "../outbox/use-outbox-action.ts";
-import { Notice } from "../ui/Notice.tsx";
 import { formatInboxTime } from "../sync/format-time.ts";
 import { useInbox } from "../sync/use-inbox.ts";
 import { useSyncEngine, useSyncSnapshot } from "../sync/use-sync.ts";
-import { useStyles } from "../theme/ThemeProvider.tsx";
-import { Button } from "../ui/Button.tsx";
-import { ScreenHeader } from "../ui/ScreenHeader.tsx";
+import { AppHeader } from "../ui/AppHeader.tsx";
+import { InfoNotice } from "../ui/InfoNotice.tsx";
+import { PrimaryButton } from "../ui/PrimaryButton.tsx";
+import { ScreenScaffold } from "../ui/ScreenScaffold.tsx";
+import { EvidenceNotice } from "./inbox/EvidenceNotice.tsx";
 import { InboxLists } from "./inbox/InboxLists.tsx";
 import { InboxNoticeBanner } from "./inbox/InboxNoticeBanner.tsx";
-import { EvidenceNotice } from "./inbox/EvidenceNotice.tsx";
-
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    root: { flex: 1, backgroundColor: theme.color.background },
-    content: { padding: spacing[2], gap: spacing[2] },
-  });
 
 function useInboxRetry() {
   const engine = useSyncEngine();
   return useOutboxAction(() => engine.retryNow());
 }
 
-/** P28, the sync inbox. It opens from the top-bar chip and never offers to delete anything. */
+/** P28, "Mis envíos". It opens from the top-bar chip and never offers to delete anything. */
 export function InboxScreen() {
-  const styles = useStyles(createStyles);
   const t = useT();
   const locale = useLocale();
   const snapshot = useSyncSnapshot();
@@ -43,17 +31,14 @@ export function InboxScreen() {
           time: formatInboxTime(snapshot.lastSyncAt, { locale }),
         });
   return (
-    <View style={styles.root}>
-      <ScreenHeader title={t("mobile.inbox.title")} subtitle={subtitle} />
-      <AppScrollView contentContainerStyle={styles.content}>
-        {errorKey !== null && <Notice tone="critical" icon="alert" message={t(errorKey)} />}
-        <InboxNoticeBanner snapshot={snapshot} />
-        <EvidenceNotice />
-        <InboxLists model={model} />
-      </AppScrollView>
-      <BottomActions>
-        <Button icon="refresh" label={t("mobile.inbox.tryNow")} onPress={run} />
-      </BottomActions>
-    </View>
+    <ScreenScaffold
+      header={<AppHeader title={t("mobile.inbox.title")} subtitle={subtitle} showSync={false} />}
+      footer={<PrimaryButton icon={RotateCw} label={t("mobile.inbox.tryNow")} onPress={run} />}
+    >
+      {errorKey !== null && <InfoNotice tone="danger" message={t(errorKey)} />}
+      <InboxNoticeBanner snapshot={snapshot} />
+      <EvidenceNotice />
+      <InboxLists model={model} />
+    </ScreenScaffold>
   );
 }

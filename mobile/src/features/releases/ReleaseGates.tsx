@@ -1,6 +1,6 @@
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { ReleaseGateRow } from "./ReleaseGateRow.tsx";
 import { hasBlockedReleaseGate, RELEASE_GATE_NAMES } from "./view-model.ts";
 import type { ReleaseGateView } from "./view-model.ts";
@@ -9,10 +9,15 @@ export function ReleaseGates({ gates }: { readonly gates: readonly ReleaseGateVi
   const t = useT();
   const isBlocked = hasBlockedReleaseGate(gates);
   return (
-    <Card isCritical={isBlocked}>
-      <AppText variant="button" accessibilityRole="header">
-        {t("mobile.release.prerequisites")}
-      </AppText>
+    <>
+      {isBlocked ? (
+        <InfoNotice
+          tone="danger"
+          title={t("courier.flow.release.blockedTitle")}
+          message={t("courier.flow.release.blockedBody")}
+        />
+      ) : null}
+      <SectionTitle title={t("courier.flow.release.gatesTitle")} />
       {RELEASE_GATE_NAMES.map((name) => (
         <ReleaseGateRow
           key={name}
@@ -25,9 +30,6 @@ export function ReleaseGates({ gates }: { readonly gates: readonly ReleaseGateVi
           }
         />
       ))}
-      <AppText variant="caption">
-        {t(isBlocked ? "mobile.release.noBypass" : "mobile.release.cachedOnly")}
-      </AppText>
-    </Card>
+    </>
   );
 }

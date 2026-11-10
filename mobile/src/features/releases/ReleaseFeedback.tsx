@@ -1,6 +1,7 @@
+import { RotateCw } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { ReleaseViewModel } from "./view-model.ts";
 
 export function ReleaseFeedback({ model }: { readonly model: ReleaseViewModel }) {
@@ -8,9 +9,9 @@ export function ReleaseFeedback({ model }: { readonly model: ReleaseViewModel })
   if (!model.errorKey) return null;
   return (
     <>
-      <Notice tone="critical" icon="alert" message={t(model.errorKey)} />
-      <Button
-        variant="outline"
+      <InfoNotice tone="danger" message={t(model.errorKey)} />
+      <SecondaryButton
+        icon={RotateCw}
         disabled={model.isBusy}
         label={t("common.actions.retry")}
         onPress={model.retry}

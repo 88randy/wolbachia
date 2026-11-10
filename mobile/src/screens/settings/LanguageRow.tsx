@@ -1,26 +1,22 @@
 import { usePreferences } from "../../app/PreferencesProvider.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { SettingRow } from "../../ui/SettingRow.tsx";
+import { PreferenceChoices } from "./PreferenceChoices.tsx";
 
-/** One button that switches to the other language; its label names the language you will get. */
+/** Both languages are always visible; the current one is filled. */
 export function LanguageRow() {
   const t = useT();
   const { locale, setLocale } = usePreferences();
-  const isSpanish = locale === "es-MX";
   return (
-    <SettingRow
+    <PreferenceChoices
       title={t("mobile.settings.language")}
-      hint={isSpanish ? t("mobile.settings.languageEs") : t("mobile.settings.languageEn")}
-      control={
-        <Button
-          variant="outline"
-          label={isSpanish ? t("mobile.settings.languageEn") : t("mobile.settings.languageEs")}
-          onPress={() => {
-            setLocale(isSpanish ? "en" : "es-MX");
-          }}
-        />
-      }
+      options={[
+        { id: "es-MX", label: t("mobile.settings.languageEs") },
+        { id: "en", label: t("mobile.settings.languageEn") },
+      ]}
+      selectedId={locale}
+      onSelect={(id) => {
+        setLocale(id === "en" ? "en" : "es-MX");
+      }}
     />
   );
 }

@@ -1843,6 +1843,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/zones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read-only quadrant polygons inside the assigned scope of the caller, for the offline map. */
+        get: operations["field_zones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fuel-loads/": {
         parameters: {
             query?: never;
@@ -8159,6 +8176,13 @@ export interface components {
          * @enum {string}
          */
         ExtraObservationKindEnum: "identified_extra" | "unidentified_extra";
+        /** @description One quadrant polygon of the scope of the caller; `ring` is closed [lng, lat] pairs. */
+        FieldZone: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            ring: number[][];
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -18871,6 +18895,37 @@ export interface operations {
             };
         };
     };
+    field_zones_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldZone"][];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     fuel_loads_list: {
         parameters: {
             query?: {
@@ -27029,6 +27084,7 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                pending_result?: boolean;
                 quadrant?: string;
                 /** @description Case-insensitive search across: code. */
                 search?: string;

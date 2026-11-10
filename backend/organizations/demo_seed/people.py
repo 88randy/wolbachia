@@ -84,6 +84,7 @@ def ensure_organization() -> Organization:
     """Reuse the demo organization or bootstrap it with its admin user (writes)."""
     existing = Organization.objects.filter(slug=DEMO_SLUG).first()
     if existing is not None:
+        _rename_organization(existing)
         return existing
     admin = DEMO_USERS[0]
     organization, _ = bootstrap_organization(
@@ -93,16 +94,26 @@ def ensure_organization() -> Organization:
     return organization
 
 
+def _rename_organization(organization: Organization) -> None:
+    """Upgrade an organization seeded by the first demo version (same slug, new display name)."""
+    if organization.name != DEMO_ORGANIZATION.name:
+        organization.name = DEMO_ORGANIZATION.name
+        organization.timezone = DEMO_ORGANIZATION.timezone
+        organization.save(update_fields=["name", "timezone"])
+
+
 def ensure_centers(organization: Organization, admin: User) -> list[Center]:
-    """Get or create the demo centers (writes Center)."""
-    return [
-        Center.objects.get_or_create(
-            organization=organization,
-            code=code,
-            defaults={"name": name, "created_by": admin},
-        )[0]
-        for code, name in CENTER_CODES
-    ]
+    """Get or create the demo centers and give them their current names (writes Center)."""
+    centers = []
+    for code, name in CENTER_CODES:
+        center, _ = Center.objects.get_or_create(
+            organization=organization, code=code, defaults={"name": name, "created_by": admin}
+        )
+        if center.name != name:
+            center.name = name
+            center.save(update_fields=["name"])
+        centers.append(center)
+    return centers
 
 
 def _ensure_user(spec: DemoUser, reset_passwords: bool) -> User:
