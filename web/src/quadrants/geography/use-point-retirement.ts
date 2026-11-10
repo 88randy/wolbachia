@@ -15,7 +15,9 @@ export function usePointRetirement(scope: GeographyScope, quadrant: string) {
     return {
       reason: resolution?.evidence ?? t("geography.status.retired"),
       author:
-        resolution?.created_by ?? point.current_version.created_by ?? t("geography.status.unknown"),
+        resolution?.created_by_name ??
+        point.current_version.created_by_name ??
+        t("geography.status.unknown"),
     };
   };
 }

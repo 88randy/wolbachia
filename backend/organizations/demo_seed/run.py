@@ -15,6 +15,7 @@ from organizations.demo_seed import (
     lab_history,
     operations,
     people,
+    personnel,
     samples_history,
 )
 from organizations.demo_seed.resilience import release_stale_sessions, retrying
@@ -56,6 +57,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     }
     with custody_history.frozen_clock(custody_history.history_start()):
         quadrants = retrying(lambda: geography.ensure_geography(centers, admin))
+    personnel.ensure_personnel(organization, members, list(centers.values()))
     operations.ensure_incident_types(
         organization,
         admin,

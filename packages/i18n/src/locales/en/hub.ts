@@ -37,6 +37,9 @@ export const hub: Record<keyof typeof source, string> = {
   "hub.fleet.motorcycles": "Status of each motorcycle, inspections and services.",
 
   "hub.releases.description": "Release permits and their types.",
+  "hub.releases.records": "Recorded releases with their permit, lot and map point.",
+  "hub.releases.devices": "Release devices, their source lot and status.",
+  "hub.community.description": "Community activities: notices, talks and meetings.",
   "hub.releases.permits": "Active, expiring and suspended permits.",
   "hub.releases.permitTypes": "Permit types and their requirements.",
 

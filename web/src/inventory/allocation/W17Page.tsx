@@ -6,7 +6,7 @@ import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryContext } from "../use-inventory-context";
 import { WRITE_OFFS_ROUTE } from "./allocation-query";
 import { WriteOffWorkspace } from "./WriteOffWorkspace";
-import page from "../../styles/page.module.css";
+import { PageFrame } from "../../components/templates/PageFrame";
 
 /** W17 shrinkage and write-offs of the warehouse. */
 export function W17Page() {
@@ -17,7 +17,7 @@ export function W17Page() {
   if (!hasCenterScope(me.scope))
     return <InlineNotice tone="warning">{t("allocation.page.denied")}</InlineNotice>;
   return (
-    <section className={page.page}>
+    <PageFrame>
       <WriteOffWorkspace
         key={scope.context}
         scope={scope}
@@ -25,6 +25,6 @@ export function W17Page() {
         kind="lot"
         titleKey="allocation.writeOff.title"
       />
-    </section>
+    </PageFrame>
   );
 }

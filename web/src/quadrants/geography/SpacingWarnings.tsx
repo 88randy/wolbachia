@@ -14,7 +14,7 @@ export function SpacingWarnings({ warnings, points }: Props) {
         <h3>{t("geography.points.spacing")}</h3>
         {warnings.map((warning, index) => (
           <p key={index}>
-            {points.find((point) => point.id === warning.point)?.code ?? warning.point}
+            {points.find((point) => point.id === warning.point)?.code ?? "—"}
             {" · "}
             {t("geography.points.distance")}
             {": "}

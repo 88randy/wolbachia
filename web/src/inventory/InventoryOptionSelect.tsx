@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
-import { Select } from "../forms/Select";
-import { SearchField } from "../forms/SearchField";
-import { Button } from "../ui/Button";
+import { Combobox } from "../ui/Combobox";
 import { ErrorState } from "../ui/ErrorState";
 import { useInventoryContext } from "./use-inventory-context";
 import { inventoryOptionOptions } from "./inventory-options";
@@ -82,59 +80,26 @@ function retainSelected(options: { value: string; label: string }[], input: Prop
 type Model = ReturnType<typeof useChoice>;
 function ChoiceInputs({ input, model }: { input: Props; model: Model }) {
   const { t } = useTranslation();
-  const options = [{ value: "", label: t("inventory.option.choose") }, ...model.options];
   return (
-    <>
-      <SearchField
-        id={input.id + "-search"}
-        label={input.label + ": " + t("inventory.field.search")}
-        value={model.search}
-        disabled={input.disabled}
-        onChange={(event) => {
-          model.find(event.target.value);
-        }}
-      />
-      <Select
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={input.id} className="text-xs font-bold text-ink">
+        {input.label}
+      </label>
+      <Combobox
         id={input.id}
-        label={input.label}
-        required={input.required}
         value={input.value}
-        disabled={input.disabled || model.query.isFetching}
-        options={options}
-        onChange={(event) => {
-          model.change(event.target.value);
-        }}
+        options={model.options}
+        placeholder={t("inventory.option.choose")}
+        selectedLabel={input.currentLabel}
+        disabled={input.disabled}
+        isLoading={model.query.isFetching && model.options.length === 0}
+        onSearch={model.find}
+        onValueChange={model.change}
       />
-    </>
-  );
-}
-function ChoicePaging({ input, model }: { input: Props; model: Model }) {
-  const { t } = useTranslation();
-  const busy = input.disabled || model.query.isFetching;
-  return (
-    <div className={styles.actions}>
-      <Button
-        variant="ghost"
-        disabled={busy || model.page === 1}
-        onClick={() => {
-          model.setPage(model.page - 1);
-        }}
-      >
-        {t("inventory.option.previous")}
-      </Button>
-      <Button
-        variant="ghost"
-        disabled={busy || !model.query.data?.next}
-        onClick={() => {
-          model.setPage(model.page + 1);
-        }}
-      >
-        {t("inventory.option.next")}
-      </Button>
     </div>
   );
 }
-/** A paginated chooser composed from existing controls; obsolete target pages never qualify. */
+/** One searchable picker (server search on the first page); obsolete targets never qualify. */
 export function InventoryOptionSelect(props: Props) {
   const model = useChoice(props);
   return (
@@ -147,7 +112,6 @@ export function InventoryOptionSelect(props: Props) {
           }}
         />
       )}
-      <ChoicePaging input={props} model={model} />
     </div>
   );
 }

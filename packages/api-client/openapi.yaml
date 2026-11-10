@@ -12864,6 +12864,194 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-points/:
+    get:
+      operationId: release_points_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - release-points
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReleasePointList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: release_points_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - release-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleasePointCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleasePoint'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-points/{id}/:
+    get:
+      operationId: release_points_retrieve
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this release point.
+        required: true
+      tags:
+      - release-points
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleasePoint'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/release-points/{id}/move/:
+    post:
+      operationId: release_points_move_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this release point.
+        required: true
+      tags:
+      - release-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointPublicationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleasePoint'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/releases/:
     get:
       operationId: releases_list
@@ -18530,6 +18718,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -18538,6 +18730,7 @@ components:
       - block
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - geometry
       - id
@@ -21450,6 +21643,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -21457,6 +21654,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - decision
       - evidence
       - id
@@ -28616,6 +28814,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Release'
+    PaginatedReleasePointList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleasePoint'
     PaginatedRelocationList:
       type: object
       required:
@@ -30453,6 +30674,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -30460,6 +30685,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - id
       - is_retired
@@ -31270,6 +31496,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -31282,6 +31512,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - geometry
       - id
@@ -32179,13 +32410,25 @@ components:
           type: string
           format: uuid
           readOnly: true
+        permit_code:
+          type: string
+          readOnly: true
+        quadrant_code:
+          type: string
+          readOnly: true
         lot:
           type: string
           format: uuid
           readOnly: true
+        lot_code:
+          type: string
+          readOnly: true
         release_device:
           type: string
           format: uuid
+          readOnly: true
+        release_device_code:
+          type: string
           readOnly: true
         training_version:
           type: string
@@ -32237,10 +32480,14 @@ components:
       - id
       - location
       - lot
+      - lot_code
+      - permit_code
       - permit_version
       - provenance
+      - quadrant_code
       - quantity
       - release_device
+      - release_device_code
       - schedule_task
       - server_received_at
       - training_version
@@ -32508,13 +32755,22 @@ components:
           type: string
           format: uuid
           readOnly: true
+        center_code:
+          type: string
+          readOnly: true
         quadrant:
           type: string
           format: uuid
           readOnly: true
+        quadrant_code:
+          type: string
+          readOnly: true
         source_lot:
           type: string
           format: uuid
+          readOnly: true
+        source_lot_code:
+          type: string
           readOnly: true
         source_lot_version:
           type: string
@@ -32543,13 +32799,16 @@ components:
       required:
       - blocked_by
       - center
+      - center_code
       - code
       - created_at
       - created_by
       - id
       - quadrant
+      - quadrant_code
       - revision
       - source_lot
+      - source_lot_code
       - source_lot_version
       - status
     ReleaseDeviceStatus:
@@ -32647,6 +32906,119 @@ components:
           $ref: '#/components/schemas/SupplyRelease'
       required:
       - release
+    ReleasePoint:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version:
+          allOf:
+          - $ref: '#/components/schemas/ReleasePointVersion'
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - current_version
+      - id
+      - quadrant
+    ReleasePointCreateRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        quadrant:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+      required:
+      - code
+      - location
+      - quadrant
+    ReleasePointVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        point:
+          type: string
+          format: uuid
+          readOnly: true
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - created_by
+      - effective_from
+      - id
+      - location
+      - point
+      - version
     ReleaseProvenance:
       type: object
       description: 'Regulatory ids only: no courier, certification, reviewer, assignment

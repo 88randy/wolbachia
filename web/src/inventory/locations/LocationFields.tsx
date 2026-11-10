@@ -5,6 +5,7 @@ import { InventoryOptionSelect } from "../InventoryOptionSelect";
 import { inventoryFieldProps } from "../inventory-field-props";
 import type { InventoryFieldsProps } from "../inventory-form-types";
 import styles from "../inventory.module.css";
+import { MapPointPicker } from "../../map-picker/MapPointPicker";
 function LocationCenter(props: InventoryFieldsProps) {
   const { t } = useTranslation();
   return (
@@ -93,6 +94,25 @@ function LocationIdentity(props: InventoryFieldsProps) {
     </>
   );
 }
+/** The place is marked on the map; longitude/latitude are filled from the pin. */
+function LocationPlace(props: InventoryFieldsProps) {
+  const { t } = useTranslation();
+  const longitude = Number(props.values["longitude"]);
+  const latitude = Number(props.values["latitude"]);
+  const hasValue =
+    Boolean(props.values["longitude"]?.trim()) && Number.isFinite(longitude + latitude);
+  return (
+    <MapPointPicker
+      label={t("inventory.field.place")}
+      value={hasValue ? [longitude, latitude] : null}
+      onChange={([lon = 0, lat = 0]) => {
+        if (props.disabled) return;
+        props.setValue("longitude", String(lon));
+        props.setValue("latitude", String(lat));
+      }}
+    />
+  );
+}
 export function LocationFields(props: InventoryFieldsProps) {
   return (
     <div className={styles.fields}>
@@ -100,9 +120,7 @@ export function LocationFields(props: InventoryFieldsProps) {
       <LocationCenter {...props} />
       <LocationQuadrant {...props} />
       <LocationOwner {...props} />
-      {["longitude", "latitude"].map((name) => (
-        <InventoryTextField key={name} {...inventoryFieldProps(props, name)} required />
-      ))}
+      <LocationPlace {...props} />
       <InventorySelectField
         {...inventoryFieldProps(props, "is_insecticide_free")}
         options={YES_NO}

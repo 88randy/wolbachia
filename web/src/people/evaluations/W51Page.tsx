@@ -1,12 +1,16 @@
-import { useSearch, Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { PageFrame } from "../../components/templates/PageFrame";
+import { PageHeader } from "../../components/templates/PageHeader";
 import { useMe } from "../../session/use-me";
 import { useDocumentTitle } from "../../shell/use-document-title";
+import { buttonVariants } from "../../ui/button-variants";
 import { InlineNotice } from "../../ui/InlineNotice";
-import { W51Workspace } from "./W51Workspace";
-import { useEvaluationScope } from "./use-evaluation-scope";
 import { canOpenEvaluations } from "./evaluation-access";
-import styles from "./evaluations.module.css";
+import { useEvaluationScope } from "./use-evaluation-scope";
+import { W51Workspace } from "./W51Workspace";
+
+/** W51: evaluation sheets (presentation, execution, coverage), their results and HR notices. */
 export function W51Page() {
   const { t } = useTranslation();
   const me = useMe();
@@ -18,13 +22,16 @@ export function W51Page() {
     return <InlineNotice tone="warning">{t("evaluations.page.denied")}</InlineNotice>;
   const owner = JSON.stringify([me.user.id, me.organization?.slug]);
   return (
-    <section className={styles.page}>
-      <h1>{t("evaluations.page.title")}</h1>
-      <p>{t("evaluations.page.hint")}</p>
-      <nav aria-label={t("evaluations.page.people")}>
-        <Link to="/people">{t("evaluations.page.people")}</Link>
-      </nav>
+    <PageFrame>
+      <PageHeader
+        title={t("evaluations.page.title")}
+        actions={
+          <Link to="/people/trainings" className={buttonVariants({ variant: "tertiary" })}>
+            {t("evaluations.page.trainings")}
+          </Link>
+        }
+      />
       <W51Workspace key={owner} scope={scope} item={item} />
-    </section>
+    </PageFrame>
   );
 }

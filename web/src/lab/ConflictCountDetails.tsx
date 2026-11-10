@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { LabName } from "./LabName";
 import type { Count } from "./lab-query";
 
 export function ConflictCountDetails({ count }: { count: Count | undefined }) {
@@ -9,7 +10,9 @@ export function ConflictCountDetails({ count }: { count: Count | undefined }) {
   return (
     <dl>
       <dt>{t("lab.history.author")}</dt>
-      <dd>{count.created_by}</dd>
+      <dd>
+        <LabName kind="user" id={count.created_by} />
+      </dd>
       <dt>{t("lab.history.time")}</dt>
       <dd>
         <time dateTime={count.created_at}>{format(count.created_at)}</time>

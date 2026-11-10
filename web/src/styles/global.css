@@ -296,3 +296,24 @@ html
   font-weight: 700;
   line-height: var(--web-type-body-line-height);
 }
+
+/* Checkbox and radio groups: a left-aligned column, never centered. */
+fieldset:has(> label > input[type="checkbox"]),
+fieldset:has(> label > input[type="radio"]) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  text-align: start;
+}
+fieldset:has(> label > input[type="checkbox"]) > legend,
+fieldset:has(> label > input[type="radio"]) > legend {
+  margin-bottom: var(--space-0-5);
+  padding: 0;
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}

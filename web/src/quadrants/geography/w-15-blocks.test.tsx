@@ -32,6 +32,7 @@ const BLOCK: Schemas["Block"] = {
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
   },
 };
 function createdPoint(code: string): Schemas["SamplingPoint"] {

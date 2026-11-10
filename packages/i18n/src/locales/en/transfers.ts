@@ -10,6 +10,7 @@ export const transfers: Record<keyof typeof spanish, string> = {
   "transfers.page.readError":
     "The transfer could not be loaded. Retry to review its current state.",
   "transfers.field.code": "Transfer",
+  "transfers.field.route": "Route",
   "transfers.field.origin": "Origin location",
   "transfers.field.destination": "Destination location",
   "transfers.state.prepared": "Prepared",

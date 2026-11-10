@@ -1,17 +1,17 @@
 import { useTranslation } from "react-i18next";
-import { InlineNotice } from "../../ui/InlineNotice";
+import { useLocationNames } from "../use-location-names";
+import { EmptyValue } from "../../ui/EmptyValue";
 import type { Discrepancy } from "./discrepancy-query";
-import styles from "../inventory.module.css";
 
 export function DiscrepancyHolds({ record }: { record: Discrepancy }) {
   const { t } = useTranslation();
+  const nameOf = useLocationNames();
   return (
     <>
-      <InlineNotice>{t("discrepancies.holds.explanation")}</InlineNotice>
       <ul>
         {record.holds.map((hold) => (
-          <li key={hold.id} className={styles.mono}>
-            {hold.lot_id} · {hold.location_id} ·{" "}
+          <li key={hold.id}>
+            {nameOf(hold.location_id) ?? <EmptyValue />} ·{" "}
             {t(hold.resolution_id ? "discrepancies.holds.released" : "discrepancies.holds.active")}
           </li>
         ))}
