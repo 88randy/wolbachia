@@ -1,5 +1,15 @@
 # Database startup and schema lineage (#266)
 
+## Additive sample schema21 (#139)
+
+Retained owner-bound sample drafts append after unchanged SQL1-20. The sample UUID
+and different event UUID are fixed, including across rejection, retry and process
+restart. No-file drafts participate in owner admission and local-record detection.
+Source/start pins cannot change; saved observations and private evidence cannot be
+edited or removed. Raw code/Other edits use JSON CAS; Save seals capture time and
+event/evidence enrollment in the existing outbox transaction. Downloaded capture
+metadata remains a scoped KV cache, never a second authored queue or owner proof.
+
 ## Additive release schema20 (#139)
 
 Retained owner-bound release drafts append after unchanged SQL1-19. No-file drafts

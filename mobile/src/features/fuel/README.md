@@ -52,13 +52,13 @@ user check with a real private preview and Retake, not an automatic detector.
 
 ## Criterion → test
 
-| Criterion | Cheapest owning tests |
-| --- | --- |
-| Retake preserves fields, fixed motorcycle/units, invalid input recovery | `fuel-domain.test.ts`, `m-11.test.ts`, `fuel-editor.test.ts` |
-| Partial/unknown and inclusive efficiency policy; review preserves input | `fuel-domain.test.ts`, exact-source review journey in `m-11.test.ts` |
-| Atomic offline save/reopen, original UUID retry, truthful pending/delivery | `m-11.test.ts`, `fuel-authority.test.ts` |
-| Local capture/close remains available; opening/fuel/close JSON retains unsent order | `fuel-authority.test.ts` |
-| es-MX/en, light/dark, 130% host scale, labels/48dp actions | `fuel-ui.test.ts` (host renderer only) |
+| Criterion                                                                           | Cheapest owning tests                                                |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Retake preserves fields, fixed motorcycle/units, invalid input recovery             | `fuel-domain.test.ts`, `m-11.test.ts`, `fuel-editor.test.ts`         |
+| Partial/unknown and inclusive efficiency policy; review preserves input             | `fuel-domain.test.ts`, exact-source review journey in `m-11.test.ts` |
+| Atomic offline save/reopen, original UUID retry, truthful pending/delivery          | `m-11.test.ts`, `fuel-authority.test.ts`                             |
+| Local capture/close remains available; opening/fuel/close JSON retains unsent order | `fuel-authority.test.ts`                                             |
+| es-MX/en, light/dark, 130% host scale, labels/48dp actions                          | `fuel-ui.test.ts` (host renderer only)                               |
 
 The tests use real ordinary SQLite and private temporary files, and the generated
 API client with scripted transport. They do not qualify native SQLCipher,

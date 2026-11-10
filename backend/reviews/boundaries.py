@@ -115,6 +115,10 @@ def _batch_source_ids(ctx: EventContext) -> set[UUID]:
             from releases.stock import release_source_references
 
             identifiers.update(release_source_references(ctx))
+        if ctx.envelope.type == "sample.collect":
+            from lab.samples.handlers import source_references as sample_source_references
+
+            identifiers.update(sample_source_references(ctx))
         marker = _authorized_marker_source(ctx)
         if marker is not None:
             identifiers.add(marker)
@@ -307,6 +311,10 @@ def lock_source_references(ctx: EventContext) -> None:
         from releases.stock import release_source_references
 
         identifiers.update(release_source_references(ctx))
+    if ctx.envelope.type == "sample.collect":
+        from lab.samples.handlers import source_references as sample_source_references
+
+        identifiers.update(sample_source_references(ctx))
     require_prepared_source_ids(identifiers)
     list(
         FieldEvent.objects.filter(organization=ctx.organization, pk__in=identifiers)
@@ -437,6 +445,10 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
         from community.review import source_block
 
         source_block(ctx, data)
+    if envelope.type == "sample.collect":
+        from lab.samples.handlers import authorize_collection
+
+        authorize_collection(ctx, data)
     causal = classify_dependencies(batch, envelope, candidates)
     subjects = subject_facts(batch.organization, envelope)
     with ExitStack() as stack:

@@ -2,6 +2,69 @@
 
 Issue #5. The phone records events offline (decision 2) and uploads them in **sync batches**. One request uploads the batch and pulls what changed for the phone. Code: `backend/field_sync/` (pipeline, registry, `record.void`) and `backend/reviews/` (review items). Contract conventions: [`api-conventions.md`](api-conventions.md). Terms: [`glossary.md`](glossary.md).
 
+## Wolbachia sample collection (#117 / B-21)
+
+`sample.collect` schema1 takes `{sample_id,code,origin_code,method_version,
+source_ref:{kind,id},other_text?,evidence_ids?}`. Source kind is exactly reading,
+lot or release, resolving canonical OvitrapReading, inventory.Lot or releases.Release.
+The UUID is the canonical QR identity and code is organization-reserved human text.
+Location is retained from envelope GPS; normal shift checks and both clocks remain.
+Reading/release authors must match the authentic collector; a lot reference is
+scoped source provenance, not courier custody or stock consumption. Source chronology
+must precede sample capture. Center/quadrant derive from the actual source, including
+genuinely center-only lots. Current paired sample.collect AND field_event.sync apply
+before causal diversion and exact replay. No alternate transport/history feed exists.
+
+Origin comes from the declared archived sample-origin catalog; Other requires
+other_text. Exact verified, named Wolbachia-capable LabMethodVersion and original
+verification must already exist at device_time; current method/source validity is
+also checked. No missing original proof is manufactured by later configuration.
+Optional evidence IDs use the existing private FieldEvent parent and verified
+owned exact-source binding. Downloads require current sample.read and, for an
+in-review source, review_item.read on the same source vector.
+
+| Code | Meaning |
+| --- | --- |
+| `sample_inaccessible` | Rejected: unknown, foreign or currently unauthorized source/method/reference. |
+| `sample_configuration_unavailable` | Review: no genuine original active origin/named verified Wolbachia method proof. |
+| `sample_source_unavailable` | Rejected: source is ineffective or cannot precede the captured collection. |
+| `sample_state_conflict` | Rejected: reserved sample UUID/code or incompatible immutable command identity. |
+| `sample_evidence_required` | Review: declared private evidence is not yet verified for this source. |
+| `sample_void_blocked` | Rejected: retain real reception/result or upstream-source sample dependents. |
+
+New in_review sources create no operational sample, receipt or attempt. Canonical
+review acceptance checks exact original method/origin/source observations and current
+author/reviewer authority before one sample and the existing effect receipt. Original
+ingest status/hash/rule/catalog pins and both timestamps remain unchanged. Missing
+original configuration cannot later be treated as an approved assay.
+
+HTTP reception/results reuse the existing Lab lock owner. Sync/review prepare real
+source Users/FieldEvents before Organization NOWAIT and courier TRY, then domain
+and sorted Uploads; no network/storage/mail occurs under locks. Source void uses
+the existing reasoned record.void and preserves dependents. No DELETE or result
+overwrite is introduced. See [the sample HTTP contract](api-conventions.md#wolbachia-samples-117--b-21).
+
+P20 uses the optional nullable root `sample_capture` snapshot in bootstrap and
+ordinary sync `changes`, not a new CourierChange kind. Schema1 carries
+`organization_id,user_id,version,as_of,valid_until,methods,sources,receipts`.
+Actual paired `field.bootstrap`, `field_event.sync` and `sample.collect` scope
+precedes every source and minimal own receipt. Methods expose exact verified
+version/verification IDs, capability, labels, revisions, hashes and original
+clocks without procedure/results. Reading/Release sources retain authentic
+collector/event/device clocks; lot sources retain a real LotVersion without
+asserting custody. The minimal reception proof is `{sample_id,event_id,received_at}`
+from a genuine own SampleReceipt, never a sync acknowledgement or assay result.
+Origins remain in the existing archived sample-origin catalog.
+
+The captured frame rejects owner/grant/generation/clock/payload replacement.
+`as_of` is excluded from semantic version, scope and ETag hashes. Known future
+source/method activation bounds `valid_until` and the common `next_change_at`.
+Changed source/method/receipt facts invalidate old cursors; bootstrap recovery
+preserves immutable captures and the transactional outbox. Missing/null legacy
+snapshots clear cached positive capture facts. Snapshot metadata is persisted
+inside the existing bootstrap/sync SQLite transaction. No extra read grant,
+command endpoint, scientific default, queue kind or migration is introduced.
+
 ## Request
 
 The reserved eligibility section now has one typed version1 producer (#101).
@@ -278,6 +341,7 @@ Rules for handlers: keep row locks short: the batch runs under `SET LOCAL lock_t
 | `fuel.load` | `fleet` app (#103) |
 | `incident.report`, `emergency.accident` | `incidents` app (#104) |
 | `release.record` | `releases` app (#116); authoritative permit/training/task/stock revalidation |
+| `sample.collect` | Existing `lab.samples` module (#117); immutable source/method/origin collection proof |
 
 Location, count and other families without a real
 registered handler remain unavailable. Their presence in the backlog or a

@@ -1,3 +1,4 @@
+from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from lab.independent_qa.views import EggPaddleViewSet, LabQAPolicyViewSet, RecountViewSet
@@ -31,4 +32,4 @@ router.register(
     basename="lab-reception-incident-policy",
 )
 router.register("recount-requests", RecountRequestViewSet, basename="recount-request")
-urlpatterns = router.urls
+urlpatterns = [path("", include("lab.samples.urls")), *router.urls]

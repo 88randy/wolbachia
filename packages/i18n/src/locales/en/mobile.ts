@@ -2,6 +2,90 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.sample.title": "Wolbachia sample",
+  "mobile.sample.subtitle": "Collection and lab delivery",
+  "mobile.sample.loading": "Loading your saved samples…",
+  "mobile.sample.refresh": "Refresh capture data",
+  "mobile.sample.source": "Choose the sample source",
+  "mobile.sample.sourceReading": "Ovitrap reading",
+  "mobile.sample.sourceLot": "Lot",
+  "mobile.sample.sourceRelease": "Release",
+  "mobile.sample.noSources":
+    "No sources are available in your downloaded copy. Refresh or contact your supervisor.",
+  "mobile.sample.origin": "Where does the sample come from?",
+  "mobile.sample.noOrigins": "No configured origins are available. Contact your administrator.",
+  "mobile.sample.method": "Verified method",
+  "mobile.sample.noMethods": "No verified methods are available. Contact your administrator.",
+  "mobile.sample.selected": "Selected",
+  "mobile.sample.identity": "Sample identifier",
+  "mobile.sample.unavailable": "Unavailable",
+  "mobile.sample.code": "Sample code",
+  "mobile.sample.codeHint":
+    "Enter the container code, up to 50 characters. The server checks that it is unique.",
+  "mobile.sample.codeRequired": "Enter a code of up to 50 characters.",
+  "mobile.sample.otherText": "Specify the other origin",
+  "mobile.sample.otherHint": "Describe the sample origin, up to 1000 characters.",
+  "mobile.sample.otherRequired": "Describe the other origin before saving.",
+  "mobile.sample.gps": "Location accuracy (m)",
+  "mobile.sample.acquireGps": "Get location",
+  "mobile.sample.photo": "Photo evidence",
+  "mobile.sample.photoUnknown": "Choose an origin to see its photo requirement.",
+  "mobile.sample.photoUnavailable":
+    "We could not open the camera. Your fields are retained; try again.",
+  "mobile.sample.photoRequired": "This origin requires a photo.",
+  "mobile.sample.photoOptional": "A photo is optional for this origin.",
+  "mobile.sample.photoPreview": "Private sample photo",
+  "mobile.sample.takePhoto": "Take photo",
+  "mobile.sample.undoPhoto": "Undo last photo",
+  "mobile.sample.savedCaptures": "Samples saved on this phone",
+  "mobile.sample.draftStatus": "Draft on this phone",
+  "mobile.sample.deliveryPending": "Lab delivery unconfirmed",
+  "mobile.sample.beginHint":
+    "Choose a real source from your downloaded copy. A QR identifier alone does not confirm its origin or authorization.",
+  "mobile.sample.begin": "Prepare sample",
+  "mobile.sample.save": "Save sample",
+  "mobile.sample.saveHint":
+    "Data is saved on this phone and sent when connected. Saving does not confirm lab reception.",
+  "mobile.sample.pendingEdits":
+    "Saving your latest changes. If this does not finish, your fields stay available; use Retry.",
+  "mobile.sample.working": "Working…",
+  "mobile.sample.blockedHint":
+    "Complete the missing fields. If downloaded requirements are missing, refresh or contact your supervisor. They cannot be bypassed.",
+  "mobile.sample.phoneSaved": "Sample saved on this phone. Sending is still pending.",
+  "mobile.sample.serverReceived": "The server received the sample record.",
+  "mobile.sample.inReview":
+    "The record is in review. This does not confirm an operational sample or lab reception.",
+  "mobile.sample.rejected":
+    "The server rejected the record. Your data and photos are retained; check the inbox and contact your supervisor.",
+  "mobile.sample.evidencePending": "Private evidence is still awaiting verification.",
+  "mobile.sample.reviewApplied":
+    "An applied review was observed. The original sending status is retained.",
+  "mobile.sample.reviewDiscarded":
+    "A review discard was observed. The original capture is retained.",
+  "mobile.sample.reviewObserved": "A later review decision is available. Check the inbox.",
+  "mobile.sample.inbox": "View inbox",
+  "mobile.sample.backToDay": "Back to day",
+  "mobile.sample.deliver": "Deliver the container to the lab when closing your shift.",
+  "mobile.sample.receiptUnknown":
+    "No confirmed reception is present in the downloaded data. The reminder is retained.",
+  "mobile.sample.received": "A lab reception is confirmed for this exact sample and record.",
+  "mobile.sample.noResultAssumption":
+    "Reception is not a result. A missing, invalid or disputed result does not mean negative.",
+  "mobile.sample.storageError":
+    "We could not save your changes. Your fields are retained; use Retry.",
+  "mobile.sample.scopeUnavailable":
+    "Your access or context changed. Unlock and refresh to continue.",
+  "mobile.sample.shiftRequired": "You need an open shift to collect a sample.",
+  "mobile.sample.configurationUnavailable":
+    "Original or current origin and method requirements are missing. Refresh or contact your administrator.",
+  "mobile.sample.sourceUnavailable":
+    "The original source is no longer available or does not match this capture. Contact your supervisor.",
+  "mobile.sample.originRequired": "Choose an available origin.",
+  "mobile.sample.methodRequired": "Choose an available verified method version.",
+  "mobile.sample.gpsRequired": "Get a location before saving.",
+  "mobile.sample.evidenceRequired": "Add the photo required by the origin before saving.",
+  "mobile.sample.staleDraft":
+    "This draft has changed. Restore its current state before continuing.",
   "mobile.release.title": "Record release",
   "mobile.release.blockedTitle": "Release blocked",
   "mobile.release.subtitle": "Requirements in the downloaded copy",

@@ -8,7 +8,6 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | --- | --- | --- |
 | envío UIEB | UiebShipment | Immutable technical source projection with cutoff and linked supersession. |
 | fuente de envío | ShipmentSource | Genuine selected Bag, WolbachiaSample or Lot identity; not a legal Annex VI template. |
-| muestra de Wolbachia | WolbachiaSample | Canonical minimal B21 identity with actual collection event, origin, method and Reading or Lot provenance. |
 | solicitud de material | MaterialRequest | Actual recipient, lot, storage, unit, quantity and optional piece. |
 | evidencia de notificación CENAPRECE | NotificationEvidence | Recorded reference/date and verified owned private upload. |
 | recibo de entrega | DeliveryReceipt | Unique authenticated command, verified signature and one real stock debit. |
@@ -57,6 +56,9 @@ Rules:
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
+| muestra de Wolbachia | Wolbachia sample | `WolbachiaSample`, `sample.collect` | Canonical collection UUID/code, retained origin/method proof, GPS, clocks and Reading, Lot or Release provenance; shared by results and shipments. |
+| recepción de muestra | sample receipt | `SampleReceipt`, `/wolbachia-samples/{id}/receive/` | Authored laboratory reception, distinct from collection. |
+| intento de resultado de Wolbachia | Wolbachia result attempt | `WolbachiaResultAttempt` | Append-only valid/invalid/disputed observation with an explicit binary result only when valid. |
 
 
 ## Notifications (#150)

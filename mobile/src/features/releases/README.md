@@ -35,9 +35,10 @@ in_review ingestion is not proof of stock consumption. Saved evidence and review
 outcomes remain readable after the shift closes. Critical rejection preserves
 the original UUID, payload and files, with no override.
 
-Sample collection P20 is excluded: #117 is open and `sample.collect` is not
-registered on the checked master. No sample API, queue or negative result is
-invented. This limitation is recorded on #139.
+P20 sample collection consumes the real #117 handler and shares the original
+outbox/journal. Its source/method/origin pins and lab reminder are owned by the
+separate [sample feature](../samples/README.md); a pending release event is not
+proof that an operational Release source exists.
 
 GeoJSON Polygon uses longitude/latitude and covers exterior/hole boundaries.
 GPS uses the explicit positive finite permit accuracy policy, without a fallback;
@@ -46,14 +47,14 @@ actual manual-evidence-review policy requires photos, no planned quantity is
 presented as stock, and actual UUIDs remain visible where human labels are absent.
 Phone-saved, server-received and later-reviewed outcomes are separate.
 
-| Criterion | Test |
-| --- | --- |
-| Gate matrix, decimal limits, original/current safety and no bypass | `release-domain.test.ts` |
-| Transactional bootstrap readiness, shared assignment compatibility, delta floors, ownership and original-source guard | `release-projections.test.ts` |
-| Retained owner drafts, immutable pins, raw CAS, atomic supersession and cold SQLite reopen | `release-store.test.ts` |
-| Offline Save/evidence, generated-client retry, suspension, reservations, camera lock/revocation, review after close and transport ordering | `m-10.test.ts` |
-| Actual QR/manual routing with no unrelated capture mutation | `m-07-source.test.ts` |
-| Raw-edit/native flush barriers, truthful statuses and localized 48dp controls in both themes at 130% host scale | `release-ui.test.ts` |
+| Criterion                                                                                                                                  | Test                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Gate matrix, decimal limits, original/current safety and no bypass                                                                         | `release-domain.test.ts`      |
+| Transactional bootstrap readiness, shared assignment compatibility, delta floors, ownership and original-source guard                      | `release-projections.test.ts` |
+| Retained owner drafts, immutable pins, raw CAS, atomic supersession and cold SQLite reopen                                                 | `release-store.test.ts`       |
+| Offline Save/evidence, generated-client retry, suspension, reservations, camera lock/revocation, review after close and transport ordering | `m-10.test.ts`                |
+| Actual QR/manual routing with no unrelated capture mutation                                                                                | `m-07-source.test.ts`         |
+| Raw-edit/native flush barriers, truthful statuses and localized 48dp controls in both themes at 130% host scale                            | `release-ui.test.ts`          |
 
 Tests use ordinary SQLite, synthetic private files and scripted HTTP, not a live
 B20 backend. Windows refused the authorized PostgreSQL host port 55532; the isolated

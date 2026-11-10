@@ -101,6 +101,7 @@ def write_method(
         fields.update(
             supports_independent_qa=values.get("supports_independent_qa", False),
             supports_paddle_reuse=values.get("supports_paddle_reuse", False),
+            supports_wolbachia=values.get("supports_wolbachia", False),
         )
         proof = {**fields, "effective_from": fields["effective_from"].isoformat()}
         return LabMethodVersion.objects.create(

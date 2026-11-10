@@ -7,6 +7,7 @@ from uuid import UUID
 
 from django.http import Http404
 
+from field_sync.models import FieldEvent
 from inventory.access import scoped_inventory
 from inventory.allocations.scope import require_contexts
 from inventory.models import Lot, LotVersion
@@ -20,6 +21,7 @@ from lab.access import (
 from lab.exceptions import LabConflictError
 from lab.samples.models import WolbachiaSample
 from lab.samples.selectors import sample_contexts, sample_rows
+from lab.samples.sources import resolve_source, source_is_effective
 from lab.shipments.models import ShipmentSource, UiebShipment
 from lab.transactions import LabParticipants
 from ovitraps.models import Bag
@@ -72,6 +74,12 @@ def sample_participants(samples: tuple[WolbachiaSample, ...]) -> LabParticipants
     for sample in samples:
         if sample.reading is not None:
             events[sample.reading.event_id] = sample.reading.event
+            events[sample.reading.ovitrap.event_id] = sample.reading.ovitrap.event
+        if sample.release is not None:
+            source = FieldEvent.objects.filter(pk=sample.release.declared_event_id).first()
+            if source is None:
+                raise LabConflictError("shipment_source_unavailable")
+            events[source.pk] = source
     if any(event.created_by_id is None for event in events.values()):
         raise LabConflictError("shipment_source_unavailable")
     return LabParticipants(
@@ -124,7 +132,10 @@ def freeze_sample(sample: WolbachiaSample, cutoff: datetime) -> dict[str, Any]:
     if (
         sample.created_at > cutoff
         or not is_effective(source)
-        or (sample.reading is not None and not is_effective(sample.reading.event))
+        or not source_is_effective(
+            resolve_source(sample.organization, sample.event.payload["source_ref"])
+        )
+        or (sample.reading is not None and not is_effective(sample.reading.ovitrap.event))
     ):
         raise LabConflictError("shipment_source_unavailable")
     receipt = getattr(source, "review_effect_receipt", None)
@@ -148,13 +159,17 @@ def freeze_sample(sample: WolbachiaSample, cutoff: datetime) -> dict[str, Any]:
         "source_status": source.status,
         "rules_version": source.rules_version,
         "catalog_version": source.catalog_version,
-        "origin_id": str(sample.origin_id),
+        "origin_snapshot": sample.origin_snapshot,
         "method_version_id": str(sample.method_version_id),
-        "location_id": str(sample.location_id),
+        "location": sample.location,
+        "center_id": str(sample.center_id),
+        "quadrant_id": str(sample.quadrant_id) if sample.quadrant_id else None,
+        "source_provenance": sample.source_provenance,
         "reading_id": str(sample.reading_id) if sample.reading_id else None,
         "lot_id": str(sample.lot_id) if sample.lot_id else None,
+        "release_id": str(sample.release_id) if sample.release_id else None,
         "lot_version_id": str(lot_version.pk) if lot_version else None,
-        "collector_id": str(sample.collector_id),
+        "collector_id": str(sample.created_by_id),
         "review_effect_receipt_id": str(receipt.pk) if receipt else None,
     }
 
@@ -166,8 +181,8 @@ def append_sources(shipment: UiebShipment, selection: ShipmentSelection) -> None
             created_by=shipment.created_by,
             shipment=shipment,
             sample=sample,
-            center_id=sample.location.center_id,
-            quadrant_id=sample.location.quadrant_id,
+            center_id=sample.center_id,
+            quadrant_id=sample.quadrant_id,
         )
     for bag in selection.bags:
         quadrant = bag.reading.ovitrap.sampling_point.block.quadrant

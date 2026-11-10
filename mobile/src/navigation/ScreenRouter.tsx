@@ -7,6 +7,7 @@ import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
 import { P11Screen } from "../features/scanner/P11Screen.tsx";
 import { P12Screen } from "../features/scanner/P12Screen.tsx";
 import { P18Screen } from "../features/releases/P18Screen.tsx";
+import { P20Screen } from "../features/samples/P20Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { P8Screen } from "../features/supply-receipt/P8Screen.tsx";
 import { P22Screen } from "../features/fuel/P22Screen.tsx";
@@ -52,6 +53,8 @@ function screenFor(route: Route): ReactNode {
     return (
       <P18Screen key={`${route.taskId ?? "none"}:${route.deviceId ?? "none"}`} selection={route} />
     );
+  if (route.name === "sampleCapture")
+    return <P20Screen key={JSON.stringify(route)} selection={route} />;
   if (route.name === "ovitrapScanner")
     return (
       <ScannerScreen

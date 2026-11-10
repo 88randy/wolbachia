@@ -42,6 +42,9 @@ class ProducerContext:
     release_visibility_revision: str = ""
     release_capture_payloads: dict[str, dict[str, Any]] | None = None
     release_capture_frame: tuple[str, str, str, str, str] | None = None
+    sample_visibility_revision: str = ""
+    sample_capture_payload: dict[str, Any] | None = None
+    sample_capture_frame: tuple[str, ...] | None = None
 
     def includes(self, row: dict[str, Any]) -> bool:
         """Defense in depth before serialization: require ownership metadata on every row.

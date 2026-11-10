@@ -78,7 +78,11 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     if data is None:
         return SubjectFacts()
     try:
-        selectors = {"release.record": release_subjects, "community.activity": _community_subject}
+        selectors = {
+            "release.record": release_subjects,
+            "community.activity": _community_subject,
+            "sample.collect": sample_subjects,
+        }
         if selector := selectors.get(envelope.type):
             return selector(organization, data)
         if envelope.type in {"supplies.receive", "supplies.reconcile"}:
@@ -129,6 +133,23 @@ def _community_subject(organization: Organization, values: dict[str, Any]) -> Su
         SubjectFacts()
         if block is None
         else SubjectFacts(True, (block_context(block),), "block", block.pk)
+    )
+
+
+def sample_subjects(organization: Organization, values: dict[str, Any]) -> SubjectFacts:
+    from lab.samples.services import resolve_source
+
+    source = resolve_source(organization, values["source_ref"])
+    return SubjectFacts(
+        True,
+        (
+            {
+                "center_id": str(source.center_id),
+                "quadrant_id": str(source.quadrant_id) if source.quadrant_id else None,
+            },
+        ),
+        "wolbachia_sample",
+        values["sample_id"],
     )
 
 

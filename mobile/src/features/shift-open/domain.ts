@@ -29,6 +29,7 @@ export interface ChecklistCatalog {
   /** /field/catalog/ only returns ACTIVE items. */
   readonly items: readonly ChecklistItem[];
   readonly blockedMotorcycles?: readonly string[];
+  readonly sampleOrigins?: readonly ChecklistItem[];
 }
 export interface MapAsset {
   readonly id: string;

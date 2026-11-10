@@ -1,6 +1,6 @@
 # UIEB shipment sources and external material delivery (#118 / B22)
 
-Shipments freeze actual B18 Bag/Reading, minimal B21 WolbachiaSample and B08 LotVersion references at an aware
+Shipments freeze actual B18 Bag/Reading, canonical B21 WolbachiaSample and B08 LotVersion references at an aware
 cutoff, including original source clocks, payload hash, rules/catalog pins and
 review effect proof. `source-projection-v1` names this technical projection; it
 does not claim an authoritative Annex VI legal edition. B25 owns rendering and
@@ -48,9 +48,12 @@ deliver/void`; evidence independently needs `field.upload`, stock safety needs
 
 Dependency audit: B10 reservations/ledger and B18 provenance already exist. B24's
 minimal authorization/revocation owner is `privacy/`; full ARCO/retention remains
-#120. The minimal B21 sample identity lives in `lab/samples`, consuming only real
-effective source facts; #117 retains collection/reception/results and must reconcile
-the documented internal source_ref assumption. Unknown source UUIDs fail closed.
+#120. The canonical B21 sample owner is `lab/samples`: its real `sample.collect`
+handler retains exactly one `{kind: reading|lot|release, id: UUID}` source. Shipments
+consume that existing identity, including archived origin, GPS, method, collector,
+source proof and clocks; no second sample writer or reception location is inferred.
+Sample and upstream source corrections flag existing snapshots without rewriting
+them. Unknown or unapplied source UUIDs fail closed.
 No #116
 permit/release or #100 protected identity model is duplicated.
 

@@ -37,6 +37,14 @@ import {
   readReleaseProjection,
 } from "../releases/projections.ts";
 import type { TaskOwner } from "./current-task.ts";
+import {
+  sampleBundleStatements,
+  sampleChangeStatements,
+  invalidateSampleProjection,
+  clearSampleProjection,
+  needsSampleBootstrap,
+  readSampleProjection,
+} from "../samples/projection.ts";
 import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
@@ -141,6 +149,12 @@ export class DayStore {
   releaseProjection(handle: CaptureTransportHandle) {
     return readReleaseProjection(this.#db, handle);
   }
+  sampleProjection(handle: CaptureTransportHandle) {
+    return readSampleProjection(this.#db, handle);
+  }
+  needsSampleBootstrap(): Promise<boolean> {
+    return needsSampleBootstrap(this.#db);
+  }
   needsReleaseBootstrap(): Promise<boolean> {
     return needsReleaseBootstrap(this.#db);
   }
@@ -172,6 +186,7 @@ export class DayStore {
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
       ...releaseBundleStatements(body, handle),
+      ...sampleBundleStatements(body, handle),
       ...trainingBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
       suppliesBootstrapReadiness(body),
@@ -199,6 +214,7 @@ export class DayStore {
       ...courierChangeStatements(body),
       ...supplyChangeStatements(body, handle),
       ...releaseChangeStatements(body, handle),
+      ...sampleChangeStatements(body, handle),
       ...trainingChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
@@ -211,6 +227,7 @@ export class DayStore {
       ...invalidateCaptureContext,
       invalidateSupplyProjection,
       invalidateReleaseProjection,
+      invalidateSampleProjection,
       invalidateTrainingProjection,
       revokeCaptureScope(),
     ]);
@@ -221,6 +238,7 @@ export class DayStore {
       ...captureRecoveryStatements(handle),
       invalidateSupplyProjection,
       invalidateReleaseProjection,
+      invalidateSampleProjection,
       invalidateTrainingProjection,
       INVALIDATE_ATTACHMENTS,
     ]);
@@ -257,6 +275,7 @@ export class DayStore {
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
       ...clearReleaseProjection,
+      ...clearSampleProjection,
       ...clearTrainingProjection,
       removeStatement("history_projection_ready"),
       ...invalidateCaptureContext,

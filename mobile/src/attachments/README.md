@@ -1,9 +1,9 @@
 # Private evidence transport (#246)
 
-M10 (#139) declares release evidence_ids through the same journal and field_event
+M10 (#139) declares release and sample evidence_ids through the same journal and field_event
 parent. Only Save enrolls photos; Undo retains unenrolled private files. Normal
-release JSON waits for verified originals and the opening receipt; same-shift close
-JSON waits for earlier unsettled releases, including future retries. The final
+release/sample JSON waits for verified originals and the opening receipt; same-shift close
+JSON waits for earlier unsettled releases or samples, including future retries. The final
 upload exception and the single SyncEngine remain unchanged. Capture-time safety
 and server review stay independent of file verification or receipt.
 

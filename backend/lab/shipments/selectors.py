@@ -6,6 +6,7 @@ from django.db.models import Exists, OuterRef, Q, QuerySet
 
 from inventory.transfers.scope import paired_query
 from lab.samples.selectors import sample_contexts, sample_pair_query
+from lab.samples.sources import resolve_source, source_is_effective
 from lab.shipments.models import MaterialRequest, ShipmentSource, UiebShipment
 from uploads.access import UploadActor, current_scope
 
@@ -44,9 +45,9 @@ def shipment_contexts(shipment: UiebShipment) -> list[dict[str, Any]]:
         for source in shipment.sources.all()
     ]
     for source in shipment.sources.filter(sample__isnull=False).select_related(
-        "sample__location",
         "sample__lot",
         "sample__reading__ovitrap__sampling_point__block__quadrant",
+        "sample__release__permit_version__permit",
     ):
         contexts.extend(sample_contexts(source.sample))
     return contexts
@@ -123,7 +124,7 @@ def source_changed(shipment: UiebShipment) -> bool:
 
     pins = {row["id"]: row for row in shipment.source_snapshot}
     for source in shipment.sources.select_related(
-        "bag__event", "sample__event", "sample__reading__event"
+        "bag__event", "sample__event", "sample__reading__event", "sample__reading__ovitrap__event"
     ):
         if source.bag_id and source.bag.event.voided_at is not None:
             return True
@@ -139,8 +140,14 @@ def source_changed(shipment: UiebShipment) -> bool:
 def sample_source_changed(sample: Any, pin: dict[str, Any]) -> bool:  # noqa: ANN401 -- genuine retained sample
     from inventory.models import LotVersion
 
-    if sample.event.voided_at is not None or (
-        sample.reading_id and sample.reading.event.voided_at is not None
+    if (
+        sample.event.voided_at is not None
+        or (
+            not source_is_effective(
+                resolve_source(sample.organization, sample.event.payload["source_ref"])
+            )
+        )
+        or (sample.reading_id and sample.reading.ovitrap.event.voided_at is not None)
     ):
         return True
     if sample.lot_id:

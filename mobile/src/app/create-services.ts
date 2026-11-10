@@ -44,6 +44,8 @@ import type { ScannerService } from "../features/scanner/service.ts";
 import { createScanner } from "../features/scanner/create-scanner.ts";
 import { createReleases } from "../features/releases/create-releases.ts";
 import type { ReleaseService } from "../features/releases/service.ts";
+import { createSamples } from "../features/samples/create-samples.ts";
+import type { SampleService } from "../features/samples/service.ts";
 import { createHistory } from "../features/history/service.ts";
 import type { HistoryService } from "../features/history/service.ts";
 import { createTraining } from "../features/training/create-training.ts";
@@ -52,6 +54,7 @@ import { SettingsService } from "../screens/settings/settings-service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly samples: SampleService;
   readonly releases: ReleaseService;
   readonly history: HistoryService;
   readonly training: TrainingService;
@@ -107,7 +110,7 @@ export async function createServices(): Promise<AppServices> {
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
   const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
-  const scanner = createScanner(db, bundle, captures.ovitrapCheck);
+  const scanner = createScanner(db, bundle, { ovitrap: captures.ovitrapCheck, ...forms });
   const reads = createReadScreens({ db, auth, tokens, requests, bundle, deviceId, attachments });
   return { ...shared, ...captures, scanner, engine, shiftOpen, day, ...forms, ...reads };
 }
@@ -157,6 +160,7 @@ function createLocalForms(
     fuel: createFuel(input),
     incidents: createIncidents(input),
     releases: createReleases(input),
+    samples: createSamples(input),
   };
 }
 

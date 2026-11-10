@@ -15,6 +15,7 @@ import { LIFECYCLE_EVIDENCE_SCHEMA } from "../features/ovitrap-lifecycle/evidenc
 import { SUPPLY_RECEIPT_SCHEMA } from "../features/supply-receipt/schema.ts";
 import { FUEL_SCHEMA } from "../features/fuel/schema.ts";
 import { RELEASE_SCHEMA } from "../features/releases/schema.ts";
+import { SAMPLE_SCHEMA } from "../features/samples/schema.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -304,6 +305,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
   FUEL_SCHEMA,
   INCIDENT_SCHEMA,
   RELEASE_SCHEMA,
+  SAMPLE_SCHEMA,
 ];
 
 /** Highest schema version this build knows. */

@@ -12,6 +12,15 @@ export type Route =
   | { readonly name: "qrScanner" }
   | { readonly name: "supplyDetail"; readonly lotId: string }
   | {
+      readonly name: "sampleCapture";
+      readonly sampleId: string | null;
+      readonly sourceRef: {
+        readonly kind: "reading" | "lot" | "release";
+        readonly id: string;
+      } | null;
+      readonly manualCapture: boolean;
+    }
+  | {
       readonly name: "releaseCapture";
       readonly taskId: string | null;
       readonly deviceId: string | null;
@@ -65,7 +74,11 @@ function isSameRoute(left: Route | undefined, right: Route): boolean {
   if (!left || left.name !== right.name) return false;
   if ("lotId" in right) return "lotId" in left && left.lotId === right.lotId;
   if (right.name === "releaseCapture") return isSameRelease(left, right);
+  if (right.name === "sampleCapture") return isSameSample(left, right);
   if ("target" in right) return isSameScanner(left, right);
+  return isSameOvitrap(left, right);
+}
+function isSameOvitrap(left: Route, right: Route): boolean {
   if (!("ovitrapId" in right)) return true;
   return (
     "ovitrapId" in left &&
@@ -78,6 +91,15 @@ function isSameRelease(left: Route, right: Extract<Route, { name: "releaseCaptur
     left.name === "releaseCapture" &&
     left.taskId === right.taskId &&
     left.deviceId === right.deviceId &&
+    left.manualCapture === right.manualCapture
+  );
+}
+function isSameSample(left: Route, right: Extract<Route, { name: "sampleCapture" }>): boolean {
+  return (
+    left.name === "sampleCapture" &&
+    left.sampleId === right.sampleId &&
+    left.sourceRef?.kind === right.sourceRef?.kind &&
+    left.sourceRef?.id === right.sourceRef?.id &&
     left.manualCapture === right.manualCapture
   );
 }

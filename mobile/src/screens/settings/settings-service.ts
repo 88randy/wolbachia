@@ -53,4 +53,5 @@ const PENDING_SUMMARY = `SELECT
     UNION ALL SELECT 1 FROM fuel_draft WHERE event_id IS NULL
     UNION ALL SELECT 1 FROM incident_draft WHERE event_id IS NULL
     UNION ALL SELECT 1 FROM release_draft WHERE event_id IS NULL AND superseded_by IS NULL
+    UNION ALL SELECT 1 FROM sample_draft WHERE event_id IS NULL
   )) AS drafts`;

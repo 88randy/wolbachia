@@ -44,9 +44,9 @@ const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) re
 // waits for earlier fuel/releases, including future retries and parked errors. Local saves never wait.
 // Only sent/rejected/in_review predecessors release normal transport; final JSON bypasses this.
 const UNSETTLED_FUEL = `(type='shift.close' AND EXISTS(SELECT 1 FROM outbox_event fuel
-  WHERE fuel.type IN ('fuel.load','release.record') AND fuel.shift_id=waiting.shift_id AND fuel.seq<waiting.seq
+  WHERE fuel.type IN ('fuel.load','release.record','sample.collect') AND fuel.shift_id=waiting.shift_id AND fuel.seq<waiting.seq
     AND fuel.local_status IN ('pending','sending','error')))`;
-const UNSETTLED_OPENING = `(type IN ('fuel.load','release.record','incident.report','emergency.accident') AND EXISTS(SELECT 1 FROM outbox_event opening
+const UNSETTLED_OPENING = `(type IN ('fuel.load','release.record','sample.collect','incident.report','emergency.accident') AND EXISTS(SELECT 1 FROM outbox_event opening
   WHERE opening.type='shift.open' AND opening.shift_id=waiting.shift_id
     AND opening.local_status IN ('pending','sending','error')))`;
 

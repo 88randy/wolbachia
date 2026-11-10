@@ -12,6 +12,9 @@ RECOUNT_CREATE = "recount.create"
 RECOUNT_ADJUDICATE = "recount.adjudicate"
 PADDLE_REUSE = "egg_paddle.reuse"
 ENTOMOLOGIST_CODES = (
+    "sample.read",
+    "sample.receive",
+    "sample.result_create",
     BAG_RECEIVE,
     COUNT_CREATE,
     COUNT_READ,
@@ -20,6 +23,8 @@ ENTOMOLOGIST_CODES = (
     RECOUNT_CREATE,
 )
 ADMIN_CODES = (
+    "sample.collect",
+    "sample.void",
     *ENTOMOLOGIST_CODES,
     COUNT_VOID,
     METHOD_MANAGE,

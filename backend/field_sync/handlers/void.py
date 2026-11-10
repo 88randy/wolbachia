@@ -82,6 +82,9 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
         from field_sync.codes import CAUSAL_PARENT_PENDING
 
         raise EventNeedsReview(CAUSAL_PARENT_PENDING)
+    from lab.samples.handlers import protect_sample_dependents
+
+    protect_sample_dependents(ctx, target)
     try:
         voided = void_locked_record(target, ctx.user, choice)
     except AlreadyVoidedError:

@@ -7,6 +7,7 @@ import { DayStore } from "../src/features/day/store.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { readScannerResources } from "../src/features/scanner/resource-source.ts";
 import { ScannerService } from "../src/features/scanner/service.ts";
+import { sampleScannerRoute } from "../src/features/scanner/sample-route.ts";
 import { OvitrapDraftBuffer } from "../src/features/ovitrap-check/draft-buffer.ts";
 import { createStores } from "./support/factories.ts";
 import { CONTRACT_IDS } from "./support/lifecycle-contract-fixtures.ts";
@@ -232,4 +233,73 @@ void test("M10 release-device QR and exact manual code route only downloaded pai
     await scanner.resolve({ value: `wbf:1:release-device:${pins.device.id}`, isManual: false }),
     { error: "unavailable" },
   );
+});
+
+function sampleScanner(admit: Parameters<typeof sampleScannerRoute>[1]["admit"]) {
+  return new ScannerService({
+    sample: (input, current) => sampleScannerRoute(input, { admit }, current),
+    read: () => () => Promise.reject(new Error("Sample QR borrowed ovitrap authority")),
+    resources: () => Promise.reject(new Error("Sample QR manufactured a downloaded resource")),
+    ovitrap: {
+      draftBuffer: new OvitrapDraftBuffer(),
+      update: () => Promise.reject(new Error("Unrelated draft write")),
+      startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
+      enterBag: () => Promise.reject(new Error("Unrelated bag")),
+    },
+  });
+}
+
+void test("M10 sample QR is only an identity candidate admitted by its current capture reader", async () => {
+  const sampleId = id(139);
+  let allowed = true;
+  const seen: string[] = [];
+  const scanner = sampleScanner((candidate) => {
+    seen.push(candidate);
+    return Promise.resolve(allowed);
+  });
+  const input = { value: "wbf:1:sample:" + sampleId, isManual: false };
+  const open = { input, eventId: id(140), isCurrent: () => true };
+  assert.deepEqual(await scanner.open(open), {
+    route: { name: "sampleCapture", sampleId, sourceRef: null, manualCapture: false },
+  });
+  allowed = false;
+  assert.deepEqual(await scanner.open(open), { error: "unavailable" });
+  assert.deepEqual(
+    await scanner.open({ ...open, input: { ...input, expected: "release-device" } }),
+    { error: "kind" },
+  );
+  assert.deepEqual(seen, [sampleId, sampleId]);
+  assert.equal(
+    await sampleScannerRoute(
+      { ...input, isManual: true },
+      { admit: () => Promise.resolve(true) },
+      () => true,
+    ),
+    null,
+  );
+});
+
+void test("M10 sample QR cannot navigate after its admission lease changes", async () => {
+  let entered!: () => void;
+  let release!: (allowed: boolean) => void;
+  const admitted = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const answer = new Promise<boolean>((resolve) => {
+    release = resolve;
+  });
+  let current = true;
+  const scanner = sampleScanner(() => {
+    entered();
+    return answer;
+  });
+  const pending = scanner.open({
+    input: { value: "wbf:1:sample:" + id(139), isManual: false },
+    eventId: null,
+    isCurrent: () => current,
+  });
+  await admitted;
+  current = false;
+  release(true);
+  assert.deepEqual(await pending, { error: "unavailable" });
 });

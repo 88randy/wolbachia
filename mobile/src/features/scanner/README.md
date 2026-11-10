@@ -38,8 +38,14 @@ supply incident link or auto-submit a report.
 - `release-device` uses the actual permits2 capture projection and routes to
   P18/P19 (#139), without touching an ovitrap draft. That feature rechecks the
   explicit task/permit binding, actual custody and safety before Save. Unknown,
-  foreign and unavailable identities remain opaque. `sample` stays unavailable
-  because #117/sample.collect is absent; no placeholder capture authority exists.
+  foreign and unavailable identities remain opaque.
+- A `sample` QR supplies a candidate UUID to P20's existing capture reader. New
+  capture needs the current authenticated owner, paired cached sample authority
+  and active shift; an owned saved sample can reopen read-only after shift close.
+  No downloaded sample/container is fabricated for a new QR. Source, method and
+  origin are selected from authentic downloaded facts before Save. Human sample
+  code is entered in P20 and is independent from the canonical QR UUID. This route
+  does not read, flush or mutate an unrelated ovitrap draft.
 - Supplies1 exposes lot/unit UUIDs, declared plan quantities and original assignment
   pins. It has no lot human code, unit/supply label or expiry. P12 shows those actual
   references and an explicit missing-metadata notice. It never says expiry does not
@@ -55,15 +61,15 @@ supply incident link or auto-submit a report.
 
 ## Acceptance criterion to test
 
-| Criterion | Evidence |
-| --- | --- |
-| Five-kind grammar, malformed/URL/version/UUID, manual exact code, wrong kind | `test/m-07.test.ts` parser and resolver matrix |
-| Unknown/foreign/wrong courier, real unit/lot pins, ambiguity/retired | `test/m-07-source.test.ts` canonical SQLite resources and typed lot route |
-| Duplicate callbacks and cancelled late continuations | `test/m-07.test.ts` deferred callback lease; existing `test/m-05-scanner.test.ts` permission denial/session lease used by P11 |
-| Typed bag/ovitrap route, manual provenance, no routing event/inventory mutation | `test/m-07-wiring.test.ts` real M08 writer and canonical local projections |
-| Local save/restart/retry original UUID once; failed write has no destination | `test/m-07-wiring.test.ts` cold service recreation, existing outbox and scripted sync |
-| Localized named manual controls, large targets and truthful P12 metadata across both themes at 130% host scale | `test/m-07-ui.test.ts` actual component host-prop matrix; no native rendering claim |
-| TalkBack, 130% text, light/dark and es-MX/en native journey | UNRUN; Node host checks cannot qualify native layout or hardware |
+| Criterion                                                                                                      | Evidence                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Five-kind grammar, malformed/URL/version/UUID, manual exact code, wrong kind                                   | `test/m-07.test.ts` parser and resolver matrix                                                                                |
+| Unknown/foreign/wrong courier, real unit/lot pins, ambiguity/retired                                           | `test/m-07-source.test.ts` canonical SQLite resources and typed lot route                                                     |
+| Duplicate callbacks and cancelled late continuations                                                           | `test/m-07.test.ts` deferred callback lease; existing `test/m-05-scanner.test.ts` permission denial/session lease used by P11 |
+| Typed bag/ovitrap route, manual provenance, no routing event/inventory mutation                                | `test/m-07-wiring.test.ts` real M08 writer and canonical local projections                                                    |
+| Local save/restart/retry original UUID once; failed write has no destination                                   | `test/m-07-wiring.test.ts` cold service recreation, existing outbox and scripted sync                                         |
+| Localized named manual controls, large targets and truthful P12 metadata across both themes at 130% host scale | `test/m-07-ui.test.ts` actual component host-prop matrix; no native rendering claim                                           |
+| TalkBack, 130% text, light/dark and es-MX/en native journey                                                    | UNRUN; Node host checks cannot qualify native layout or hardware                                                              |
 
 The cold-service test uses the production SQLite schema in Node; it does not prove
 native SQLCipher force-stop disk behavior or a real-API journey. Camera/torch,

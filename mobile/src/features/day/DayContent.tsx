@@ -8,6 +8,7 @@ import { createDayStyles } from "./styles.ts";
 import type { M06Model } from "./use-m-06.ts";
 import { DayNotices } from "./DayNotices.tsx";
 import { LocationNotice } from "./LocationNotice.tsx";
+import { SampleButton } from "./SampleButton.tsx";
 export function DayContent({ model }: { readonly model: M06Model }) {
   const t = useT();
   const styles = useStyles(createDayStyles);
@@ -17,6 +18,7 @@ export function DayContent({ model }: { readonly model: M06Model }) {
       <DayNotices model={model} />
       {model.state === null ? null : <LocationNotice model={model} />}
       <DayBody model={model} />
+      {model.state === null ? null : <SampleButton />}
       {model.phase === "empty" ? null : (
         <Button
           disabled={model.isRefreshing}

@@ -1,5 +1,16 @@
 # Day projections and task locations
 
+## Sample capture prerequisites (#139)
+
+The existing full bootstrap transaction retains the typed optional `sample_capture`
+snapshot under the original owner/session/scope binding. Only a complete bootstrap
+hydrates this new consumer; deltas or a304 cannot repair legacy readiness. Missing
+or unsupported metadata blocks P20; explicit null records known unavailability.
+`withSampleProjection` shares the original short writer and raw SQL guard, including
+the current profile, catalog and rules. Recovery invalidates readiness and revocation
+removes downloaded rows while preserving authored sample drafts, events and files.
+The Day entry opens P20's durable own work list and new collection form.
+
 ## Release prerequisites (#139)
 
 The same DayStore bootstrap/delta/revocation transaction consumes permits2,

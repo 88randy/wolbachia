@@ -2,6 +2,91 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.sample.title": "Muestra de Wolbachia",
+  "mobile.sample.subtitle": "Captura y entrega al laboratorio",
+  "mobile.sample.loading": "Consultando tus muestras guardadas…",
+  "mobile.sample.refresh": "Actualizar datos de captura",
+  "mobile.sample.source": "Elige la fuente de la muestra",
+  "mobile.sample.sourceReading": "Lectura de ovitrampa",
+  "mobile.sample.sourceLot": "Lote",
+  "mobile.sample.sourceRelease": "Liberación",
+  "mobile.sample.noSources":
+    "No hay fuentes disponibles en tu copia descargada. Actualiza o consulta a tu supervisor.",
+  "mobile.sample.origin": "¿De dónde viene la muestra?",
+  "mobile.sample.noOrigins": "No hay orígenes configurados disponibles. Consulta al administrador.",
+  "mobile.sample.method": "Método verificado",
+  "mobile.sample.noMethods": "No hay métodos verificados disponibles. Consulta al administrador.",
+  "mobile.sample.selected": "Seleccionado",
+  "mobile.sample.identity": "Identificador de la muestra",
+  "mobile.sample.unavailable": "No disponible",
+  "mobile.sample.code": "Código de la muestra",
+  "mobile.sample.codeHint":
+    "Escribe el código del recipiente, de hasta 50 caracteres. El servidor comprueba que sea único.",
+  "mobile.sample.codeRequired": "Escribe un código de hasta 50 caracteres.",
+  "mobile.sample.otherText": "Especifica el otro origen",
+  "mobile.sample.otherHint": "Describe el origen de la muestra, de hasta 1000 caracteres.",
+  "mobile.sample.otherRequired": "Describe el otro origen antes de guardar.",
+  "mobile.sample.gps": "Precisión de la ubicación (m)",
+  "mobile.sample.acquireGps": "Obtener ubicación",
+  "mobile.sample.photo": "Evidencia fotográfica",
+  "mobile.sample.photoUnknown": "Elige un origen para conocer el requisito de foto.",
+  "mobile.sample.photoUnavailable":
+    "No pudimos abrir la cámara. Conserva tus datos e intenta de nuevo.",
+  "mobile.sample.photoRequired": "Este origen requiere una foto.",
+  "mobile.sample.photoOptional": "Para este origen la foto es opcional.",
+  "mobile.sample.photoPreview": "Foto privada de la muestra",
+  "mobile.sample.takePhoto": "Tomar foto",
+  "mobile.sample.undoPhoto": "Deshacer última foto",
+  "mobile.sample.savedCaptures": "Muestras guardadas en este teléfono",
+  "mobile.sample.draftStatus": "Borrador en el teléfono",
+  "mobile.sample.deliveryPending": "Entrega al laboratorio sin confirmar",
+  "mobile.sample.beginHint":
+    "Elige una fuente real de tu copia descargada. El identificador QR por sí solo no confirma su origen ni autorización.",
+  "mobile.sample.begin": "Preparar muestra",
+  "mobile.sample.save": "Guardar muestra",
+  "mobile.sample.saveHint":
+    "Los datos se guardan en este teléfono y se envían con señal. Guardar no confirma recepción en laboratorio.",
+  "mobile.sample.pendingEdits":
+    "Guardando los últimos cambios. Si no terminan, conserva tus datos y usa Reintentar.",
+  "mobile.sample.working": "Procesando…",
+  "mobile.sample.blockedHint":
+    "Completa los campos pendientes. Si faltan requisitos descargados, actualiza o consulta a tu supervisor. No hay una opción para omitirlos.",
+  "mobile.sample.phoneSaved": "Muestra guardada en el teléfono. El envío sigue pendiente.",
+  "mobile.sample.serverReceived": "El servidor recibió el registro de la muestra.",
+  "mobile.sample.inReview":
+    "El registro está en revisión. Esto no confirma una muestra operativa ni recepción en laboratorio.",
+  "mobile.sample.rejected":
+    "El servidor rechazó el registro. Tus datos y fotos se conservan; revisa la bandeja y consulta a tu supervisor.",
+  "mobile.sample.evidencePending": "La evidencia privada sigue pendiente de verificación.",
+  "mobile.sample.reviewApplied":
+    "Se observó una revisión aplicada. El estado original del envío se conserva.",
+  "mobile.sample.reviewDiscarded":
+    "Se observó el descarte en revisión. La captura original se conserva.",
+  "mobile.sample.reviewObserved": "Hay una decisión posterior de revisión. Consulta la bandeja.",
+  "mobile.sample.inbox": "Ver bandeja",
+  "mobile.sample.backToDay": "Volver al día",
+  "mobile.sample.deliver": "Entrega el recipiente al laboratorio al cerrar jornada.",
+  "mobile.sample.receiptUnknown":
+    "No hay una recepción confirmada en los datos descargados. El recordatorio se conserva.",
+  "mobile.sample.received":
+    "Hay una recepción de laboratorio confirmada para esta muestra y este registro.",
+  "mobile.sample.noResultAssumption":
+    "La recepción no es un resultado. Un resultado ausente, inválido o en disputa no significa negativo.",
+  "mobile.sample.storageError":
+    "No pudimos guardar los cambios. Tus campos se conservan; usa Reintentar.",
+  "mobile.sample.scopeUnavailable":
+    "Tu acceso o contexto cambió. Desbloquea y actualiza para continuar.",
+  "mobile.sample.shiftRequired": "Necesitas una jornada abierta para capturar una muestra.",
+  "mobile.sample.configurationUnavailable":
+    "Faltan requisitos originales o actuales de origen y método. Actualiza o consulta al administrador.",
+  "mobile.sample.sourceUnavailable":
+    "La fuente original ya no está disponible o no corresponde a esta captura. Consulta a tu supervisor.",
+  "mobile.sample.originRequired": "Elige un origen disponible.",
+  "mobile.sample.methodRequired": "Elige una versión de método verificada disponible.",
+  "mobile.sample.gpsRequired": "Obtén una ubicación antes de guardar.",
+  "mobile.sample.evidenceRequired": "Agrega la foto requerida por el origen antes de guardar.",
+  "mobile.sample.staleDraft":
+    "Este borrador ya cambió. Recupera su estado actual antes de continuar.",
   "mobile.release.title": "Registrar liberación",
   "mobile.release.blockedTitle": "No puedes liberar",
   "mobile.release.subtitle": "Requisitos de la copia descargada",

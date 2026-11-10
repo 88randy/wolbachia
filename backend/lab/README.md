@@ -1,5 +1,11 @@
 # Laboratory reception and authoritative counts (#114)
 
+`samples/` adds B-21/#117 collection, reception and immutable Wolbachia result
+attempts, using canonical Reading/Lot/Release sources and the existing named
+LabMethodVersion owner. `supports_wolbachia` is explicit and defaults false.
+See [samples/README.md](samples/README.md) for commands, analytical eligibility,
+current paired scope and correction dependencies. No operational assay is seeded.
+
 This domain implements B-18 against real immutable `ovitraps.Bag` and Reading
 sources. Unknown, foreign and currently unauthorized human codes share 404 and
 create no command, receipt, source, incident, count or attachment. A no-paddle
