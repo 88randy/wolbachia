@@ -12,7 +12,7 @@ from geography.models import Quadrant
 from incidents.configuration import write_type
 from organizations.models import Center, Membership, Organization
 from rules.models import RuleParameter, RuleParameterVersion
-from scheduling.models import AssignmentVersion, ScheduledTask
+from scheduling.models import AssignmentVersion
 from scheduling.services import AssignmentChange, change_assignment, generate_schedule
 from shifts.models import Motorcycle
 from shifts.services import create_motorcycle
@@ -34,12 +34,12 @@ INCIDENT_TYPES = (
 )
 # Which courier covers which quadrant (courier username -> quadrant codes).
 ASSIGNMENTS = {
-    "demo-courier-1": ("Q-DEMO-01", "Q-DEMO-02"),
-    "demo-courier-2": ("Q-DEMO-03",),
-    "demo-courier-3": ("Q-DEMO-04",),
-    "demo-courier-4": ("Q-DEMO-05",),
-    "demo-courier-5": ("Q-DEMO-06", "Q-DEMO-07"),
-    "demo-courier-6": ("Q-DEMO-08",),
+    "demo-courier-1": ("Q-MER-01", "Q-MER-02"),
+    "demo-courier-2": ("Q-MER-03",),
+    "demo-courier-3": ("Q-MER-04",),
+    "demo-courier-4": ("Q-MER-05",),
+    "demo-courier-5": ("Q-MER-06", "Q-MER-07"),
+    "demo-courier-6": ("Q-MER-08",),
 }
 # code, plate (synthetic) and center; motorcycle N is ridden by courier N in the history.
 MOTORCYCLES = (
@@ -83,13 +83,7 @@ def ensure_assignments(
 
 
 def ensure_schedule(organization: Organization, admin: Membership) -> None:
-    """Generate this week's placing tasks once, before any ovitrap is placed (writes).
-
-    Skipped when tasks exist: regenerating after placements would need the revisit rule to be in
-    force since the start of the week, which a freshly seeded organization cannot satisfy.
-    """
-    if ScheduledTask.objects.filter(organization=organization).exists():
-        return
+    """Generate this week's missing tasks (writes); the planner skips identities that exist."""
     _backdate_revisit_rule(organization, admin.user)
     generate_schedule(admin, local_today(organization.timezone, timezone.now()))
 

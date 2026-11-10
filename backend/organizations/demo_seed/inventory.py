@@ -1,3 +1,4 @@
+# ruff: noqa: PLR0913 -- seed helpers pass explicit row facts
 """Demo storage location, supply types, lots, readings and the courier's supply plan (writes)."""
 
 from dataclasses import dataclass
@@ -20,8 +21,8 @@ from organizations.demo_seed.field import NAMESPACE
 from organizations.models import Membership, Organization
 from uploads.access import UploadActor
 
-LOCATION_CODE = "LOC-DEMO-01"
-HOME_QUADRANT = "Q-DEMO-01"
+LOCATION_CODE = "LOC-MER-01"
+HOME_QUADRANT = "Q-MER-01"
 STOCK_CONDITIONS = (Decimal("15"), Decimal("35"))  # inside the demo protocol's ranges
 
 
@@ -35,9 +36,9 @@ class SupplySpec:
 
 
 SUPPLIES = (
-    SupplySpec("S-DEMO-PADDLE", "Demo egg paddles", "400", courier_quantity="40"),
-    SupplySpec("S-DEMO-BAG", "Demo sample bags", "400", courier_quantity="40"),
-    SupplySpec("S-DEMO-WOLB", "Demo Wolbachia eggs", "50", biological=True, courier_quantity="10"),
+    SupplySpec("S-MER-PADDLE", "Paletas de oviposición", "400", courier_quantity="40"),
+    SupplySpec("S-MER-BAG", "Bolsas de muestra", "400", courier_quantity="40"),
+    SupplySpec("S-MER-WOLB", "Huevos con Wolbachia", "50", biological=True, courier_quantity="10"),
 )
 
 
@@ -47,21 +48,23 @@ class DemoStock:
     lots: dict[str, Lot]
 
 
-def _ensure_location(actor: UploadActor, quadrant: Quadrant, owner: Membership) -> Location:
-    existing = Location.objects.filter(organization=actor.organization, code=LOCATION_CODE).first()
+def _ensure_location(
+    actor: UploadActor, quadrant: Quadrant, owner: Membership, code: str = LOCATION_CODE
+) -> Location:
+    existing = Location.objects.filter(organization=actor.organization, code=code).first()
     if existing is not None:
         return existing
     version = revise_location(
         MasterChange(
             actor,
             {
-                "code": LOCATION_CODE,
+                "code": code,
                 "center_id": quadrant.center_id,
                 "quadrant_id": quadrant.pk,
-                "name": "Demo warehouse",
+                "name": "Almacén central",
                 "kind": "warehouse",
                 "owner_id": owner.pk,
-                "geometry": {"type": "Point", "coordinates": [-99.137, 19.403]},
+                "geometry": {"type": "Point", "coordinates": [-89.5925, 20.9674]},
                 "is_insecticide_free": True,
             },
         )
@@ -100,9 +103,11 @@ def _ensure_supply(actor: UploadActor, spec: SupplySpec) -> SupplyType:
     return revise_supply_type(MasterChange(actor, _supply_values(spec))).supply_type
 
 
-def _lot_values(spec: SupplySpec, supply: SupplyType, location: Location) -> dict[str, Any]:
+def _lot_values(
+    spec: SupplySpec, supply: SupplyType, location: Location, code: str | None = None
+) -> dict[str, Any]:
     values: dict[str, Any] = {
-        "code": f"L-{spec.code.removeprefix('S-')}",
+        "code": code or f"L-{spec.code.removeprefix('S-')}",
         "supply_id": supply.pk,
         "initial_location_id": location.pk,
         "quantity": Decimal(spec.quantity),
@@ -119,9 +124,11 @@ def _lot_values(spec: SupplySpec, supply: SupplyType, location: Location) -> dic
     return values
 
 
-def _ensure_lot(actor: UploadActor, spec: SupplySpec, location: Location) -> Lot:
+def _ensure_lot(
+    actor: UploadActor, spec: SupplySpec, location: Location, code: str | None = None
+) -> Lot:
     supply = SupplyType.objects.get(organization=actor.organization, code=spec.code)
-    values = _lot_values(spec, supply, location)
+    values = _lot_values(spec, supply, location, code)
     existing = Lot.objects.filter(organization=actor.organization, code=values["code"]).first()
     if existing is not None:
         return existing
@@ -149,6 +156,19 @@ def ensure_stock(actor: UploadActor, home: Quadrant, owner: Membership) -> DemoS
     return DemoStock(location, lots)
 
 
+def ensure_quadrant_lot(
+    actor: UploadActor, quadrant: Quadrant, owner: Membership, number: int
+) -> Lot:
+    """A small storage point and biological lot inside one release quadrant (writes).
+
+    A release device, its permit and its source lot must share the quadrant, so each release
+    quadrant beyond the home one gets its own.
+    """
+    location = _ensure_location(actor, quadrant, owner, f"LOC-MER-{number:02d}")
+    spec = SupplySpec("S-MER-WOLB", "Huevos con Wolbachia", "20", biological=True)
+    return _ensure_lot(actor, spec, location, f"L-MER-WOLB-{number:02d}")
+
+
 def _transit_policy(actor: UploadActor, supply: SupplyType) -> None:
     version = supply.versions.order_by("-revision").first()
     if version is None:
@@ -166,15 +186,19 @@ def _transit_policy(actor: UploadActor, supply: SupplyType) -> None:
     publish_transit_configuration(ConfigurationWrite(actor, supply.pk, values))
 
 
-def ensure_courier_plan(actor: UploadActor, courier: Membership, stock: DemoStock) -> None:
+def ensure_courier_plan(
+    actor: UploadActor, courier: Membership, stock: DemoStock, biological: bool = True
+) -> None:
     """Plan today supplies for the courier; the command id makes a rerun a replay (writes)."""
     lines = []
     for spec in SUPPLIES:
+        if spec.biological and not biological:
+            continue  # the biological lot only covers the first couriers
         lot = stock.lots[spec.code]
         version = lot.supply.versions.order_by("-revision").first()
         if version is None:
             continue
-        line_id = uuid5(NAMESPACE, f"assignment-line:{spec.code}")
+        line_id = uuid5(NAMESPACE, f"assignment-line:{courier.user_id}:{spec.code}")
         lines.append(
             {
                 "id": line_id,
@@ -187,7 +211,7 @@ def ensure_courier_plan(actor: UploadActor, courier: Membership, stock: DemoStoc
     if not lines or _plan_exists(actor.organization, courier):
         return
     values = {
-        "command_id": uuid5(NAMESPACE, "assignment-command"),
+        "command_id": uuid5(NAMESPACE, f"assignment-command:{courier.user_id}"),
         "courier_id": courier.user_id,
         "origin_id": stock.location.pk,
         "date": timezone.localdate(),

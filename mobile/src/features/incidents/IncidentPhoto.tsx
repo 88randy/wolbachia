@@ -1,28 +1,27 @@
 import { Image, View } from "react-native";
 import { useState } from "react";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { Notice } from "../../ui/Notice.tsx";
-import { createIncidentStyles } from "./styles.ts";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 
 export function IncidentPhoto({ fileRef }: { readonly fileRef: string }) {
-  const t = useT(),
-    styles = useStyles(createIncidentStyles);
+  const t = useT();
   const [hasFailed, setFailed] = useState(false);
   return (
-    <View>
-      <Image
-        source={{ uri: fileRef }}
-        style={styles.photo}
-        resizeMode="contain"
-        accessible
-        accessibilityLabel={t("mobile.incidents.photoPreview")}
-        onError={() => {
-          setFailed(true);
-        }}
-      />
+    <View className="gap-2">
+      <View className="overflow-hidden rounded-card bg-surface-muted">
+        <Image
+          source={{ uri: fileRef }}
+          className="aspect-square w-full"
+          resizeMode="contain"
+          accessible
+          accessibilityLabel={t("mobile.incidents.photoPreview")}
+          onError={() => {
+            setFailed(true);
+          }}
+        />
+      </View>
       {hasFailed ? (
-        <Notice tone="warning" icon="alert" message={t("mobile.incidents.previewUnavailable")} />
+        <InfoNotice tone="warning" message={t("mobile.incidents.previewUnavailable")} />
       ) : null}
     </View>
   );

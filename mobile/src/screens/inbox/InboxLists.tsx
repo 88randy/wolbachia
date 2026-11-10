@@ -1,6 +1,7 @@
+import { CircleCheck } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import type { InboxModel } from "../../sync/inbox-model.ts";
-import { AppText } from "../../ui/AppText.tsx";
+import { EmptyState } from "../../ui/EmptyState.tsx";
 import { GroupSection } from "./GroupSection.tsx";
 import { InboxSection } from "./InboxSection.tsx";
 import { ProblemCard } from "./ProblemCard.tsx";
@@ -14,7 +15,7 @@ export function InboxLists({ model }: { readonly model: InboxModel | null }) {
   if (model === null) return null;
   const { problems, onPhone, sent } = model;
   if (problems.length + onPhone.length + sent.length === 0) {
-    return <AppText tone="secondary">{t("mobile.inbox.empty")}</AppText>;
+    return <EmptyState icon={CircleCheck} title={t("mobile.inbox.empty")} />;
   }
   return (
     <>

@@ -24,8 +24,16 @@ export type ChecklistItem = Pick<
   Schemas["SnapshotItem"],
   "code" | "label_es" | "label_en" | "is_other" | "requires_photo"
 >;
+/** One motorcycle of the downloaded fleet list (the courier picks it, never types its code). */
+export interface MotorcycleOption {
+  readonly code: string;
+  readonly plate: string;
+  readonly isBlocked: boolean;
+}
 export interface ChecklistCatalog {
   readonly version: string;
+  /** Fleet list from the snapshot; absent in catalogs stored before this field existed. */
+  readonly motorcycles?: readonly MotorcycleOption[];
   /** /field/catalog/ only returns ACTIVE items. */
   readonly items: readonly ChecklistItem[];
   readonly blockedMotorcycles?: readonly string[];

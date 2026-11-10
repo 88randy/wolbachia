@@ -1,27 +1,36 @@
-import { View } from "react-native";
-import { AppScrollView } from "../../ui/AppScrollView.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { createShiftStyles } from "../shift-open/styles.ts";
-import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { CloseFooter } from "./CloseFooter.tsx";
-import { CloseOdometerForm } from "./CloseOdometerForm.tsx";
-import { PendingPoints } from "./PendingPoints.tsx";
-import { SuppliesForm } from "./SuppliesForm.tsx";
+import { useState } from "react";
+import { CloseOdometerStep } from "./CloseOdometerStep.tsx";
+import { ClosePendingStep } from "./ClosePendingStep.tsx";
+import { CloseSuppliesStep } from "./CloseSuppliesStep.tsx";
+import type { CloseDraft } from "./domain.ts";
 import type { M14Model } from "./use-m-14.ts";
 
-export function P26Screen({ model }: { readonly model: M14Model }) {
-  const styles = useStyles(createShiftStyles);
-  const t = useT();
-  if (!model.state?.draft) return <AppText>{t("mobile.shiftClose.noShift")}</AppText>;
-  return (
-    <View style={styles.root}>
-      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <PendingPoints model={model} />
-        <SuppliesForm model={model} />
-        <CloseOdometerForm model={model} />
-      </AppScrollView>
-      <CloseFooter model={model} />
-    </View>
-  );
+/** Close the shift: what is missing, leftovers to return, final kilometers. */
+export function P26Screen({
+  model,
+  draft,
+}: {
+  readonly model: M14Model;
+  readonly draft: CloseDraft;
+}) {
+  const [index, setIndex] = useState(0);
+  const hasSupplies = draft.supplies.length > 0 && model.state?.canReconcile === true;
+  const kinds = hasSupplies
+    ? (["pending", "supplies", "odometer"] as const)
+    : (["pending", "odometer"] as const);
+  const props = {
+    model,
+    draft,
+    step: { current: index + 1, total: kinds.length },
+    onNext: () => {
+      setIndex(index + 1);
+    },
+    onBack: () => {
+      setIndex(Math.max(index - 1, 0));
+    },
+  };
+  const kind = kinds[index];
+  if (kind === "pending") return <ClosePendingStep {...props} />;
+  if (kind === "supplies") return <CloseSuppliesStep {...props} />;
+  return <CloseOdometerStep {...props} />;
 }
