@@ -10722,6 +10722,422 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/availability/:
+    get:
+      operationId: platform_availability_retrieve
+      description: '`GET /platform/availability/?slug=&username=`: whether a new slug/username
+        is free.'
+      parameters:
+      - in: query
+        name: slug
+        schema:
+          type: string
+          maxLength: 64
+      - in: query
+        name: username
+        schema:
+          type: string
+          maxLength: 150
+      tags:
+      - platform
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/:
+    get:
+      operationId: platform_organizations_list
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - active
+          - suspended
+          type: string
+          minLength: 1
+        description: |-
+          * `active` - active
+          * `suspended` - suspended
+      tags:
+      - platform
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlatformOrganizationList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: platform_organizations_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProvisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProvisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/:
+    get:
+      operationId: platform_organizations_retrieve
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrganizationDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/admins/:
+    post:
+      operationId: platform_organizations_admins_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminInputRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedAdmin'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/apply-defaults/:
+    post:
+      operationId: platform_organizations_apply_defaults_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultsResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/centers/:
+    post:
+      operationId: platform_organizations_centers_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CenterInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CenterInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CenterInputRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformCenter'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/logo/:
+    get:
+      operationId: platform_organizations_logo_retrieve
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: platform_organizations_logo_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoInputRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrganizationDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/reactivate/:
+    post:
+      operationId: platform_organizations_reactivate_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrganizationDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/platform/organizations/{slug}/suspend/:
+    post:
+      operationId: platform_organizations_suspend_create
+      description: Per-user read/write throttles and the identity attestation of platform
+        views.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9-]+$
+        required: true
+      tags:
+      - platform
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOrganizationDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/portal-settings/:
     get:
       operationId: portal_settings_list
@@ -17273,6 +17689,34 @@ components:
       - id
       - quantity
       - release_line_id
+    AdminInputRequest:
+      type: object
+      properties:
+        admin_first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        admin_delivery:
+          $ref: '#/components/schemas/CredentialDeliveryEnum'
+      required:
+      - admin_delivery
+      - admin_email
+      - admin_first_name
+      - admin_last_name
+      - admin_username
     AdvisoryParameters:
       type: object
       properties:
@@ -17654,6 +18098,18 @@ components:
       required:
       - id
       - kind
+    Availability:
+      type: object
+      properties:
+        slug_available:
+          type: boolean
+          nullable: true
+        username_available:
+          type: boolean
+          nullable: true
+      required:
+      - slug_available
+      - username_available
     AvailabilityEnum:
       enum:
       - unconfigured
@@ -18543,6 +18999,20 @@ components:
       required:
       - code
       - id
+      - name
+    CenterInputRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - code
       - name
     CertificationRevocationRead:
       type: object
@@ -19979,6 +20449,28 @@ components:
       - severity
       - supervisor_sla_seconds
       - terminal_id
+    CreatedAdmin:
+      type: object
+      properties:
+        username:
+          type: string
+        delivery:
+          $ref: '#/components/schemas/CredentialDeliveryEnum'
+        temporary_password:
+          type: string
+          nullable: true
+      required:
+      - delivery
+      - temporary_password
+      - username
+    CredentialDeliveryEnum:
+      enum:
+      - password
+      - invite
+      type: string
+      description: |-
+        * `password` - password
+        * `invite` - invite
     Dashboard:
       type: object
       properties:
@@ -20040,6 +20532,19 @@ components:
         * `keep` - keep
         * `move` - move
         * `remove` - remove
+    DefaultsResult:
+      type: object
+      properties:
+        profiles:
+          type: integer
+        catalogs:
+          type: integer
+        parameters:
+          type: integer
+      required:
+      - catalogs
+      - parameters
+      - profiles
     DeliveryReceipt:
       type: object
       description: |-
@@ -24272,6 +24777,14 @@ components:
       oneOf:
       - $ref: '#/components/schemas/MobileLoginResponse'
       - $ref: '#/components/schemas/WebLoginResponse'
+    LogoInputRequest:
+      type: object
+      properties:
+        logo:
+          type: string
+          format: binary
+      required:
+      - logo
     LogoUploadRequest:
       type: object
       properties:
@@ -24894,7 +25407,10 @@ components:
             $ref: '#/components/schemas/MeOrganizationChoice'
         limits:
           $ref: '#/components/schemas/MeLimits'
+        is_platform_admin:
+          type: boolean
       required:
+      - is_platform_admin
       - limits
       - organization
       - organizations
@@ -27824,6 +28340,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PlacementOption'
+    PaginatedPlatformOrganizationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformOrganization'
     PaginatedPointVersionList:
       type: object
       required:
@@ -29657,6 +30196,186 @@ components:
           center_only: '#/components/schemas/QuadrantPlacementOption'
           location: '#/components/schemas/LotPlacementOption'
           center_only_draft: '#/components/schemas/LotPlacementOption'
+    PlatformAdminUser:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - email
+      - first_name
+      - is_active
+      - last_name
+      - username
+    PlatformCenter:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - code
+      - is_active
+      - name
+    PlatformHistory:
+      type: object
+      properties:
+        action:
+          allOf:
+          - $ref: '#/components/schemas/PlatformHistoryActionEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+      required:
+      - action
+      - actor_name
+      - created_at
+      - reason
+    PlatformHistoryActionEnum:
+      enum:
+      - organization.create
+      - organization.defaults_apply
+      - organization.logo_upload
+      - organization.suspend
+      - organization.reactivate
+      - center.create
+      - admin.create
+      - platform_admin.grant
+      type: string
+      description: |-
+        * `organization.create` - Organization Create
+        * `organization.defaults_apply` - Organization Defaults Apply
+        * `organization.logo_upload` - Organization Logo Upload
+        * `organization.suspend` - Organization Suspend
+        * `organization.reactivate` - Organization Reactivate
+        * `center.create` - Center Create
+        * `admin.create` - Admin Create
+        * `platform_admin.grant` - Platform Admin Grant
+    PlatformOrganization:
+      type: object
+      properties:
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        timezone:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        users_count:
+          type: integer
+          readOnly: true
+        centers_count:
+          type: integer
+          readOnly: true
+        has_logo:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - centers_count
+      - country
+      - created_at
+      - has_logo
+      - is_active
+      - name
+      - slug
+      - timezone
+      - users_count
+    PlatformOrganizationDetail:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        epi_week:
+          type: string
+        is_active:
+          type: boolean
+        has_logo:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        centers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformCenter'
+        admins:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformAdminUser'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformHistory'
+      required:
+      - admins
+      - centers
+      - country
+      - created_at
+      - epi_week
+      - has_logo
+      - history
+      - is_active
+      - languages
+      - name
+      - slug
+      - timezone
     PointPublicationRequest:
       type: object
       properties:
@@ -30141,6 +30860,78 @@ components:
           type: string
           format: uuid
           nullable: true
+    ProvisionRequest:
+      type: object
+      properties:
+        admin_first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        admin_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        admin_delivery:
+          $ref: '#/components/schemas/CredentialDeliveryEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 64
+        country:
+          type: string
+          minLength: 1
+          maxLength: 2
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        epi_week:
+          $ref: '#/components/schemas/EpiWeekEnum'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 2
+        centers:
+          type: array
+          items:
+            $ref: '#/components/schemas/CenterInputRequest'
+      required:
+      - admin_delivery
+      - admin_email
+      - admin_first_name
+      - admin_last_name
+      - admin_username
+      - centers
+      - country
+      - epi_week
+      - languages
+      - name
+      - slug
+      - timezone
+    ProvisionResponse:
+      type: object
+      properties:
+        organization:
+          $ref: '#/components/schemas/PlatformOrganizationDetail'
+        admin:
+          $ref: '#/components/schemas/CreatedAdmin'
+      required:
+      - admin
+      - organization
     PublicationStateEnum:
       enum:
       - outboxed
@@ -30720,6 +31511,15 @@ components:
       description: |-
         * `bag_disposed` - bag_disposed
         * `paddle_reused` - paddle_reused
+    ReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
     ReassignRequest:
       type: object
       properties:

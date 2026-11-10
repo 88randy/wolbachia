@@ -4126,6 +4126,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/platform/availability/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /platform/availability/?slug=&username=`: whether a new slug/username is free. */
+        get: operations["platform_availability_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_list"];
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/admins/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_admins_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/apply-defaults/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_apply_defaults_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/centers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_centers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/logo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_logo_retrieve"];
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_logo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/suspend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_suspend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portal-settings/": {
         parameters: {
             query?: never;
@@ -6585,6 +6740,14 @@ export interface components {
             /** Format: decimal */
             quantity: string;
         };
+        AdminInputRequest: {
+            admin_first_name: string;
+            admin_last_name: string;
+            admin_username: string;
+            /** Format: email */
+            admin_email: string;
+            admin_delivery: components["schemas"]["CredentialDeliveryEnum"];
+        };
         AdvisoryParameters: {
             closed_house_weeks_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
             incidents_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
@@ -6759,6 +6922,10 @@ export interface components {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
             id: string;
+        };
+        Availability: {
+            slug_available: boolean | null;
+            username_available: boolean | null;
         };
         /**
          * @description * `unconfigured` - unconfigured
@@ -7124,6 +7291,10 @@ export interface components {
             readonly id: string;
             readonly code: string;
             readonly name: string;
+        };
+        CenterInputRequest: {
+            code: string;
+            name: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -7707,6 +7878,17 @@ export interface components {
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
         };
+        CreatedAdmin: {
+            username: string;
+            delivery: components["schemas"]["CredentialDeliveryEnum"];
+            temporary_password: string | null;
+        };
+        /**
+         * @description * `password` - password
+         *     * `invite` - invite
+         * @enum {string}
+         */
+        CredentialDeliveryEnum: "password" | "invite";
         Dashboard: {
             /** Format: date-time */
             cutoff: string;
@@ -7733,6 +7915,11 @@ export interface components {
          * @enum {string}
          */
         DecisionEnum: "keep" | "move" | "remove";
+        DefaultsResult: {
+            profiles: number;
+            catalogs: number;
+            parameters: number;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -9524,6 +9711,10 @@ export interface components {
             label?: string;
         };
         LoginResponse: components["schemas"]["MobileLoginResponse"] | components["schemas"]["WebLoginResponse"];
+        LogoInputRequest: {
+            /** Format: binary */
+            logo: string;
+        };
         LogoUploadRequest: {
             expected_revision: number;
             /** Format: binary */
@@ -9786,6 +9977,7 @@ export interface components {
             scope: components["schemas"]["MeScope"];
             organizations: components["schemas"]["MeOrganizationChoice"][];
             limits: components["schemas"]["MeLimits"];
+            is_platform_admin: boolean;
         };
         MeLimits: {
             void_reason_min_length: number;
@@ -11253,6 +11445,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PlacementOption"][];
         };
+        PaginatedPlatformOrganizationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PlatformOrganization"][];
+        };
         PaginatedPointVersionList: {
             /** @example 123 */
             count: number;
@@ -12174,6 +12381,73 @@ export interface components {
          */
         PhaseEnum: "dispatch" | "receive";
         PlacementOption: components["schemas"]["QuadrantPlacementOption"] | components["schemas"]["LotPlacementOption"];
+        PlatformAdminUser: {
+            /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
+            readonly username: string;
+            readonly first_name: string;
+            readonly last_name: string;
+            /**
+             * Email address
+             * Format: email
+             */
+            readonly email: string;
+            /**
+             * Active
+             * @description Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+             */
+            readonly is_active: boolean;
+        };
+        PlatformCenter: {
+            readonly code: string;
+            readonly name: string;
+            readonly is_active: boolean;
+        };
+        PlatformHistory: {
+            readonly action: components["schemas"]["PlatformHistoryActionEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly actor_name: string;
+            readonly reason: string;
+        };
+        /**
+         * @description * `organization.create` - Organization Create
+         *     * `organization.defaults_apply` - Organization Defaults Apply
+         *     * `organization.logo_upload` - Organization Logo Upload
+         *     * `organization.suspend` - Organization Suspend
+         *     * `organization.reactivate` - Organization Reactivate
+         *     * `center.create` - Center Create
+         *     * `admin.create` - Admin Create
+         *     * `platform_admin.grant` - Platform Admin Grant
+         * @enum {string}
+         */
+        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "admin.create" | "platform_admin.grant";
+        PlatformOrganization: {
+            readonly slug: string;
+            readonly name: string;
+            readonly country: string;
+            readonly timezone: string;
+            readonly is_active: boolean;
+            readonly users_count: number;
+            readonly centers_count: number;
+            readonly has_logo: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PlatformOrganizationDetail: {
+            slug: string;
+            name: string;
+            country: string;
+            timezone: string;
+            languages: string[];
+            epi_week: string;
+            is_active: boolean;
+            has_logo: boolean;
+            /** Format: date-time */
+            created_at: string;
+            centers: components["schemas"]["PlatformCenter"][];
+            admins: components["schemas"]["PlatformAdminUser"][];
+            history: components["schemas"]["PlatformHistory"][];
+        };
         PointPublicationRequest: {
             expected_revision: number;
             location: number[];
@@ -12358,6 +12632,25 @@ export interface components {
             required_fields?: components["schemas"]["RequiredFieldsEnum"][];
             /** Format: uuid */
             incident_type_id?: string | null;
+        };
+        ProvisionRequest: {
+            admin_first_name: string;
+            admin_last_name: string;
+            admin_username: string;
+            /** Format: email */
+            admin_email: string;
+            admin_delivery: components["schemas"]["CredentialDeliveryEnum"];
+            name: string;
+            slug: string;
+            country: string;
+            timezone: string;
+            epi_week: components["schemas"]["EpiWeekEnum"];
+            languages: components["schemas"]["LanguagesEnum"][];
+            centers: components["schemas"]["CenterInputRequest"][];
+        };
+        ProvisionResponse: {
+            organization: components["schemas"]["PlatformOrganizationDetail"];
+            admin: components["schemas"]["CreatedAdmin"];
         };
         /** @enum {string} */
         PublicationStateEnum: "outboxed" | "pending_outbox";
@@ -12593,6 +12886,9 @@ export interface components {
          * @enum {string}
          */
         ReasonEnum: "bag_disposed" | "paddle_reused";
+        ReasonRequest: {
+            reason: string;
+        };
         ReassignRequest: {
             expected_revision: number;
             /** Format: uuid */
@@ -22967,6 +23263,383 @@ export interface operations {
                     "image/jpeg": string;
                     "image/png": string;
                     "application/pdf": string;
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_availability_retrieve: {
+        parameters: {
+            query?: {
+                slug?: string;
+                username?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Availability"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `active` - active
+                 *     * `suspended` - suspended
+                 */
+                status?: "active" | "suspended";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPlatformOrganizationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionRequest"];
+                "multipart/form-data": components["schemas"]["ProvisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProvisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_admins_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminInputRequest"];
+                "multipart/form-data": components["schemas"]["AdminInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AdminInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_apply_defaults_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultsResult"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_centers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterInputRequest"];
+                "multipart/form-data": components["schemas"]["CenterInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CenterInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCenter"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_logo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_logo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogoInputRequest"];
+                "multipart/form-data": components["schemas"]["LogoInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_suspend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

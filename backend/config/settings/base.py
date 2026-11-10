@@ -256,6 +256,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "CredentialDeliveryEnum": ["password", "invite"],
         "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
         "WolbachiaResultEnum": ["positive", "negative"],
         "CodeEnum": ["incident_conflict"],
