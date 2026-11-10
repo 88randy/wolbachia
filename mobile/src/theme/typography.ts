@@ -81,9 +81,13 @@ const VARIANTS: Readonly<Record<TextVariant, VariantSpec>> = {
  * the phone's text-size setting (React Native does it), which is how 130 % text works: the design's
  * "130 %" board is the scale of a phone set to a larger text size.
  */
-export function textStyleFor(variant: TextVariant, isMonospace = false): TextStyleSpec {
+export function textStyleFor(
+  variant: TextVariant,
+  isMonospace = false,
+  textScale = 1,
+): TextStyleSpec {
   const spec = VARIANTS[variant];
-  const fontSize = mobileTypeScale[spec.size];
+  const fontSize = mobileTypeScale[spec.size] * textScale;
   return {
     fontSize,
     lineHeight: Math.round(fontSize * spec.lineHeight),

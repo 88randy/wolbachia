@@ -1,5 +1,36 @@
 # mobile
 
+## M15 history, training and settings (#144)
+
+Settings links P29 local shift/event/code history and P30 own training/evaluation
+feedback. They consume existing scoped history7/eligibility projections and the
+generated B03 reads. A new consumer requires a full bootstrap, even when an old
+cursor/ETag is valid. Downloaded personal projections are removed on revocation;
+authored drafts, source UUIDs, outbox events and private files remain retained.
+See [history](src/features/history/README.md) and
+[training](src/features/training/README.md) for contract and test ownership.
+
+P31 saves language, appearance and additional text scaling per local user in one
+serialized SQLite value. Failed persistence preserves the previous selection and
+shows retry guidance. Closing local access delegates to the existing credential
+lock, retaining the server session lifetime and all pending work. Its summary
+counts pending events, unfinished drafts and unverified/unbound files independently;
+neither a count nor a bundled version is a server-delivery/install receipt.
+Organization support comes from the retained authenticated profile's actual
+`support_contact`, with an explicit unconfigured state.
+
+Design deviations: the issue's MO03 local lock replaces the design's blocked
+destructive logout; unproved activity totals/author names are not invented.
+Updater state is unavailable pending #146's signed native updater and B29 service;
+P31 shows the running JavaScript bundle version only. No manifest, download,
+installation, privacy URL or successful-upgrade receipt is fabricated.
+
+`settings-preferences.test.ts` protects restart, owner isolation, serialized choices
+and write failure; `settings-journey.test.ts` protects retained work/credential
+lifetime and P31 native-host props in es-MX/en, light/dark and130% text.
+Host-prop tests are not TalkBack, physical force-stop, Android installation or
+real-API/device qualification. These native checks remain UNRUN; no phone is installed.
+
 ## M07 QR scanner and supply detail (#136)
 
 P11/P21 share native camera/torch and explicit manual entry, current scoped local
