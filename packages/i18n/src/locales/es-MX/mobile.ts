@@ -324,8 +324,8 @@ export const mobile = {
   "mobile.unlock.greetingNeutral": "Hola",
   "mobile.shiftOpen.severeSaved":
     "No puedes salir con esta moto por una falla grave. Avisa a tu supervisor para que gestione la liberación de flota.",
-  "mobile.shiftOpen.receivedRejected": "Recibido en la oficina · Apertura rechazada",
-  "mobile.shiftOpen.receivedInReview": "Recibido en la oficina · En revisión",
+  "mobile.shiftOpen.receivedRejected": "La oficina no aceptó tu apertura. Avisa a tu supervisor.",
+  "mobile.shiftOpen.receivedInReview": "La oficina está revisando tu apertura.",
   "mobile.preview.title": "Vista de estilos",
   "mobile.preview.sample": "Ejemplo",
   "mobile.preview.intro":
@@ -721,8 +721,8 @@ export const mobile = {
     "La salida requiere un mapa con archivos verificados y cobertura completa. Vuelve a intentar la preparación.",
   "mobile.shiftOpen.rejected":
     "La oficina rechazó la apertura. Revisa el resultado en Envíos y consulta a tu supervisor antes de salir.",
-  "mobile.shiftOpen.phoneSaved": "Guardado en el teléfono · Recepción en la oficina pendiente",
-  "mobile.shiftOpen.serverReceived": "Recibido en la oficina · Consulta el resultado",
+  "mobile.shiftOpen.phoneSaved": "Tu jornada está abierta. La oficina la recibirá cuando haya internet.",
+  "mobile.shiftOpen.serverReceived": "La oficina ya recibió tu jornada.",
   "mobile.shiftOpen.reviewPending":
     "Revisión posterior: sin confirmación de resolución en esta versión.",
   "mobile.shiftOpen.correctAndRetry": "Corregir e intentar de nuevo",
@@ -751,9 +751,9 @@ export const mobile = {
 
   // Top-bar sync chip
   "mobile.chip.allSent": "Todo enviado",
-  "mobile.chip.toUpload": "{count} por subir",
-  "mobile.chip.noSignal": "Sin señal · {count} por subir",
-  "mobile.chip.noSignalEmpty": "Sin señal",
+  "mobile.chip.toUpload": "{count} por enviar",
+  "mobile.chip.noSignal": "Sin internet · {count} por enviar",
+  "mobile.chip.noSignalEmpty": "Sin internet",
   "mobile.chip.error": "Error: revisar",
   "mobile.chip.hint": "Abre la bandeja de envíos",
 

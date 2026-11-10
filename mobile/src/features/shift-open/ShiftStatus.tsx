@@ -12,8 +12,8 @@ export function ShiftStatus({ state }: { readonly state: ShiftSnapshot }) {
   if (opening === null) return null;
   return (
     <>
-      <AppText isMonospace>{state.draft?.motorcycle_code}</AppText>
-      <Notice tone="info" icon="alert" message={t(deliveryKey(opening))} />
+      <AppText variant="bodyStrong">{state.draft?.motorcycle_code}</AppText>
+      <Notice tone="info" icon="check" message={t(deliveryKey(opening))} />
       {state.gate === "severe" ? (
         <Notice tone="critical" icon="alert" message={t("mobile.shiftOpen.severeSaved")} />
       ) : state.gate ? (
