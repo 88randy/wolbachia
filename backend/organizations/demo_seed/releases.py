@@ -1,3 +1,4 @@
+# ruff: noqa: PLR0913 -- seed helpers pass explicit row facts
 """Demo release permit and release device, built through the release services (writes)."""
 
 import hashlib
@@ -23,9 +24,9 @@ from uploads.services import (
     receive_upload,
 )
 
-PERMIT_TYPE_CODE = "PT-DEMO"
-PERMIT_CODE = "PERMIT-DEMO-01"
-DEVICE_CODE = "RD-DEMO-01"
+PERMIT_TYPE_CODE = "PT-MER"
+PERMIT_CODE = "PERMIT-MER-01"
+DEVICE_CODE = "RD-MER-01"
 
 
 def _demo_pdf() -> bytes:
@@ -92,13 +93,13 @@ def ensure_permit(  # noqa: PLR0913
 
 
 def ensure_release_device(
-    organization: Organization, actor: UploadActor, lot: Lot
+    organization: Organization, actor: UploadActor, lot: Lot, code: str = DEVICE_CODE
 ) -> ReleaseDevice:
     """The demo release device fed by the biological lot, found by code (writes)."""
-    existing = ReleaseDevice.objects.filter(organization=organization, code=DEVICE_CODE).first()
+    existing = ReleaseDevice.objects.filter(organization=organization, code=code).first()
     if existing is not None:
         return existing
     return create_release_device(
         actor,
-        {"code": DEVICE_CODE, "quadrant_id": lot.quadrant_id, "source_lot_id": lot.pk},
+        {"code": code, "quadrant_id": lot.quadrant_id, "source_lot_id": lot.pk},
     )
