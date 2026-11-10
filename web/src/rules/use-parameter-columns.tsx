@@ -5,7 +5,6 @@ import { useFormatDate, useFormatNumber } from "../format/use-formatters";
 import { NotConfiguredBadge } from "./NotConfiguredBadge";
 import { useParameterLabels } from "./parameter-labels";
 import type { RuleParameter } from "./rules-query";
-import styles from "./rules.module.css";
 
 type Column = DataTableColumn<RuleParameter>;
 
@@ -29,11 +28,6 @@ function identityColumns(write: Writers): Column[] {
       headerKey: "rules.column.parameter",
       cell: (parameter) => write.name(parameter.key),
       link: pageOf,
-    },
-    {
-      id: "key",
-      headerKey: "rules.column.key",
-      cell: (parameter) => <code className={styles.code}>{parameter.key}</code>,
     },
     { id: "unit", headerKey: "rules.column.unit", cell: (p) => write.unit(p.unit) },
   ];

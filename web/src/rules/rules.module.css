@@ -12,7 +12,6 @@
 }
 
 .code {
-  font-family: var(--font-family-mono);
   font-size: var(--web-type-label-small-font-size);
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
@@ -62,7 +61,6 @@
 .detail {
   margin: 0;
   font-variant-numeric: var(--font-variant-numeric);
-  font-family: var(--font-family-mono);
   overflow-wrap: anywhere;
 }
 
@@ -72,7 +70,6 @@
   line-height: var(--web-type-title-line-height);
   font-weight: 500;
   font-variant-numeric: var(--font-variant-numeric);
-  font-family: var(--font-family-mono);
 }
 
 .formGrid {
