@@ -24,13 +24,16 @@ from organizations.services import (
 
 DEMO_SLUG = "demo"
 DEMO_ORGANIZATION = OrganizationSpec(
-    name="Demo Wolbachia Program",
+    name="Programa Wolbachia Mérida",
     slug=DEMO_SLUG,
     country="MX",
-    timezone="America/Mexico_City",
+    timezone="America/Merida",
     languages=("es-MX", "en"),
 )
-CENTER_CODES = (("C-DEMO-01", "Demo center North"), ("C-DEMO-02", "Demo center South"))
+CENTER_CODES = (
+    ("C-DEMO-01", "Base Centro-Oriente"),
+    ("C-DEMO-02", "Base Poniente-Norte"),
+)
 
 
 @dataclass(frozen=True)
@@ -42,19 +45,39 @@ class DemoUser:
     password: str  # DEV-ONLY, documented fixed list; see module docstring.
 
 
-# Fixed DEV-ONLY passwords, one per user. Synthetic names; no real person is described.
+# Fixed DEV-ONLY passwords, one per user. Fully synthetic people: invented combinations of common
+# Mexican (Yucatecan) names and surnames, no RFC and no real person.
 DEMO_USERS = (
     DemoUser("demo-admin", "admin", "Ada", "Admin", "Demo-Admin-Local-2026"),
-    DemoUser("demo-supervisor", "supervisor", "Sergio", "Supervisor", "Demo-Super-Local-2026"),
-    DemoUser("demo-courier-1", "courier", "Carla", "Courier", "Demo-Courier1-Local-2026"),
-    DemoUser("demo-courier-2", "courier", "Mario", "Courier", "Demo-Courier2-Local-2026"),
-    DemoUser("demo-entomologist", "entomologist", "Elena", "Entomologa", "Demo-Entomo-Local-2026"),
-    DemoUser("demo-promoter", "community_promoter", "Paula", "Promotora", "Demo-Promo-Local-2026"),
-    DemoUser("demo-coordinator", "coordinator", "Cora", "Coordinadora", "Demo-Coord-Local-2026"),
-    DemoUser("demo-warehouse", "warehouse", "Walter", "Almacen", "Demo-Wareh-Local-2026"),
-    DemoUser("demo-regulatory", "regulatory", "Regina", "Regulatoria", "Demo-Regul-Local-2026"),
-    DemoUser("demo-government", "government", "Gael", "Gobierno", "Demo-Govern-Local-2026"),
+    DemoUser(
+        "demo-supervisor", "supervisor", "Sergio Alberto", "Medina Cetina", "Demo-Super-Local-2026"
+    ),
+    DemoUser("demo-supervisor-2", "supervisor", "Mónica", "Pacheco Ruiz", "Demo-Super2-Local-2026"),
+    DemoUser("demo-courier-1", "courier", "Carlos", "Canul Pech", "Demo-Courier1-Local-2026"),
+    DemoUser("demo-courier-2", "courier", "Mario", "Chan Euán", "Demo-Courier2-Local-2026"),
+    DemoUser("demo-courier-3", "courier", "Luis Enrique", "May Poot", "Demo-Courier3-Local-2026"),
+    DemoUser("demo-courier-4", "courier", "Jorge", "Dzul Tun", "Demo-Courier4-Local-2026"),
+    DemoUser("demo-courier-5", "courier", "Yesenia", "Uc Cauich", "Demo-Courier5-Local-2026"),
+    DemoUser("demo-courier-6", "courier", "Diana Laura", "Ek Balam", "Demo-Courier6-Local-2026"),
+    DemoUser(
+        "demo-entomologist", "entomologist", "Elena", "Vargas Solís", "Demo-Entomo-Local-2026"
+    ),
+    DemoUser(
+        "demo-entomologist-2",
+        "entomologist",
+        "Ricardo",
+        "Aguilar Peniche",
+        "Demo-Entomo2-Local-2026",
+    ),
+    DemoUser(
+        "demo-promoter", "community_promoter", "Paula", "Góngora Cruz", "Demo-Promo-Local-2026"
+    ),
+    DemoUser("demo-coordinator", "coordinator", "Cora", "Escalante Báez", "Demo-Coord-Local-2026"),
+    DemoUser("demo-warehouse", "warehouse", "Walter", "Rosado Lara", "Demo-Wareh-Local-2026"),
+    DemoUser("demo-regulatory", "regulatory", "Regina", "Cervera Ortiz", "Demo-Regul-Local-2026"),
+    DemoUser("demo-government", "government", "Gael", "Herrera Sosa", "Demo-Govern-Local-2026"),
 )
+COURIER_USERNAMES = tuple(user.username for user in DEMO_USERS if user.profile == "courier")
 
 
 def ensure_organization() -> Organization:

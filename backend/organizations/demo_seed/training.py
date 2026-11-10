@@ -135,7 +135,9 @@ def ensure_certifications(
     return version
 
 
-def _ensure_release_point(actor: UploadActor) -> SamplingPoint:
+def _ensure_release_point(
+    actor: UploadActor, code: str = RELEASE_POINT, block_code: str = RELEASE_BLOCK
+) -> SamplingPoint:
     """The point of the release task, written with the ORM and a version from yesterday.
 
     A release is planned for a day only if the point already existed at that day's local midnight,
@@ -143,10 +145,10 @@ def _ensure_release_point(actor: UploadActor) -> SamplingPoint:
     a point seeded today could only host a release tomorrow.
     """
     organization = actor.organization
-    block = Block.objects.get(organization=organization, code=RELEASE_BLOCK)
+    block = Block.objects.get(organization=organization, code=block_code)
     point, created = SamplingPoint.objects.get_or_create(
         organization=organization,
-        code=RELEASE_POINT,
+        code=code,
         defaults={"block": block, "created_by": actor.user},
     )
     if created:
@@ -173,3 +175,9 @@ def ensure_release_task(actor: UploadActor, permit: Permit, courier: Membership)
         "expected_revision": permit_revision(permit),
     }
     schedule_release(actor, permit.pk, values)
+
+
+def ensure_release_points(actor: UploadActor, quadrant_numbers: range) -> None:
+    """One release point in the second block of each given demo quadrant (writes)."""
+    for number in quadrant_numbers:
+        _ensure_release_point(actor, f"Q-DEMO-{number:02d}-REL-P1", f"Q-DEMO-{number:02d}-B2")

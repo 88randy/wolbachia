@@ -1,14 +1,17 @@
 """Demo fleet, quadrant assignments, task schedule and incident types (writes via services)."""
 
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.utils import timezone
 
+from accounts.models import User
 from catalogs.models import Catalog, CatalogItem
 from core.time import local_today
 from geography.models import Quadrant
 from incidents.configuration import write_type
 from organizations.models import Center, Membership, Organization
+from rules.models import RuleParameter, RuleParameterVersion
 from scheduling.models import AssignmentVersion, ScheduledTask
 from scheduling.services import AssignmentChange, change_assignment, generate_schedule
 from shifts.models import Motorcycle
@@ -33,8 +36,20 @@ INCIDENT_TYPES = (
 ASSIGNMENTS = {
     "demo-courier-1": ("Q-DEMO-01", "Q-DEMO-02"),
     "demo-courier-2": ("Q-DEMO-03",),
+    "demo-courier-3": ("Q-DEMO-04",),
+    "demo-courier-4": ("Q-DEMO-05",),
+    "demo-courier-5": ("Q-DEMO-06", "Q-DEMO-07"),
+    "demo-courier-6": ("Q-DEMO-08",),
 }
-MOTORCYCLES = (("M-DEMO-01", "DEMO-001", "C-DEMO-01"), ("M-DEMO-02", "DEMO-002", "C-DEMO-02"))
+# code, plate (synthetic) and center; motorcycle N is ridden by courier N in the history.
+MOTORCYCLES = (
+    ("M-DEMO-01", "YY-1021-A", "C-DEMO-01"),
+    ("M-DEMO-02", "YY-1022-A", "C-DEMO-02"),
+    ("M-DEMO-03", "YY-1023-A", "C-DEMO-01"),
+    ("M-DEMO-04", "YY-1024-A", "C-DEMO-01"),
+    ("M-DEMO-05", "YY-1025-A", "C-DEMO-02"),
+    ("M-DEMO-06", "YY-1026-A", "C-DEMO-01"),
+)
 SLA_SUPERVISOR_SECONDS = 900
 SLA_COORDINATOR_SECONDS = 1800
 
@@ -75,6 +90,7 @@ def ensure_schedule(organization: Organization, admin: Membership) -> None:
     """
     if ScheduledTask.objects.filter(organization=organization).exists():
         return
+    _backdate_revisit_rule(organization, admin.user)
     generate_schedule(admin, local_today(organization.timezone, timezone.now()))
 
 
@@ -114,3 +130,26 @@ def ensure_incident_types(
             {key: value for key, value in data.items() if key not in {"code", "label"}},
             other.pk,
         )
+
+
+def _backdate_revisit_rule(organization: Organization, admin: User) -> None:
+    """Make the revisit rule apply since the first demo week, so the history gets weekly checks.
+
+    The planner evaluates the rule at each local midnight of the week; the seeded version starts
+    now, which a fresh organization cannot satisfy once traps with history exist. An earlier
+    version with the same value is a plain insert-only row.
+    """
+    parameter = RuleParameter.objects.get(organization=organization, key="revisit_interval_days")
+    current = parameter.versions.order_by("effective_from").first()
+    start = timezone.now() - timedelta(days=90)
+    if current is None or current.effective_from <= start:
+        return
+    RuleParameterVersion.objects.create(
+        organization=organization,
+        created_by=admin,
+        parameter=parameter,
+        value=current.value,
+        effective_from=start,
+        effective_date=local_today(organization.timezone, start),
+        reason="Demo seed: rule in force since the first demo week",
+    )

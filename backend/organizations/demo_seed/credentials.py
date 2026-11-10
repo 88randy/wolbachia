@@ -3,9 +3,12 @@
 from pathlib import Path
 
 from django.conf import settings
+from django.db.models import Max
 
-from organizations.demo_seed import inventory, operations, people, releases, training
+from geography.models import SamplingPoint
+from organizations.demo_seed import geography, inventory, operations, people, releases, training
 from organizations.demo_seed.run import DemoResult
+from shifts.models import Shift
 
 CREDENTIALS_FILE = "demo-credentials.local.md"
 
@@ -39,6 +42,30 @@ def _ovitrap_section(result: DemoResult) -> list[str]:
     for item in result.ovitraps:
         reading = "done this week" if item.has_reading else "pending (check it on the phone)"
         lines.append(f"| {item.point_code} | `{item.qr}` | {reading} | {item.bag_code or '-'} |")
+    return lines
+
+
+def _fleet_section(result: DemoResult) -> list[str]:
+    """Last odometer per motorcycle: a new shift on the phone must open at or above it."""
+    lines = ["", "## Odómetro (al abrir turno captura este valor o más)", ""]
+    rows = (
+        Shift.objects.filter(organization=result.organization)
+        .values("motorcycle__code")
+        .annotate(last=Max("odometer_close_km"))
+        .order_by("motorcycle__code")
+    )
+    lines += [f"- {row['motorcycle__code']}: {row['last']} km" for row in rows]
+    return lines
+
+
+def _points_section(result: DemoResult) -> list[str]:
+    """Where each demo point is (the model has no address field, so this is a local note)."""
+    lines = ["", "## Puntos de muestreo (dirección sintética)", ""]
+    lines += ["| Punto | Dirección |", "| --- | --- |"]
+    points = SamplingPoint.objects.filter(
+        organization=result.organization, code__regex=r"-B[12]-P[1-9]$"
+    ).order_by("code")
+    lines += [f"| {point.code} | {geography.point_address(point.code)} |" for point in points]
     return lines
 
 
@@ -88,6 +115,8 @@ def write_credentials(result: DemoResult) -> Path:
         "",
         *_data_section(result),
         *_ovitrap_section(result),
+        *_fleet_section(result),
+        *_points_section(result),
         *_walkthrough_section(),
         "",
     ]

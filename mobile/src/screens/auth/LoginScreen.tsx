@@ -7,6 +7,7 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { Button } from "../../ui/Button.tsx";
 import { ForgotPasswordSheet } from "./ForgotPasswordSheet.tsx";
+import { LoginConnectionPanel } from "./LoginConnectionPanel.tsx";
 import { LoginContent } from "./LoginContent.tsx";
 import { createAuthStyles } from "./auth-styles.ts";
 
@@ -14,6 +15,8 @@ export function LoginScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) {
   const t = useT();
   const styles = useStyles(createAuthStyles);
   const form = useLoginForm();
+  if (form.canConfigureServer && form.isServerOpen)
+    return <LoginConnectionPanel close={form.toggleServer} />;
   return (
     <View style={styles.root}>
       <LoginContent snapshot={snapshot} form={form} />

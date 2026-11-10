@@ -9,7 +9,10 @@ from geography.models import Quadrant
 from organizations.demo_seed import (
     field,
     geography,
+    history,
+    incidents_history,
     inventory,
+    lab_history,
     operations,
     people,
     releases,
@@ -57,9 +60,16 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     )
     operations.ensure_motorcycles(organization, centers, admin)
     operations.ensure_assignments(quadrants, members, admin)
+    device = field.ensure_device(organization)
+    catalog = field.catalog_for(organization, members["demo-courier-1"].user)
+    history.ensure_history(organization, members, device, catalog)
     operations.ensure_schedule(organization, admin)
     ovitraps = field.ensure_ovitraps(organization, members["demo-courier-1"].user)
     _seed_stock_and_releases(organization, members, quadrants)
+    incidents_history.ensure_incidents(organization, members, quadrants)
+    lab_history.ensure_lab_history(
+        organization, UploadActor(members["demo-entomologist"].user, organization)
+    )
     return DemoResult(organization, members, quadrants, ovitraps)
 
 
@@ -72,7 +82,11 @@ def _seed_stock_and_releases(
     inventory.ensure_transit_policies(actor)
     inventory.ensure_courier_plan(actor, members["demo-courier-1"], stock)
     permit = releases.ensure_permit(organization, actor, home)
+    for number in range(2, 5):
+        code = f"PERMIT-DEMO-{number:02d}"
+        releases.ensure_permit(organization, actor, quadrants[f"Q-DEMO-{number:02d}"], code)
+    training.ensure_release_points(actor, range(2, 7))
     releases.ensure_release_device(organization, actor, stock.lots["S-DEMO-WOLB"])
-    couriers = [members["demo-courier-1"], members["demo-courier-2"]]
+    couriers = [members[name] for name in people.COURIER_USERNAMES]
     training.ensure_certifications(actor, home, couriers)
     training.ensure_release_task(actor, permit, couriers[0])

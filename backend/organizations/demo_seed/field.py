@@ -23,6 +23,7 @@ from organizations.models import Organization
 NAMESPACE = UUID("6f0e2f3a-1d2b-4c5e-9a77-358358358358")
 PLACED_BLOCK = "Q-DEMO-01-B1"
 CHECKED_COUNT = 3
+PLACED_COUNT = 4  # the clock-skew limit allows about four 90 s steps
 STEP_SECONDS = 90  # 130 m in 90 s is under 6 km/h, below the speed lock
 BAG_PREFIX = "B-DEMO-"
 GPS_ACCURACY_M = 5
@@ -141,6 +142,13 @@ def _check(sender: Sender, visit: Visit) -> None:
     _send(sender, EventSpec(f"check:{point.code}", "ovitrap.check", payload, version.location, at))
 
 
+def catalog_for(organization: Organization, author: User) -> dict[str, Any]:
+    """The current catalog snapshot content, remembered under its version."""
+    return remember_catalog_snapshot(
+        organization, author, build_catalog_snapshot(organization)
+    ).content
+
+
 def ensure_ovitraps(organization: Organization, courier: User) -> list[DemoOvitrap]:
     """Place every point of the first demo block; read the first few and bag them (writes).
 
@@ -156,7 +164,7 @@ def ensure_ovitraps(organization: Organization, courier: User) -> list[DemoOvitr
     sender = Sender(batch, snapshot.version)
     points = SamplingPoint.objects.filter(organization=organization, block__code=PLACED_BLOCK)
     items = []
-    for number, point in enumerate(points.order_by("code")):
+    for number, point in enumerate(points.order_by("code")[:PLACED_COUNT]):
         has_reading = number < CHECKED_COUNT
         bag = f"{BAG_PREFIX}{number + 1:03d}" if has_reading else None
         item = DemoOvitrap(point.code, demo_id(f"ovitrap:{point.code}"), has_reading, bag)

@@ -125,3 +125,11 @@ class AccessLogSerializer(OrgScopedModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class AccessLogFilterSerializer(serializers.Serializer[Any]):
+    action = serializers.ChoiceField(choices=AccessLog.Action.choices, required=False)
+    result = serializers.ChoiceField(choices=AccessLog.Result.choices, required=False)
+    actor_id = serializers.UUIDField(required=False)
+    created_after = serializers.DateTimeField(required=False)
+    created_before = serializers.DateTimeField(required=False)

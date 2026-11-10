@@ -123,8 +123,11 @@ class HomeSummary(TypedDict):
 
 def home_summary(member: Membership, now: datetime) -> HomeSummary:
     """Every figure is computed with the filters it links to, so card and list cannot differ."""
+    from analytics.selectors import home_cards
+
     effective = effective_scope(member)
-    if not readable_sources(effective):
+    extra = home_cards(member, now)
+    if not readable_sources(effective) and not extra:
         return HomeSummary(
             cutoff=now,
             cards=[],
@@ -135,7 +138,7 @@ def home_summary(member: Membership, now: datetime) -> HomeSummary:
         )
     if INCIDENT_READ not in effective.permissions:
         return HomeSummary(
-            cutoff=now, cards=[], critical=[], attention=[], link_filters={}, support=None
+            cutoff=now, cards=extra, critical=[], attention=[], link_filters={}, support=None
         )
     cards = [
         {
@@ -147,6 +150,7 @@ def home_summary(member: Membership, now: datetime) -> HomeSummary:
         }
         for key, filters in CARD_FILTERS.items()
     ]
+    cards = [*extra, *cards]
     return HomeSummary(
         cutoff=now,
         cards=cards,
