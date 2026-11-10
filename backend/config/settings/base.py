@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
     "notifications",
+    "releases.apps.ReleasesConfig",
 ]
 
 MIDDLEWARE = [
@@ -244,6 +245,7 @@ SPECTACULAR_SETTINGS = {
             ("system", "System"),
         ],
         "NotificationObjectKindEnum": ["incident", "motorcycle", "review_item"],
+        "ReleaseDeviceStatusEnum": ["active", "inactive", "retired"],
         "OutcomeEnum": ["recovered_later", "written_off"],
         "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],
         "ResourceTypeEnum": ["quadrant", "block"],

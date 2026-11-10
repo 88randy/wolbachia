@@ -89,9 +89,11 @@ def test_legacy_upgrade_preserves_signed_inventory_and_all_four_evidence_parents
         ("uploads", "0003_append_only_reviews"),
         ("reviews", "0003_append_only_reviews"),
     ]
+    head_state = None
     try:
-        executor.migrate(previous)
-        MigrationExecutor(connection).migrate(leaves)
+        legacy_state = executor.migrate(previous)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         assert old_legs == list(
             StockMovement.objects.order_by("pk").values_list("pk", "quantity", "operation_id")
         )
@@ -174,9 +176,15 @@ def test_legacy_upgrade_preserves_signed_inventory_and_all_four_evidence_parents
             )
             connection.check_constraints()
         assert not unreceived.event.transfer.events.filter(kind="receive").exists()
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate(previous)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        # A protected reverse rolls back preceding dependent DDL and recorder writes.
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate(previous)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert Transfer.objects.filter(pk=sent.event.transfer_id).exists()
         assert AttachmentLink.objects.filter(transfer_event=sent.event).exists()
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)

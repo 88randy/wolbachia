@@ -39,7 +39,13 @@ export const AREAS = [
     id: "inventory",
     path: "/inventory",
     group: "resources",
-    requiredPermissions: ["supply_type.read", "lot.read", "location.read"],
+    requiredPermissions: [
+      "supply_type.read",
+      "lot.read",
+      "location.read",
+      "transfer.read",
+      "discrepancy.read",
+    ],
   },
   { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: ["motorcycle.read"] },
   {

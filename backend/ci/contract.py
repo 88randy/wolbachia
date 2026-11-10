@@ -18,7 +18,16 @@ MODULE_PARTITIONS = {
     "migrations-session-audit": frozenset({"tests/test_session_audit_migrations_181.py"}),
     "migrations-people": frozenset({"tests/test_people_migrations_101.py"}),
     INTEGRATION_PARTITION: frozenset(
-        {"tests/test_inventory_allocations_b_10.py", "tests/test_uploads_b_04.py"}
+        {
+            "tests/test_inventory_allocations_b_10.py",
+            "tests/test_uploads_b_04.py",
+            "tests/test_permit_api_116.py",
+            "tests/test_release_guards_116.py",
+            "tests/test_release_stock_116.py",
+            "tests/test_release_uuid_116.py",
+            "tests/test_releases_b_20.py",
+            "tests/test_releases_concurrency_116.py",
+        }
     ),
 }
 PARTITION_NAMES = ("regular", *MODULE_PARTITIONS)
