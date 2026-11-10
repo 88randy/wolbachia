@@ -10,6 +10,7 @@ export function LabHome() {
   return (
     <section className={page.page}>
       <h1 className={page.title}>{t("shell.nav.lab")}</h1>
+      {can("bag.receive") && <Link to="/lab/bags">{t("labReception.page.title")}</Link>}
       {can("egg_count.create") && <Link to="/lab/egg-counts">{t("lab.count.title")}</Link>}
       {can("egg_count.read") && <Link to="/lab/count-history">{t("lab.history.title")}</Link>}
     </section>

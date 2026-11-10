@@ -1,0 +1,35 @@
+import { useTranslation } from "react-i18next";
+import { ScanLine } from "lucide-react";
+import { Button } from "../ui/Button";
+import { TextField } from "../forms/TextField";
+import type { ReceptionActions } from "./use-reception-command";
+import type { useReceptionScanner } from "./use-reception-scanner";
+import styles from "./reception.module.css";
+
+interface ReceptionScanFormProps {
+  actions: ReceptionActions;
+  scanner: ReturnType<typeof useReceptionScanner>;
+}
+export function ReceptionScanForm({ actions, scanner }: ReceptionScanFormProps) {
+  const { t } = useTranslation();
+  return (
+    <form onSubmit={scanner.submit} className={styles.scanForm}>
+      <ScanLine aria-hidden="true" className={styles.scanIcon} />
+      <TextField
+        ref={scanner.input}
+        id="bag-scan"
+        label={t("labReception.scan.label")}
+        hint={t("labReception.scan.hint")}
+        value={scanner.code}
+        onChange={(event) => {
+          scanner.setCode(event.target.value);
+        }}
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <Button type="submit" aria-disabled={actions.isReviewRequired || !actions.canSubmit}>
+        {t("labReception.scan.submit")}
+      </Button>
+    </form>
+  );
+}

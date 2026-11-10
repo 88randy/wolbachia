@@ -1,3 +1,6 @@
+import { PeopleHome } from "../people/PeopleHome";
+import { W50Page } from "../people/trainings/W50Page";
+import { W51Page } from "../people/evaluations/W51Page";
 import { LabHome } from "../lab/LabHome";
 import { W35Page } from "../lab/W35Page";
 import { W35HistoryPage } from "../lab/W35HistoryPage";
@@ -9,6 +12,7 @@ import { W7Page } from "../incidents/W7Page";
 import { W30Page } from "../operations/reviews/W30Page";
 import { W31Page } from "../operations/relocations/W31Page";
 import { W33Page } from "../operations/closure/W33Page";
+import { W34Page } from "../lab/W34Page";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { W12Page } from "../inventory/transfers/W12Page";
 import { W14Page } from "../inventory/transfers/W14Page";
@@ -52,6 +56,7 @@ import { AREAS } from "./areas";
 import { installSessionSync } from "../session/install-session-sync";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
 import {
+  ForbiddenError,
   requireAreaAccess,
   requireOrganization,
   requireOrganizationChoice,
@@ -120,22 +125,51 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "operations"
-        ? OperationsHome
-        : area.id === "incidents"
-          ? W6Page
-          : area.id === "settings"
-            ? SettingsPage
-            : area.id === "fleet"
-              ? FleetHome
-              : area.id === "quadrants"
-                ? W22Page
-                : area.id === "lab"
-                  ? LabHome
-                  : () => <AreaPlaceholder areaId={area.id} />,
+      area.id === "people"
+        ? PeopleHome
+        : area.id === "operations"
+          ? OperationsHome
+          : area.id === "incidents"
+            ? W6Page
+            : area.id === "settings"
+              ? SettingsPage
+              : area.id === "fleet"
+                ? FleetHome
+                : area.id === "quadrants"
+                  ? W22Page
+                  : area.id === "lab"
+                    ? LabHome
+                    : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+const trainingsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/people/trainings",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (!context.me.permissions.some((code) => ["training.read", "training.manage"].includes(code)))
+      throw new ForbiddenError("people");
+  },
+  component: W50Page,
+  errorComponent: AreaErrorState,
+});
+const evaluationsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/people/evaluations",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (
+      !context.me.permissions.some((code) =>
+        ["evaluation.read", "evaluation.create"].includes(code),
+      )
+    )
+      throw new ForbiddenError("people");
+  },
+  component: W51Page,
+  errorComponent: AreaErrorState,
+});
 
 const incidentRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -180,6 +214,17 @@ const quadrantClosureRoute = createRoute({
     const { code } = quadrantClosureRoute.useParams();
     return <W33Page code={code} />;
   },
+  errorComponent: AreaErrorState,
+});
+
+const labReceptionRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/bags",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "bag.receive");
+  },
+  component: W34Page,
   errorComponent: AreaErrorState,
 });
 
@@ -406,10 +451,13 @@ const routeTree = rootRoute.addChildren([
     shiftsRoute,
     shiftRoute,
     quadrantVersionsRoute,
+    trainingsRoute,
+    evaluationsRoute,
     incidentRoute,
     reviewsRoute,
     relocationsRoute,
     quadrantClosureRoute,
+    labReceptionRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,

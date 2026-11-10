@@ -6,6 +6,10 @@ manifest identity scanning, photo-backed reception and discrepancy resolution.
 See [signed transfers](src/inventory/transfers/README.md) for supported contracts,
 the preparation/physical-code gap tracked in #337 and criterion-to-test ownership.
 
+Issue #148 adds W50/W51 at `/people/trainings` and `/people/evaluations`.
+See [people workflows](src/people/README.md) for permission separation, retained
+rubric/certification provenance, test mapping and explicit B03 read gaps.
+
 Issue #160 adds the W30 review queue, W31 relocation decisions and W33 quadrant
 closure: `/operations/reviews`, `/operations/relocations`, and
 `/quadrants/<code>/closure`. See [operations](src/operations/README.md) for the
@@ -39,6 +43,11 @@ The mobile app (`mobile/`) is for the courier in the field. The web is where eve
 Full inventory with states: [`docs/web-screens.md`](../docs/web-screens.md). Endpoints the web needs: [`docs/web-api-needs.md`](../docs/web-api-needs.md).
 
 ## Profiles
+
+W34 reception is available at `/lab/bags` with `bag.receive`; `/lab` exposes the
+permitted reception and independent W35 URL links. See
+[`src/lab/README.md`](src/lab/README.md) for contracts, count definitions,
+design deviations and the keyboard/accessibility test matrix.
 
 B-01 defines nine seeded profile bundles: courier, supervisor, entomologist, community promoter, admin, coordinator, warehouse, regulatory and government. W65 renders the backend projections as data and never branches on profile names. Government has a read-only portal boundary; the fixed-profile projection gap is documented in the W-03 section.
 
