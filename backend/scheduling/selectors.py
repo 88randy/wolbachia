@@ -166,6 +166,9 @@ def task_query(
 def _task_projection(
     tasks: QuerySet[Any], organization: Organization, start: date
 ) -> QuerySet[Any]:
+    from releases.models import Release
+
+    releases = Release.objects.filter(organization=organization, schedule_task_id=OuterRef("pk"))
     owners = TaskOwnership.objects.filter(task=OuterRef("pk")).order_by("-revision")
     risk = RiskCategoryVersion.objects.filter(
         block_id=OuterRef("point__block_id"), week_start=start
@@ -208,7 +211,9 @@ def _task_projection(
             protocol=Subquery(risk.values("protocol")[:1]),
             risk_category=Subquery(risk.values("category")[:1]),
             is_completed=Case(
-                When(action="place", then=Exists(placements)), default=Exists(readings)
+                When(action="place", then=Exists(placements)),
+                When(action="release", then=Exists(releases)),
+                default=Exists(readings),
             ),
         )
         .annotate(

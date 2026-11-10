@@ -111,6 +111,10 @@ def _batch_source_ids(ctx: EventContext) -> set[UUID]:
 
             authorize_source(ctx, ctx.envelope.payload)
             identifiers.update(supply_references(ctx))
+        if ctx.envelope.type == "release.record":
+            from releases.stock import release_source_references
+
+            identifiers.update(release_source_references(ctx))
         marker = _authorized_marker_source(ctx)
         if marker is not None:
             identifiers.add(marker)
@@ -122,6 +126,10 @@ def _batch_source_ids(ctx: EventContext) -> set[UUID]:
 def _domain_users(ctx: EventContext) -> set[UUID]:
     from inventory.allocations.transactions import assignment_participants
 
+    if ctx.envelope.type == "release.record":
+        from releases.stock import release_participants
+
+        return release_participants(ctx)
     if ctx.envelope.type in {"supplies.receive", "supplies.reconcile"}:
         from inventory.allocations.review import source_participants
 
@@ -186,7 +194,7 @@ def _review_domain_users(source: FieldEvent) -> set[UUID]:
             type__in=("supplies.receive", "supplies.reconcile", "shift.close"),
         ).first()
         return set() if target is None else _review_domain_users(target)
-    return _domain_users(context) if source.type == "shift.close" else set()
+    return _domain_users(context) if source.type in {"shift.close", "release.record"} else set()
 
 
 @contextmanager
@@ -295,6 +303,10 @@ def lock_source_references(ctx: EventContext) -> None:
 
         authorize_source(ctx, ctx.envelope.payload)
         identifiers.update(supply_references(ctx))
+    if ctx.envelope.type == "release.record":
+        from releases.stock import release_source_references
+
+        identifiers.update(release_source_references(ctx))
     require_prepared_source_ids(identifiers)
     list(
         FieldEvent.objects.filter(organization=ctx.organization, pk__in=identifiers)
@@ -374,6 +386,8 @@ def retain_domain_boundary(
         )
         if subjects.resource_kind == "motorcycle":
             code = "motorcycle_unknown"
+        if ctx.envelope.type == "release.record":
+            code = "release_inaccessible"
         raise EventRejected(code)
     shift = (
         None
@@ -426,10 +440,11 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
     causal = classify_dependencies(batch, envelope, candidates)
     subjects = subject_facts(batch.organization, envelope)
     with ExitStack() as stack:
-        if (
-            subjects.resource_kind in {"transfer", "supply_assignment"}
-            or envelope.type == "shift.close"
-        ):
+        if subjects.resource_kind in {
+            "transfer",
+            "supply_assignment",
+            "release",
+        } or envelope.type in {"shift.close", "release.record"}:
             from inventory.transactions import inventory_transaction
 
             stack.enter_context(inventory_transaction(organization=batch.organization))

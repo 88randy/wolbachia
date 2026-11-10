@@ -192,6 +192,15 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="stock_operation",
     )
+    release = models.OneToOneField(
+        "releases.Release", null=True, on_delete=models.PROTECT, related_name="stock_operation"
+    )
+    release_receipt_line = models.ForeignKey(
+        "inventory.SupplyReceiptLine",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="release_operations",
+    )
     source_kind = models.CharField(
         max_length=24,
         choices=[
@@ -207,6 +216,7 @@ class StockOperation(InventoryRecord):
                 "lot_write_off",
                 "supply_compensation",
                 "paddle_return",
+                "release_record",
             )
         ],
     )
@@ -223,6 +233,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -234,6 +246,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=False,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -247,6 +261,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=False,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                     )
                     | models.Q(
                         source_kind="paddle_return",
@@ -254,6 +270,17 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=False,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind="release_record",
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                        paddle_return__isnull=True,
+                        release__isnull=False,
+                        release_receipt_line__isnull=False,
                     )
                 ),
                 name="stock_exact_source_branch",

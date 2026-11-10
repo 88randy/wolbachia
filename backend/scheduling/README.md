@@ -1,5 +1,16 @@
 # scheduling
 
+## Explicit releases (#116)
+
+`POST /permits/{id}/schedule/` creates a real `release` task and authored owner
+under `schedule.manage` plus `permit.manage` for its exact point/permit pair.
+It never derives release authority from risk categories. `ReleaseSchedule` pins
+the official permit version; capture requires an already-existing task, binding
+and capture-time owner, plus the current owner. Release safety is revalidated by
+the releases owner. The existing schedule projection counts completion only from
+the actual immutable Release and its canonical inventory effect. The assignment
+producer advances to version4 to admit the new action, preserving existing rows.
+
 B33 rejection links a real next-org-local-day check task and actual due-day owner
 through the existing v3 assignment producer. Task identity/provenance is preserved
 when reused. Generation skips a closed current QuadrantVersion; neither a review

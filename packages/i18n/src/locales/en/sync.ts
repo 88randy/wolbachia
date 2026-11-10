@@ -153,4 +153,32 @@ export const sync: Record<keyof typeof source, string> = {
     "Verified supply evidence is missing. Keep the signature and pending files for review.",
   "sync.result.supplyTransitUnavailable":
     "The transit procedure or its evidence needs review. No unverified use was applied.",
+  "sync.result.releaseInaccessible":
+    "The permit or another reference is unavailable in your authorized scope. Keep the capture and contact your supervisor.",
+  "sync.result.releasePermitExpired":
+    "The permit is not valid for this capture. Keep the evidence and contact your supervisor.",
+  "sync.result.releasePermitSuspended":
+    "The permit is suspended. Keep the evidence and contact your supervisor.",
+  "sync.result.releaseZoneInvalid":
+    "The location is outside the officially authorized zone. Keep the evidence and contact your supervisor.",
+  "sync.result.releaseTrainingInvalid":
+    "The required training is not valid for this capture. Contact your supervisor.",
+  "sync.result.releaseScheduleInvalid":
+    "The capture does not match an authorized release task. Keep the evidence for review.",
+  "sync.result.releaseLotBlocked":
+    "The lot does not meet release conditions. Keep the evidence and contact your supervisor.",
+  "sync.result.releaseStockUnavailable":
+    "Verified stock in your custody is unavailable for this capture. Keep the receipt and contact your supervisor.",
+  "sync.result.releaseGpsUnusable":
+    "A location with sufficient accuracy is missing. Keep the capture and contact your supervisor.",
+  "sync.result.releaseConfigurationUnavailable":
+    "Current configuration needed to validate the release is missing. Keep the capture and contact your supervisor.",
+  "sync.result.releaseDeviceUnavailable":
+    "The release device or its source lot is unavailable for this capture. Contact your supervisor.",
+  "sync.result.releaseEvidenceRequired":
+    "Verified release evidence is missing. Keep pending files and contact your supervisor.",
+  "sync.result.releaseVoidBlocked":
+    "Physical consumption must be preserved. Contact your supervisor to correct the record.",
+  "sync.result.releaseTransitReviewRequired":
+    "Transit evidence needs an authorized review. The capture was retained without applying consumption.",
 };

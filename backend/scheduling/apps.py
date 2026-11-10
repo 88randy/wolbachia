@@ -9,4 +9,4 @@ class SchedulingConfig(AppConfig):
         from field_sync.producers import BundleProducer, register
         from scheduling.courier_feed import AssignmentProducerSerializer, build
 
-        register(BundleProducer("assignments", 3, build, AssignmentProducerSerializer))
+        register(BundleProducer("assignments", 4, build, AssignmentProducerSerializer))
