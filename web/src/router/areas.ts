@@ -80,8 +80,11 @@ export const AREAS = [
     id: "dashboards",
     path: "/dashboards",
     group: "analysis",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: [
+      "analytics.operations.read",
+      "analytics.entomology.read",
+      "analytics.wolbachia.read",
+    ],
   },
   {
     id: "regulatory",

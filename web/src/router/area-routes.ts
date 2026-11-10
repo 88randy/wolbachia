@@ -4,6 +4,7 @@
  * (`router/base-routes.tsx`). Adding a screen touches only its area module; adding a new area
  * adds one line here and its entry in `router/areas.ts`.
  */
+import { dashboardsRoutes } from "../dashboards/routes";
 import { fleetRoutes } from "../fleet/routes";
 import { homeRoutes } from "../home/routes";
 import { incidentRoutes } from "../incidents/routes";
@@ -28,6 +29,7 @@ export const areaRouteModules = [
   ...fleetRoutes,
   ...labRoutes,
   ...peopleRoutes,
+  ...dashboardsRoutes,
   ...settingsRoutes,
   ...placeholderRoutes,
 ];
