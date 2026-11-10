@@ -4,7 +4,7 @@ import type { ApiClient, Schemas } from "@wolbachia/api-client";
 import type { TableQueryConfig, TableState } from "../data-table/table-types";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
-import { decodeRange, endOfDayInstant, startOfDayInstant } from "./toolbar/date-range";
+import type { MessageKey } from "@wolbachia/i18n";
 
 export interface RegScope {
   client: ApiClient;
@@ -30,38 +30,105 @@ function cursorTable(filters: TableQueryConfig["filters"]): TableQueryConfig {
   };
 }
 
-const text = (key: string, maxLength: number) =>
-  ({ kind: "text", key, labelKey: "regulatory.common.search", maxLength }) as const;
+const search = (labelKey: MessageKey) =>
+  ({ kind: "text", key: "search", labelKey, maxLength: 80, input: "search" }) as const;
+
+const dateRange = [
+  {
+    kind: "text",
+    key: "created_after",
+    labelKey: "regulatory.common.dates",
+    maxLength: 40,
+    input: "date-from",
+    dateFormat: "datetime",
+  },
+  {
+    kind: "text",
+    key: "created_before",
+    labelKey: "regulatory.common.dates",
+    maxLength: 40,
+    input: "date-to",
+    dateFormat: "datetime",
+  },
+] as const;
 
 export const TRANSFER_TABLE = cursorTable([
-  text("search", 80),
-  { kind: "text", key: "status", labelKey: "regulatory.transfers.statusLabel", maxLength: 12 },
+  search("regulatory.transfers.searchLabel"),
+  {
+    kind: "select",
+    key: "status",
+    labelKey: "regulatory.transfers.statusLabel",
+    presentation: "segmented",
+    options: [
+      { value: "active", labelKey: "regulatory.transfers.status.active" },
+      { value: "scheduled", labelKey: "regulatory.transfers.status.scheduled" },
+      { value: "expired", labelKey: "regulatory.transfers.status.expired" },
+      { value: "revoked", labelKey: "regulatory.transfers.status.revoked" },
+    ],
+  },
 ]);
 export const ARCO_TABLE = cursorTable([
-  text("search", 80),
-  { kind: "text", key: "status", labelKey: "regulatory.arco.statusLabel", maxLength: 12 },
-  { kind: "text", key: "request_type", labelKey: "regulatory.arco.typeLabel", maxLength: 14 },
+  search("regulatory.arco.searchLabel"),
+  {
+    kind: "select",
+    key: "status",
+    labelKey: "regulatory.arco.statusLabel",
+    presentation: "segmented",
+    options: [
+      { value: "received", labelKey: "regulatory.arco.status.received" },
+      { value: "in_progress", labelKey: "regulatory.arco.status.in_progress" },
+      { value: "resolved", labelKey: "regulatory.arco.status.resolved" },
+      { value: "rejected", labelKey: "regulatory.arco.status.rejected" },
+    ],
+  },
+  {
+    kind: "select",
+    key: "request_type",
+    labelKey: "regulatory.arco.typeLabel",
+    options: [
+      { value: "access", labelKey: "regulatory.arco.type.access" },
+      { value: "rectification", labelKey: "regulatory.arco.type.rectification" },
+      { value: "cancellation", labelKey: "regulatory.arco.type.cancellation" },
+      { value: "opposition", labelKey: "regulatory.arco.type.opposition" },
+    ],
+  },
 ]);
 export const ACCESS_TABLE = cursorTable([
-  { kind: "text", key: "action", labelKey: "regulatory.access.actionLabel", maxLength: 24 },
-  { kind: "text", key: "result", labelKey: "regulatory.access.resultLabel", maxLength: 16 },
-  { kind: "text", key: "dates", labelKey: "regulatory.common.dates", maxLength: 21 },
+  {
+    kind: "select",
+    key: "action",
+    labelKey: "regulatory.access.actionLabel",
+    options: [
+      { value: "user.create", labelKey: "regulatory.access.action.user.create" },
+      { value: "user.update", labelKey: "regulatory.access.action.user.update" },
+      { value: "user.deactivate", labelKey: "regulatory.access.action.user.deactivate" },
+      { value: "user.reveal_rfc", labelKey: "regulatory.access.action.user.reveal_rfc" },
+      { value: "user.rotate_rfc", labelKey: "regulatory.access.action.user.rotate_rfc" },
+    ],
+  },
+  {
+    kind: "select",
+    key: "result",
+    labelKey: "regulatory.access.resultLabel",
+    options: [
+      { value: "success", labelKey: "regulatory.access.result.success" },
+      { value: "rfc_rejected", labelKey: "regulatory.access.result.rfc_rejected" },
+    ],
+  },
+  ...dateRange,
 ]);
-export const RECEIPT_TABLE = cursorTable([
-  { kind: "text", key: "dates", labelKey: "regulatory.common.dates", maxLength: 21 },
-]);
+export const RECEIPT_TABLE = cursorTable([...dateRange]);
 
 function cursorParams(state: TableState) {
   return state.cursor === null ? {} : { cursor: state.cursor };
 }
 
 function dateParams(state: TableState) {
-  const { from, to } = decodeRange(state.filters["dates"]);
-  const after = from === undefined ? undefined : startOfDayInstant(from);
-  const before = endOfDayInstant(to ?? from ?? "");
+  const after = state.filters["created_after"];
+  const before = state.filters["created_before"];
   return {
     ...(after === undefined ? {} : { created_after: after }),
-    ...(from === undefined || before === undefined ? {} : { created_before: before }),
+    ...(before === undefined ? {} : { created_before: before }),
   };
 }
 

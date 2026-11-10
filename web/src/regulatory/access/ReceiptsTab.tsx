@@ -6,7 +6,7 @@ import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useFormatCalendarDate, useFormatNumber } from "../../format/use-formatters";
 import { RECEIPT_TABLE, receiptOptions } from "../reg-queries";
 import type { ExportReceiptRow } from "../reg-queries";
-import { ListToolbar } from "../toolbar/ListToolbar";
+import { FilterBar } from "../../data-table/FilterBar";
 import { useRegList } from "../use-reg-list";
 
 /** Receipts of the official exports: who downloaded what and for which period. */
@@ -57,10 +57,7 @@ export function ReceiptsTab() {
   ];
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <ListToolbar
-        controller={controller}
-        range={{ key: "dates", label: t("regulatory.common.dates") }}
-      />
+      <FilterBar controller={controller} />
       <DataTable
         caption={t("regulatory.access.tab.exports")}
         columns={columns}

@@ -27,16 +27,13 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
   "count-history": "lab.history.title",
-<<<<<<< HEAD
   "data-transfers": "regulatory.page.transfers",
   exports: "regulatory.page.exports",
   "arco-requests": "regulatory.page.arco",
   "access-log": "regulatory.page.accessLog",
   "export-receipts": "regulatory.access.tab.exports",
   "portal-settings": "regulatory.page.portal",
-=======
   records: "shell.crumb.records",
->>>>>>> origin/develop
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   transfers: "transfers.page.title",

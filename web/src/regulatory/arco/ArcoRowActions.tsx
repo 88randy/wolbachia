@@ -1,6 +1,12 @@
 /* eslint-disable max-lines-per-function -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
-import { Play, UserCheck } from "lucide-react";
+import { Ellipsis, Play, UserCheck } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { useMe } from "../../session/use-me";
 import { Button } from "../../ui/Button";
@@ -39,35 +45,44 @@ export function ArcoRowActions({ row }: { row: ArcoRow }) {
       ),
   });
   if (row.status === "resolved" || row.status === "rejected") return null;
+  const hasMenu = row.status === "received" || row.owner_id !== me.user.id;
   return (
-    <span className="flex flex-wrap items-center gap-1">
-      {row.status === "received" && (
-        <Button
-          size="sm"
-          variant="ghost"
-          leadingIcon={<Play aria-hidden="true" />}
-          loading={start.isBusy}
-          onClick={() => {
-            start.submit({ status: "in_progress" });
-          }}
-        >
-          {t("regulatory.arco.start")}
-        </Button>
-      )}
-      {row.owner_id !== me.user.id && (
-        <Button
-          size="sm"
-          variant="ghost"
-          leadingIcon={<UserCheck aria-hidden="true" />}
-          loading={take.isBusy}
-          onClick={() => {
-            take.submit({ owner_id: me.user.id });
-          }}
-        >
-          {t("regulatory.arco.takeIt")}
-        </Button>
-      )}
+    <span className="flex items-center justify-end gap-1">
       <ArcoResolveDialog row={row} />
+      {hasMenu && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={t("common.actions.rowActions")}
+              leadingIcon={<Ellipsis aria-hidden="true" />}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {row.status === "received" && (
+              <DropdownMenuItem
+                onSelect={() => {
+                  start.submit({ status: "in_progress" });
+                }}
+              >
+                <Play aria-hidden="true" />
+                {t("regulatory.arco.start")}
+              </DropdownMenuItem>
+            )}
+            {row.owner_id !== me.user.id && (
+              <DropdownMenuItem
+                onSelect={() => {
+                  take.submit({ owner_id: me.user.id });
+                }}
+              >
+                <UserCheck aria-hidden="true" />
+                {t("regulatory.arco.takeIt")}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </span>
   );
 }

@@ -6,17 +6,8 @@ import { useFormatDateTime } from "../../format/use-format-date-time";
 import { StatusPill } from "../../ui/StatusPill";
 import { ACCESS_TABLE, accessOptions } from "../reg-queries";
 import type { AccessRow } from "../reg-queries";
-import { ListToolbar } from "../toolbar/ListToolbar";
+import { FilterBar } from "../../data-table/FilterBar";
 import { useRegList } from "../use-reg-list";
-
-const ACTIONS = [
-  "user.create",
-  "user.update",
-  "user.deactivate",
-  "user.reveal_rfc",
-  "user.rotate_rfc",
-] as const;
-const RESULTS = ["success", "rfc_rejected"] as const;
 
 /** Who viewed or changed personal data: read only, names instead of ids. */
 export function AccessTab() {
@@ -61,28 +52,7 @@ export function AccessTab() {
   ];
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <ListToolbar
-        controller={controller}
-        selects={[
-          {
-            key: "action",
-            label: t("regulatory.access.actionLabel"),
-            options: ACTIONS.map((value) => ({
-              value,
-              label: t(`regulatory.access.action.${value}`),
-            })),
-          },
-          {
-            key: "result",
-            label: t("regulatory.access.resultLabel"),
-            options: RESULTS.map((value) => ({
-              value,
-              label: t(`regulatory.access.result.${value}`),
-            })),
-          },
-        ]}
-        range={{ key: "dates", label: t("regulatory.common.dates") }}
-      />
+      <FilterBar controller={controller} />
       <DataTable
         caption={t("regulatory.access.tab.access")}
         columns={columns}

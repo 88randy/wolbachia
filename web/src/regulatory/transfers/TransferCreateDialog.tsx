@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
-import { SelectMenu } from "../../ui/SelectMenu";
+import { Combobox } from "../Combobox";
 import { FormDialog } from "../FormDialog";
 import { centersOptions, quadrantsOfCenterOptions } from "../reg-queries";
 import { DateRangeField } from "../toolbar/DateRangeField";
@@ -90,73 +90,70 @@ export function TransferCreateDialog() {
         action.submit(null, close);
       }}
     >
-      <TextField
-        id="transfer-institution"
-        label={t("regulatory.transfers.form.institution")}
-        value={draft.institution}
-        maxLength={200}
-        required
-        onChange={(event) => {
-          patch({ institution: event.target.value });
-        }}
-      />
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="transfer-center" className="text-xs font-semibold text-ink-2">
-          {t("regulatory.transfers.form.center")}
-        </label>
-        <SelectMenu
-          id="transfer-center"
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <TextField
+            id="transfer-institution"
+            label={t("regulatory.transfers.form.institution")}
+            value={draft.institution}
+            maxLength={200}
+            required
+            onChange={(event) => {
+              patch({ institution: event.target.value });
+            }}
+          />
+        </div>
+        <Combobox
+          label={t("regulatory.transfers.form.center")}
           value={draft.center}
           placeholder={t("regulatory.transfers.form.centerPlaceholder")}
           options={(centers.data?.results ?? []).map((center) => ({
             value: center.id,
             label: center.name,
+            detail: center.code,
           }))}
-          onValueChange={(center) => {
+          onChange={(center) => {
             patch({ center, quadrant: "" });
           }}
         />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="transfer-quadrant" className="text-xs font-semibold text-ink-2">
-          {t("regulatory.transfers.form.quadrant")}
-        </label>
-        <SelectMenu
-          id="transfer-quadrant"
+        <Combobox
+          label={t("regulatory.transfers.form.quadrant")}
           value={draft.quadrant}
           disabled={draft.center === ""}
           placeholder={t("regulatory.transfers.form.quadrantPlaceholder")}
-          options={[
-            { value: "", label: t("regulatory.transfers.form.quadrantPlaceholder") },
-            ...(quadrants.data?.results ?? []).map((quadrant) => ({
-              value: quadrant.id,
-              label: quadrant.code,
-            })),
-          ]}
-          onValueChange={(quadrant) => {
+          clearLabel={t("regulatory.transfers.form.quadrantPlaceholder")}
+          options={(quadrants.data?.results ?? []).map((quadrant) => ({
+            value: quadrant.id,
+            label: quadrant.code,
+          }))}
+          onChange={(quadrant) => {
             patch({ quadrant });
           }}
         />
+        <div className="sm:col-span-2">
+          <DateRangeField
+            label={t("regulatory.transfers.form.validity")}
+            from={draft.from}
+            to={draft.to}
+            onChange={(range) => {
+              patch(range);
+            }}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <TextField
+            id="transfer-reference"
+            label={t("regulatory.transfers.form.reference")}
+            hint={t("regulatory.transfers.form.referenceHint")}
+            value={draft.reference}
+            maxLength={1000}
+            required
+            onChange={(event) => {
+              patch({ reference: event.target.value });
+            }}
+          />
+        </div>
       </div>
-      <DateRangeField
-        label={t("regulatory.transfers.form.validity")}
-        from={draft.from}
-        to={draft.to}
-        onChange={(range) => {
-          patch(range);
-        }}
-      />
-      <TextField
-        id="transfer-reference"
-        label={t("regulatory.transfers.form.reference")}
-        hint={t("regulatory.transfers.form.referenceHint")}
-        value={draft.reference}
-        maxLength={1000}
-        required
-        onChange={(event) => {
-          patch({ reference: event.target.value });
-        }}
-      />
       <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
         <input type="checkbox" checked disabled readOnly />
         {t("regulatory.transfers.form.fields")}: {t("regulatory.transfers.field.rfc")}

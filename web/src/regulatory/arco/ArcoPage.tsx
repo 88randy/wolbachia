@@ -9,12 +9,11 @@ import { StatusPill } from "../../ui/StatusPill";
 import type { Tone } from "../../ui/tone";
 import { ARCO_TABLE, arcoOptions } from "../reg-queries";
 import type { ArcoRow } from "../reg-queries";
-import { ListToolbar } from "../toolbar/ListToolbar";
+import { FilterBar } from "../../data-table/FilterBar";
 import { useRegList } from "../use-reg-list";
 import { ArcoCreateDialog } from "./ArcoCreateDialog";
 import { ArcoDeadline } from "./ArcoDeadline";
 import { ArcoRowActions } from "./ArcoRowActions";
-import { ARCO_STATUSES, ARCO_TYPES } from "./arco-types";
 
 const STATUS_TONES: Readonly<Record<string, Tone>> = {
   received: "info",
@@ -82,29 +81,7 @@ export function ArcoPage() {
   ];
   return (
     <ListPage title={t("regulatory.arco.title")} description={t("regulatory.arco.description")}>
-      <ListToolbar
-        controller={controller}
-        search={{ key: "search", label: t("regulatory.arco.searchLabel") }}
-        segments={{
-          key: "status",
-          label: t("regulatory.arco.statusLabel"),
-          options: ARCO_STATUSES.map((value) => ({
-            value,
-            label: t(`regulatory.arco.status.${value}`),
-          })),
-        }}
-        selects={[
-          {
-            key: "request_type",
-            label: t("regulatory.arco.typeLabel"),
-            options: ARCO_TYPES.map((value) => ({
-              value,
-              label: t(`regulatory.arco.type.${value}`),
-            })),
-          },
-        ]}
-        actions={canManage ? <ArcoCreateDialog /> : undefined}
-      />
+      <FilterBar controller={controller} actions={canManage ? <ArcoCreateDialog /> : undefined} />
       <DataTable
         caption={t("regulatory.arco.title")}
         columns={columns}

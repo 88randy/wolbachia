@@ -25,14 +25,3 @@ export function endOfDayInstant(isoDay: string): string | undefined {
   day.setDate(day.getDate() + 1);
   return day.toISOString();
 }
-
-/** A range lives in ONE address key (`2026-11-01_2026-11-10`), so a change is a single update. */
-export function encodeRange(from: string | undefined, to: string | undefined): string | undefined {
-  return from === undefined ? undefined : `${from}_${to ?? from}`;
-}
-
-export function decodeRange(value: string | undefined): { from?: string; to?: string } {
-  const [from, to] = (value ?? "").split("_");
-  if (fromIsoDay(from) === undefined) return {};
-  return { from, ...(fromIsoDay(to) === undefined ? {} : { to }) };
-}

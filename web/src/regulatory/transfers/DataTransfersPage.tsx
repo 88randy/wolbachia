@@ -5,15 +5,13 @@ import { DataTable } from "../../data-table/DataTable";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDate } from "../../format/use-formatters";
 import { useCan } from "../../session/use-can";
-import { ListToolbar } from "../toolbar/ListToolbar";
+import { FilterBar } from "../../data-table/FilterBar";
 import { TRANSFER_TABLE, transferOptions } from "../reg-queries";
 import type { TransferRow } from "../reg-queries";
 import { useRegList } from "../use-reg-list";
 import { TransferCreateDialog } from "./TransferCreateDialog";
 import { TransferRevokeDialog } from "./TransferRevokeDialog";
 import { TransferStatus } from "./TransferStatus";
-
-const STATUSES = ["active", "scheduled", "expired", "revoked"] as const;
 
 /** W59: authorizations for personal data leaving the platform. */
 export function DataTransfersPage() {
@@ -79,17 +77,8 @@ export function DataTransfersPage() {
       title={t("regulatory.transfers.title")}
       description={t("regulatory.transfers.description")}
     >
-      <ListToolbar
+      <FilterBar
         controller={controller}
-        search={{ key: "search", label: t("regulatory.transfers.searchLabel") }}
-        segments={{
-          key: "status",
-          label: t("regulatory.transfers.statusLabel"),
-          options: STATUSES.map((value) => ({
-            value,
-            label: t(`regulatory.transfers.status.${value}`),
-          })),
-        }}
         actions={canManage ? <TransferCreateDialog /> : undefined}
       />
       <DataTable
