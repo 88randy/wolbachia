@@ -11,7 +11,7 @@ from django.utils import timezone
 from geography.models import Quadrant
 from inventory.models import Lot
 from organizations.models import Organization
-from releases.models import Permit, ReleaseDevice
+from releases.models import Permit, PermitType, ReleaseDevice
 from releases.services import create_permit, create_permit_type, create_release_device
 from uploads.access import UploadActor
 from uploads.services import (
@@ -51,16 +51,18 @@ def _upload_pdf(actor: UploadActor) -> UUID:
     return identifier
 
 
-def _permit_values(actor: UploadActor, quadrant: Quadrant, type_id: UUID) -> dict[str, Any]:
+def _permit_values(  # noqa: PLR0913
+    actor: UploadActor, quadrant: Quadrant, type_id: UUID, code: str = PERMIT_CODE
+) -> dict[str, Any]:
     version = quadrant.versions.order_by("-revision").first()
     if version is None:
         raise RuntimeError("The demo quadrant has no geometry version.")
     return {
-        "code": PERMIT_CODE,
+        "code": code,
         "quadrant_id": quadrant.pk,
         "type_id": type_id,
-        "number": "DEMO-0001",
-        "authority": "Synthetic demo authority",
+        "number": code.replace("PERMIT-", "AUT-"),
+        "authority": "Autoridad sanitaria estatal (demo sintético)",
         "official_document_id": _upload_pdf(actor),
         "document_attestation": "Synthetic demo document, not a real permit",
         "geometry": version.geometry,
@@ -69,20 +71,24 @@ def _permit_values(actor: UploadActor, quadrant: Quadrant, type_id: UUID) -> dic
     }
 
 
-def ensure_permit(organization: Organization, actor: UploadActor, quadrant: Quadrant) -> Permit:
-    """The demo permit with its type, found by code (writes)."""
-    existing = Permit.objects.filter(organization=organization, code=PERMIT_CODE).first()
+def ensure_permit(  # noqa: PLR0913
+    organization: Organization, actor: UploadActor, quadrant: Quadrant, code: str = PERMIT_CODE
+) -> Permit:
+    """A demo permit with the shared permit type, found by code (writes)."""
+    existing = Permit.objects.filter(organization=organization, code=code).first()
     if existing is not None:
         return existing
-    kind = create_permit_type(
-        actor,
-        {
-            "code": PERMIT_TYPE_CODE,
-            "name": "Demo permit type",
-            "requirements": {"max_gps_accuracy_m": 15},
-        },
-    )
-    return create_permit(actor, _permit_values(actor, quadrant, kind.pk))
+    kind = PermitType.objects.filter(organization=organization, code=PERMIT_TYPE_CODE).first()
+    if kind is None:
+        kind = create_permit_type(
+            actor,
+            {
+                "code": PERMIT_TYPE_CODE,
+                "name": "Permiso de liberación de Wolbachia (demo)",
+                "requirements": {"max_gps_accuracy_m": 15},
+            },
+        )
+    return create_permit(actor, _permit_values(actor, quadrant, kind.pk, code))
 
 
 def ensure_release_device(
