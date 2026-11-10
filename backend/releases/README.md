@@ -45,6 +45,8 @@ Lists use page-number paging, strict ordering, `center`/`quadrant` filters and e
 source lot/device, training and schedule pins, positive physical quantity, GPS,
 both clocks and the safety assessment provenance. Original sync results are never
 rewritten. No DELETE or PATCH exists; retained rows and SQL guards are append-only.
+Relation IDs use UUID strings; semantic UUID proof accepts supported text spellings
+without changing the original payload or its hash. Numeric UUID inputs are refused.
 
 `POST /permits/{id}/schedule/` explicitly creates a real planner task with a point,
 courier and due date. Both `schedule.manage` and `permit.manage` must cover the

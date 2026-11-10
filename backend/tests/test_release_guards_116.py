@@ -325,6 +325,8 @@ def test_empty_regulatory_guard_reversals_are_safe_without_dropping_provenance()
     editor = SimpleNamespace(connection=connection)
     for name in ("0002_release_guards", "0004_release_device_status_guard"):
         import_module(f"releases.migrations.{name}").refuse_populated_reverse(apps, editor)
+    uuid_guard = import_module("releases.migrations.0005_semantic_source_uuids")
+    uuid_guard.Migration.operations[-1].reverse_code(apps, editor)
 
 
 def revoke_bootstrap(context):
@@ -404,5 +406,8 @@ def test_populated_regulatory_guard_reverse_refuses_before_official_records_are_
     equipment = import_module("releases.migrations.0004_release_device_status_guard")
     with pytest.raises(IrreversibleError, match="lifecycle must be retained"):
         equipment.refuse_populated_reverse(apps, editor)
+    uuid_guard = import_module("releases.migrations.0005_semantic_source_uuids")
+    with pytest.raises(IrreversibleError, match="provenance must be retained"):
+        uuid_guard.Migration.operations[-1].reverse_code(apps, editor)
     assert context.permit.versions.filter(pk=context.permit_version.pk).exists()
     assert context.device.statuses.count() == 1

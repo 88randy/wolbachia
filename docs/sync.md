@@ -1277,6 +1277,9 @@ debit or task-completion effect. Acceptance retains the exact original regulator
 training, receipt/unit/lot/policy and evidence pins, rechecks current safety and
 applies once through the existing review receipt. Original ingest status, both
 timestamps, payload hash and rule/catalog provenance are unchanged.
+Release relation IDs are UUID strings. Supported textual spellings compare by UUID
+identity in the deferred proof; the original JSON and its hash remain unchanged.
+Numeric or boolean UUID inputs are invalid payloads.
 
 The one canonical inventory ledger uses source_kind=release_record with the
 actual Release and credited SupplyReceiptLine. Its negative same-custodian leg
