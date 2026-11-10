@@ -18,6 +18,7 @@ import {
   projectionBundle,
 } from "./support/lifecycle-projection-fixtures.ts";
 import { ASSIGNMENT, CATALOG, RULES, makeDraft } from "./support/m-08-fixtures.ts";
+import { releasePins } from "./support/release-fixtures.ts";
 
 const id = (suffix: number) => `10000000-0000-4000-8000-${String(suffix).padStart(12, "0")}`;
 const POINT = { id: PROJECTION_POINT.id, code: PROJECTION_POINT.code, lat: 19, lng: -99 };
@@ -176,4 +177,59 @@ void test("M07 retired identity stays explicit and stale authority or storage fa
   await assert.rejects(readScannerResources(broken, turn), /storage read failed/);
   await fixture.bundle.clearSessionData();
   await assert.rejects(readScannerResources(fixture.db, turn));
+});
+
+void test("M10 release-device QR and exact manual code route only downloaded paired identity without touching an ovitrap draft", async () => {
+  const fixture = await scannerFixture();
+  const pins = releasePins();
+  const permit = {
+    ...pins.permit,
+    center_id: CONTRACT_IDS.center,
+    quadrant_id: CONTRACT_IDS.quadrant,
+  };
+  Object.assign(fixture.body, { permits: [permit], eligibility: [] });
+  await fixture.db.runAtomically([
+    {
+      sql: "UPDATE kv SET value=json_set(value,'$.permissions',json(?)) WHERE key='session_profile'",
+      params: [JSON.stringify(["field_event.sync", "field.upload", "supply_assignment.receive"])],
+    },
+  ]);
+  await fixture.bundle.refresh(true);
+  const scanner = new ScannerService({
+    read: () => fixture.bundle.captureLifecycleSource(),
+    resources: (turn) => readScannerResources(fixture.db, turn),
+    ovitrap: {
+      draftBuffer: new OvitrapDraftBuffer(),
+      update: () => Promise.reject(new Error("Unrelated draft write")),
+      startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
+      enterBag: () => Promise.reject(new Error("Unrelated bag")),
+    },
+  });
+  for (const isManual of [false, true]) {
+    assert.deepEqual(
+      await scanner.open({
+        input: {
+          isManual,
+          value: isManual ? pins.device.code : `wbf:1:release-device:${pins.device.id}`,
+        },
+        eventId: null,
+        isCurrent: () => true,
+      }),
+      {
+        route: {
+          name: "releaseCapture",
+          taskId: null,
+          deviceId: pins.device.id,
+          manualCapture: isManual,
+        },
+      },
+    );
+  }
+  assert.equal((await fixture.db.query("SELECT id FROM outbox_event")).length, 0);
+  assert.equal((await fixture.db.query("SELECT id FROM release_draft")).length, 0);
+  await fixture.bundle.clearSessionData();
+  assert.deepEqual(
+    await scanner.resolve({ value: `wbf:1:release-device:${pins.device.id}`, isManual: false }),
+    { error: "unavailable" },
+  );
 });

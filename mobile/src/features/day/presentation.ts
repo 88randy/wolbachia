@@ -23,6 +23,7 @@ export const ACTION_KEYS: Readonly<Record<DayTask["task"]["action"], MessageKey>
   replace: "mobile.day.replace",
   relocate: "mobile.day.relocate",
   remove: "mobile.day.remove",
+  release: "mobile.release.title",
 };
 /** [ASSUMPTION] Fixture summary codes until the history producer publishes its vocabulary. */
 export const HISTORY_KEYS: Readonly<Record<string, MessageKey>> = {

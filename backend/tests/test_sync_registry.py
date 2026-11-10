@@ -94,7 +94,7 @@ def test_record_void_is_registered_by_the_app_itself() -> None:
         "sampling_points": 1,
         "ovitraps": 1,
         "eligibility": 1,
-        "permits": 1,
+        "permits": 2,
     }
 
 

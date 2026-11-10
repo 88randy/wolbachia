@@ -5,7 +5,7 @@ export interface AssignedTask {
   readonly point_id: string;
   readonly courier: string;
   readonly ovitrap_id?: string;
-  readonly action: "place" | "check" | "replace" | "relocate" | "remove";
+  readonly action: "place" | "check" | "replace" | "relocate" | "remove" | "release";
   readonly date: string;
   readonly risk: "high" | "normal";
   readonly version: string;

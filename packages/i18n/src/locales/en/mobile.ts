@@ -1,7 +1,9 @@
 /** English messages of the `mobile` area: exactly the keys of `../es-MX/mobile.ts`. */
 import type { mobile as source } from "../es-MX/mobile.ts";
+import { release } from "./release.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  ...release,
   "mobile.scanner.title": "Scan code",
   "mobile.scanner.hint": "Point at the program QR code.",
   "mobile.scanner.start": "Use camera",

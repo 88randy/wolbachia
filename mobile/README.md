@@ -1,12 +1,29 @@
 # mobile
 
+## M10 release and blocked release (#139)
+
+Assignments4 release tasks now remain visible in the day list and open P18/P19.
+The permits2 capture bundle and eligibility1 data commit with the existing DayStore
+writer, cursor and owner/session/scope fences. Actual devices, ReleaseSchedule
+bindings, receipt custody, transit policy and original/current safety drive every
+gate. P19 provides supervisor reporting and has no proceed override. Raw drafts,
+fresh GPS and adopted evidence save through the existing atomic outbox/file journal.
+See [release contract, tests and limits](src/features/releases/README.md).
+
+The existing QR router opens actual downloaded release devices. Capture and retry
+retain one UUID; phone-saved, server-received and review outcomes remain separate.
+Schema20 adds only retained owner-bound drafts after unchanged SQL1-19. No new
+handler, ledger, permission grant, transport queue or dependency is introduced.
+Sample collection is excluded because #117 is open and sample.collect is not on
+master. Native/API/accessibility qualification remains UNRUN; no phone install.
+
 ## M07 QR scanner and supply detail (#136)
 
 P11/P21 share native camera/torch and explicit manual entry, current scoped local
 routing and duplicate feedback. P12 shows actual downloaded lot/unit/assignment
 pins without inferred stock or expiry. M08 durable drafts and the existing outbox
 own all captures and retry. See [scanner contracts, test map and producer limits](src/features/scanner/README.md).
-Release/sample destinations await #139; supply human labels/codes/expiry and native
+Sample destinations await #117; supply human labels/codes/expiry and native
 MO01/API/accessibility qualification remain unavailable or unrun as documented there.
 
 ## M12 incidents and emergency (#141)

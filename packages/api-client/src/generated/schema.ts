@@ -10202,6 +10202,7 @@ export interface components {
             valid_to: string | null;
             requirements: unknown;
             blocked_by: string[];
+            capture: components["schemas"]["ReleaseCaptureBundle"] | null;
         };
         PermitChange: {
             sequence: number;
@@ -11086,6 +11087,84 @@ export interface components {
             kind: "ReleaseCancelIntentRequest";
             /** Format: uuid */
             release_id: string;
+        };
+        ReleaseCaptureBundle: {
+            /** Format: date-time */
+            as_of: string;
+            version: string;
+            devices: components["schemas"]["ReleaseCaptureDevice"][];
+            tasks: components["schemas"]["ReleaseCaptureTask"][];
+        };
+        ReleaseCaptureCustody: {
+            /** Format: uuid */
+            receipt_line_id: string;
+            /** Format: uuid */
+            receipt_source_event_id: string;
+            /** Format: uuid */
+            assignment_id: string;
+            /** Format: date */
+            assignment_date: string;
+            /** Format: uuid */
+            shift_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: decimal */
+            available_quantity: string;
+            accounted_release_event_ids: string[];
+            /** Format: date-time */
+            received_at: string;
+            /** Format: uuid */
+            source_lot_version_id: string;
+            /** Format: uuid */
+            current_lot_version_id: string;
+            /** Format: date-time */
+            source_expires_at: string | null;
+            /** Format: date-time */
+            current_expires_at: string | null;
+            /** Format: uuid */
+            transit_policy_id: string | null;
+            transit_mode: string | null;
+            proof_roles: string[];
+            requires_evidence: boolean;
+            blocked_by: string[];
+        };
+        ReleaseCaptureDevice: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["ReleaseDeviceStatusEnum"];
+            revision: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            source_lot_id: string;
+            /** Format: uuid */
+            source_lot_version_id: string;
+            custody: components["schemas"]["ReleaseCaptureCustody"][];
+        };
+        ReleaseCaptureTask: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            point_id: string;
+            /** Format: uuid */
+            permit_id: string;
+            /** Format: uuid */
+            permit_version_id: string;
+            /** Format: uuid */
+            courier_id: string;
+            /** Format: date */
+            due_date: string;
+            owner_revision: number;
+            is_completed: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            binding_created_at: string;
+            /** Format: date-time */
+            owner_created_at: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).

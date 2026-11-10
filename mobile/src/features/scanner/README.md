@@ -35,9 +35,11 @@ supply incident link or auto-submit a report.
 
 ## Current producer limits and design deviations
 
-- `release-device` and `sample` parse correctly but have no mobile projection or
-  destination screen on master. They remain unavailable until [#139](https://github.com/88randy/wolbachia/issues/139)
-  supplies those contracts/screens. No placeholder release/capture authority is inferred.
+- `release-device` uses the actual permits2 capture projection and routes to
+  P18/P19 (#139), without touching an ovitrap draft. That feature rechecks the
+  explicit task/permit binding, actual custody and safety before Save. Unknown,
+  foreign and unavailable identities remain opaque. `sample` stays unavailable
+  because #117/sample.collect is absent; no placeholder capture authority exists.
 - Supplies1 exposes lot/unit UUIDs, declared plan quantities and original assignment
   pins. It has no lot human code, unit/supply label or expiry. P12 shows those actual
   references and an explicit missing-metadata notice. It never says expiry does not

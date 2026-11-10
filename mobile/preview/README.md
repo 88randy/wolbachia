@@ -25,6 +25,24 @@ Save runs the production validator without durable writes or server receipt.
 The explicit synthetic camera port returns cancellation, preserving all values
 without creating evidence. This preview is never an Android/device or API claim.
 
+For the actual P18/P19 `ReleaseView`, open
+`http://127.0.0.1:4203/?screen=release&theme=light`. Add `blocked=1` for P19's
+non-overridable training blocker, `theme=dark`, `lang=en` or `scale=130` to inspect
+the same view in each browser matrix state. The complete P18 fixture has a
+synthetic task/device/permit/lot, eight passing fixture gates, quantity 2500,
+synthetic GPS ±4 m and one synthetic evidence reference **without photo bytes**.
+Changing quantity or Undo changes preview memory only. Taking a photo always
+cancels; Save displays a preview-only explanation and never reports Phone saved.
+
+The release preview renders the production view, header, controls and footer.
+Only the header's navigation and sync hooks are replaced by browser-only no-op
+navigation and an explicit synthetic offline snapshot. No app services, capture
+controller, outbox, API, native GPS/camera or file/storage writer is created.
+These Vite aliases apply only to this developer harness; Metro never reads them.
+Screenshots are **browser-renderer evidence only** and do not qualify Android,
+SQLCipher, camera, GPS, TalkBack, keyboard/safe-area behavior or either MO01 device
+profile. Do not commit preview screenshots or a new evidence manifest.
+
 The browser adapters select the libraries' real web SVG/safe-area implementations
 and refuse native
 module calls (the SVG library statically imports an Android-only touch-sound module).

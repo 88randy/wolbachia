@@ -1,5 +1,21 @@
 # Day projections and task locations
 
+## Release prerequisites (#139)
+
+The same DayStore bootstrap/delta/revocation transaction consumes permits2,
+eligibility1 and actual assignments4 release tasks. A new private readiness key
+requires explicit full sections under the original capture identity before reads;
+legacy ETags/cursors and deltas cannot hydrate the consumer. Production refresh
+omits ETag while this consumer is pending. No released migration changes.
+
+`withReleaseProjection` shares the existing short projection gate and checks the
+original owner/session/context/profile and paired scope in one SQLite read. Its
+raw source guard includes actual quadrant metadata for task scope. The day parser
+retains action=release without turning it into ovitrap work or completion.
+P18/P19 fail closed on missing B20 device/lot/custody/task-binding facts. The actual
+new nested capture bundle supplies them; no quadrant or selected permit infers
+task authority. Evidence, drafts and original outcomes are retained separately.
+
 ## Fuel capture context (#140)
 
 `withFuelContext` reuses the same short projection writer and downloaded paired

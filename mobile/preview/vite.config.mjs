@@ -11,6 +11,14 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^.*\/navigation\/NavigationProvider\.tsx$/,
+        replacement: path.join(previewRoot, "release-preview-runtime.js"),
+      },
+      {
+        find: /^.*\/sync\/use-sync\.ts$/,
+        replacement: path.join(previewRoot, "release-preview-runtime.js"),
+      },
+      {
         find: /^react-native-svg$/,
         replacement: path.join(
           repositoryRoot,

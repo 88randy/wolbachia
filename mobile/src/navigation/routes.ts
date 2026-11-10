@@ -11,6 +11,12 @@ export type Route =
   | { readonly name: "day" }
   | { readonly name: "qrScanner" }
   | { readonly name: "supplyDetail"; readonly lotId: string }
+  | {
+      readonly name: "releaseCapture";
+      readonly taskId: string | null;
+      readonly deviceId: string | null;
+      readonly manualCapture: boolean;
+    }
   | { readonly name: "map" }
   | { readonly name: "ovitrapCapture" }
   | {
@@ -56,11 +62,20 @@ export function currentRoute(stack: Stack): Route {
 function isSameRoute(left: Route | undefined, right: Route): boolean {
   if (!left || left.name !== right.name) return false;
   if ("lotId" in right) return "lotId" in left && left.lotId === right.lotId;
+  if (right.name === "releaseCapture") return isSameRelease(left, right);
   if ("target" in right) return isSameScanner(left, right);
   if (!("ovitrapId" in right)) return true;
   return (
     "ovitrapId" in left &&
     left.ovitrapId === right.ovitrapId &&
+    left.manualCapture === right.manualCapture
+  );
+}
+function isSameRelease(left: Route, right: Extract<Route, { name: "releaseCapture" }>): boolean {
+  return (
+    left.name === "releaseCapture" &&
+    left.taskId === right.taskId &&
+    left.deviceId === right.deviceId &&
     left.manualCapture === right.manualCapture
   );
 }

@@ -46,7 +46,8 @@ export class ScannerService {
     if ("error" in result) return result;
     if (!isCurrent()) return { error: "unavailable" };
     const { resource, manualCapture } = result;
-    if (resource.kind === "lot") return { route: { name: "supplyDetail", lotId: resource.id } };
+    const readRoute = readOnlyRoute(resource, manualCapture);
+    if (readRoute) return { route: readRoute };
     await this.#deps.ovitrap.draftBuffer.persist(this.#deps.ovitrap, eventId);
     if (!isCurrent()) return { error: "unavailable" };
     if (resource.kind === "ovitrap")
@@ -59,6 +60,17 @@ export class ScannerService {
       ? { route: { name: "ovitrapCapture" } }
       : { error: "unavailable" };
   }
+}
+function readOnlyRoute(resource: ScannerResource, manualCapture: boolean): Route | null {
+  if (resource.kind === "lot") return { name: "supplyDetail", lotId: resource.id };
+  return resource.kind === "release-device"
+    ? {
+        name: "releaseCapture",
+        taskId: null,
+        deviceId: resource.id,
+        manualCapture,
+      }
+    : null;
 }
 function stillMatches(result: ScannerResult, resource: ScannerResource): boolean {
   return "resource" in result && sameResource(resource, result.resource);

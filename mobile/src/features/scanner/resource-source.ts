@@ -6,6 +6,7 @@ import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 import type { LifecycleSourceTurn } from "../ovitrap-lifecycle/types.ts";
 import { readSupplyAssignments } from "../supply-receipt/projection-state.ts";
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
+import { readReleaseProjection, ReleaseProjectionUnavailable } from "../releases/projections.ts";
 
 export interface ScannerResource {
   readonly kind: QrKind;
@@ -74,6 +75,26 @@ async function lotResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
     return [];
   }
 }
+async function releaseResources(
+  db: SqlExecutor,
+  turn: LifecycleSourceTurn,
+): Promise<ScannerResource[]> {
+  try {
+    const source = await turn.write(() => readReleaseProjection(db, turn.handle));
+    const devices = source.permits.flatMap((permit) => permit.capture?.devices ?? []);
+    return devices
+      .filter((device, index) => devices.findIndex(({ id }) => id === device.id) === index)
+      .map((device) => ({
+        kind: "release-device",
+        id: device.id,
+        code: device.code,
+        isRetired: device.status === "retired",
+      }));
+  } catch (error) {
+    if (!(error instanceof ReleaseProjectionUnavailable)) throw error;
+    return [];
+  }
+}
 
 function assignedBagContext(draft: Draft | null, assignment: Assignment | null) {
   if (!draft?.point || !assignment) return null;
@@ -109,6 +130,7 @@ export async function readScannerResources(
     ...(await ovitrapResources(db, turn)),
     ...(await lotResources(db, turn)),
     ...(await bagResources(db, turn)),
+    ...(await releaseResources(db, turn)),
   ];
   await turn.assertCurrent();
   return resources;

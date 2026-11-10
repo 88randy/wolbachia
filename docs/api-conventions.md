@@ -52,7 +52,7 @@ uses only requirements, training and certification facts recorded by device_time
 then independently checks current qualification. Later backdated facts cannot
 create capture authority. Review retains the exact original task/binding/owner pins.
 The existing assignments producer advances3 to4 to include action=release and its
-real completion state; the new permits producer is1. Root2/history7/supplies1
+real completion state; the permits producer advances to2 for #139. Root2/history7/supplies1
 remain unchanged. Older cursors require bootstrap recovery at the producer boundary.
 
 `release.record` rechecks capture-time and current permit validity/official zone,
@@ -69,6 +69,40 @@ retains recipient-specific PermitSuspensionNotice facts for eligible courier/
 coordinator memberships. Their delivery_unavailable status records absent external
 transport, not a delivered notification. Source and effect/receipt history remain
 separate; physical consumption is retained when a void is refused.
+
+### Own release capture download (#139)
+
+Permits2 adds required nullable `capture: ReleaseCaptureBundle` to the existing
+bootstrap/permit contract. Current paired `field.bootstrap` AND `field_event.sync`
+authorize only this narrow own prerequisite snapshot; administrative/read grants
+are unchanged. A base permit delta carries `capture:null`, never another user's
+snapshot. Root2, assignments4, supplies1, history7 and `release.record` schema1 remain.
+
+`ReleaseCaptureBundle` contains observed `as_of`, stable `version`, `devices` and
+`tasks`. Devices retain UUID/code/status/revision/created_at and biological source
+lot/version IDs. Each task retains its actual UUID/point, permit/PermitVersion,
+courier/due date/owner revision/completion and task/binding/owner creation clocks.
+Only current owned, genuine explicit release bindings appear.
+
+Device custody rows retain genuine own receipt-line/source/assignment/date/shift,
+unit/piece identities, `received_at`, exact decimal `available_quantity`, original
+and current lot version/expiry, transit policy ID/mode/proof_roles,
+`requires_evidence` and coded `blocked_by`. Availability is the nonnegative minimum
+of actual remaining receipt and the canonical assignment ledger balance.
+`accounted_release_event_ids` UUID list proves only real same-courier release
+debits on this receipt line; a digest change alone never discharges reservations.
+Original/current transit safety uses B20's existing evaluator. Receipt UUID order
+matches B20 selection; the phone must additionally match its exact shift or the
+null-shift assignment's local day. An unsafe first sufficient candidate is not
+skipped. No packaging conversion, planned stock, missing safety default or Location
+condition reading is inferred.
+
+The release dependency digest participates in existing `scope_revision`; changed
+equipment, ownership, lot/safety/policy or custody invalidates old cursors and
+requires full bootstrap. `as_of` alone changes neither `capture.version` nor the
+semantic bootstrap ETag. Downloads are cached observations, never server acceptance
+or permanent release authorization. Upload, ingestion and source-bound review keep
+their independent existing authorization/revalidation.
 
 ## Training eligibility and private evaluations (#101)
 

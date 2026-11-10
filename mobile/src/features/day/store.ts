@@ -21,6 +21,14 @@ import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-contex
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
 import { readFuelCaptureContext } from "../fuel/capture-context.ts";
+import {
+  releaseBundleStatements,
+  releaseChangeStatements,
+  invalidateReleaseProjection,
+  clearReleaseProjection,
+  needsReleaseBootstrap,
+  readReleaseProjection,
+} from "../releases/projections.ts";
 import type { TaskOwner } from "./current-task.ts";
 import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
@@ -118,6 +126,12 @@ export class DayStore {
   fuelCaptureContext(handle: CaptureTransportHandle) {
     return readFuelCaptureContext(this.#db, handle);
   }
+  releaseProjection(handle: CaptureTransportHandle) {
+    return readReleaseProjection(this.#db, handle);
+  }
+  needsReleaseBootstrap(): Promise<boolean> {
+    return needsReleaseBootstrap(this.#db);
+  }
   needsSupplyBootstrap(): Promise<boolean> {
     return needsSupplyBootstrap(this.#db);
   }
@@ -145,6 +159,7 @@ export class DayStore {
       bundleMetadata(bundle.meta),
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
+      ...releaseBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
       isRecord(body) && Array.isArray(body.supplies)
         ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
@@ -172,6 +187,7 @@ export class DayStore {
       ...manifests,
       ...courierChangeStatements(body),
       ...supplyChangeStatements(body, handle),
+      ...releaseChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
     statements.push(...changeMetadata(body, tasks.filter((entry) => entry.isUnreadable).length));
@@ -182,6 +198,7 @@ export class DayStore {
       setStatement("day_cleanup_pending", "true"),
       ...invalidateCaptureContext,
       invalidateSupplyProjection,
+      invalidateReleaseProjection,
       revokeCaptureScope(),
     ]);
   }
@@ -190,6 +207,7 @@ export class DayStore {
     await this.#db.runAtomically([
       ...captureRecoveryStatements(handle),
       invalidateSupplyProjection,
+      invalidateReleaseProjection,
       INVALIDATE_ATTACHMENTS,
     ]);
   }
@@ -222,6 +240,7 @@ export class DayStore {
       ...clearDownloadedProjections,
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
+      ...clearReleaseProjection,
       ...invalidateCaptureContext,
       revokeCaptureScope(),
       { sql: "DELETE FROM day_sampling_point" },

@@ -14,6 +14,8 @@ import type { SupplyProjectionSource } from "../supply-receipt/projection-types.
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
 import type { FuelCaptureSource } from "../fuel/capture-context.ts";
 import { FuelError } from "../fuel/domain.ts";
+import { ReleaseProjectionUnavailable } from "../releases/projections.ts";
+import type { ReleaseProjectionSource } from "../releases/projections.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
@@ -187,6 +189,7 @@ export class DayBundleService {
     return (
       force ||
       (await this.#deps.store.needsBootstrap(consumesLifecycle)) ||
+      (consumesLifecycle && (await this.#deps.store.needsReleaseBootstrap())) ||
       (consumesLifecycle && (await this.#deps.store.needsSupplyBootstrap()))
     );
   }
@@ -341,6 +344,21 @@ export class DayBundleService {
     return turn.write(async () => {
       const source = await this.#deps.store.fuelCaptureContext(handle);
       if (!handle.isCurrent()) throw new FuelError("scope");
+      return action(source);
+    });
+  }
+  /** Release reads use the same original identity, projection gate and raw SQL revision guard. */
+  async withReleaseProjection<T>(
+    action: (source: ReleaseProjectionSource) => Promise<T>,
+  ): Promise<T> {
+    const turn = await this.#captureTurn();
+    if (turn.handle === null)
+      throw new ReleaseProjectionUnavailable("Release context unavailable.");
+    const handle = turn.handle;
+    return turn.write(async () => {
+      const source = await this.#deps.store.releaseProjection(handle);
+      if (!handle.isCurrent())
+        throw new ReleaseProjectionUnavailable("Release context unavailable.");
       return action(source);
     });
   }

@@ -42,9 +42,12 @@ import { createIncidents } from "../features/incidents/create-incidents.ts";
 import type { IncidentService } from "../features/incidents/service.ts";
 import type { ScannerService } from "../features/scanner/service.ts";
 import { createScanner } from "../features/scanner/create-scanner.ts";
+import { createReleases } from "../features/releases/create-releases.ts";
+import type { ReleaseService } from "../features/releases/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly releases: ReleaseService;
   readonly scanner: ScannerService;
   readonly attachments: Attachments;
   readonly supplyReceipt: SupplyReceiptService;
@@ -135,6 +138,7 @@ function createLocalForms(
     supplyReceipt: createSupplyReceipt(input),
     fuel: createFuel(input),
     incidents: createIncidents(input),
+    releases: createReleases(input),
   };
 }
 

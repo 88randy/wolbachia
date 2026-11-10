@@ -4,6 +4,14 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#139 advances permits to2 with typed ReleaseCaptureBundle/Device/Task/Custody.
+The read-only own-courier frame carries authentic regulatory task bindings,
+equipment lineage, receipt balances and original/current transit safety. Actual
+accounted release source UUIDs prevent double local reservation after reviewed
+consumption. Stable scope/hash changes require the existing full rebootstrap;
+observation time alone does not churn ETag. The release.record write contract,
+handler, ledger and permission grants remain unchanged.
+
 #101 adds training/requirement versions, evidence-backed certifications,
 evaluation rubrics/attempts/revisions/voids, pending notice-policy routing and
 qualification reads. Commands use immutable UUID receipts plus CAS; private

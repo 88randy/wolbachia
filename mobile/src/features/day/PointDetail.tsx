@@ -1,11 +1,11 @@
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
 import { Card } from "../../ui/Card.tsx";
 import type { M06Model } from "./use-m-06.ts";
 import { TaskSummary } from "./TaskSummary.tsx";
 import { PointHistory } from "./PointHistory.tsx";
 import { PointDirections } from "./PointDirections.tsx";
+import { TaskCaptureAction } from "./TaskCaptureAction.tsx";
 export function PointDetail({ model }: { readonly model: M06Model }) {
   const t = useT();
   const row = model.selected;
@@ -15,7 +15,7 @@ export function PointDetail({ model }: { readonly model: M06Model }) {
       <TaskSummary row={row} />
       <PointDirections model={model} />
       <PointHistory task={row.task} />
-      <AppText>{t("mobile.day.scanHint")}</AppText>
+      <TaskCaptureAction task={row.task} />
       <Button
         label={t("mobile.day.closeDetail")}
         variant="text"

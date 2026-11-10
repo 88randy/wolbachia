@@ -160,16 +160,21 @@ def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     if not scope.allows(permission):
         raise PermissionDenied
     from lab.independent_qa.selectors import visibility_revision
+    from releases.capture_projections import prepare_release_capture
     from uploads.access import UploadActor
 
-    return ProducerContext(
-        batch.organization,
-        batch.user,
-        scope,
-        batch.received_at,
-        permission,
-        configuration_generation=captured_generation(membership),
-        lab_visibility_revision=visibility_revision(UploadActor(batch.user, batch.organization)),
+    return prepare_release_capture(
+        ProducerContext(
+            batch.organization,
+            batch.user,
+            scope,
+            batch.received_at,
+            permission,
+            configuration_generation=captured_generation(membership),
+            lab_visibility_revision=visibility_revision(
+                UploadActor(batch.user, batch.organization)
+            ),
+        )
     )
 
 
@@ -202,6 +207,7 @@ def scope_revision(ctx: ProducerContext) -> str:
             "generation": ctx.configuration_generation,
             "schema": bundle_schema_version(),
             "lab_visibility": ctx.lab_visibility_revision,
+            "release_visibility": ctx.release_visibility_revision,
         }
     )
 
@@ -352,8 +358,12 @@ def build_bootstrap(batch: BatchContext, ctx: ProducerContext | None = None) -> 
         "map_manifest_ready": map_manifests_ready(sections["map_manifests"]),
         **sections,
     }
+    from releases.capture_projections import capture_content
+
     return {
-        "bundle_version": snapshot_hash(payload),
+        "bundle_version": snapshot_hash(
+            {**payload, "permits": capture_content(sections["permits"])}
+        ),
         **payload,
         "generated_at": batch.received_at,
         "cursor": encode_cursor(

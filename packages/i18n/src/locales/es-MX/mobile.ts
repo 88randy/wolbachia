@@ -1,7 +1,9 @@
 /** Mexican Spanish messages of the `mobile` area (courier app shell and sync inbox). Source of the `mobile.*` key list. */
 import type { AreaCatalog } from "../area.ts";
+import { release } from "./release.ts";
 
 export const mobile = {
+  ...release,
   "mobile.scanner.title": "Escanear código",
   "mobile.scanner.hint": "Apunta al código QR del programa.",
   "mobile.scanner.start": "Usar cámara",

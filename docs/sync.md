@@ -1299,10 +1299,37 @@ No late account/source lock or network/storage/mail operation occurs under domai
 locks. Suspension uses the same permit arbiter; a concurrent loser returns a
 retryable429, and a retry sees committed suspension before any consumption.
 
-The permits1 producer emits current official geometry/requirements/validity and
+The permits2 producer emits current official geometry/requirements/validity and
 coded blockers, with scoped transactional upserts on permit writes/suspension.
 Suspension also retains scoped courier/coordinator recipient facts with explicit
 delivery_unavailable; persistence and feed publication do not establish external
 notification delivery. Assignments4 adds release tasks/completion; root2,
 history7 and supplies1 stay unchanged. Producer-boundary changes require a full
 bootstrap before clients resume with the new cursor.
+
+### Own cached release prerequisites (#139)
+
+Permits2 adds nullable `capture` with observed `as_of`, stable `version`, actual
+scoped devices/current status/source lot, genuine owned ReleaseSchedule bindings
+and effective own receipt custody. Both `field.bootstrap` and `field_event.sync`
+must cover the real permit pair; no new grant or broad inventory read is implied.
+Each custody row includes exact remaining/ledger-minimum quantity, unit/piece,
+receipt/source/assignment/shift/day pins, source/current lot version and expiry,
+actual transit policy/proof_roles, `requires_evidence` and B20 transit blockers.
+`accounted_release_event_ids` proves exact original source UUIDs already debited
+on this real receipt; local reservations need this or an authentic terminal
+disposition, never a changed digest or rewritten ingest status.
+Rows keep receipt UUID order. The client matches its exact shift or null-shift
+assignment local day, then uses the first sufficient candidate; unsafe candidates
+cannot be skipped. Device, binding, ownership and receipt clocks cannot be after
+capture. Existing eligibility1 supplies only the original self qualification pins.
+
+The prepared same-scope read cache contributes a stable dependency hash to the
+existing scope revision. Device/status, task/owner, lot/policy/safety or actual
+custody changes require full rebootstrap through invalid_cursor, without new
+CourierChange kinds, migrations, outbox writers or publication in other apps.
+Regulatory base permit deltas carry `capture:null` and cannot hydrate capture.
+Observation `as_of` is excluded from capture and semantic bootstrap content hashes
+so unchanged facts still return304; crossing an actual expiry changes blockers and
+the dependency revision. Original saved event UUID/envelope/evidence survive
+recovery. Current server safety and original-source review remain authoritative.

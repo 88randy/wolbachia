@@ -1,5 +1,15 @@
 # Database startup and schema lineage (#266)
 
+## Additive release schema20 (#139)
+
+Retained owner-bound release drafts append after unchanged SQL1-19. No-file drafts
+participate in owner activation and local-record detection. Original regulatory,
+task, equipment and custody snapshots cannot change; the actual device_time seals
+only with the first outbox event. Saved observations and private bytes are retained.
+The same raw source/draft/reservation CAS and outbox transaction arbitrate Save;
+one real task cannot acquire a second local release. No reset, backfill or second
+transport is introduced. The structural profiles derive from the migration registry.
+
 ## Additive incident schema19 (#141)
 
 Retained owner-bound incident/accident drafts append after unchanged SQL1–18.
