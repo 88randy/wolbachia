@@ -1,19 +1,23 @@
 """Public schemas with no storage keys, invented roster or implicit organization selector."""
 
 from collections.abc import Mapping
+from functools import cached_property
 from typing import Any, Literal
 from uuid import UUID
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from catalogs.models import CatalogItem
 from core.filters import CODE_MAX_LENGTH
 from core.serializers import OrgScopedModelSerializer
 from incidents.configuration import validate_unique_blocker_kinds
 from incidents.models import Incident, IncidentEvent, IncidentTypeVersion, Severity
 from incidents.origins import CREATION_ORIGINS
+from incidents.permissions import INCIDENT_MANAGE_TYPE
+from organizations.models import Membership
 from ovitraps.payloads import StrictPayloadSerializer
-from uploads.access import UploadActor, actor_from_request
+from uploads.access import UploadActor, actor_from_request, current_scope
 
 
 def _actor(context: Mapping[str, Any]) -> UploadActor | None:
@@ -255,6 +259,28 @@ class ReportedIncidentSerializer(OrgScopedModelSerializer):
 class IncidentTypeSerializer(OrgScopedModelSerializer):
     id = serializers.UUIDField(source="item_id", read_only=True)
     current_version_id = serializers.UUIDField(source="pk", read_only=True)
+    supervisor_display = serializers.SerializerMethodField()
+    coordinator_display = serializers.SerializerMethodField()
+    terminal_display = serializers.SerializerMethodField()
+
+    @cached_property
+    def can_manage_types(self) -> bool:
+        actor = _actor(self.context)
+        return actor is not None and current_scope(actor).allows(INCIDENT_MANAGE_TYPE)
+
+    def _owner_display(self, member: Membership | None) -> str | None:
+        if member is None or not self.can_manage_types:
+            return None
+        return member.user.get_full_name().strip() or member.user.username
+
+    def get_supervisor_display(self, obj: IncidentTypeVersion) -> str | None:
+        return self._owner_display(obj.supervisor)
+
+    def get_coordinator_display(self, obj: IncidentTypeVersion) -> str | None:
+        return self._owner_display(obj.coordinator)
+
+    def get_terminal_display(self, obj: IncidentTypeVersion) -> str | None:
+        return self._owner_display(obj.terminal)
 
     class Meta:
         model = IncidentTypeVersion
@@ -276,7 +302,25 @@ class IncidentTypeSerializer(OrgScopedModelSerializer):
             "report_evidence_min",
             "close_evidence_min",
             "blocker_kinds",
+            "supervisor_display",
+            "coordinator_display",
+            "terminal_display",
         ]
+        read_only_fields = fields
+
+
+class IncidentTypeHistorySerializer(IncidentTypeSerializer):
+    class Meta(IncidentTypeSerializer.Meta):
+        fields = [*IncidentTypeSerializer.Meta.fields, "created_at", "created_by"]
+        read_only_fields = fields
+
+
+class IncidentTypeUnconfiguredItemSerializer(OrgScopedModelSerializer):
+    label = serializers.CharField(source="label_es", read_only=True)  # type: ignore[assignment]  # public catalog label
+
+    class Meta:
+        model = CatalogItem
+        fields = ["id", "code", "label", "icon", "is_other"]
         read_only_fields = fields
 
 
@@ -420,3 +464,19 @@ class IncidentContextOptionSerializer(serializers.Serializer[Any]):
 class IncidentOwnerOptionSerializer(serializers.Serializer[Any]):
     membership_id = serializers.UUIDField(source="pk")
     label = serializers.CharField()  # type: ignore[assignment]  # minimal owner display label
+
+
+class IncidentTypeConfigurationOwnerQuerySerializer(IncidentOptionQuerySerializer):
+    membership_id = serializers.UUIDField(required=False)
+
+
+class IncidentTypeUnconfiguredQuerySerializer(StrictPayloadSerializer):
+    code = serializers.CharField(max_length=CODE_MAX_LENGTH, required=False)
+    page = serializers.IntegerField(required=False, min_value=1)
+    page_size = serializers.IntegerField(required=False, min_value=1)
+
+
+class IncidentTypeConfigurationOwnerOptionSerializer(serializers.Serializer[Any]):
+    membership_id = serializers.UUIDField()
+    label = serializers.CharField()  # type: ignore[assignment]  # minimal configuration owner name
+    is_terminal_eligible = serializers.BooleanField()

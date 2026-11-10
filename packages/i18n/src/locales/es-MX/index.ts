@@ -6,6 +6,8 @@ import { trainings } from "./trainings.ts";
 import { evaluations } from "./evaluations.ts";
 import { labReception } from "./labReception.ts";
 import { lab } from "./lab.ts";
+import { conditions } from "./conditions.ts";
+import { incidentTypes } from "./incidentTypes.ts";
 import { shift } from "./shift.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
@@ -37,6 +39,8 @@ import { voiding } from "./voiding.ts";
 
 import { discrepancies } from "./discrepancies.ts";
 export const esMX = {
+  ...conditions,
+  ...incidentTypes,
   ...notifications,
   ...transfers,
   ...discrepancies,

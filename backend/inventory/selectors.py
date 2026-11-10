@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Any, cast
+from uuid import UUID
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
@@ -17,6 +18,7 @@ from django.db.models import (
     Value,
     When,
 )
+from django.http import Http404
 
 from core.time import server_now
 from incidents.models import IncidentEvent
@@ -24,6 +26,7 @@ from inventory.access import require_scope, scoped_inventory
 from inventory.models import (
     BiologicalProtocolVersion,
     ConditionBreach,
+    ConditionIncidentLink,
     ConditionReading,
     InventoryRecord,
     Location,
@@ -35,7 +38,7 @@ from inventory.models import (
     SupplyTypeVersion,
 )
 from inventory.policy import BIOLOGICAL_FIELDS, LotSafety, LotSafetySnapshot, Protocol, evaluate_lot
-from uploads.access import UploadActor
+from uploads.access import UploadActor, current_scope
 
 
 def latest_versions(model: type[InventoryRecord], parent: str) -> QuerySet[Any]:
@@ -127,30 +130,38 @@ def unresolved_breaches(lot: Lot) -> QuerySet[ConditionBreach]:
     return query
 
 
+def daily_condition_readings(
+    version: LotVersion, at: datetime, location: Location | None
+) -> QuerySet[ConditionReading]:
+    """Only assessed facts for the exact current pin, site and organization-local day count."""
+    from zoneinfo import ZoneInfo
+
+    organization = version.lot.organization
+    readings = ConditionReading.objects.filter(
+        organization=organization,
+        lot=version.lot,
+        protocol=version.protocol,
+        local_date=at.astimezone(ZoneInfo(organization.timezone)).date(),
+        timezone=organization.timezone,
+        slot__isnull=False,
+    ).exclude(evaluation="unassessed")
+    return (
+        readings.filter(
+            Q(capture_location=location, capture_mode="explicit_location")
+            | Q(capture_mode="legacy_initial", location_version__location=location)
+        )
+        if location
+        else readings.none()
+    )
+
+
 def lot_safety(
     version: LotVersion, at: datetime | None = None, location: Location | None = None
 ) -> LotSafety:
     now = at or server_now()
-    from zoneinfo import ZoneInfo
-
     organization = version.lot.organization
-    local_date = now.astimezone(ZoneInfo(organization.timezone)).date()
     requested_location = location or version.initial_location
-    readings = ConditionReading.objects.filter(
-        lot=version.lot,
-        protocol=version.protocol,
-        local_date=local_date,
-        timezone=organization.timezone,
-        slot__isnull=False,
-    ).exclude(evaluation="unassessed")
-    readings = (
-        readings.filter(
-            Q(capture_location=requested_location, capture_mode="explicit_location")
-            | Q(capture_mode="legacy_initial", location_version__location=requested_location)
-        )
-        if requested_location
-        else readings.none()
-    )
+    readings = daily_condition_readings(version, now, requested_location)
     storage = current_location(requested_location) if requested_location else None
     from inventory.transfers.models import TransferHold
 
@@ -168,11 +179,103 @@ def lot_safety(
         protocol_ready(version.protocol),
         version.supply_version.requires_insecticide_free,
         storage.is_insecticide_free if storage else None,
-        frozenset(readings.values_list("slot", flat=True)),
+        frozenset(slot for slot in readings.values_list("slot", flat=True) if slot is not None),
         tuple(str(pk) for pk in unresolved_breaches(version.lot).values_list("pk", flat=True)),
         tuple(str(pk) for pk in holds.values_list("pk", flat=True)),
     )
     return evaluate_lot(snapshot, now)
+
+
+def condition_status(actor: UploadActor, target: tuple[Lot, Location | None]) -> dict[str, Any]:
+    """Expose one current monitoring frame after the caller authorizes its real target pair."""
+    from zoneinfo import ZoneInfo
+
+    lot, location = target
+    version = _condition_status_version(actor, target)
+    now = server_now()
+    timezone = version.lot.organization.timezone
+    safety = lot_safety(version, now, location)
+    placement = location or lot
+    return {
+        "lot_id": lot.pk,
+        "lot_version_id": version.pk,
+        "protocol_id": version.protocol_id,
+        "location_id": location.pk if location else None,
+        "evaluated_at": now,
+        "local_date": now.astimezone(ZoneInfo(timezone)).date(),
+        "timezone": timezone,
+        "protocol": version.protocol,
+        "is_protocol_configured": protocol_ready(version.protocol),
+        "can_create_condition": current_scope(actor).allows(
+            "condition.create",
+            str(placement.center_id),
+            str(placement.quadrant_id) if placement.quadrant_id else None,
+        ),
+        "slots": _condition_slots(version, (now, location)),
+        "status": safety.status,
+        "blocked_by": safety.blocked_by,
+        "blocking_incidents": _blocking_condition_incidents(actor, lot),
+    }
+
+
+def _condition_status_version(
+    actor: UploadActor, target: tuple[Lot, Location | None]
+) -> LotVersion:
+    lot, location = target
+    require_scope(actor, "lot.read", location or lot)
+    original = current_scope(actor).allows(
+        "lot.read", str(lot.center_id), str(lot.quadrant_id) if lot.quadrant_id else None
+    )
+    query = lot_versions(actor, "lot.read", None if original else location)
+    version = query.filter(lot=lot).first()
+    if version is None:
+        raise Http404
+    return cast(LotVersion, version)
+
+
+def _condition_slots(
+    version: LotVersion, context: tuple[datetime, Location | None]
+) -> list[dict[str, Any]]:
+    readings = daily_condition_readings(version, *context).order_by("slot", "-device_time", "-pk")
+    latest: dict[int, UUID] = {}
+    for reading in readings:
+        if reading.slot is not None:
+            latest.setdefault(reading.slot, reading.pk)
+    windows = version.protocol.reading_windows if version.protocol else []
+    return [
+        {
+            "slot": slot,
+            "window": windows[slot] if slot < len(windows) else None,
+            "is_complete": slot in latest,
+            "reading_id": latest.get(slot),
+        }
+        for slot in (0, 1)
+    ]
+
+
+def _blocking_condition_incidents(actor: UploadActor, lot: Lot) -> list[dict[str, Any]]:
+    scope = current_scope(actor)
+    links = (
+        ConditionIncidentLink.objects.filter(
+            organization=actor.organization,
+            incident__organization=actor.organization,
+            breach__in=unresolved_breaches(lot),
+        )
+        .select_related("incident")
+        .order_by("incident__code", "incident_id")
+    )
+    return [
+        {"id": link.incident_id, "code": link.incident.code}
+        for link in links
+        if all(
+            scope.allows(
+                permission,
+                str(link.incident.center_id),
+                str(link.incident.quadrant_id) if link.incident.quadrant_id else None,
+            )
+            for permission in ("lot.read", "incident.read")
+        )
+    ]
 
 
 def location_stock(actor: UploadActor, location: Location) -> QuerySet[Any]:

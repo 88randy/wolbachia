@@ -78,6 +78,7 @@ export const AREAS = [
       "device.read",
       "organization.read",
       "role.read",
+      "incident.manage_type",
     ],
   },
 ] as const;
