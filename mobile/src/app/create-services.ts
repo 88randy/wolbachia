@@ -38,12 +38,15 @@ import { createSupplyReceipt } from "../features/supply-receipt/create-supply-re
 import type { SupplyReceiptService } from "../features/supply-receipt/service.ts";
 import { createFuel } from "../features/fuel/create-fuel.ts";
 import type { FuelService } from "../features/fuel/service.ts";
+import { createIncidents } from "../features/incidents/create-incidents.ts";
+import type { IncidentService } from "../features/incidents/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly attachments: Attachments;
   readonly supplyReceipt: SupplyReceiptService;
   readonly fuel: FuelService;
+  readonly incidents: IncidentService;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
@@ -120,11 +123,14 @@ function createCaptures(
   };
 }
 
-function createLocalForms(input: Parameters<typeof createShiftClose>[0]) {
+function createLocalForms(
+  input: Parameters<typeof createShiftClose>[0] & { readonly requests: SessionRequests },
+) {
   return {
     shiftClose: createShiftClose(input),
     supplyReceipt: createSupplyReceipt(input),
     fuel: createFuel(input),
+    incidents: createIncidents(input),
   };
 }
 

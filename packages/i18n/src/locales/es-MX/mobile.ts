@@ -840,4 +840,95 @@ export const mobile = {
   "mobile.fuel.saveHint":
     "Guardar conserva la carga en este teléfono. El envío y la revisión ocurren después.",
   "mobile.fuel.inbox": "Ver envío y revisión en la bandeja",
+  "mobile.incidents.title": "Reportar incidente",
+  "mobile.incidents.subtitle": "Captura local y conversación con tu equipo",
+  "mobile.incidents.emergency": "Emergencia",
+  "mobile.incidents.emergencyHint":
+    "Ponte a salvo. La captura no confirma que alguien recibió el aviso.",
+  "mobile.incidents.report": "Incidente",
+  "mobile.incidents.accident": "Accidente",
+  "mobile.incidents.unavailable":
+    "La captura no está habilitada con el contexto actual. Conservamos tus borradores; desbloquea la app o actualiza tu jornada.",
+  "mobile.incidents.shiftRequired":
+    "Abre o revisa tu jornada para reportar. La llamada de apoyo no requiere guardar un reporte.",
+  "mobile.incidents.staleDraft":
+    "La captura cambió mientras trabajabas. Conservamos lo anterior; vuelve a abrirla antes de reintentar.",
+  "mobile.incidents.typeRequired": "Selecciona un tipo de incidente.",
+  "mobile.incidents.descriptionRequired": "Describe lo ocurrido para guardar el incidente.",
+  "mobile.incidents.descriptionLong": "Acorta la descripción a 4000 caracteres y vuelve a guardar.",
+  "mobile.incidents.evidenceLimit":
+    "La captura admite hasta 100 fotos. Conserva el resto en el teléfono.",
+  "mobile.incidents.photoUnavailable":
+    "No se pudo abrir la cámara. Conservamos la captura; reintenta cuando estás a salvo.",
+  "mobile.incidents.saved": "Guardado en el teléfono: pendiente de envío.",
+  "mobile.incidents.serverReceived": "Recibido por el servidor.",
+  "mobile.incidents.reviewPending":
+    "Recibido por el servidor: requiere revisión. La captura original se conserva.",
+  "mobile.incidents.rejected":
+    "El servidor no aceptó el reporte. Se conserva en el teléfono; revisa el motivo en la bandeja.",
+  "mobile.incidents.evidencePending":
+    "Hay fotos pendientes de verificación. La captura sigue guardada; revisa la bandeja para reintentar el envío.",
+  "mobile.incidents.noDeliveryPromise":
+    "Recibir el reporte no confirma que tu supervisor lo leyó ni que la ayuda va en camino.",
+  "mobile.incidents.description": "Descripción de lo ocurrido",
+  "mobile.incidents.optionalDescription": "Detalle opcional del accidente",
+  "mobile.incidents.searchTypes": "Buscar tipo de incidente",
+  "mobile.incidents.noTypeMatches": "No hay tipos que coincidan. Cambia la búsqueda.",
+  "mobile.incidents.noTypes":
+    "No hay tipos descargados disponibles. Actualiza los tipos con conexión o pide al administrador que revise la configuración.",
+  "mobile.incidents.chooseType": "Elegir tipo",
+  "mobile.incidents.type": "Tipo de incidente",
+  "mobile.incidents.otherHint": "Otro requiere que expliques lo ocurrido en la descripción.",
+  "mobile.incidents.evidence": "Fotos de evidencia",
+  "mobile.incidents.evidenceMinimum": "Mínimo de fotos configurado para este tipo:",
+  "mobile.incidents.evidenceMissing":
+    "Falta evidencia requerida. Puedes conservar el reporte; el servidor puede enviarlo a revisión.",
+  "mobile.incidents.uploadUnavailable":
+    "Tu contexto actual no permite adjuntar fotos. Conserva los detalles y pide apoyo al supervisor.",
+  "mobile.incidents.takePhoto": "Agregar foto",
+  "mobile.incidents.photoPreview": "Vista previa de evidencia del incidente",
+  "mobile.incidents.previewUnavailable":
+    "No se pudo mostrar esta foto. El archivo se conserva; revisa la captura antes de guardar.",
+  "mobile.incidents.originalTime": "Hora original de captura (UTC)",
+  "mobile.incidents.gpsCaptured": "Se guardó la ubicación disponible con la captura.",
+  "mobile.incidents.noGps":
+    "Sin ubicación disponible. No se inventó una ubicación para este reporte.",
+  "mobile.incidents.mine": "Mis incidentes y comentarios",
+  "mobile.incidents.pageHint":
+    "Solo tus reportes disponibles en la página descargada. Actualiza con conexión para consultar respuestas; esta lista puede estar incompleta.",
+  "mobile.incidents.repliesUnavailable":
+    "Los comentarios del equipo se consultan con conexión. La respuesta desde el móvil aún no está disponible.",
+  "mobile.incidents.noIncidents":
+    "Todavía no hay reportes tuyos en esta página. Guarda un reporte o actualiza con conexión.",
+  "mobile.incidents.readUnavailable":
+    "El contexto actual no permite consultar esta conversación. Los borradores siguen guardados.",
+  "mobile.incidents.readFailed":
+    "No se pudo actualizar. Conservamos la captura y lo que aún está autorizado en este teléfono. Reintenta con conexión.",
+  "mobile.incidents.refreshing": "Actualizando tipos y comentarios...",
+  "mobile.incidents.refresh": "Actualizar tipos, contacto y comentarios",
+  "mobile.incidents.onPhone": "Capturas guardadas en este teléfono",
+  "mobile.incidents.draftPending":
+    "Hay texto pendiente de guardar. Reintenta antes de cerrar la captura.",
+  "mobile.incidents.draftSaved":
+    "Borrador guardado en el teléfono. Falta guardar el reporte para enviarlo.",
+  "mobile.incidents.empty":
+    "Inicia un reporte para elegir su tipo, describir lo ocurrido y adjuntar evidencia.",
+  "mobile.incidents.accidentHint":
+    "Puedes guardar un accidente sin foto ni detalle. La falta de señal nunca confirma aviso entregado.",
+  "mobile.incidents.saveHint":
+    "Guardar conserva el reporte en este teléfono. El envío y la revisión son pasos posteriores.",
+  "mobile.incidents.working": "Guardando en el teléfono...",
+  "mobile.incidents.save": "Guardar reporte en el teléfono",
+  "mobile.incidents.begin": "Iniciar reporte",
+  "mobile.incidents.beginAccident": "Capturar accidente",
+  "mobile.incidents.safeClose": "Continuar al cierre de jornada",
+  "mobile.incidents.callWorkContact": "Llamar al contacto laboral configurado",
+  "mobile.incidents.dialerOpened":
+    "Se abrió el teléfono. Esto no confirma una llamada ni que alguien recibió el aviso; depende del dispositivo y la red.",
+  "mobile.incidents.dialerUnavailable":
+    "No se pudo abrir la llamada. Usa la app Teléfono del dispositivo y busca ayuda cuando sea seguro. El reporte se conserva.",
+  "mobile.incidents.contactMissing":
+    "No hay un teléfono laboral validado disponible. No se configuró un número de emergencias para esta app.",
+  "mobile.incidents.callFallback":
+    "Si necesitas ayuda inmediata, usa la app Teléfono del dispositivo y el contacto de emergencia que conozcas. La llamada depende del dispositivo y la red.",
 } as const satisfies AreaCatalog<"mobile">;
