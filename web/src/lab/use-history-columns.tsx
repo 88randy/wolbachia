@@ -1,3 +1,4 @@
+import { EntityName } from "../lookups/EntityName";
 import styles from "./lab.module.css";
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
@@ -23,7 +24,11 @@ function observationColumns(
         </span>
       ),
     },
-    { id: "created_by", headerKey: "lab.history.author", cell: (count) => count.created_by },
+    {
+      id: "created_by",
+      headerKey: "lab.history.author",
+      cell: (count) => <EntityName kind="user" id={count.created_by} />,
+    },
     {
       id: "created_at",
       headerKey: "lab.history.time",

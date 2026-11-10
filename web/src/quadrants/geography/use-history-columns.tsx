@@ -1,10 +1,9 @@
+import { EntityName } from "../../lookups/EntityName";
 import type { Schemas } from "@wolbachia/api-client";
-import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { ResolutionHistory } from "./ResolutionHistory";
 export function useHistoryColumns(): DataTableColumn<Schemas["QuadrantVersion"]>[] {
-  const { t } = useTranslation();
   const format = useFormatDateTime();
   return [
     {
@@ -21,7 +20,7 @@ export function useHistoryColumns(): DataTableColumn<Schemas["QuadrantVersion"]>
     {
       id: "created_by",
       headerKey: "geography.field.author",
-      cell: (row) => row.created_by ?? t("geography.status.unknown"),
+      cell: (row) => <EntityName kind="user" id={row.created_by} />,
     },
     {
       id: "geometry",

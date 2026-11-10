@@ -1,3 +1,4 @@
+import { EntityName } from "../../lookups/EntityName";
 import { Link } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
@@ -141,8 +142,7 @@ function provenanceColumns({ t, format }: Context): Column[] {
     {
       id: "author",
       headerKey: "inventory.field.author",
-      cell: (row) =>
-        "created_by" in row ? (row.created_by ?? t("inventory.option.unknownAuthor")) : null,
+      cell: (row) => ("created_by" in row ? <EntityName kind="user" id={row.created_by} /> : null),
     },
   ];
 }
