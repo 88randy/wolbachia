@@ -1,5 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
 import type { ReactElement } from "react";
+import type { MessageKey } from "@wolbachia/i18n";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaOf } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
@@ -39,12 +40,13 @@ const inventoryHomeRoute = createRoute({
 });
 function inventoryRoute<const Path extends string>(
   path: Path,
-  options: { permission: string; component: () => ReactElement },
+  options: { permission: string; component: () => ReactElement; crumb?: MessageKey },
 ) {
   return createRoute({
     getParentRoute: () => inventoryLayout,
     path,
     validateSearch: tableSearchSchema,
+    ...(options.crumb ? { staticData: { crumb: options.crumb } } : {}),
     beforeLoad: ({ context }) => {
       requirePermission("inventory", context.me, options.permission);
     },
@@ -53,9 +55,14 @@ function inventoryRoute<const Path extends string>(
   });
 }
 const inventoryRoutes = [
-  inventoryRoute("/inventory/transfers", { permission: "transfer.read", component: W12Page }),
+  inventoryRoute("/inventory/transfers", {
+    crumb: "transfers.page.title",
+    permission: "transfer.read",
+    component: W12Page,
+  }),
   inventoryRoute("/inventory/transfers/$code", { permission: "transfer.read", component: W12Page }),
   inventoryRoute("/inventory/discrepancies", {
+    crumb: "discrepancies.page.title",
     permission: "discrepancy.read",
     component: W14Page,
   }),
@@ -64,20 +71,35 @@ const inventoryRoutes = [
     component: W14Page,
   }),
   inventoryRoute("/inventory/assignments", {
+    crumb: "allocation.assignment.title",
     permission: "inventory.allocate",
     component: W15Page,
   }),
   inventoryRoute("/inventory/reconciliations", {
+    crumb: "allocation.reconciliation.title",
     permission: "inventory.reconcile",
     component: W16Page,
   }),
   inventoryRoute("/inventory/write-offs", {
+    crumb: "allocation.writeOff.title",
     permission: "inventory.write_off",
     component: W17Page,
   }),
-  inventoryRoute("/inventory/supplies", { permission: "supply_type.read", component: W8Page }),
-  inventoryRoute("/inventory/lots", { permission: "lot.read", component: W9Page }),
-  inventoryRoute("/inventory/locations", { permission: "location.read", component: W11Page }),
+  inventoryRoute("/inventory/supplies", {
+    crumb: "inventory.page.supplies",
+    permission: "supply_type.read",
+    component: W8Page,
+  }),
+  inventoryRoute("/inventory/lots", {
+    crumb: "inventory.page.lots",
+    permission: "lot.read",
+    component: W9Page,
+  }),
+  inventoryRoute("/inventory/locations", {
+    crumb: "inventory.page.locations",
+    permission: "location.read",
+    component: W11Page,
+  }),
   inventoryRoute("/inventory/lots/new", { permission: "lot.create", component: W10Page }),
   inventoryRoute("/inventory/supplies/$code", {
     permission: "supply_type.read",
@@ -93,6 +115,7 @@ const inventoryRoutes = [
 const labelsRoute = createRoute({
   getParentRoute: () => inventoryLayout,
   path: "/inventory/labels",
+  staticData: { crumb: "inventory.labels.title" },
   beforeLoad: ({ context }) => {
     if (!canAny(context.me, LABEL_PERMISSIONS)) throw new ForbiddenError("inventory");
   },
