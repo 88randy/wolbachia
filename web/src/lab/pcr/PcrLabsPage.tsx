@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { unwrap } from "@wolbachia/api-client";
-import { Pencil, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../../components/templates/ListPage";
 import { DataTable } from "../../data-table/DataTable";
@@ -43,6 +44,7 @@ export function PcrLabsPage() {
     },
   });
   const manage = can(PCR_MANAGE);
+  const [editing, setEditing] = useState<ExternalLab>();
   const columns: DataTableColumn<ExternalLab>[] = [
     { id: "name", headerKey: "pcr.labs.name", cell: (row) => <span className="font-semibold">{row.name}</span> },
     { id: "contact", headerKey: "pcr.labs.contact", cell: (row) => row.contact || <EmptyValue /> },
@@ -75,31 +77,39 @@ export function PcrLabsPage() {
         getRowId={(row) => row.id}
         controller={controller}
         data={pageTableData(query, controller.state.page, LAB_TABLE.pageSize)}
-        rowActions={
+        rowMenu={
           manage
-            ? (row) => (
-                <div className="flex items-center justify-end gap-1">
-                  <LabDialog
-                    lab={row}
-                    trigger={
-                      <Button variant="ghost" size="sm" aria-label={`${t("pcr.labs.edit")} ${row.name}`}>
-                        <Pencil aria-hidden="true" />
-                      </Button>
-                    }
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      toggle.mutate(row);
-                    }}
-                  >
-                    {t(row.is_active ? "pcr.labs.deactivate" : "pcr.labs.activate")}
-                  </Button>
-                </div>
-              )
+            ? (row) => [
+                {
+                  id: "edit",
+                  label: t("pcr.labs.edit"),
+                  onSelect: () => {
+                    setEditing(row);
+                  },
+                },
+                {
+                  id: "toggle",
+                  label: t(row.is_active ? "pcr.labs.deactivate" : "pcr.labs.activate"),
+                  destructive: row.is_active,
+                  onSelect: () => {
+                    toggle.mutate(row);
+                  },
+                },
+              ]
             : undefined
         }
+      />
+      <LabDialog
+        key={editing?.id ?? "none"}
+        trigger={<span hidden />}
+        lab={editing}
+        open={editing !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setEditing(undefined);
+        }}
+        onSaved={() => {
+          setEditing(undefined);
+        }}
       />
     </ListPage>
   );

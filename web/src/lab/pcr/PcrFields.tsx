@@ -1,19 +1,19 @@
 import type { ReactNode } from "react";
 import { useId } from "react";
 import { cn } from "@/lib/utils";
-import { SelectMenu } from "../../ui/SelectMenu";
-import type { SelectMenuOption } from "../../ui/SelectMenu";
+import { Combobox } from "../../ui/Combobox";
+import type { ComboboxOption } from "../../ui/Combobox";
 
 interface LabeledSelectProps {
   label: string;
   value: string;
-  options: readonly SelectMenuOption[];
+  options: readonly ComboboxOption[];
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
 
-/** A label above one shadcn select (search inside the list is not needed for short lists). */
+/** A label above one combobox picker (search inside the dropdown). */
 export function LabeledSelect({ label, value, options, onChange, placeholder, className }: LabeledSelectProps) {
   const id = useId();
   return (
@@ -21,23 +21,9 @@ export function LabeledSelect({ label, value, options, onChange, placeholder, cl
       <label htmlFor={id} className="text-[13px] font-semibold text-ink">
         {label}
       </label>
-      <SelectMenu id={id} value={value} options={options} onValueChange={onChange} placeholder={placeholder} />
+      <Combobox id={id} value={value} options={options} onValueChange={onChange} placeholder={placeholder} />
     </div>
   );
-}
-
-/** One fact of a description grid: label above, value below, normal font. */
-export function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <dt className="text-xs font-semibold text-ink-3">{label}</dt>
-      <dd className="m-0 text-sm text-ink [overflow-wrap:anywhere]">{children}</dd>
-    </div>
-  );
-}
-
-export function FactGrid({ children }: { children: ReactNode }) {
-  return <dl className="m-0 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>;
 }
 
 /** Big toggle card for a choice (filled when selected, never just an outline). */

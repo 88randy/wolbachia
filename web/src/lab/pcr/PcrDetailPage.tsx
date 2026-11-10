@@ -14,14 +14,15 @@ import { NotFoundState } from "../../states/NotFoundState";
 import { PendingState } from "../../states/PendingState";
 import { Button } from "../../ui/Button";
 import { buttonVariants } from "../../ui/button-variants";
-import { Card } from "../../ui/Card";
 import { CardMenu } from "../../ui/CardMenu";
+import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
+import { DetailSection } from "../../components/templates/DetailSection";
+import type { OverflowAction } from "../../components/templates/OverflowMenu";
 import { EmptyValue } from "../../ui/EmptyValue";
 import { ErrorState } from "../../ui/ErrorState";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { StatusPill } from "../../ui/StatusPill";
 import { useLabScope } from "../use-lab-scope";
-import { Fact, FactGrid } from "./PcrFields";
 import { FilePicker, ReasonDialog, ReceiveDialog, ShipDialog } from "./PcrDialogs";
 import { PCR_MANAGE, pcrDetailOptions } from "./pcr-api";
 import type { PcrDetail } from "./pcr-api";
@@ -96,11 +97,11 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
         {t("pcr.action.results")}
       </Link>
     ) : null;
-  const menu =
-    manage && live ? (
-      <CardMenu
-        items={[
+  const moreActions: OverflowAction[] =
+    manage && live
+      ? [
           {
+            id: "undo",
             label: t("pcr.action.undo"),
             onSelect: () => {
               setDialog("undo");
@@ -108,28 +109,32 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
             disabled: batch.status === "preparing",
           },
           {
+            id: "void",
             label: t("pcr.action.void"),
+            destructive: true,
             onSelect: () => {
               setDialog("void");
             },
           },
-        ]}
-      />
-    ) : null;
+        ]
+      : [];
   const targets = batch.targets.map((target) => t(targetKey(target))).join(" · ");
   return (
     <DetailPage
       code={t("pcr.list.title")}
       title={batch.code}
       status={<StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>}
-      description={`${batch.external_lab.name} · ${targets}`}
+      subtitle={`${batch.external_lab.name} · ${targets}`}
+      back={{ label: t("pcr.list.title"), link: { to: "/lab/pcr" } }}
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {secondary}
-          {primary}
-          {menu}
-        </div>
+        secondary || primary ? (
+          <>
+            {secondary}
+            {primary}
+          </>
+        ) : undefined
       }
+      moreActions={moreActions}
       notices={
         <>
           {batch.status === "voided" && <InlineNotice tone="critical">{t("pcr.detail.voidedNotice")}</InlineNotice>}
@@ -139,18 +144,24 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
       aside={<History batch={batch} />}
     >
       <Stepper batch={batch} />
-      <Card title={t("pcr.detail.facts")}>
-        <FactGrid>
-          <Fact label={t("pcr.col.lab")}>{batch.external_lab.name}</Fact>
-          <Fact label={t("pcr.detail.contact")}>{batch.external_lab.contact || <EmptyValue />}</Fact>
-          <Fact label={t("pcr.detail.address")}>{batch.external_lab.address || <EmptyValue />}</Fact>
-          <Fact label={t("pcr.col.targets")}>{targets}</Fact>
-          <Fact label={t("pcr.detail.createdBy")}>{batch.author_name || <EmptyValue />}</Fact>
-          <Fact label={t("pcr.detail.createdAt")}>{formatDate(batch.created_at)}</Fact>
-          <Fact label={t("pcr.col.shippedAt")}>{batch.shipped_at ? formatDate(batch.shipped_at) : <EmptyValue />}</Fact>
-          {batch.notes && <Fact label={t("pcr.detail.notes")}>{batch.notes}</Fact>}
-        </FactGrid>
-      </Card>
+      <DetailSection title={t("pcr.detail.facts")}>
+        <DescriptionGrid
+          columns={3}
+          items={[
+            { label: t("pcr.col.lab"), value: batch.external_lab.name },
+            { label: t("pcr.detail.contact"), value: batch.external_lab.contact || <EmptyValue /> },
+            { label: t("pcr.detail.address"), value: batch.external_lab.address || <EmptyValue /> },
+            { label: t("pcr.col.targets"), value: targets },
+            { label: t("pcr.detail.createdBy"), value: batch.author_name || <EmptyValue /> },
+            { label: t("pcr.detail.createdAt"), value: formatDate(batch.created_at) },
+            {
+              label: t("pcr.col.shippedAt"),
+              value: batch.shipped_at ? formatDate(batch.shipped_at) : <EmptyValue />,
+            },
+            ...(batch.notes ? [{ label: t("pcr.detail.notes"), value: batch.notes, wide: true }] : []),
+          ]}
+        />
+      </DetailSection>
       <SamplesCard batch={batch} onVoidResult={(resultId) => {
         setDialog({ resultId });
       }} canManage={manage && live} formatDateTime={formatDateTime} />
@@ -182,7 +193,7 @@ function Stepper({ batch }: { batch: PcrDetail }) {
   const { t } = useTranslation();
   const current = FLOW.indexOf(batch.status);
   return (
-    <Card title={t("pcr.detail.progress")}>
+    <DetailSection title={t("pcr.detail.progress")}>
       <ol className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 xl:grid-cols-6">
         {FLOW.map((status, index) => {
           const done = current >= 0 && index < current;
@@ -211,7 +222,7 @@ function Stepper({ batch }: { batch: PcrDetail }) {
           );
         })}
       </ol>
-    </Card>
+    </DetailSection>
   );
 }
 
@@ -232,7 +243,7 @@ function SamplesCard({
   );
   const history = batch.results.filter((row) => !row.current);
   return (
-    <Card title={t("pcr.detail.samples", { count: batch.samples.length })}>
+    <DetailSection title={t("pcr.detail.samples", { count: batch.samples.length })}>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="text-left text-xs text-ink-2">
@@ -304,7 +315,7 @@ function SamplesCard({
           ))}
         </ul>
       )}
-    </Card>
+    </DetailSection>
   );
 }
 
@@ -319,7 +330,7 @@ function ReportCard({ batch, canManage }: { batch: PcrDetail; canManage: boolean
   const canUpload =
     canManage && ["received_by_lab", "results_received", "closed"].includes(batch.status);
   return (
-    <Card title={t("pcr.detail.report")}>
+    <DetailSection title={t("pcr.detail.report")}>
       <div className="flex flex-col gap-3">
         {batch.reports.length === 0 && <p className="m-0 text-sm text-ink-2">{t("pcr.detail.noReport")}</p>}
         {batch.reports.map((report, index) => (
@@ -379,7 +390,7 @@ function ReportCard({ batch, canManage }: { batch: PcrDetail; canManage: boolean
           </div>
         )}
       </div>
-    </Card>
+    </DetailSection>
   );
 }
 
@@ -388,7 +399,7 @@ function History({ batch }: { batch: PcrDetail }) {
   const formatDateTime = useFormatDateTime();
   const download = usePcrDownload();
   return (
-    <Card title={t("pcr.detail.history")}>
+    <DetailSection title={t("pcr.detail.history")}>
       <ol className="m-0 flex list-none flex-col gap-4 p-0">
         {[...batch.events].reverse().map((event) => (
           <li key={event.id} className={cn("flex gap-3", event.undone && "opacity-60")}>
@@ -435,6 +446,6 @@ function History({ batch }: { batch: PcrDetail }) {
           </div>
         </li>
       </ol>
-    </Card>
+    </DetailSection>
   );
 }

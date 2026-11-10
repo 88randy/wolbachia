@@ -13,7 +13,8 @@ import { InlineNotice } from "../../ui/InlineNotice";
 import { useToast } from "../../ui/toast-context";
 import { useLabScope } from "../use-lab-scope";
 import { LabDialog } from "./LabDialog";
-import { ChoiceCard, Fact, FactGrid, LabeledSelect } from "./PcrFields";
+import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
+import { ChoiceCard, LabeledSelect } from "./PcrFields";
 import { PCR_TARGETS, eligibleOptions, labsOptions, pcrErrorKey } from "./pcr-api";
 import type { PcrSample, PcrTarget } from "./pcr-api";
 import { targetKey } from "./pcr-status";
@@ -155,15 +156,21 @@ export function PcrNewPage() {
       )}
       {step === 2 && <SampleChooser selected={selected} onChange={setSelected} />}
       {step === 3 && (
-        <FactGrid>
-          <Fact label={t("pcr.wizard.summaryLab")}>{lab?.name}</Fact>
-          <Fact label={t("pcr.wizard.summaryTargets")}>
-            {targets.map((target) => t(targetKey(target))).join(" · ")}
-          </Fact>
-          <Fact label={t("pcr.wizard.summarySamples")}>
-            {[...selected.values()].map((sample) => sample.code).join(", ")}
-          </Fact>
-        </FactGrid>
+        <DescriptionGrid
+          columns={2}
+          items={[
+            { label: t("pcr.wizard.summaryLab"), value: lab?.name ?? "" },
+            {
+              label: t("pcr.wizard.summaryTargets"),
+              value: targets.map((target) => t(targetKey(target))).join(" · "),
+            },
+            {
+              label: t("pcr.wizard.summarySamples"),
+              value: [...selected.values()].map((sample) => sample.code).join(", "),
+              wide: true,
+            },
+          ]}
+        />
       )}
     </WizardPage>
   );

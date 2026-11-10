@@ -54,7 +54,7 @@ function ResultsWorkspace({ batch }: { batch: PcrDetail }) {
       code={batch.code}
       title={t("pcr.results.title")}
       status={<StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>}
-      description={t("pcr.results.description")}
+      subtitle={t("pcr.results.description")}
       notices={
         <>
           {!expected && <InlineNotice tone="warning">{t("pcr.results.notExpected")}</InlineNotice>}

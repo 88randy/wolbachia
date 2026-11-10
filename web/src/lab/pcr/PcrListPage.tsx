@@ -83,6 +83,7 @@ export function PcrListPage() {
         caption={t("pcr.list.title")}
         columns={columns}
         getRowId={(row) => row.id}
+        rowLink={(row) => ({ to: "/lab/pcr/$code", params: { code: row.code } })}
         controller={controller}
         data={pageTableData(query, controller.state.page, PCR_TABLE.pageSize)}
       />

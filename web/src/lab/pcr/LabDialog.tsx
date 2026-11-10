@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
-import { DialogFooter } from "../../ui/DialogFooter";
+import { FormActions, FormField, FormGrid } from "../../components/templates/FormGrid";
 import { useToast } from "../../ui/toast-context";
 import { useLabScope } from "../use-lab-scope";
 import { pcrErrorKey } from "./pcr-api";
@@ -14,14 +14,19 @@ import type { ExternalLab } from "./pcr-api";
 
 interface LabDialogProps {
   trigger: ReactNode;
-  lab?: ExternalLab;
+  lab?: ExternalLab | undefined;
   onSaved?: (lab: ExternalLab) => void;
+  /** Controlled open state (opened from a row menu); uncontrolled when omitted. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 /** Create or edit one external laboratory (name, contact, address). */
-export function LabDialog({ trigger, lab, onSaved }: LabDialogProps) {
+export function LabDialog({ trigger, lab, onSaved, ...control }: LabDialogProps) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = control.open ?? ownOpen;
+  const setOpen = control.onOpenChange ?? setOwnOpen;
   return (
     <Dialog
       trigger={trigger}
@@ -109,7 +114,8 @@ function LabForm({
           setError(undefined);
         }}
       />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <FormGrid columns={2}>
+        <FormField>
         <TextField
           id="pcr-lab-contact"
           label={t("pcr.labs.contact")}
@@ -119,6 +125,8 @@ function LabForm({
             setContact(event.currentTarget.value);
           }}
         />
+        </FormField>
+        <FormField>
         <TextField
           id="pcr-lab-address"
           label={t("pcr.labs.address")}
@@ -128,15 +136,16 @@ function LabForm({
             setAddress(event.currentTarget.value);
           }}
         />
-      </div>
-      <DialogFooter>
+        </FormField>
+      </FormGrid>
+      <FormActions>
         <Button type="button" variant="ghost" onClick={onCancel}>
           {t("common.actions.cancel")}
         </Button>
         <Button type="submit" loading={save.isPending}>
           {t("common.actions.save")}
         </Button>
-      </DialogFooter>
+      </FormActions>
     </form>
   );
 }
