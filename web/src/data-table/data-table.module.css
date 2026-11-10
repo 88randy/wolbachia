@@ -42,6 +42,17 @@
   min-height: var(--web-control-sm);
 }
 
+.head .sortButton {
+  min-height: var(--web-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
 .sortButton {
   display: inline-flex;
   align-items: center;
@@ -61,8 +72,17 @@
 }
 
 .sortIcon {
-  width: var(--web-icon-sm);
-  height: var(--web-icon-sm);
+  width: calc(var(--web-icon-sm) - 2px);
+  height: calc(var(--web-icon-sm) - 2px);
+  opacity: 0.4;
+  transition: opacity var(--web-motion-fast) var(--web-motion-easing);
+}
+.sortButton:hover .sortIcon {
+  opacity: 0.8;
+}
+.sorted .sortIcon {
+  opacity: 1;
+  color: var(--color-action);
 }
 
 .cell {

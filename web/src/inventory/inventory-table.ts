@@ -1,3 +1,5 @@
+import { CENTER_LOOKUP, LOCATION_LOOKUP, SUPPLY_LOOKUP } from "../lookups/lookup-sources";
+import type { LookupSource } from "../lookups/lookup-sources";
 import type { MessageKey } from "@wolbachia/i18n";
 import type {
   FilterDefinition,
@@ -13,6 +15,33 @@ const text = (key: string, labelKey: MessageKey): FilterDefinition => ({
   labelKey,
   kind: "text",
   maxLength: 200,
+});
+const dateEnd = (
+  key: string,
+  labelKey: MessageKey,
+  end: { input: "date-from" | "date-to"; dateFormat?: "date" | "datetime" },
+): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 40,
+  input: end.input,
+  dateFormat: end.dateFormat ?? "datetime",
+});
+const hidden = (key: string, labelKey: MessageKey): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 200,
+  input: "hidden",
+});
+const pick = (key: string, labelKey: MessageKey, lookup: LookupSource): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 36,
+  input: "lookup",
+  lookup,
 });
 const select = (
   key: string,
@@ -64,26 +93,32 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
     sortOptions: [...base.sortOptions, { value: "expiry", labelKey: "inventory.field.expiry" }],
     filters: [
       text("search", "inventory.field.search"),
-      text("supply", "inventory.field.supply"),
-      text("location", "inventory.field.location"),
-      text("center", "inventory.field.center"),
+      pick("supply", "inventory.field.supply", SUPPLY_LOOKUP),
+      pick("location", "inventory.field.location", LOCATION_LOOKUP),
+      pick("center", "inventory.field.center", CENTER_LOOKUP),
       select("status", "inventory.field.status", [
         ["draft", "inventory.status.draft"],
         ["blocked", "inventory.status.blocked"],
         ["available", "inventory.status.available"],
       ]),
       select("blocked_by", "inventory.field.blocker", Object.entries(blockerKeys)),
-      text("expiry_from_date", "inventory.field.expiryFrom"),
-      text("expiry_before_date", "inventory.field.expiryBefore"),
-      text("expiry_from", "inventory.field.expiryFromInstant"),
-      text("expiry_before", "inventory.field.expiryBeforeInstant"),
+      dateEnd("expiry_from_date", "inventory.field.expiryFrom", {
+        input: "date-from",
+        dateFormat: "date",
+      }),
+      dateEnd("expiry_before_date", "inventory.field.expiryBefore", {
+        input: "date-to",
+        dateFormat: "date",
+      }),
+      hidden("expiry_from", "inventory.field.expiryFromInstant"),
+      hidden("expiry_before", "inventory.field.expiryBeforeInstant"),
     ],
   },
   locations: {
     ...base,
     filters: [
       text("search", "inventory.field.search"),
-      text("center", "inventory.field.center"),
+      pick("center", "inventory.field.center", CENTER_LOOKUP),
       select("kind", "inventory.field.kind", [
         ["biofactory", "inventory.option.biofactory"],
         ["warehouse", "inventory.option.warehouse"],
@@ -101,7 +136,10 @@ export const STOCK_TABLE: TableQueryConfig = {
     { value: "lot__code", labelKey: "inventory.field.code" },
     { value: "piece_id", labelKey: "inventory.field.piece" },
   ],
-  filters: [text("lot", "inventory.field.code"), text("supply", "inventory.field.supply")],
+  filters: [
+    text("lot", "inventory.field.code"),
+    pick("supply", "inventory.field.supply", SUPPLY_LOOKUP),
+  ],
 };
 export const MOVEMENT_TABLE: TableQueryConfig = {
   ...base,
@@ -113,14 +151,14 @@ export const MOVEMENT_TABLE: TableQueryConfig = {
     { value: "quantity", labelKey: "inventory.field.movementQuantity" },
   ],
   filters: [
-    text("lot", "inventory.field.linkedLot"),
+    hidden("lot", "inventory.field.linkedLot"),
     ...STOCK_TABLE.filters.filter((filter) => filter.key !== "lot"),
     text("lot_code", "inventory.field.code"),
     text("operation", "inventory.field.operation"),
     text("piece", "inventory.field.piece"),
     text("unit", "inventory.field.unit"),
-    text("created_at_from", "inventory.field.movementFrom"),
-    text("created_at_before", "inventory.field.movementBefore"),
+    dateEnd("created_at_from", "inventory.field.movementFrom", { input: "date-from" }),
+    dateEnd("created_at_before", "inventory.field.movementBefore", { input: "date-to" }),
   ],
 };
 /** Only allowlisted server parameters leave the screen; view is a local URL concern. */

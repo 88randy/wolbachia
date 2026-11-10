@@ -1,59 +1,94 @@
+import type { MessageKey } from "@wolbachia/i18n";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { InlineNotice } from "../ui/InlineNotice";
+import { InfoHint } from "../ui/InfoHint";
 import { ExportButton } from "./ExportButton";
 import { FilterChips } from "./FilterChips";
-import { FilterControls } from "./FilterControls";
+import { filterLayoutOf } from "./filter-layout";
+import { FilterPanel } from "./FilterPanel";
+import { FilterPopover } from "./FilterPopover";
+import { FilterSearch } from "./FilterSearch";
 import { IgnoredNotice } from "./IgnoredNotice";
-import { IncludeVoidedToggle } from "./IncludeVoidedToggle";
-import styles from "./filter-bar.module.css";
-import { SortSelect } from "./SortSelect";
-import type { TableController, TableQueryConfig } from "./table-types";
-import type { MessageKey } from "@wolbachia/i18n";
+import { QuickFilter } from "./QuickFilter";
+import type { TableController } from "./table-types";
 
-interface FilterBarProps {
+export interface FilterBarProps {
   controller: TableController;
   labelKey?: MessageKey;
   /** `/api/v1/<resource>/export/`; the button shows only when it is given. */
   exportPath?: string;
+  /** The primary page action (and secondary ones), right aligned in the toolbar. */
+  actions?: ReactNode;
+  /** Counts per option value of the quick filter ("" = all). */
+  quickCounts?: Readonly<Record<string, number>>;
+  /** Screen-owned pickers (lookups with their own data) shown inside "Filtros". */
+  extraFilters?: ReactNode;
 }
 
-function hasFilterControls(config: TableQueryConfig, exportPath: string | undefined) {
-  return (
-    config.filters.length > 0 ||
-    config.supportsVoided ||
-    exportPath !== undefined ||
-    Boolean(config.sortOptions?.length)
-  );
+function panelCount(controller: TableController, keys: readonly string[]): number {
+  const active = keys.filter((key) => key in controller.state.filters).length;
+  return active + (controller.state.includeVoided ? 1 : 0);
 }
 
 /**
- * Filters of a list (#29): the inputs the screen declared, the "Include voided" toggle when the
- * endpoint supports it, the export button, the chips of the active filters with "Clear filters",
- * and the notice for URL parameters that were ignored. All of it reads and writes the address.
- * A list with none of those (W62 has no filters) gets no empty "Filters" region.
+ * The one list toolbar: live search, "Filtros" popover (dropdowns, date range, toggles),
+ * quick status tabs, then the page action and the export on the right. Active filters show as
+ * chips below. Everything reads and writes the URL through `controller`, so views stay shareable.
+ * Sorting is done on the column headers, never here.
  */
-export function FilterBar({
-  controller,
-  exportPath,
-  labelKey = "table.filters.label",
-}: FilterBarProps) {
+export function FilterBar(props: FilterBarProps) {
+  const { controller, exportPath, actions, quickCounts, extraFilters } = props;
+  const labelKey = props.labelKey ?? "table.filters.label";
   const { t } = useTranslation();
   const { config, state } = controller;
-  const hasControls = hasFilterControls(config, exportPath);
-  if (!hasControls && !config.limitationsKey && controller.ignored.length === 0) return null;
+  const layout = useMemo(() => filterLayoutOf(config), [config]);
+  const panelKeys = [
+    ...layout.panel.map((filter) => filter.key),
+    ...(layout.dateRange ? [layout.dateRange.from.key, layout.dateRange.to.key] : []),
+  ];
+  const hasPanel =
+    panelKeys.length > 0 ||
+    config.supportsVoided ||
+    layout.quick !== undefined ||
+    extraFilters !== undefined;
   return (
-    <section className={styles.bar} aria-label={t(labelKey)}>
+    <section className="flex min-w-0 flex-col gap-2" aria-label={t(labelKey)}>
       <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
-      <div className={styles.row}>
-        <FilterControls controller={controller} />
-        {Boolean(config.sortOptions?.length) && <SortSelect controller={controller} />}
-        {config.supportsVoided && (
-          <IncludeVoidedToggle isOn={state.includeVoided} onChange={controller.setIncludeVoided} />
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
+        {layout.search && (
+          <FilterSearch
+            filter={layout.search}
+            value={state.filters[layout.search.key]}
+            onChange={(next) => {
+              if (layout.search) controller.setFilter(layout.search.key, next);
+            }}
+          />
         )}
-        {exportPath !== undefined && <ExportButton exportPath={exportPath} state={state} />}
+        {hasPanel && (
+          <FilterPopover activeCount={panelCount(controller, panelKeys)}>
+            <FilterPanel controller={controller} layout={layout} />
+            {extraFilters}
+          </FilterPopover>
+        )}
+        {layout.quick && (
+          <QuickFilter
+            className="hidden md:inline-flex"
+            filter={layout.quick}
+            value={state.filters[layout.quick.key]}
+            counts={quickCounts}
+            onChange={(next) => {
+              if (layout.quick) controller.setFilter(layout.quick.key, next);
+            }}
+          />
+        )}
+        {config.limitationsKey && <InfoHint text={t(config.limitationsKey)} />}
+        <div className="ml-auto flex flex-wrap items-center gap-2 empty:hidden">
+          {actions}
+          {exportPath !== undefined && <ExportButton exportPath={exportPath} state={state} />}
+        </div>
       </div>
       <FilterChips controller={controller} />
-      {config.limitationsKey && <InlineNotice tone="info">{t(config.limitationsKey)}</InlineNotice>}
     </section>
   );
 }

@@ -7,7 +7,7 @@ export const table = {
   "table.sort.descending": "Ordenado por {column}, de mayor a menor",
 
   // Result count and loading, announced to screen readers
-  "table.status.range": "Mostrando {from} a {to} de {total}",
+  "table.status.range": "{from}–{to} de {total}",
   "table.status.rangeCursor": "Resultados en esta página: {count}",
   "table.status.loading": "Cargando resultados",
 
@@ -26,6 +26,18 @@ export const table = {
   "table.filters.clear": "Limpiar filtros",
   "table.filters.remove": "Quitar filtro {filter}: {value}",
   "table.filters.includeVoided": "Incluir anulados",
+  "table.filters.button": "Filtros",
+  "table.filters.search": "Buscar",
+  "table.filters.searchPlaceholder": "Buscar…",
+  "table.filters.dates": "Fechas",
+  "table.filters.anyDate": "Cualquier fecha",
+  "table.filters.dateFrom": "Desde {date}",
+  "table.filters.dateTo": "Hasta {date}",
+  "table.filters.applied": "aplicado",
+  "table.filters.default": "{value} (predeterminado)",
+  "table.filters.info": "Más información",
+  "table.filters.quick": "Filtro rápido",
+  "table.filters.clearDates": "Quitar fechas",
   "table.filters.ignoredTitle": "Ignoramos parte de la dirección",
   "table.filters.ignoredBody":
     "Estos parámetros no son válidos para esta lista y no se aplicaron: {names}.",

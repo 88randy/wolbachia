@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { useTableUrlState } from "../data-table/use-table-url-state";
@@ -19,17 +18,13 @@ export function CatalogNavigation({
   slug: string;
   isParentError: boolean;
 }) {
-  const { t } = useTranslation();
   const controller = useTableUrlState(CATALOG_NAV_TABLE, URL_SCOPE);
   const scope = { client: useApiClient(), identity: useSessionIdentity() };
   const query = useQuery(catalogPageOptions({ scope, state: controller.state }));
   const refresh = useCatalogRefresh();
   return (
     <>
-      <details open={controller.hasActiveFilters || controller.state.isSortExplicit}>
-        <summary>{t("refresh.filters.catalogNavigation")}</summary>
-        <FilterBar controller={controller} labelKey="refresh.filters.catalogNavigation" />
-      </details>
+      <FilterBar controller={controller} labelKey="refresh.filters.catalogNavigation" />
       <CatalogRefreshNotice error={isParentError ? null : query.error} onRetry={refresh} />
       <CatalogNavigationContent
         slug={slug}
