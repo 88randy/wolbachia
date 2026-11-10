@@ -13,12 +13,14 @@ restores a revoked code. Current paired scope still applies to each operation.
 `Permit` fixes one actual center/quadrant pair. `PermitVersion` preserves the official
 number, issuing authority, reviewed document, reviewed geometry and aware
 `[valid_from, valid_to)` interval. Creating a version requires current paired
-`permit.manage` and `field.upload`, the actor's own verified unbound image and an
-explicit official-document review attestation. The existing upload verifier accepts
-JPEG/PNG only; this is a reviewed image of the official document, not verification
-of an arbitrary PDF or a digital signature. The version pins the immutable byte
-verification and its real reviewer; it grants no evidence download or reparenting
-capability. Courier polygons and risk colors never provide permit authority.
+`permit.manage` and `field.upload`, the actor's own verified unbound upload and an
+explicit official-document review attestation. The upload verifier accepts JPEG, PNG and PDF; this is a reviewed copy of the official
+document, not verification of a digital signature. The version pins the immutable byte
+verification and its real reviewer; it grants no reparenting capability.
+`GET /permits/{id}/versions/{revision}/document/` downloads those exact bytes under
+`permit.manage` and the paired scope (`Content-Disposition: attachment`, `nosniff`,
+`private, no-store`); another organization or an unknown revision is a coded 404.
+Courier polygons and risk colors never provide permit authority.
 
 `POST /permit-types/`, `POST /permits/` and `POST /permits/{id}/versions/` append
 facts. Versions take `expected_revision`. `POST /permits/{id}/suspend/` takes

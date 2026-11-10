@@ -1,6 +1,7 @@
 import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
+import { permitDocument } from "./permitDocument.ts";
 import { transferEvidence } from "./transferEvidence.ts";
 
 import { trainings } from "./trainings.ts";
@@ -45,6 +46,7 @@ export const en: Record<MessageKey, string> = {
   ...allocation,
   ...discrepancies,
   ...transferEvidence,
+  ...permitDocument,
 
   ...trainings,
   ...evaluations,

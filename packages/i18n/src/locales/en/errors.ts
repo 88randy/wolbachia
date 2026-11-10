@@ -27,4 +27,11 @@ export const errors: Record<keyof typeof source, string> = {
     "The fault is no longer open. Refresh its details to continue.",
   "errors.api.motorcycleInspectionRequired":
     "The motorcycle needs an authorized inspection. Ask your supervisor for help.",
+  "errors.upload.contentMismatch":
+    "The file content does not match its type. Select the original file.",
+  "errors.upload.invalidPdf": "The PDF is invalid or damaged. Select another file.",
+  "errors.upload.pdfEncrypted":
+    "The PDF is password protected. Remove the protection and upload it again.",
+  "errors.upload.typeNotAllowed": "This file type is not accepted here. Use PDF, JPEG or PNG.",
+  "errors.upload.tooLarge": "The file is over the {max} limit. Select a smaller one.",
 };
