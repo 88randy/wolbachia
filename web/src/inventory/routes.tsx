@@ -3,7 +3,8 @@ import type { ReactElement } from "react";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaOf } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
-import { requireAreaAccess, requirePermission } from "../router/guards";
+import { ForbiddenError, requireAreaAccess, requirePermission } from "../router/guards";
+import { canAny } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { W15Page } from "./allocation/W15Page";
 import { W16Page } from "./allocation/W16Page";
@@ -12,6 +13,8 @@ import { W39Page } from "./allocation/W39Page";
 import { W18Page } from "./conditions/W18Page";
 import { InventoryHome } from "./InventoryHome";
 import { InventoryScreen } from "./InventoryScreen";
+import { LABEL_PERMISSIONS } from "./labels/label-kinds";
+import { W19Page } from "./labels/W19Page";
 import { W11Page } from "./locations/W11Page";
 import { W10Page } from "./lots/W10Page";
 import { W9Page } from "./lots/W9Page";
@@ -87,6 +90,15 @@ const inventoryRoutes = [
   }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const labelsRoute = createRoute({
+  getParentRoute: () => inventoryLayout,
+  path: "/inventory/labels",
+  beforeLoad: ({ context }) => {
+    if (!canAny(context.me, LABEL_PERMISSIONS)) throw new ForbiddenError("inventory");
+  },
+  component: W19Page,
+  errorComponent: AreaErrorState,
+});
 const labWriteOffsRoute = createRoute({
   getParentRoute: () => inventoryLayout,
   path: "/lab/write-offs",
@@ -100,5 +112,10 @@ const labWriteOffsRoute = createRoute({
 
 /** Inventory area (W8-W18) plus W39, all inside the inventory context layout. */
 export const inventoryAreaRoutes = [
-  inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes, labWriteOffsRoute]),
+  inventoryLayout.addChildren([
+    inventoryHomeRoute,
+    ...inventoryRoutes,
+    labelsRoute,
+    labWriteOffsRoute,
+  ]),
 ];

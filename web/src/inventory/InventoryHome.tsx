@@ -3,6 +3,7 @@ import {
   Boxes,
   ClipboardCheck,
   FileWarning,
+  QrCode,
   MapPin,
   PackageMinus,
   PackageOpen,
@@ -81,6 +82,14 @@ export function InventoryHome() {
       link: { to: "/inventory/locations" },
       title: t("inventory.page.locations"),
       description: t("hub.inventory.locations"),
+    },
+    {
+      id: "labels",
+      permission: "lot.read",
+      icon: QrCode,
+      link: { to: "/inventory/labels" },
+      title: t("inventory.labels.card"),
+      description: t("inventory.labels.cardHint"),
     },
   ];
   return (
