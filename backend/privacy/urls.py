@@ -5,6 +5,7 @@ from rest_framework.routers import SimpleRouter
 
 from privacy.views import (
     ArcoRequestViewSet,
+    ExportLogViewSet,
     ExportViewSet,
     PortalCoverageView,
     PortalHomeView,
@@ -16,6 +17,7 @@ from privacy.views import (
 router = SimpleRouter()
 router.register("data-transfers", TransferAuthorizationViewSet, basename="data-transfer")
 router.register("export", ExportViewSet, basename="export")
+router.register("export-log", ExportLogViewSet, basename="export-log")
 router.register("arco-requests", ArcoRequestViewSet, basename="arco-request")
 router.register("portal-settings", PortalSettingsViewSet, basename="portal-settings")
 

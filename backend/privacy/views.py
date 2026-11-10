@@ -23,7 +23,8 @@ from core.views import OrgScopedViewSetMixin
 from organizations.models import Membership, Organization
 from privacy import portal
 from privacy.exports import ExportRequest, build_export, to_csv, to_xlsx
-from privacy.models import ArcoRequest, DataTransferAuthorization, PortalSettings
+from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
+from privacy.names import person_name, with_actor_name
 from privacy.permissions import (
     ARCO_MANAGE,
     ARCO_READ,
@@ -37,6 +38,7 @@ from privacy.serializers import (
     ArcoRequestSerializer,
     ArcoResolveSerializer,
     ArcoUpdateSerializer,
+    ExportLogSerializer,
     ExportQuerySerializer,
     PortalSettingsSerializer,
     TransferAuthorizationCreateSerializer,
@@ -65,8 +67,10 @@ class TransferAuthorizationViewSet(
 ):
     """W59: authorizations for personal data leaving the platform; revoke, never edit."""
 
-    queryset = DataTransferAuthorization.objects.select_related("revocation").order_by(
-        "-created_at", "-id"
+    queryset = (
+        DataTransferAuthorization.objects.select_related("revocation", "center", "quadrant")
+        .annotate(created_by_name=person_name("created_by_id"))
+        .order_by("-created_at", "-id")
     )
     serializer_class = TransferAuthorizationSerializer
     pagination_class = StreamCursorPagination
@@ -175,7 +179,12 @@ class ArcoRequestViewSet(
     }
 
     def get_queryset(self) -> Any:  # noqa: ANN401
-        rows = super().get_queryset().order_by("-received_on", "-id")
+        rows = (
+            super()
+            .get_queryset()
+            .annotate(owner_name=person_name("owner_id"))
+            .order_by("-received_on", "-id")
+        )
         params = self.request.query_params
         if params.get("status") in ArcoRequest.Status.values:
             rows = rows.filter(status=params["status"])
@@ -240,6 +249,19 @@ class ArcoRequestViewSet(
         item.resolved_at = server_now()
         item.save()
         return Response(ArcoRequestSerializer(item).data)
+
+
+class ExportLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    """W60, second tab: receipts of the official exports (filters only, never row values)."""
+
+    queryset = ExportLog.objects.all()
+    serializer_class = ExportLogSerializer
+    pagination_class = StreamCursorPagination
+    http_method_names = ["get", "head", "options"]
+    required_permissions = {"list": "access_log.read"}
+
+    def get_queryset(self) -> Any:  # noqa: ANN401
+        return with_actor_name(super().get_queryset()).order_by("-created_at", "-id")
 
 
 class PortalSettingsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):

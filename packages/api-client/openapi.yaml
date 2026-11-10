@@ -4392,6 +4392,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/export-log/:
+    get:
+      operationId: export_log_list
+      description: 'W60, second tab: receipts of the official exports (filters only,
+        never row values).'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      tags:
+      - export-log
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExportLogList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/field/bootstrap/:
     get:
       operationId: field_bootstrap_list
@@ -17013,9 +17049,17 @@ components:
           type: string
           format: uuid
           readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+          nullable: true
         target_id:
           type: string
           format: uuid
+          readOnly: true
+          nullable: true
+        target_name:
+          type: string
           readOnly: true
           nullable: true
         center_id:
@@ -17049,6 +17093,7 @@ components:
       required:
       - action
       - actor_id
+      - actor_name
       - center_id
       - created_at
       - id
@@ -17057,6 +17102,7 @@ components:
       - result
       - revision
       - target_id
+      - target_name
     AccessLogActionEnum:
       enum:
       - user.create
@@ -17259,6 +17305,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        owner_name:
+          type: string
+          readOnly: true
+          nullable: true
         resolution_note:
           type: string
           readOnly: true
@@ -17280,6 +17330,7 @@ components:
       - due_on
       - id
       - owner_id
+      - owner_name
       - received_on
       - remaining_days
       - request_type
@@ -20922,6 +20973,51 @@ components:
       - humidity_pct
       - location_id
       - temperature_c
+    ExportLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        dataset:
+          type: string
+          readOnly: true
+        date_from:
+          type: string
+          format: date
+          readOnly: true
+        date_to:
+          type: string
+          format: date
+          readOnly: true
+        recipient_institution:
+          type: string
+          readOnly: true
+        row_count:
+          type: integer
+          readOnly: true
+        rfc_rows_released:
+          type: integer
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_name
+      - created_at
+      - dataset
+      - date_from
+      - date_to
+      - id
+      - recipient_institution
+      - rfc_rows_released
+      - row_count
     ExtraObservation:
       type: object
       properties:
@@ -26897,6 +26993,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvaluationRead'
+    PaginatedExportLogList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportLog'
     PaginatedFuelLoadList:
       type: object
       required:
@@ -36244,11 +36359,17 @@ components:
           type: string
           format: uuid
           readOnly: true
+        center_name:
+          type: string
+          readOnly: true
         quadrant_id:
           type: string
           format: uuid
           readOnly: true
           nullable: true
+        quadrant_code:
+          type: string
+          readOnly: true
         valid_from:
           type: string
           format: date-time
@@ -36260,6 +36381,10 @@ components:
         reference:
           type: string
           readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
         status:
           type: string
           readOnly: true
@@ -36275,10 +36400,13 @@ components:
           readOnly: true
       required:
       - center_id
+      - center_name
       - created_at
+      - created_by_name
       - fields
       - id
       - purpose
+      - quadrant_code
       - quadrant_id
       - recipient_institution
       - reference
