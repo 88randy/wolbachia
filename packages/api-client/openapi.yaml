@@ -16612,6 +16612,11 @@ paths:
         schema:
           type: integer
       - in: query
+        name: pending_result
+        schema:
+          type: boolean
+          default: false
+      - in: query
         name: quadrant
         schema:
           type: string
