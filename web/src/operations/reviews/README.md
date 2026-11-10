@@ -34,13 +34,13 @@ tables and irreversible confirmation primitives are reused. Code-based causes
 and opaque unknown payloads remain labeled as returned evidence, not invented
 human names or navigable records.
 
-| Criterion / invariant | Test |
-| --- | --- |
-| Mandatory acceptance and terminal-decision safety | `review-command.test.ts`, `reviews.test.tsx` |
-|409 retains reason and uses the deliberately refreshed revision | `reviews.test.tsx` |
-| Scope loss, inaccessible deep links and private-draft retirement | `reviews.test.tsx` |
-| Confirmed receipt survives failed refresh | `reviews.test.tsx` |
-| R7, real task receipt, closure blockers, keyboard, axe, both locales/themes,320px/+30% text | `../../../e2e/w-19.spec.ts` |
+| Criterion / invariant                                                                       | Test                                         |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Mandatory acceptance and terminal-decision safety                                           | `review-command.test.ts`, `reviews.test.tsx` |
+| 409 retains reason and uses the deliberately refreshed revision                             | `reviews.test.tsx`                           |
+| Scope loss, inaccessible deep links and private-draft retirement                            | `reviews.test.tsx`                           |
+| Confirmed receipt survives failed refresh                                                   | `reviews.test.tsx`                           |
+| R7, real task receipt, closure blockers, keyboard, axe, both locales/themes,320px/+30% text | `../../../e2e/w-19.spec.ts`                  |
 
 No new dependency or API is introduced. Existing primitive behavior was checked
 against official [TanStack Query cancellation](https://tanstack.com/query/latest/docs/framework/react/guides/query-cancellation)

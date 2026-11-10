@@ -7,6 +7,9 @@ import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 
 import { useDocumentTitle } from "../shell/use-document-title";
+import { useBreadcrumbLabel } from "../shell/breadcrumb-labels";
+import { useLanguage } from "../i18n/use-language";
+import { displayLabel } from "./catalog-domain";
 import { NotFoundState } from "../states/NotFoundState";
 import { catalogEditorKey, catalogsQueryOptions } from "./catalogs-query";
 import { useSessionIdentity } from "../session/use-session-identity";
@@ -23,7 +26,13 @@ export function CatalogsPage() {
   const scope = { client: useApiClient(), identity: useSessionIdentity() };
   const query = useQuery(catalogsQueryOptions(scope));
   const refresh = useCatalogRefresh();
+  const { language } = useLanguage();
   useDocumentTitle(t("catalogs.page.title"));
+  const current = query.data?.find((entry) => entry.slug === slug);
+  useBreadcrumbLabel(
+    `/settings/catalogs/${slug ?? ""}`,
+    current ? displayLabel(current, language).label : undefined,
+  );
   if (query.error && query.data === undefined) throw query.error;
   if (!query.data) return <CatalogLoadingState />;
   const first = query.data[0];

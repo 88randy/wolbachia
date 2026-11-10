@@ -3,11 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import type { Schemas } from "@wolbachia/api-client";
 import { FilterBar } from "../../data-table/FilterBar";
-import { SortSelect } from "../../data-table/SortSelect";
-import { FilterControls } from "../../data-table/FilterControls";
-import { FilterChips } from "../../data-table/FilterChips";
-import { IgnoredNotice } from "../../data-table/IgnoredNotice";
-import filterStyles from "../../data-table/filter-bar.module.css";
 import { DataTable } from "../../data-table/DataTable";
 import { pageTableData } from "../../data-table/table-data";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
@@ -38,7 +33,7 @@ function useLocationTableUrl(movements: boolean) {
   };
   return buildTableController(base.config, parsed, go);
 }
-/** Linked UUIDs remain removable chips, while the editable history control is the human code. */
+/** Linked ids stay URL-only chips; the editable control is the human code. */
 function LocationFilters({
   controller,
   movements,
@@ -46,25 +41,13 @@ function LocationFilters({
   controller: TableController;
   movements: boolean;
 }) {
-  const { t } = useTranslation();
   if (!movements) return <FilterBar controller={controller} />;
-  const controls = {
-    ...controller,
-    config: {
-      ...controller.config,
-      filters: controller.config.filters.filter((filter) => filter.key !== "lot"),
-    },
-  };
-  return (
-    <section className={filterStyles.bar} aria-label={t("table.filters.label")}>
-      <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
-      <div className={filterStyles.row}>
-        <FilterControls controller={controls} />
-        <SortSelect controller={controller} />
-      </div>
-      <FilterChips controller={controller} />
-    </section>
+  const filters = controller.config.filters.map((filter) =>
+    filter.key === "lot" && filter.kind === "text"
+      ? { ...filter, input: "hidden" as const }
+      : filter,
   );
+  return <FilterBar controller={{ ...controller, config: { ...controller.config, filters } }} />;
 }
 function useLocationTable({ location, movements }: Props) {
   const { t } = useTranslation();

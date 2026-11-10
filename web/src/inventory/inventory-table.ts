@@ -14,6 +14,19 @@ const text = (key: string, labelKey: MessageKey): FilterDefinition => ({
   kind: "text",
   maxLength: 200,
 });
+const dateEnd = (
+  key: string,
+  labelKey: MessageKey,
+  input: "date-from" | "date-to",
+  dateFormat: "date" | "datetime" = "datetime",
+): FilterDefinition => ({ key, labelKey, kind: "text", maxLength: 40, input, dateFormat });
+const hidden = (key: string, labelKey: MessageKey): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 200,
+  input: "hidden",
+});
 const select = (
   key: string,
   labelKey: MessageKey,
@@ -73,10 +86,10 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
         ["available", "inventory.status.available"],
       ]),
       select("blocked_by", "inventory.field.blocker", Object.entries(blockerKeys)),
-      text("expiry_from_date", "inventory.field.expiryFrom"),
-      text("expiry_before_date", "inventory.field.expiryBefore"),
-      text("expiry_from", "inventory.field.expiryFromInstant"),
-      text("expiry_before", "inventory.field.expiryBeforeInstant"),
+      dateEnd("expiry_from_date", "inventory.field.expiryFrom", "date-from", "date"),
+      dateEnd("expiry_before_date", "inventory.field.expiryBefore", "date-to", "date"),
+      hidden("expiry_from", "inventory.field.expiryFromInstant"),
+      hidden("expiry_before", "inventory.field.expiryBeforeInstant"),
     ],
   },
   locations: {
@@ -113,14 +126,14 @@ export const MOVEMENT_TABLE: TableQueryConfig = {
     { value: "quantity", labelKey: "inventory.field.movementQuantity" },
   ],
   filters: [
-    text("lot", "inventory.field.linkedLot"),
+    hidden("lot", "inventory.field.linkedLot"),
     ...STOCK_TABLE.filters.filter((filter) => filter.key !== "lot"),
     text("lot_code", "inventory.field.code"),
     text("operation", "inventory.field.operation"),
     text("piece", "inventory.field.piece"),
     text("unit", "inventory.field.unit"),
-    text("created_at_from", "inventory.field.movementFrom"),
-    text("created_at_before", "inventory.field.movementBefore"),
+    dateEnd("created_at_from", "inventory.field.movementFrom", "date-from"),
+    dateEnd("created_at_before", "inventory.field.movementBefore", "date-to"),
   ],
 };
 /** Only allowlisted server parameters leave the screen; view is a local URL concern. */

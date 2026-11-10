@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card } from "../../ui/Card";
-import { InlineNotice } from "../../ui/InlineNotice";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
@@ -41,7 +40,6 @@ export function TransferList({ scope }: { scope: TransferScope }) {
   const columns = useColumns();
   return (
     <Card title={t("transfers.page.title")} headingLevel={1}>
-      <InlineNotice tone="info">{t("transfers.page.preparedOnly")}</InlineNotice>
       <div className={styles.filters}>
         <FilterBar controller={controller} />
       </div>

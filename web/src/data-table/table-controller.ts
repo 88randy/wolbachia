@@ -60,6 +60,9 @@ export function buildTableController(
     setFilter: (key, value) => {
       go(patchForFilter(key, value));
     },
+    setFilters: (patch) => {
+      go({ ...patchForFilter("page", undefined), ...patch });
+    },
     clearFilters: () => {
       go(patchForClearFilters(config));
     },

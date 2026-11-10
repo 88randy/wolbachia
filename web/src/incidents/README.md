@@ -70,21 +70,21 @@ preserved as returned; this workspace does not add an incident-report composer.
 
 ## Criterion to test
 
-| Criterion or invariant | Owning test |
-| --- | --- |
-| Every tray header count links to its actual server-filtered list | `incidents.test.tsx`: every header count |
-| Missing/duplicate/unverified/restricted evidence, reason limits and closed state cannot authorize close | `incident-command.test.ts` |
-| W7 close command sends the reviewed revision and verified IDs after confirmation | `incidents.test.tsx`: close sends only verified evidence |
-| Full W7 thread, Other description and voided source | `incidents.test.tsx`: resolves a human code |
-| First-load skeleton and partial count failure preserve the available tray | `incidents.test.tsx`: loads with a skeleton |
-| Failed detail refresh retains in-memory drafts/evidence and gates commands until retry | `incidents.test.tsx`: keeps in-memory drafts and evidence |
-| Known and unknown blocker kinds remain readable in the interface language | `incidents.test.tsx`: translates blocker kinds |
-| Voided rows retain correction reason and author | `incidents.test.tsx`: marks voided rows |
-| Scoped permissions, filters/sort/All, missing code, independent retry, reassign/severity and duplicate comments | `incidents.test.tsx` |
-| Previous owner choices cannot authorize reassignment during a pending search | `incidents.test.tsx`: keeps previous owner options read-only |
-| Original evidence bytes, exact parent and stable-ID renewal | `incident-evidence.test.ts` |
-| A retired upload releases busy state and drops its late result | `incident-session.test.tsx` |
-| W6/W7 navigation, close-dialog keyboard focus, axe and 320 px in both themes/locales; synthetic 30% DOM text expansion | `../../e2e/incidents.spec.ts` |
+| Criterion or invariant                                                                                                 | Owning test                                                  |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Every tray header count links to its actual server-filtered list                                                       | `incidents.test.tsx`: every header count                     |
+| Missing/duplicate/unverified/restricted evidence, reason limits and closed state cannot authorize close                | `incident-command.test.ts`                                   |
+| W7 close command sends the reviewed revision and verified IDs after confirmation                                       | `incidents.test.tsx`: close sends only verified evidence     |
+| Full W7 thread, Other description and voided source                                                                    | `incidents.test.tsx`: resolves a human code                  |
+| First-load skeleton and partial count failure preserve the available tray                                              | `incidents.test.tsx`: loads with a skeleton                  |
+| Failed detail refresh retains in-memory drafts/evidence and gates commands until retry                                 | `incidents.test.tsx`: keeps in-memory drafts and evidence    |
+| Known and unknown blocker kinds remain readable in the interface language                                              | `incidents.test.tsx`: translates blocker kinds               |
+| Voided rows retain correction reason and author                                                                        | `incidents.test.tsx`: marks voided rows                      |
+| Scoped permissions, filters/sort/All, missing code, independent retry, reassign/severity and duplicate comments        | `incidents.test.tsx`                                         |
+| Previous owner choices cannot authorize reassignment during a pending search                                           | `incidents.test.tsx`: keeps previous owner options read-only |
+| Original evidence bytes, exact parent and stable-ID renewal                                                            | `incident-evidence.test.ts`                                  |
+| A retired upload releases busy state and drops its late result                                                         | `incident-session.test.tsx`                                  |
+| W6/W7 navigation, close-dialog keyboard focus, axe and 320 px in both themes/locales; synthetic 30% DOM text expansion | `../../e2e/incidents.spec.ts`                                |
 
 Verification uses `npm ci`, `node scripts/typecheck.mjs web`, ESLint and Prettier
 on the affected files, and the touched web Vitest files with `--maxWorkers=1`.

@@ -8,7 +8,13 @@ export const RECEPTION_TABLE: TableQueryConfig = {
   sortableIds: ["created_at"],
   filters: [
     { key: "code", kind: "text", labelKey: "labReception.filters.code", maxLength: 50 },
-    { key: "point", kind: "text", labelKey: "labReception.filters.point", maxLength: 36 },
+    {
+      key: "point",
+      kind: "text",
+      labelKey: "labReception.filters.point",
+      maxLength: 36,
+      input: "hidden",
+    },
     { key: "week", kind: "text", labelKey: "labReception.filters.week", maxLength: 20 },
   ],
 };
