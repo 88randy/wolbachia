@@ -13,7 +13,7 @@ from rest_framework.exceptions import NotFound
 
 from accounts.models import AccessLog, Device, DeviceSession, Personnel, RevokeReason, User
 from accounts.personnel_scope import authorize_membership_scope
-from accounts.revocation import Revocation, revoke_active
+from accounts.revocation import Revocation, cancel_final_uploads, revoke_active
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc, encrypt_rfc, rotate_rfc
 from core.exceptions import FieldValidationError
 from core.time import server_now
@@ -345,9 +345,10 @@ def issue_temporary_password(actor: UploadActor, user_id: UUID) -> str:
             DeviceSession.objects.filter(user_id=user_id),
             Revocation(RevokeReason.PASSWORD_CHANGED, actor.user),
         )
+        cancel_final_uploads(user)
         person.revision += 1
         person.save(update_fields=["revision"])
-        _receipt(actor, person, AccessLog.Action.UPDATE)
+        _receipt(actor, person, AccessLog.Action.TEMPORARY_PASSWORD)
     return password
 
 

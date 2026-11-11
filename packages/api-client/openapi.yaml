@@ -32,6 +32,7 @@ paths:
           - user.deactivate
           - user.reveal_rfc
           - user.rotate_rfc
+          - user.temporary_password
           type: string
           minLength: 1
         description: |-
@@ -40,6 +41,7 @@ paths:
           * `user.deactivate` - Deactivate
           * `user.reveal_rfc` - Reveal Rfc
           * `user.rotate_rfc` - Rotate Rfc
+          * `user.temporary_password` - Temporary Password
       - in: query
         name: actor_id
         schema:
@@ -19354,6 +19356,7 @@ components:
       - user.deactivate
       - user.reveal_rfc
       - user.rotate_rfc
+      - user.temporary_password
       type: string
       description: |-
         * `user.create` - Create
@@ -19361,6 +19364,7 @@ components:
         * `user.deactivate` - Deactivate
         * `user.reveal_rfc` - Reveal Rfc
         * `user.rotate_rfc` - Rotate Rfc
+        * `user.temporary_password` - Temporary Password
     AccessLogOriginEnum:
       enum:
       - web

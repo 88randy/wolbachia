@@ -280,6 +280,7 @@ class AccessLog(ImmutableMixin, OrgScopedModel):
         DEACTIVATE = "user.deactivate"
         REVEAL_RFC = "user.reveal_rfc"
         ROTATE_RFC = "user.rotate_rfc"
+        TEMPORARY_PASSWORD = "user.temporary_password"  # noqa: S105 -- an audit action
 
     class Origin(models.TextChoices):
         WEB = "web"

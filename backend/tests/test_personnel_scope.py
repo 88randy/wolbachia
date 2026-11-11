@@ -13,7 +13,7 @@ from accounts.personnel_services import (
     update_personnel,
 )
 from accounts.services import DeviceInfo, start_device_session
-from organizations.models import Center, all_scope
+from organizations.models import Center, Membership, all_scope
 from tests.factories import MembershipFactory, ProfileFactory
 from tests.test_accounts_b_02 import make_actor, make_person
 from tests.test_accounts_b_02 import setup as setup
@@ -139,8 +139,15 @@ def test_center_admin_can_update_a_local_personnel_file_without_wider_effective_
             )
         )
 
+    # The editor holds every permission of the account it edits (account authority rule).
+    actor = scoped_admin(setup)
+    actor_member = Membership.objects.get(user=actor.user, organization=actor.organization)
+    profile = actor_member.profiles.first()
+    profile.permission_codes = [*MUTATION_CODES, "field_event.sync"]
+    profile.save(update_fields=["permission_codes"])
+
     updated = update_personnel(
-        scoped_admin(setup),
+        actor,
         member.user_id,
         {"expected_revision": person.revision, "work_phone": "synthetic-authorized-edit"},
     )
