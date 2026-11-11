@@ -19,19 +19,19 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from django.db import transaction
 from django.db.models import Exists, OuterRef, QuerySet, Subquery, Sum
 from django.http import Http404
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from accounts.models import User
-from core.exceptions import DomainError
+from core.exceptions import AlreadyVoidedError, DomainError
 from core.snapshots import snapshot_hash
 from geography.decisions.models import QuadrantClosure
 from geography.models import Quadrant, QuadrantVersion
 from inventory.models import Location, StockMovement
 from inventory.transfers.policy import json_facts
 from organizations.models import Center, Membership
+from platform_admin.models import PlatformAuditEntry
 from shifts.models import Motorcycle, Shift, ShiftStatus
 from uploads.access import UploadActor
 
@@ -141,25 +141,46 @@ def _failure(error: Exception) -> str:
     return "permission_denied"
 
 
-def move_motorcycles(center: Center, destination: Center, actor: User) -> list[dict[str, Any]]:
-    """Move every live motorcycle of `center` to `destination`, one locked update each."""
+def _move_one(motorcycle: Motorcycle, move: tuple[Center, Center], actor: User) -> str:
+    """Move one motorcycle under its try-lock after re-authorizing the actor (writes Motorcycle
+    and the audit). Returns the item status; raises for an item failure."""
+    from shifts.access import lock_authorized_motorcycle
+    from shifts.permissions import MOTORCYCLE_MANAGE
     from shifts.services import update_motorcycle
 
+    origin, destination = move
+    with lock_authorized_motorcycle(motorcycle, actor, MOTORCYCLE_MANAGE) as locked:
+        if locked.center_id != origin.pk:
+            return "skipped"
+        update_motorcycle(locked, {"center": destination})
+        PlatformAuditEntry.objects.create(
+            action=PlatformAuditEntry.Action.MOTORCYCLE_CENTER_MOVE,
+            actor=actor,
+            organization_id=origin.organization_id,
+            target_id=locked.pk,
+            details={"code": locked.code, "from": origin.code, "to": destination.code},
+        )
+    return "moved"
+
+
+def move_motorcycles(center: Center, destination: Center, actor: User) -> list[dict[str, Any]]:
+    """Move every live motorcycle of `center` to `destination`, one locked transaction each.
+
+    A motorcycle voided or moved elsewhere since the list was read is reported, not touched.
+    """
     results = []
     for motorcycle in active_motorcycles(center).order_by("code"):
+        item: dict[str, Any] = {"id": motorcycle.pk, "code": motorcycle.code}
         try:
-            with transaction.atomic():
-                update_motorcycle(motorcycle, {"center": destination})
-            results.append({"id": motorcycle.pk, "code": motorcycle.code, "status": "moved"})
+            status = _move_one(motorcycle, (center, destination), actor)
+            item["status"] = status
+            if status == "skipped":
+                item["reason"] = "center_changed"
+        except AlreadyVoidedError:
+            item.update(status="skipped", reason="voided")
         except (DomainError, Http404, NotFound, PermissionDenied) as error:
-            results.append(
-                {
-                    "id": motorcycle.pk,
-                    "code": motorcycle.code,
-                    "status": "failed",
-                    "reason": _failure(error),
-                }
-            )
+            item.update(status="failed", reason=_failure(error))
+        results.append(item)
     return results
 
 

@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
 
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 
 from accounts.models import User
 from core.exceptions import DomainError, FieldValidationError
 from core.time import server_now
+from organizations.exceptions import AdministrationBusyError
 from organizations.models import Center, Membership, Organization
 from organizations.services import effective_scope
 from platform_admin.models import PlatformAuditEntry
@@ -70,6 +71,23 @@ def _audit(  # noqa: PLR0913 -- one audit receipt: action, actor, center, detail
     )
 
 
+RETRYABLE_LOCK_SQLSTATES = frozenset({"55P03", "40P01"})
+
+
+def _lock_center(center: Center) -> Center:
+    """Try-lock the center row inside the caller's transaction; never wait (429 when busy).
+
+    NO KEY UPDATE leaves foreign-key checks (motorcycle moves) unblocked, and still conflicts
+    with the shared lock `shift.open` takes on the center of its motorcycle.
+    """
+    try:
+        return Center.objects.select_for_update(nowait=True, no_key=True).get(pk=center.pk)
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_LOCK_SQLSTATES:
+            raise AdministrationBusyError from error
+        raise
+
+
 def require_all_centers_grant(membership: Membership) -> None:
     """A limited center scope cannot create a center: it would sit outside that scope."""
     grants = effective_scope(membership).grants
@@ -110,7 +128,7 @@ def rename_center(center: Center, name: str, actor: User) -> Center:
     if not name.strip():
         raise FieldValidationError("name", "required")
     with transaction.atomic():
-        locked = Center.objects.select_for_update().get(pk=center.pk)
+        locked = _lock_center(center)
         previous = locked.name
         locked.name = name.strip()
         locked.save(update_fields=["name", "updated_at"])
@@ -123,7 +141,7 @@ def deactivate_center(center: Center, reason: str, actor: User) -> Center:
     from organizations.center_closure import closure_blockers
 
     with transaction.atomic():
-        locked = Center.objects.select_for_update().get(pk=center.pk)
+        locked = _lock_center(center)
         if not locked.is_active:
             raise CenterStateConflictError
         blockers = closure_blockers(locked)
@@ -149,7 +167,7 @@ def deactivate_center(center: Center, reason: str, actor: User) -> Center:
 def reactivate_center(center: Center, actor: User) -> Center:
     """Reactivate; the previous deactivation stays in the audit log."""
     with transaction.atomic():
-        locked = Center.objects.select_for_update().get(pk=center.pk)
+        locked = _lock_center(center)
         if locked.is_active:
             raise CenterStateConflictError
         locked.is_active = True

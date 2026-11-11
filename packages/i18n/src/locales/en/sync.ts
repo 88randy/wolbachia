@@ -41,6 +41,8 @@ export const sync: Record<keyof typeof source, string> = {
     "Your session had already ended when this record was sent, so a supervisor will review it. Sign in again if you need to keep working.",
   "sync.result.shiftAlreadyOpen":
     "You already have an open shift, so a new one was not started. Continue with the open shift or close it first.",
+  "sync.result.centerInactive":
+    "The center of this motorcycle is closed, so the shift was not started. Tell your supervisor.",
   "sync.result.motorcycleInUse":
     "This motorcycle is already in an open shift. Choose another one or tell your supervisor.",
   "sync.result.capturedAfterShiftClose":

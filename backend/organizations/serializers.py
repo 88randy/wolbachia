@@ -165,7 +165,9 @@ class CenterMoveResultSerializer(serializers.Serializer[Any]):
     location_code = serializers.CharField(required=False)
     transfer_code = serializers.CharField(required=False)
     line_count = serializers.IntegerField(required=False)
-    status = serializers.ChoiceField(choices=["moved", "prepared", "already_prepared", "failed"])
+    status = serializers.ChoiceField(
+        choices=["moved", "prepared", "already_prepared", "skipped", "failed"]
+    )
     reason = serializers.CharField(required=False)
 
 

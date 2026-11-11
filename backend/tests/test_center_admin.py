@@ -10,6 +10,7 @@ from inventory.transfers.models import Transfer
 from organizations.models import Center, all_scope
 from platform_admin.models import PlatformAuditEntry
 from shifts.models import Motorcycle
+from shifts.services import CENTER_SHARE_LOCK_SQL
 from tests.inventory_support import AT, inventory_context
 
 pytestmark = pytest.mark.django_db
@@ -239,3 +240,84 @@ def test_move_stock_refuses_a_destination_in_the_same_center(stocked):
     response = client.post(url, {"destination_location": str(context.location.pk)})
 
     assert response.status_code == 404
+
+
+def test_move_motorcycles_audits_each_move_with_its_actor(org_a, make_member, center):
+    user, member = make_member(org_a, (*CENTER_CODES, *MOVE_CODES))
+    set_scope(member, all_scope())
+    other = Center.objects.create(organization=org_a, code="SUR", name="Sur")
+    moto = Motorcycle.objects.create(organization=org_a, center=center, code="M-09")
+
+    response = client_for(user).post(
+        f"/api/v1/centers/{center.pk}/move-motorcycles/", {"destination_center": str(other.pk)}
+    )
+
+    assert [row["status"] for row in response.data["results"]] == ["moved"]
+    entry = PlatformAuditEntry.objects.get(action="motorcycle.center_move", target_id=moto.pk)
+    assert entry.actor_id == user.pk
+    assert entry.details == {"code": "M-09", "from": "NORTE", "to": "SUR"}
+
+
+def test_a_motorcycle_moved_elsewhere_after_the_list_is_skipped(org_a, make_member, center):
+    from organizations.center_closure import _move_one
+
+    user, member = make_member(org_a, MOVE_CODES)
+    set_scope(member, all_scope())
+    other = Center.objects.create(organization=org_a, code="SUR", name="Sur")
+    third = Center.objects.create(organization=org_a, code="ESTE", name="Este")
+    moto = Motorcycle.objects.create(organization=org_a, center=center, code="M-10")
+    Motorcycle.objects.filter(pk=moto.pk).update(center=third)
+
+    assert _move_one(moto, (center, other), user) == "skipped"
+    moto.refresh_from_db()
+    assert moto.center_id == third.pk
+    assert not PlatformAuditEntry.objects.filter(target_id=moto.pk).exists()
+
+
+def test_move_stock_refuses_a_destination_in_an_inactive_center(stocked):
+    context, destination = stocked
+    Center.objects.filter(pk=destination.center_id).update(is_active=False)
+    url = f"/api/v1/centers/{context.center.pk}/move-stock/"
+
+    response = client_for(context.actor.user).post(
+        url, {"destination_location": str(destination.pk)}
+    )
+
+    assert response.status_code == 404
+    assert not Transfer.objects.filter(origin__center=context.center).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_deactivate_answers_429_while_a_shift_open_holds_the_center(org_a, make_member):
+    import threading
+
+    from django.db import connection, transaction
+
+    center = Center.objects.create(organization=org_a, code="BUSY", name="Busy")
+    user, member = make_member(org_a, CENTER_CODES)
+    set_scope(member, all_scope())
+    is_locked, release = threading.Event(), threading.Event()
+
+    def hold_share_lock():
+        # The same shared lock that opening a shift takes on the center of its motorcycle.
+        with transaction.atomic(), connection.cursor() as cursor:
+            cursor.execute(CENTER_SHARE_LOCK_SQL, [center.pk])
+            is_locked.set()
+            release.wait(10)
+        connection.close()
+
+    holder = threading.Thread(target=hold_share_lock)
+    holder.start()
+    assert is_locked.wait(10)
+    try:
+        response = client_for(user).post(
+            f"/api/v1/centers/{center.pk}/deactivate/", {"reason": "Cierre de sede"}
+        )
+    finally:
+        release.set()
+        holder.join()
+
+    assert response.status_code == 429
+    assert response.data["code"] == "administration_in_progress"
+    center.refresh_from_db()
+    assert center.is_active is True

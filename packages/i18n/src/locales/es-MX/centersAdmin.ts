@@ -40,6 +40,8 @@ export const centersAdmin = {
   "centersAdmin.error.centerScopeLimited":
     "Solo una persona con acceso a todos los centros puede crear centros.",
   "centersAdmin.error.centerStateConflict": "El centro cambió de estado. Recarga la página.",
+  "centersAdmin.error.busy":
+    "Alguien está usando el centro en este momento. Intenta de nuevo en unos segundos.",
   "centersAdmin.error.generic": "No pudimos guardar. Intenta de nuevo.",
   "centersAdmin.detail.notFound": "No encontramos este centro o no tienes acceso a él.",
   "centersAdmin.detail.back": "Centros",
@@ -95,6 +97,7 @@ export const centersAdmin = {
   "centersAdmin.result.moved": "Movida",
   "centersAdmin.result.prepared": "Traslado preparado",
   "centersAdmin.result.alreadyPrepared": "Ya estaba preparado",
+  "centersAdmin.result.skipped": "Se omitió",
   "centersAdmin.result.failed": "No se pudo",
   "centersAdmin.close.retry": "Reintentar",
   "centersAdmin.close.final": "Desactivar el centro",
@@ -113,5 +116,8 @@ export const centersAdmin = {
   "centersAdmin.reason.permissionDenied": "No tienes permiso.",
   "centersAdmin.reason.transferCommandConflict": "Otra persona ya preparó este traslado.",
   "centersAdmin.reason.transferStorageUnavailable": "El almacén destino no está disponible.",
+  "centersAdmin.reason.centerChanged": "Ya estaba en otro centro.",
+  "centersAdmin.reason.voided": "La moto se dio de baja.",
+  "centersAdmin.reason.busy": "Está en uso en este momento. Reintenta.",
   "centersAdmin.reason.other": "Falló. Intenta de nuevo.",
 } as const satisfies AreaCatalog<"centersAdmin">;

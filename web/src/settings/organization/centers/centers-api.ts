@@ -142,6 +142,7 @@ const ERROR_KEYS: Readonly<Record<string, MessageKey>> = {
   blank: "centersAdmin.error.required",
   center_scope_limited: "centersAdmin.error.centerScopeLimited",
   center_state_conflict: "centersAdmin.error.centerStateConflict",
+  administration_in_progress: "centersAdmin.error.busy",
 };
 
 export function errorKeyOf(caught: unknown): MessageKey {
@@ -157,6 +158,9 @@ const REASON_KEYS: Readonly<Record<string, MessageKey>> = {
   permission_denied: "centersAdmin.reason.permissionDenied",
   transfer_command_conflict: "centersAdmin.reason.transferCommandConflict",
   transfer_storage_unavailable: "centersAdmin.reason.transferStorageUnavailable",
+  center_changed: "centersAdmin.reason.centerChanged",
+  voided: "centersAdmin.reason.voided",
+  sync_in_progress: "centersAdmin.reason.busy",
 };
 
 /** The blockers of a refused deactivation (`409 center_has_active_work`), else none. */
@@ -206,5 +210,6 @@ export const RESULT_KEYS: Readonly<Record<MoveResult["status"], MessageKey>> = {
   moved: "centersAdmin.result.moved",
   prepared: "centersAdmin.result.prepared",
   already_prepared: "centersAdmin.result.alreadyPrepared",
+  skipped: "centersAdmin.result.skipped",
   failed: "centersAdmin.result.failed",
 };
