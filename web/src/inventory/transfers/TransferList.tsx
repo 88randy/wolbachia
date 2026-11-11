@@ -14,6 +14,7 @@ import { useCan } from "../../session/use-can";
 import { TRANSFER_TABLE } from "./transfer-table";
 import { transferListOptions, TRANSFER_PAGE_SIZE } from "./transfer-query";
 import type { Transfer, TransferScope } from "./transfer-query";
+import { useTransferCounts } from "../use-status-counts";
 import { useLocationNames } from "../use-location-names";
 import { TransferStatus } from "./TransferStatus";
 function useColumns(): DataTableColumn<Transfer>[] {
@@ -50,6 +51,7 @@ export function TransferList({ scope }: { scope: TransferScope }) {
   const controller = useTableUrlState(TRANSFER_TABLE);
   const query = useQuery(transferListOptions(scope, controller.state));
   const columns = useColumns();
+  const counts = useTransferCounts();
   const canCreate = useCan()("transfer.create");
   return (
     <ListPage
@@ -63,7 +65,7 @@ export function TransferList({ scope }: { scope: TransferScope }) {
         )
       }
     >
-      <FilterBar controller={controller} />
+      <FilterBar controller={controller} quickCounts={counts} />
       <DataTable
         caption={t("transfers.page.title")}
         columns={columns}

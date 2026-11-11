@@ -8,7 +8,7 @@ test("signature, photo and scanner callbacks from one render preserve all input 
   const memory: TransferMemory = {};
   const record = transfer();
   const photo = "15200000-0000-4000-8000-000000000012";
-  const { result } = renderHook(() => useReceptionDraft(memory));
+  const { result } = renderHook(() => useReceptionDraft(memory, record));
   const capturedCallbacks = result.current;
   act(() => {
     capturedCallbacks.verifySignature(TRANSFER_SIGNATURE_ID);

@@ -28,8 +28,8 @@ export const transfers: Record<keyof typeof spanish, string> = {
   "transfers.signature.sender": "Sender signature",
   "transfers.signature.receiver": "Receiver signature",
   "transfers.action.dispatch": "Sign and dispatch",
-  "transfers.action.receive": "Sign receipt",
-  "transfers.action.discrepancies": "View discrepancies",
+  "transfers.action.receive": "Confirm reception",
+  "transfers.action.discrepancies": "See differences",
   "transfers.scan.label": "Scan manifest identity",
   "transfers.scan.hint":
     "Use the line, piece or lot identity in the manifest. Unknown codes remain uncredited extras.",
@@ -44,7 +44,7 @@ export const transfers: Record<keyof typeof spanish, string> = {
     "Check the quantity: it must be positive and within the expected amount. Each piece is counted once.",
   "transfers.scan.ambiguous": "The lot has several lines. Scan the exact line or piece identity.",
   "transfers.line.count": "Expected: {expected} · scanned: {received}",
-  "transfers.line.photo": "Missing item photo: {id}",
+  "transfers.line.photo": "Photo of what is missing: {id}",
   "transfers.write.dispatchRule":
     "Verify the signature before dispatch. The server checks stock, expiry and destination; an administrator or warehouse must resolve blockers.",
   "transfers.write.receiveRule":
@@ -102,4 +102,10 @@ export const transfers: Record<keyof typeof spanish, string> = {
   "transfers.record.lot": "Lot",
   "transfers.record.quantity": "Quantity",
   "transfers.record.seeDifference": "See the difference",
+  "transfers.receive.intro":
+    "Everything starts as arrived in full. If something came short, write how much arrived and upload a photo of what is missing.",
+  "transfers.receive.expected": "Expected: {quantity}",
+  "transfers.receive.received": "Arrived",
+  "transfers.receive.missing": "Missing {quantity}",
+  "transfers.receive.extras": "Something arrived that was not on the list",
 };

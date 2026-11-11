@@ -5,7 +5,7 @@ import type { TransferRecordProps } from "./TransferRecord";
 import { useReceptionDraft } from "./use-reception-draft";
 import { useReceptionScanner } from "./use-reception-scanner";
 export function useTransferReception({ scope, transfer, memory }: TransferRecordProps) {
-  const reception = useReceptionDraft(memory);
+  const reception = useReceptionDraft(memory, transfer);
   const scanner = useReceptionScanner(transfer, reception);
   const write = useTransferWrite(scope, memory);
   useEffect(() => {

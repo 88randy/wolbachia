@@ -43,7 +43,7 @@ export const discrepancies = {
   "discrepancies.close.confirmTitle": "Confirm discrepancy resolution",
   "discrepancies.close.consequence":
     "Resolution is final. It disposes only its own holds; it preserves the signed manifest and other holds. Acknowledging missing material adds no stock.",
-  "discrepancies.close.action": "Review and close discrepancy",
+  "discrepancies.close.action": "Resolve",
   "discrepancies.close.confirm": "Confirm resolution",
   "discrepancies.close.saved": "Resolution recorded",
   "discrepancies.close.uncertain":
@@ -65,4 +65,5 @@ export const discrepancies = {
   "discrepancies.correction.requirements":
     "The server checks the same destination, material and available received correction quantity. Linking it creates no additional credit.",
   "discrepancies.history.piece": "Piece",
+  "discrepancies.record.subtitle": "From shipment {transfer}",
 } satisfies Record<keyof typeof Spanish, string>;

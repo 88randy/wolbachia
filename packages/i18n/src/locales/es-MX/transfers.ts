@@ -29,8 +29,8 @@ export const transfers = {
   "transfers.signature.sender": "Firma de quien entrega",
   "transfers.signature.receiver": "Firma de recibido",
   "transfers.action.dispatch": "Firmar y despachar",
-  "transfers.action.receive": "Firmar recepción",
-  "transfers.action.discrepancies": "Ver discrepancias",
+  "transfers.action.receive": "Confirmar recepción",
+  "transfers.action.discrepancies": "Ver diferencias",
   "transfers.scan.label": "Escanear identidad del manifiesto",
   "transfers.scan.hint":
     "Usa la identidad de línea, pieza o lote del manifiesto. Un código desconocido se registra como sobrante sin abonar inventario.",
@@ -46,7 +46,7 @@ export const transfers = {
   "transfers.scan.ambiguous":
     "El lote tiene varias líneas. Escanea la identidad exacta de la línea o pieza.",
   "transfers.line.count": "Esperado: {expected} · escaneado: {received}",
-  "transfers.line.photo": "Foto del faltante: {id}",
+  "transfers.line.photo": "Foto de lo que faltó: {id}",
   "transfers.write.dispatchRule":
     "Verifica la firma antes de despachar. Se revisan existencias, caducidad y destino; administración o almacén debe resolver cualquier bloqueo.",
   "transfers.write.receiveRule":
@@ -104,4 +104,10 @@ export const transfers = {
   "transfers.record.lot": "Lote",
   "transfers.record.quantity": "Cantidad",
   "transfers.record.seeDifference": "Ver la diferencia",
+  "transfers.receive.intro":
+    "Todo empieza como llegó completo. Si algo llegó de menos, escribe cuánto llegó y sube una foto de lo que faltó.",
+  "transfers.receive.expected": "Debían llegar {quantity}",
+  "transfers.receive.received": "Llegaron",
+  "transfers.receive.missing": "Faltan {quantity}",
+  "transfers.receive.extras": "Llegó algo que no venía en la lista",
 } as const satisfies AreaCatalog<"transfers">;

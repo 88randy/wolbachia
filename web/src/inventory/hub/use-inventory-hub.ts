@@ -4,10 +4,10 @@ import { useCan } from "../../session/use-can";
 import { inventoryScopedOptions } from "../inventory-read-context";
 import { useInventoryContext } from "../use-inventory-context";
 
-type Scope = ReturnType<typeof useInventoryContext>;
+export type Scope = ReturnType<typeof useInventoryContext>;
 
 /** One-row read: only the total is used, so the hub never downloads records. */
-function useTotal(
+export function useTotal(
   scope: Scope,
   target: { key: string; enabled: boolean },
   read: (client: Scope["client"]) => Promise<{ count: number }>,

@@ -43,7 +43,7 @@ export const discrepancies = {
   "discrepancies.close.confirmTitle": "Confirmar resolución de discrepancia",
   "discrepancies.close.consequence":
     "La resolución es definitiva. Solo dispone los bloqueos propios; no borra el manifiesto firmado ni elimina otros bloqueos. Reconocer un faltante no agrega existencias.",
-  "discrepancies.close.action": "Revisar y cerrar discrepancia",
+  "discrepancies.close.action": "Resolver",
   "discrepancies.close.confirm": "Confirmar resolución",
   "discrepancies.close.saved": "Resolución registrada",
   "discrepancies.close.uncertain":
@@ -65,4 +65,5 @@ export const discrepancies = {
   "discrepancies.correction.requirements":
     "Se verifica el mismo destino, el material y la cantidad recibida disponible de la corrección. Vincularla no genera otro ingreso.",
   "discrepancies.history.piece": "Pieza",
+  "discrepancies.record.subtitle": "Del envío {transfer}",
 } as const satisfies AreaCatalog<"discrepancies">;

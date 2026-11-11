@@ -2,8 +2,6 @@ import { useTranslation } from "react-i18next";
 import { CardSkeleton } from "../../ui/CardSkeleton";
 import { ErrorState } from "../../ui/ErrorState";
 import { NotFoundState } from "../../states/NotFoundState";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { DetailPage } from "../../components/templates/DetailPage";
 import { StatusPill } from "../../ui/StatusPill";
 import { DiscrepancyFacts } from "./DiscrepancyFacts";
@@ -31,18 +29,6 @@ export function DiscrepancyRecord({ code }: { code: string }) {
   if (!state.record) return <NotFoundState />;
   return <DiscrepancyDetail state={state} record={state.record} />;
 }
-function DiscrepancyBack() {
-  const { t } = useTranslation();
-  return (
-    <Link
-      to="/inventory/discrepancies"
-      className="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-action"
-    >
-      <ArrowLeft aria-hidden="true" className="size-4" />
-      {t("discrepancies.actions.back")}
-    </Link>
-  );
-}
 function DiscrepancyDetail({
   state,
   record,
@@ -59,11 +45,12 @@ function DiscrepancyDetail({
           {t(`discrepancies.status.${record.status}`)}
         </StatusPill>
       }
-      actions={<DiscrepancyBack />}
+      subtitle={t("discrepancies.record.subtitle", { transfer: record.transfer.code })}
+      back={{ label: t("discrepancies.actions.back"), link: { to: "/inventory/discrepancies" } }}
     >
+      {state.canClose && record.status === "open" && <DiscrepancyResolveForm state={state} />}
       <DiscrepancyFacts record={record} />
       <DiscrepancyHistory record={record} />
-      {state.canClose && record.status === "open" && <DiscrepancyResolveForm state={state} />}
       <DiscrepancyCommandNotice state={state} />
     </DetailPage>
   );

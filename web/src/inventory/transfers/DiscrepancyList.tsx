@@ -10,6 +10,7 @@ import type { DataTableColumn } from "../../data-table/table-types";
 import { operationTableData } from "../../operations/read-access";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useInventoryContext } from "../use-inventory-context";
+import { useDiscrepancyCounts } from "../use-status-counts";
 import {
   DISCREPANCY_TABLE,
   DISCREPANCY_PAGE_SIZE,
@@ -51,9 +52,10 @@ export function DiscrepancyList() {
   const controller = useTableUrlState(DISCREPANCY_TABLE);
   const query = useQuery(discrepancyListOptions(scope, controller.state));
   const columns = useColumns();
+  const counts = useDiscrepancyCounts();
   return (
     <ListPage title={t("discrepancies.page.title")}>
-      <FilterBar controller={controller} />
+      <FilterBar controller={controller} quickCounts={counts} />
       <DataTable
         caption={t("discrepancies.page.title")}
         columns={columns}
