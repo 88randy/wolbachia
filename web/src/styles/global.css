@@ -26,7 +26,7 @@ body {
   font-family: var(--font-family);
   font-size: var(--web-type-body-font-size);
   line-height: var(--web-type-body-line-height);
-  font-variant-numeric: var(--font-variant-numeric);
+  /* No global tabular-nums: in Inter it widens hyphens ("Q-MER-01"). Number cells opt in. */
 }
 
 /* Focus ring from the design (.fo): solid line, offset, soft halo. Never removed. */
