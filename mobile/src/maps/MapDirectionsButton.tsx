@@ -11,6 +11,7 @@ export function MapDirectionsButton({ point }: { readonly point: MapPoint }) {
   return (
     <Button
       label={t("mobile.day.navigate")}
+      variant="outline"
       icon="navigation"
       disabled={uri === null}
       onPress={() => {

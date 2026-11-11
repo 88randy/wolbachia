@@ -23,7 +23,7 @@ export function TemporaryPasswordPanel({ userId }: { userId: string }) {
     }
   }
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col items-start gap-3">
       {writer.error && <InlineNotice tone="critical">{t(writer.error)}</InlineNotice>}
       {issued ? (
         <>

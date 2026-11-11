@@ -76,7 +76,7 @@ function ScanInput(props: {
       autoComplete="off"
       spellCheck={false}
       aria-invalid={scan.isMissing || undefined}
-      className="min-h-12 w-full rounded-xl border border-line-strong bg-surface px-4 text-lg"
+      className="min-h-12 w-full max-w-lg rounded-xl border border-line-strong bg-surface px-4 text-lg"
       onChange={(event) => {
         scan.change(event.target.value);
       }}

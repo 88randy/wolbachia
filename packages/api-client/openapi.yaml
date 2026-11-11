@@ -2632,6 +2632,21 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: status
+        schema:
+          enum:
+          - planned
+          - released
+          - cancelled
+          - received
+          type: string
+          minLength: 1
+        description: |-
+          * `planned` - planned
+          * `released` - released
+          * `cancelled` - cancelled
+          * `received` - received
       tags:
       - courier-assignments
       security:
@@ -19690,6 +19705,59 @@ components:
       - quadrant
       - revision
       - target
+    AssignmentLifecycle:
+      type: object
+      properties:
+        signature:
+          allOf:
+          - $ref: '#/components/schemas/AssignmentSignature'
+          nullable: true
+        status:
+          $ref: '#/components/schemas/AssignmentLifecycleStatusEnum'
+        release_id:
+          type: string
+          format: uuid
+          nullable: true
+        released_at:
+          type: string
+          format: date-time
+          nullable: true
+        released_by_name:
+          type: string
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_by_name:
+          type: string
+          nullable: true
+        cancel_reason_code:
+          type: string
+          nullable: true
+        cancel_reason:
+          type: string
+          nullable: true
+      required:
+      - cancel_reason
+      - cancel_reason_code
+      - cancelled_at
+      - release_id
+      - released_at
+      - signature
+      - status
+    AssignmentLifecycleStatusEnum:
+      enum:
+      - planned
+      - released
+      - cancelled
+      - received
+      type: string
+      description: |-
+        * `planned` - planned
+        * `released` - released
+        * `cancelled` - cancelled
+        * `received` - received
     AssignmentLine:
       type: object
       properties:
@@ -19819,6 +19887,31 @@ components:
       - revision
       - schedule_revision
       - valid_from
+    AssignmentSignature:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/AssignmentSignatureStateEnum'
+        channel:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        captured_by:
+          type: string
+          nullable: true
+      required:
+      - captured_by
+      - channel
+      - state
+    AssignmentSignatureStateEnum:
+      enum:
+      - signed
+      - pending_phone
+      type: string
+      description: |-
+        * `signed` - signed
+        * `pending_phone` - pending_phone
     AttachmentTargetKindEnum:
       enum:
       - field_event
@@ -21225,6 +21318,14 @@ components:
       - rules_version
       - sampling_points
       - supplies
+    ChannelEnum:
+      enum:
+      - warehouse_screen
+      - courier_device
+      type: string
+      description: |-
+        * `warehouse_screen` - warehouse_screen
+        * `courier_device` - courier_device
     Chart:
       type: object
       properties:
@@ -39329,6 +39430,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssignmentLine'
+        lifecycle:
+          $ref: '#/components/schemas/AssignmentLifecycle'
       required:
       - courier_id
       - date
@@ -39371,6 +39474,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssignmentLine'
+        lifecycle:
+          $ref: '#/components/schemas/AssignmentLifecycle'
         organization_id:
           type: string
           format: uuid

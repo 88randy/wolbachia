@@ -49,7 +49,7 @@ export function NewUserDialog({ onClose }: { onClose: () => void }) {
   }
   const isReady = form.isComplete && form.hasScope;
   return (
-    <ModalDialog title={t("users.new.title")} onClose={onClose} isBusy={writer.isBusy}>
+    <ModalDialog title={t("users.new.title")} onClose={onClose} isBusy={writer.isBusy} isWide>
       <form
         className={styles.form}
         onSubmit={(event) => {

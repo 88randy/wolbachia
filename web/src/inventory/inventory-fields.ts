@@ -42,6 +42,9 @@ export const fieldKeys: Record<string, MessageKey> = {
   expiry_basis: "inventory.field.expiryBasis",
 };
 export const blockerKeys: Record<string, MessageKey> = {
+  supply_signature_required: "inventory.blocker.signatureRequired",
+  supply_signature_channel_not_allowed: "inventory.blocker.signaturePhoneOnly",
+  supply_already_released: "inventory.blocker.alreadyReleased",
   transfer_discrepancy_hold: "inventory.blocker.transferDiscrepancyHold",
   supply_type_inactive: "inventory.blocker.supplyTypeInactive",
   lot_expired: "inventory.blocker.lotExpired",

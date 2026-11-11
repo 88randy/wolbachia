@@ -462,6 +462,18 @@ export const mobile: Record<keyof typeof source, string> = {
     "Reuse requires downloaded eligibility. A third reuse is never offered.",
   "mobile.ovitrap.supplies": "Supply UUID references, separated by commas",
   "mobile.ovitrap.photo": "Add photo evidence",
+  "mobile.camera.takeTitle": "Take the photo",
+  "mobile.camera.takeHint": "Aim and tap the big button.",
+  "mobile.camera.reviewTitle": "Does the photo look good?",
+  "mobile.camera.reviewHint": "If it looks good, use it. If not, take it again.",
+  "mobile.camera.previewLabel": "Photo you just took",
+  "mobile.camera.viewfinderLabel": "Camera view",
+  "mobile.camera.shoot": "Take photo",
+  "mobile.camera.waiting": "Waiting for the camera to open.",
+  "mobile.camera.use": "Use this photo",
+  "mobile.camera.retake": "Take it again",
+  "mobile.camera.cancel": "Cancel",
+  "mobile.camera.failed": "The photo could not be taken. Try again.",
   "mobile.camera.undo": "Remove this photo from the draft",
   "mobile.ovitrap.concurrentEdit":
     "The draft changed while saving. Your edits are still pending; try saving them again.",
@@ -483,7 +495,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.camera.fileFailed":
     "The photo could not be saved on this phone. Check available storage and take it again; your draft is still on this phone.",
   "mobile.ovitrap.photoUnavailable":
-    "The evidence camera is unavailable in this build. Keep the draft and ask for help if the list requires a photo.",
+    "The camera could not open. Allow the camera and try again; your draft is still on this phone.",
   "mobile.ovitrap.refresh": "Download lists and rules",
   "mobile.ovitrap.adopt": "Review and use downloaded versions",
   "mobile.ovitrap.catalogChanged":
@@ -670,7 +682,7 @@ export const mobile: Record<keyof typeof source, string> = {
     "The odometer photo is optional unless the list requires evidence. Saved photos stay on this phone.",
   "mobile.shiftOpen.capturePhoto": "Take photo",
   "mobile.shiftOpen.photoUnavailable":
-    "The camera is not available in this build. Your input is retained; if a photo is required, departure stays blocked.",
+    "The camera could not open. Allow the camera and try again; your input is still on this phone.",
   "mobile.shiftOpen.photoCount": "Photos saved on this phone:",
   "mobile.shiftOpen.odometerKm": "Odometer km (whole number)",
   "mobile.shiftOpen.lastOdometer": "Last odometer known to this phone:",

@@ -6,7 +6,7 @@ import { reportSessionError } from "../../session/session-events";
 import { quantityUnits } from "../transfers/transfer-quantities";
 import { findLot } from "./allocation-query";
 import type { AllocationScope } from "./allocation-query";
-import type { IntentDraft } from "./allocation-intent";
+import type { IntentDraft, ReviseDraft } from "./allocation-intent";
 import type { DeliveredLine } from "./delivery-compare";
 
 export type ScanState = "idle" | "loading" | "notFound" | "duplicate" | "piece" | "failed";
@@ -64,6 +64,26 @@ function assignDraft(context: Context, originId: string, lines: readonly Deliver
   return draft;
 }
 
+function reviseDraftOf(
+  saved: { id: string; revision: number },
+  lines: readonly DeliveredLine[],
+): ReviseDraft {
+  return {
+    target: { kind: "revise", assignmentId: saved.id },
+    body: {
+      command_id: crypto.randomUUID(),
+      expected_revision: saved.revision,
+      lines: lines.map((line) => ({
+        id: line.key,
+        lot_id: line.lotId,
+        piece_id: null,
+        unit_version_id: line.supplyVersionId,
+        quantity: line.quantity,
+      })),
+    },
+  };
+}
+
 function useScan(
   scope: AllocationScope,
   lines: readonly DeliveredLine[],
@@ -102,9 +122,16 @@ export function useAssignmentDraft(scope: AllocationScope, context: Context) {
   const removeLine = (key: string) => {
     setLines((current) => current.filter((line) => line.key !== key));
   };
+  /** Start editing a saved plan: its lines and origin become the draft. */
+  const hydrate = (saved: { origin_id: string }, next: DeliveredLine[]) => {
+    setOriginId(saved.origin_id);
+    setLines(next);
+  };
   return {
-    ...{ lines, originId, scan, blockers, addLot, setOriginId, setQuantity, removeLine },
+    ...{ lines, originId, scan, blockers, addLot, setOriginId, setQuantity, removeLine, hydrate },
     draft: () => (blockers.length > 0 ? null : assignDraft(context, originId, lines)),
+    revision: (saved: { id: string; revision: number }) =>
+      blockers.length > 0 ? null : reviseDraftOf(saved, lines),
   };
 }
 export type AssignmentDraft = ReturnType<typeof useAssignmentDraft>;

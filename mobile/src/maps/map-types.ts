@@ -13,6 +13,10 @@ export interface MapPoint {
   readonly statusLabel: string;
   readonly tone: BadgeTone;
   readonly icon: IconName;
+  /** What to do here, already translated ("Colocar ovitrampa"). */
+  readonly actionLabel?: string;
+  /** False once the task is done: the footer then offers no "Empezar". */
+  readonly isStartable?: boolean;
 }
 
 /** A quadrant polygon. `patternIndex` picks the dash pattern so color is never the only cue. */

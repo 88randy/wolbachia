@@ -17,6 +17,7 @@ export const USERS_TABLE: TableQueryConfig = {
       kind: "select",
       key: IS_ACTIVE_PARAM,
       labelKey: "users.filter.status",
+      presentation: "segmented",
       options: [
         { value: "true", labelKey: "users.status.active" },
         { value: "false", labelKey: "users.status.inactive" },

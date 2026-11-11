@@ -13,10 +13,11 @@ export const evaluations = {
     "Registra observaciones y consulta resultados con su rúbrica original. El resultado se calcula automáticamente; una evaluación no certifica una capacitación.",
   "evaluations.page.denied":
     "No tienes acceso a este contexto. Pide a administración que revise tus permisos y alcance.",
+  "evaluations.tab.new": "Nueva evaluación",
+  "evaluations.tab.history": "Historial",
+  "evaluations.tab.notice": "Avisos a recursos humanos",
   "evaluations.page.private":
     "El historial requiere permiso de lectura de evaluaciones. Tu permiso de captura no concede acceso al historial.",
-  "evaluations.page.identifiers":
-    "Este servicio todavía no ofrece un directorio autorizado de personas y contextos para esta tarea. Usa sus identificadores exactos; no se buscan nombres ni datos privados.",
   "evaluations.rubric.percent": "%",
   "evaluations.rubric.separator": " · ",
   "evaluations.rubric.title": "Rúbrica y versiones",
@@ -37,7 +38,7 @@ export const evaluations = {
     "Registrar esta observación conserva un intento inmutable y puede originar un aviso de capacitación. Revisa persona, contexto, rúbrica y respuestas.",
   "evaluations.form.review": "Revisar y guardar",
   "evaluations.form.invalid":
-    "Revisa los identificadores, la fecha con zona horaria y los valores de 0 a 100. Conservamos tus campos.",
+    "Revisa la persona, el centro, la fecha y los valores de 0 a 100. Conservamos tus campos.",
   "evaluations.form.failed":
     "No pudimos confirmar el registro. Conservamos los campos. Consulta el historial antes de iniciar otro intento; no reenviamos automáticamente.",
   "evaluations.form.retry": "Ya revisé el historial; habilitar otro intento",
@@ -50,7 +51,8 @@ export const evaluations = {
   "evaluations.field.subject": "Persona",
   "evaluations.field.center": "Centro",
   "evaluations.field.quadrant": "Cuadrante (opcional)",
-  "evaluations.field.observed": "Fecha de observación con zona horaria",
+  "evaluations.field.observed": "Fecha de observación",
+  "evaluations.field.observedTime": "Hora",
   "evaluations.field.instantHint":
     "Usa una fecha ISO 8601 con Z o desfase explícito, por ejemplo 2026-11-09T12:00:00-06:00.",
   "evaluations.field.presentation": "Presentación",

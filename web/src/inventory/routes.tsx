@@ -7,6 +7,7 @@ import { authenticatedRoute } from "../router/base-routes";
 import { ForbiddenError, requireAreaAccess, requirePermission } from "../router/guards";
 import { canAny } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
+import { DeliveryList } from "./allocation/DeliveryList";
 import { W15Page } from "./allocation/W15Page";
 import { W16Page } from "./allocation/W16Page";
 import { W17Page } from "./allocation/W17Page";
@@ -78,6 +79,11 @@ const inventoryRoutes = [
   }),
   inventoryRoute("/inventory/assignments", {
     crumb: "allocation.assignment.title",
+    permission: "inventory.allocate",
+    component: DeliveryList,
+  }),
+  inventoryRoute("/inventory/assignments/new", {
+    crumb: "allocation.delivery.new",
     permission: "inventory.allocate",
     component: W15Page,
   }),

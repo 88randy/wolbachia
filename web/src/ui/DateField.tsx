@@ -29,12 +29,15 @@ export function DateField(props: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** Last day that can be picked (`YYYY-MM-DD`). */
+  max?: string;
 }) {
   const { language } = useLanguage();
   const format = useFormatCalendarDate();
   const [isOpen, setIsOpen] = useState(false);
   const [container, triggerRef] = useDialogContainer();
   const selected = parseDay(props.value);
+  const last = props.max === undefined ? undefined : parseDay(props.max);
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={props.id} className="text-xs font-bold text-ink">
@@ -59,6 +62,7 @@ export function DateField(props: {
             locale={language === "en" ? enUS : es}
             selected={selected}
             defaultMonth={selected}
+            disabled={last ? { after: last } : undefined}
             onSelect={(date) => {
               if (!date) return;
               props.onChange(toIsoDay(date));

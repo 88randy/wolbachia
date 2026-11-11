@@ -1,3 +1,4 @@
+import type { MessageKey } from "@wolbachia/i18n";
 import { displayPointCode } from "../day/point-code.ts";
 import { ArrowRight, Save } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -12,6 +13,10 @@ import type { CaptureProps } from "./model.ts";
 import { saveGate } from "./validation.ts";
 import { useCaptureFlow } from "./use-capture-flow.ts";
 
+const HINTS: Readonly<Record<string, MessageKey>> = {
+  point: "field.hint.pickPoint",
+  prepare: "field.hint.checkSteps",
+};
 function isSaveBlocked(props: CaptureProps): boolean {
   const { model, draft } = props;
   if (model.state?.isScopeBlocked || model.state?.isBagReserved) return true;
@@ -58,9 +63,7 @@ export function CaptureWizard(props: CaptureProps) {
             icon={ArrowRight}
             label={t("field.action.next")}
             disabled={model.isBusy || !flow.isDone}
-            disabledReason={t(
-              draft.step === "point" ? "field.hint.pickPoint" : "field.hint.answerStep",
-            )}
+            disabledReason={t(HINTS[draft.step] ?? "field.hint.answerStep")}
             onPress={flow.next}
           />
         )

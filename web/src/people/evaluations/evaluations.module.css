@@ -38,11 +38,18 @@
 }
 .facts {
   display: grid;
-  gap: var(--space-1);
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+.facts > div {
+  display: contents;
+}
+.facts dt {
+  color: var(--color-text-secondary);
 }
 .facts dd {
   margin: 0;
-  font-family: var(--font-family-mono);
   overflow-wrap: anywhere;
 }
 .page code,
@@ -50,4 +57,8 @@
 .page a,
 .page summary {
   overflow-wrap: anywhere;
+}
+.form > button,
+.stack > button {
+  justify-self: end;
 }

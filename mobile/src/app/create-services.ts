@@ -1,5 +1,6 @@
 import { createShiftClose } from "../features/shift-close/create-shift-close.ts";
 import type { ShiftCloseService } from "../features/shift-close/service.ts";
+import { createForegroundGps } from "../features/ovitrap-lifecycle/create-foreground-gps.ts";
 import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
 import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
@@ -147,6 +148,7 @@ function createCaptures(
   return {
     ovitrapCheck: createOvitrapCheck({
       ...deps,
+      gps: createForegroundGps(day.location),
       assignments: createDayAssignments({ bundle, auth: deps.auth }),
     }),
     ovitrapLifecycle: createOvitrapLifecycle({

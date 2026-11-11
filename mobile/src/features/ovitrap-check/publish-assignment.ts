@@ -1,5 +1,5 @@
 import { StaleAssignmentAuthorityError } from "./snapshot-authority.ts";
-import { recordAssignmentOutcome, warnAssignmentNull } from "./assignment-diagnostics.ts";
+import { warnAssignmentNull } from "./assignment-diagnostics.ts";
 import type { OvitrapStore } from "./store.ts";
 import type { Assignment } from "./types.ts";
 
@@ -20,15 +20,11 @@ async function publishOnce(
   const { catalog, rules } = await store.snapshots();
   try {
     await store.publishSnapshots({ catalog, rules, assignment }, authority);
-    if (assignment !== null) recordAssignmentOutcome("published");
     return null;
   } catch (error) {
     if (error instanceof StaleAssignmentAuthorityError) return { assignment };
     throw error;
   }
-}
-function describe(error: unknown): string {
-  return error instanceof Error ? `${error.name}: ${error.message.slice(0, 80)}` : "unknown";
 }
 /**
  * The assignment is local (the route's own bundle): publish it first, with no network wait, so the
@@ -39,18 +35,10 @@ export async function publishAssignment(
   assignments: AssignmentProvider | undefined,
   store: OvitrapStore,
 ): Promise<void> {
-  if (!assignments) {
-    recordAssignmentOutcome("no_provider");
-    return;
-  }
+  if (!assignments) return;
   let rejected: Rejected | null = { assignment: null };
-  try {
-    for (let attempt = 1; attempt <= PUBLISH_ATTEMPTS && rejected !== null; attempt += 1)
-      rejected = await publishOnce(assignments, store);
-  } catch (error) {
-    recordAssignmentOutcome(`publish_error ${describe(error)}`);
-    throw error;
-  }
+  for (let attempt = 1; attempt <= PUBLISH_ATTEMPTS && rejected !== null; attempt += 1)
+    rejected = await publishOnce(assignments, store);
   if (rejected === null) return;
   warnAssignmentNull(await store.publishBlockReason(rejected.assignment));
   throw new StaleAssignmentAuthorityError();

@@ -24,7 +24,7 @@ export function CountInput(props: CountInputProps) {
       <input
         id={id}
         ref={props.inputRef}
-        className={styles.countInput}
+        className={`${styles.countInput} ${props.isReplacement ? styles.countInputCompact : ""}`}
         type="text"
         inputMode="numeric"
         autoComplete="off"

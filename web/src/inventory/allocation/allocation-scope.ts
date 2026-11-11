@@ -6,7 +6,8 @@ export function allocationRouteScope<Scope extends InventoryReadScope>(
   route: string,
 ) {
   if (!scope.pathname) return scope;
-  const matches = scope.pathname.replace(/\/$/, "") === route;
+  const path = scope.pathname.replace(/\/$/, "");
+  const matches = path === route || path.startsWith(`${route}/`);
   return {
     ...scope,
     identity: { ...scope.identity, isSettled: scope.identity.isSettled && matches },
