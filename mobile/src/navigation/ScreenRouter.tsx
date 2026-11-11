@@ -33,7 +33,6 @@ const SCREENS = {
   day: P9Screen,
   qrScanner: P11Screen,
   map: P10Screen,
-  ovitrapCapture: OvitrapScreen,
   openShift: OpenShiftScreen,
   closeShift: CloseShiftScreen,
   supplyReceipt: P8Screen,
@@ -67,6 +66,8 @@ function screenFor(route: Route): ReactNode {
         eventId={route.eventId}
       />
     );
+  if (route.name === "ovitrapCapture")
+    return <OvitrapScreen key={route.pointId ?? "none"} pointId={route.pointId} />;
   const Screen = SCREENS[route.name as keyof typeof SCREENS];
   return <Screen />;
 }

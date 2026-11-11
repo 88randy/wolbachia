@@ -17,6 +17,7 @@ import { createAuth } from "../auth/create-auth.ts";
 import { CredentialStore } from "../auth/credential-store.ts";
 import { nativeSecrets } from "../auth/native-secrets.ts";
 import { readEndedSession } from "../auth/session-journal.ts";
+import { createDayAssignments } from "../features/ovitrap-check/day-assignment.ts";
 import type { AuthController } from "../auth/auth-controller.ts";
 import type { SessionRequests } from "../auth/session-requests.ts";
 import appManifest from "../../package.json";
@@ -136,12 +137,18 @@ function captureIdentity(
 }
 
 function createCaptures(
-  deps: Parameters<typeof createOvitrapCheck>[0] & { tokens: CredentialStore },
+  deps: Parameters<typeof createOvitrapCheck>[0] & {
+    tokens: CredentialStore;
+    auth: AuthController;
+  },
   bundle: DayBundleService,
   day: DayService,
 ) {
   return {
-    ovitrapCheck: createOvitrapCheck(deps),
+    ovitrapCheck: createOvitrapCheck({
+      ...deps,
+      assignments: createDayAssignments({ bundle, auth: deps.auth }),
+    }),
     ovitrapLifecycle: createOvitrapLifecycle({
       ...deps,
       bundle,

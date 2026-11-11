@@ -51,7 +51,8 @@ export function MapView({
         onSelectPoint={(id) => onSelectPoint?.(id)}
       />
       <MapFooter
-        point={showDirections ? (points.find((point) => point.id === selectedId) ?? null) : null}
+        point={points.find((point) => point.id === selectedId) ?? null}
+        showDirections={showDirections}
       />
     </View>
   );

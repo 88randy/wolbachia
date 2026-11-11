@@ -1,6 +1,6 @@
 import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { View } from "react-native";
-import appManifest from "../../../package.json";
+import appConfig from "../../../app.json";
 
 import type { AuthSnapshot } from "../../auth/auth-controller.ts";
 import type { useLoginForm } from "../../auth/use-login-form.ts";
@@ -35,9 +35,11 @@ export function LoginContent({ snapshot, form }: LoginContentProps) {
       <Button variant="text" label={t("mobile.login.forgotPassword")} onPress={form.openForgot} />
       <LoginServerSetup form={form} />
       <View style={styles.spacer} />
-      <AppText variant="caption" style={styles.centered}>
-        {t("mobile.login.version", { version: appManifest.version })}
-      </AppText>
+      {appConfig.expo.version ? (
+        <AppText variant="caption" style={styles.centered}>
+          {t("mobile.login.version", { version: appConfig.expo.version })}
+        </AppText>
+      ) : null}
     </AppScrollView>
   );
 }

@@ -7,7 +7,7 @@ export function useDayLocation(
   isShiftOpen: boolean,
   recheck = 0,
 ): LocationState {
-  const [state, setState] = useState<LocationState>({ kind: "unavailable" });
+  const [state, setState] = useState<LocationState>({ kind: "searching" });
   useEffect(
     () => subscribeLocation({ source, isShiftOpen, publish: setState }),
     // `recheck` restarts the source so a new permission or setting is read at once.
@@ -42,7 +42,7 @@ function subscribeLocation({ source, isShiftOpen, publish }: LocationSubscriptio
         else stop = cancel;
       })
       .catch(() => {
-        if (current === generation) publish({ kind: "unavailable" });
+        if (current === generation) publish({ kind: "searching" });
       });
   };
   update();

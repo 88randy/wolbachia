@@ -37,6 +37,8 @@ export interface Assignment {
   readonly epiWeek: string;
   readonly organization?: Pick<Schemas["MeOrganization"], "timezone" | "epi_week">;
   readonly points: readonly Point[];
+  /** Points where a new trap goes today; when present, the placing picker lists only these. */
+  readonly placePointIds?: readonly string[];
   readonly ovitraps: readonly { id: string; point: Point; isRetired?: boolean }[];
   readonly bags: readonly { id: string; code: string }[];
   readonly reuse: readonly Reuse[];

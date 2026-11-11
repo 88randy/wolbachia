@@ -15,7 +15,8 @@ interface AppTextProps extends TextProps {
   readonly isMonospace?: boolean;
 }
 
-// Both bundled families expose tabular figures so counts and times line up.
+// Tabular figures only where numbers must line up: Inter's `tnum` also widens hyphens, which made
+// codes like M-DEMO-01 look letter-spaced.
 const styles = StyleSheet.create({ tabular: { fontVariant: ["tabular-nums"] } });
 
 /**
@@ -34,7 +35,12 @@ export function AppText({
   return (
     <Text
       {...rest}
-      style={[styles.tabular, textStyleFor(variant, isMonospace, textScale), { color }, style]}
+      style={[
+        isMonospace && styles.tabular,
+        textStyleFor(variant, isMonospace, textScale),
+        { color },
+        style,
+      ]}
     />
   );
 }

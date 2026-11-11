@@ -62,7 +62,8 @@ export function useM16(): M16Model {
 
 function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
   if (location.kind === "denied") return "denied";
-  if (location.kind === "unavailable") return "off";
+  if (location.kind === "off") return "off";
+  if (location.kind === "searching") return "searching";
   return safety.quality === "usable" ? "ok" : "unreliable";
 }
 

@@ -8,6 +8,7 @@ import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { kitShadow } from "../../ui/kit-styles.ts";
 import { hasCoordinates } from "./assignment-parser.ts";
 import type { DayTask } from "./domain.ts";
+import { displayPointCode } from "./point-code.ts";
 import { ACTION_KEYS, markerState } from "./presentation.ts";
 
 interface Props {
@@ -27,7 +28,9 @@ export function RouteCard({ row, isActing, navigationFailed, onDirections, onSta
     <View className="gap-3 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1 gap-1">
-          <AppText variant="h2">{t("field.day.point", { code: row.task.point_code })}</AppText>
+          <AppText variant="h2">
+            {t("field.day.point", { code: displayPointCode(row.task.point_code) })}
+          </AppText>
           <AppText variant="bodyStrong" tone="secondary">
             {t(ACTION_KEYS[row.task.action])}
           </AppText>
@@ -42,9 +45,7 @@ export function RouteCard({ row, isActing, navigationFailed, onDirections, onSta
       {row.task.risk === "high" ? (
         <Badge tone="critical" icon="alert" label={t("mobile.day.highRisk")} />
       ) : null}
-      {row.task.reference ? (
-        <AppText tone="secondary">{row.task.reference}</AppText>
-      ) : null}
+      {row.task.reference ? <AppText tone="secondary">{row.task.reference}</AppText> : null}
       {isDone ? null : (
         <View className="gap-3">
           <SecondaryButton
@@ -56,9 +57,7 @@ export function RouteCard({ row, isActing, navigationFailed, onDirections, onSta
           <SecondaryButton icon={ArrowRight} label={t("field.day.start")} onPress={onStart} />
         </View>
       )}
-      {navigationFailed ? (
-        <InfoNotice tone="warning" message={t("field.day.noMapsApp")} />
-      ) : null}
+      {navigationFailed ? <InfoNotice tone="warning" message={t("field.day.noMapsApp")} /> : null}
     </View>
   );
 }

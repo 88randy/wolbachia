@@ -8,6 +8,8 @@ import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
 import { Skeleton } from "../../ui/Skeleton.tsx";
 import { RouteCard } from "./RouteCard.tsx";
+import { displayPointCode } from "./point-code.ts";
+import { ACTION_KEYS } from "./presentation.ts";
 import { RouteProblems } from "./RouteProblems.tsx";
 import { RouteProgress } from "./RouteProgress.tsx";
 import { useM06 } from "./use-m-06.ts";
@@ -63,8 +65,8 @@ export function P9Screen() {
           {next === undefined ? null : (
             <BigActionCard
               icon={Route}
-              title={t("field.day.point", { code: next.task.point_code })}
-              body={t("field.day.nextBody")}
+              title={t("field.day.point", { code: displayPointCode(next.task.point_code) })}
+              body={t(ACTION_KEYS[next.task.action])}
               actionLabel={t("field.day.start")}
               onPress={() => {
                 start(next.task);

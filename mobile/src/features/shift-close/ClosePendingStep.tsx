@@ -9,6 +9,7 @@ import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { kitShadow } from "../../ui/kit-styles.ts";
 import { ChoiceRow } from "../field-ui/ChoiceRow.tsx";
 import { StepQuestion } from "../field-ui/StepQuestion.tsx";
+import { displayPointCode } from "../day/point-code.ts";
 import { CloseFrame } from "./CloseFrame.tsx";
 import type { StepProps } from "./close-steps.ts";
 
@@ -41,7 +42,9 @@ export function ClosePendingStep({ model, draft, step, onNext }: StepProps) {
           className="gap-3 rounded-card border border-line bg-surface p-4"
           style={kitShadow.card}
         >
-          <AppText variant="h2">{t("field.day.point", { code: point.pointCode })}</AppText>
+          <AppText variant="h2">
+            {t("field.day.point", { code: displayPointCode(point.pointCode) })}
+          </AppText>
           <SecondaryButton
             icon={Route}
             label={t("field.close.goNow")}

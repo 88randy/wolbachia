@@ -17,7 +17,7 @@ export const androidLocation: LocationSource = {
   async start(publish) {
     try {
       if (!(await Location.hasServicesEnabledAsync())) {
-        publish({ kind: "unavailable" });
+        publish({ kind: "off" });
         return () => undefined;
       }
       const permission = await Location.requestForegroundPermissionsAsync();
@@ -26,21 +26,21 @@ export const androidLocation: LocationSource = {
         return () => undefined;
       }
       const last = await Location.getLastKnownPositionAsync();
-      if (last !== null) publish(fromNative(last));
+      publish(last === null ? { kind: "searching" } : fromNative(last));
       const subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced },
         (fix) => {
           publish(fromNative(fix));
         },
         () => {
-          publish({ kind: "unavailable" });
+          publish({ kind: "searching" });
         },
       );
       return () => {
         subscription.remove();
       };
     } catch {
-      publish({ kind: "unavailable" });
+      publish({ kind: "searching" });
       return () => undefined;
     }
   },

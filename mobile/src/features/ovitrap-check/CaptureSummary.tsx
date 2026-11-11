@@ -1,3 +1,4 @@
+import { displayPointCode } from "../day/point-code.ts";
 import { View } from "react-native";
 import { useLocale, useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
@@ -26,7 +27,9 @@ export function CaptureSummary({ draft }: { readonly draft: Draft }) {
   const yesNo = (value: boolean | null) => t(value ? "courier.choice.yes" : "courier.choice.no");
   return (
     <View className="gap-2 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
-      <AppText variant="h2">{t("field.day.point", { code: draft.point?.code ?? "" })}</AppText>
+      <AppText variant="h2">
+        {t("field.day.point", { code: displayPointCode(draft.point?.code ?? "") })}
+      </AppText>
       <AppText tone="secondary">{captureTime(draft, locale)}</AppText>
       <AppText variant="bodyStrong">
         {t(draft.mode === "place" ? "field.capture.summaryPlace" : "field.capture.summaryCheck")}

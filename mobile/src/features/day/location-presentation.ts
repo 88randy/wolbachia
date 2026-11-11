@@ -13,7 +13,9 @@ export function locationMessage(input: {
 }): Message {
   const { state, now, maxAccuracyM } = input;
   if (state.kind === "denied") return { key: "mobile.day.locationDenied" };
-  if (state.kind === "unavailable") return { key: "mobile.day.locationUnavailable" };
+  if (state.kind === "off" || state.kind === "unavailable")
+    return { key: "mobile.day.locationUnavailable" };
+  if (state.kind === "searching") return { key: "mobile.day.locationSearching" };
   const seconds = Math.max(0, Math.floor((now.getTime() - state.fix.fixedAt) / 1000));
   if (state.kind === "stale") return { key: "mobile.day.locationStale", params: { seconds } };
   const accuracy = state.fix.accuracy_m;

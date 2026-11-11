@@ -32,6 +32,8 @@ function createAuthFieldStyles(theme: Theme) {
       backgroundColor: theme.color.surface,
     },
     passwordInput: { flex: 1, minWidth: 0, borderWidth: 0 },
+    passwordInputBox: { flex: 1, minWidth: 0 },
+    passwordToggle: { flexShrink: 0, paddingRight: spacing[1] },
     errorText: { color: theme.color.status.critical.fg },
     invalidField: { borderColor: theme.color.status.critical.fg },
   });

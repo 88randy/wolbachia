@@ -10,7 +10,7 @@ export function useStartTask(): (task: AssignedTask) => void {
   return (task) => {
     if (task.action === "release")
       push({ name: "releaseCapture", taskId: task.id, deviceId: null, manualCapture: false });
-    else if (task.action === "place") push({ name: "ovitrapCapture" });
+    else if (task.action === "place") push({ name: "ovitrapCapture", pointId: task.point_id });
     else push({ name: "qrScanner" });
   };
 }

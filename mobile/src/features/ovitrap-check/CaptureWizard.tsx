@@ -1,7 +1,8 @@
+import { displayPointCode } from "../day/point-code.ts";
 import { ArrowRight, Save } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
-import { CameraPermissionFix } from "../../system-settings/CameraPermissionFix.tsx";
+import { cameraFixAction } from "../../system-settings/camera-fix.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
@@ -30,7 +31,11 @@ export function CaptureWizard(props: CaptureProps) {
           title={t(
             draft.mode === "place" ? "field.capture.titlePlace" : "field.capture.titleCheck",
           )}
-          subtitle={draft.point ? t("field.day.point", { code: draft.point.code }) : undefined}
+          subtitle={
+            draft.point
+              ? t("field.day.point", { code: displayPointCode(draft.point.code) })
+              : undefined
+          }
           step={{ current: flow.number, total: flow.total }}
           onBack={flow.isFirst ? undefined : flow.back}
         />
@@ -58,8 +63,13 @@ export function CaptureWizard(props: CaptureProps) {
         )
       }
     >
-      {model.errorKey ? <InfoNotice tone="danger" message={t("field.capture.problem")} /> : null}
-      <CameraPermissionFix errorKey={model.errorKey} />
+      {model.errorKey ? (
+        <InfoNotice
+          tone="danger"
+          message={t("field.capture.problem")}
+          action={cameraFixAction(model.errorKey, t)}
+        />
+      ) : null}
       <CaptureNotices {...props} />
       <CapturePageBody page={flow.page} {...props} />
     </ScreenScaffold>

@@ -3,11 +3,13 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { GateNotice } from "./GateNotice.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Notice } from "../../ui/Notice.tsx";
-import { deliveryKey, isMapReady } from "./domain.ts";
+import { deliveryKey } from "./domain.ts";
+import { useLocalMap } from "./use-local-map.ts";
 import type { ShiftSnapshot } from "./service.ts";
 /** Phone storage, receipt and review never share a success label. */
 export function ShiftStatus({ state }: { readonly state: ShiftSnapshot }) {
   const t = useT();
+  const hasLocalMap = useLocalMap();
   const opening = state.opening;
   if (opening === null) return null;
   return (
@@ -25,7 +27,7 @@ export function ShiftStatus({ state }: { readonly state: ShiftSnapshot }) {
       ) : (
         <ServerOutcome opening={opening} />
       )}
-      {state.gate === null && !state.requiresOfflineMap && !isMapReady(state.map) ? (
+      {state.gate === null && !state.requiresOfflineMap && !hasLocalMap ? (
         <Notice tone="info" icon="map" message={t("field.open.mapOnline")} />
       ) : null}
     </>

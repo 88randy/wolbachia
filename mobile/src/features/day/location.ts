@@ -10,6 +10,11 @@ export interface LocationFix {
 export type LocationState =
   | { readonly kind: "granted" | "stale"; readonly fix: LocationFix }
   | { readonly kind: "denied" }
+  /** Phone location services are switched off. */
+  | { readonly kind: "off" }
+  /** Services and permission are fine; there is no fix yet (or it timed out). Calm, keeps trying. */
+  | { readonly kind: "searching" }
+  /** Not needed now (no open shift) or unknown. */
   | { readonly kind: "unavailable" };
 export interface LocationSource {
   start(publish: (state: LocationState) => void): Promise<() => void>;

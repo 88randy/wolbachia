@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
@@ -7,11 +7,14 @@ import { CaptureDone } from "./CaptureDone.tsx";
 import { CaptureStart } from "./CaptureStart.tsx";
 import { CaptureWizard } from "./CaptureWizard.tsx";
 import { NeedShift } from "./NeedShift.tsx";
+import { useAutoPlace } from "./use-auto-place.ts";
 import { useM08 } from "./use-m-08.ts";
 
 /** Ovitrap capture: start, then one page per question, then "Guardado". */
-export function OvitrapScreen() {
+export function OvitrapScreen({ pointId }: { readonly pointId?: string }) {
   const model = useM08();
+  const [isReady, setReady] = useState(false);
+  useAutoPlace(model, pointId, isReady);
   const t = useT();
   const { service, refresh } = model;
   useEffect(() => {
@@ -19,7 +22,10 @@ export function OvitrapScreen() {
     void service
       .refresh(null)
       .catch(() => undefined)
-      .then(() => refresh().catch(() => undefined));
+      .then(() => refresh().catch(() => undefined))
+      .then(() => {
+        setReady(true);
+      });
     // Once when the screen opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -640,6 +640,7 @@ export const mobile = {
   "mobile.day.mapLabel": "Mapa sin conexión de puntos asignados",
   "mobile.day.locationDenied": "Ubicación no autorizada. Puedes seguir con la lista.",
   "mobile.day.locationUnavailable": "Ubicación no disponible. Puedes seguir con la lista.",
+  "mobile.day.locationSearching": "Buscando tu ubicación…",
   "mobile.day.locationStale":
     "Ubicación desactualizada · hace {seconds} s. No se muestran distancias.",
   "mobile.day.locationFix": "Ubicación · hace {seconds} s · precisión ±{accuracy} m",
@@ -1255,6 +1256,7 @@ export const mobile = {
     "La hora del teléfono no coincide con la de la oficina; tus registros quedarán en revisión.",
   "mobile.global.causeGpsOff": "Tu ubicación está apagada.",
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
+  "mobile.global.causeGpsSearching": "Buscando tu ubicación…",
   "mobile.global.causeGpsUnreliable":
     "Aún no hay una ubicación confiable; la velocidad no se puede confirmar.",
   "mobile.global.causeBatteryLow": "Batería baja.",
@@ -1267,12 +1269,12 @@ export const mobile = {
   "mobile.global.nextInstallWhenClosing": "Instálala al cerrar jornada.",
   "mobile.global.nextKeepWorkingReview": "Puedes seguir; lo de hoy quedará en revisión, sin culpa.",
   "mobile.global.nextEnableLocation": "Actívala en los ajustes del teléfono.",
-  "mobile.global.fixEnableLocation": "Activar ubicación",
-  "mobile.global.fixAllowLocation": "Dar permiso",
-  "mobile.global.fixAllowCamera": "Dar permiso",
-  "mobile.global.fixOpenSettings": "Abrir ajustes",
-  "mobile.global.fixFreeSpace": "Liberar espacio",
-  "mobile.global.fixNetwork": "Abrir ajustes de red",
+  "mobile.global.fixEnableLocation": "Activar",
+  "mobile.global.fixAllowLocation": "Permitir",
+  "mobile.global.fixAllowCamera": "Permitir",
+  "mobile.global.fixOpenSettings": "Ajustes",
+  "mobile.global.fixFreeSpace": "Liberar",
+  "mobile.global.fixNetwork": "Ajustes",
   "mobile.global.nextWaitForFix": "Espera unos segundos, a cielo abierto si puedes.",
   "mobile.global.nextChargeOrSaveBattery": "Carga el teléfono o baja el brillo.",
   "mobile.global.nextKeepWorkingSaved":
@@ -1291,5 +1293,5 @@ export const mobile = {
   "mobile.map.unavailableHint": "Conéctate una vez para guardarlo en el teléfono.",
   "mobile.map.retry": "Intentar de nuevo",
   "mobile.map.attribution": "© colaboradores de OpenStreetMap",
-  "mobile.map.zone": "Zona {name}",
+  "mobile.map.zone": "{name}",
 } as const satisfies AreaCatalog<"mobile">;

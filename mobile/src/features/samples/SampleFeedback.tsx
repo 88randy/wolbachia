@@ -1,6 +1,6 @@
 import { RotateCw } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { CameraPermissionFix } from "../../system-settings/CameraPermissionFix.tsx";
+import { cameraFixAction } from "../../system-settings/camera-fix.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { SampleViewModel } from "./view-model.ts";
@@ -10,8 +10,11 @@ export function SampleFeedback({ model }: { readonly model: SampleViewModel }) {
   if (!model.errorKey) return null;
   return (
     <>
-      <InfoNotice tone="danger" message={t(model.errorKey)} />
-      <CameraPermissionFix errorKey={model.errorKey} />
+      <InfoNotice
+        tone="danger"
+        message={t(model.errorKey)}
+        action={cameraFixAction(model.errorKey, t)}
+      />
       <SecondaryButton
         icon={RotateCw}
         disabled={model.isBusy}

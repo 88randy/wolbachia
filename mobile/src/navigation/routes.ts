@@ -32,7 +32,7 @@ type CoreRoute =
       readonly manualCapture: boolean;
     }
   | { readonly name: "map" }
-  | { readonly name: "ovitrapCapture" }
+  | { readonly name: "ovitrapCapture"; readonly pointId?: string }
   | {
       readonly name: "ovitrapScanner";
       readonly target: "ovitrap" | "bag";
