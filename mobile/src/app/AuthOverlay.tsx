@@ -1,18 +1,15 @@
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import type { Theme } from "@wolbachia/tokens";
 
 import type { AuthSnapshot } from "../auth/auth-controller.ts";
 import { shouldRunIdleTimer } from "../auth/idle-policy.ts";
 import { IdleWarning } from "./IdleWarning.tsx";
 import { useT } from "../i18n/I18nProvider.tsx";
-import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
+import { useStyles } from "../theme/ThemeProvider.tsx";
 import { LoginScreen } from "../screens/auth/LoginScreen.tsx";
 import { UnlockScreen } from "../screens/auth/UnlockScreen.tsx";
 import { Notice } from "../ui/Notice.tsx";
-import { GlobalStateList } from "../features/safety/GlobalStateList.tsx";
-import { useSafety } from "../features/safety/SafetyProvider.tsx";
 import { LockedEmergencyCall } from "../features/incidents/LockedEmergencyCall.tsx";
 
 const createStyles = (theme: Theme) =>
@@ -34,18 +31,9 @@ interface AuthOverlayProps {
 }
 export function AuthOverlay({ snapshot, isWarning, keepWorking }: AuthOverlayProps) {
   const styles = useStyles(createStyles);
-  const { scheme } = useTheme();
   const t = useT();
-  const { globals } = useSafety();
   return (
     <SafeAreaView style={styles.overlay} accessibilityViewIsModal>
-      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      <GlobalStateList
-        isCalm
-        states={globals.filter(
-          (state) => state.cause !== "speedLock" && state.cause !== "clockSkew",
-        )}
-      />
       {snapshot.hasClockSkew && snapshot.phase !== "login" ? (
         <Notice tone="warning" icon="alert" message={t("mobile.login.clockSkew")} />
       ) : null}

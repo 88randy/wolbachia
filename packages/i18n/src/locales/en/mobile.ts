@@ -1224,7 +1224,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.causeGpsDenied": "The app has no location permission.",
   "mobile.global.causeGpsSearching": "Looking for your location…",
   "mobile.global.causeGpsUnreliable":
-    "There is no reliable location yet; speed cannot be confirmed.",
+    "Looking for your location…",
   "mobile.global.causeBatteryLow": "Low battery.",
   "mobile.global.causeNoSignal":
     "No signal: nothing is lost, everything uploads when there is network.",
@@ -1243,7 +1243,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.fixOpenSettings": "Settings",
   "mobile.global.fixFreeSpace": "Free up",
   "mobile.global.fixNetwork": "Settings",
-  "mobile.global.nextWaitForFix": "Wait a few seconds, in the open if you can.",
+  "mobile.global.nextWaitForFix": "If it takes long, go somewhere open.",
   "mobile.global.nextChargeOrSaveBattery": "Charge the phone or lower the brightness.",
   "mobile.global.nextKeepWorkingSaved": "Keep working; what is saved on the phone is not lost.",
   "mobile.global.more": "{count} more notices",

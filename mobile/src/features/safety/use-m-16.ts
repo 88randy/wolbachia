@@ -27,6 +27,14 @@ export interface M16Model {
   readonly recheckLocation: () => void;
 }
 
+function useRecheck(): readonly [number, () => void] {
+  const [count, setCount] = useState(0);
+  const recheck = useCallback(() => {
+    setCount((value) => value + 1);
+  }, []);
+  return [count, recheck];
+}
+
 /** One local fix stream feeds the lock; it is independent from the upload ping cadence. */
 export function useM16(): M16Model {
   const { auth, day } = useServices();
@@ -34,10 +42,11 @@ export function useM16(): M16Model {
   const session = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   const rules = useSafetyRules(sync.lastSyncAt);
   const isShiftOpen = useShiftOpen(sync.lastSyncAt);
-  const [recheck, setRecheck] = useState(0);
+  const [recheck, recheckLocation] = useRecheck();
   const location = useDayLocation(day.location, isShiftOpen, recheck);
   const safety = useSafetyState(location, rules);
   const storage = useStorageLevel();
+  const gps = useCalmGps(gpsLevel(location, safety));
   const globals = useMemo(
     () =>
       deriveGlobalStates({
@@ -47,17 +56,33 @@ export function useM16(): M16Model {
         // [ASSUMPTION] Battery and update sources arrive with the native adapters of M-17.
         update: "none",
         hasClockSkew: session.hasClockSkew,
-        gps: gpsLevel(location, safety),
+        gps,
         isBatteryLow: false,
         isOnline: sync.isOnline,
         isShiftOpen,
       }),
-    [safety, session.phase, session.hasClockSkew, storage, location, sync.isOnline, isShiftOpen],
+    [safety, session.phase, session.hasClockSkew, storage, gps, sync.isOnline, isShiftOpen],
   );
-  const recheckLocation = useCallback(() => {
-    setRecheck((value) => value + 1);
-  }, []);
   return { safety, rules, globals, isSpeedLocked: safety.lockCause !== null, recheckLocation };
+}
+
+/** "Looking for your location" only shows after a few seconds without a fix, never at startup. */
+const SEARCH_GRACE_MS = 5000;
+function useCalmGps(level: GpsLevel): GpsLevel {
+  const [shown, setShown] = useState<GpsLevel>("ok");
+  useEffect(() => {
+    if (level !== "searching" && level !== "unreliable") {
+      setShown(level);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setShown(level);
+    }, SEARCH_GRACE_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [level]);
+  return shown;
 }
 
 function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
