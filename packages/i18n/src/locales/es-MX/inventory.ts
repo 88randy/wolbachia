@@ -207,4 +207,13 @@ export const inventory = {
   "inventory.labels.truncated": "Se muestran los primeros {count}. Busca por código para acotar.",
   "inventory.labels.card": "Etiquetas QR",
   "inventory.labels.cardHint": "Imprime etiquetas de lotes, bolsas, papeletas, ovitrampas y motos.",
+  "inventory.option.pickCenterFirst": "Primero elige el centro",
+  "inventory.option.pickQuadrantFirst": "Primero elige el cuadrante",
+  "inventory.option.noLocations": "No hay almacenes en este centro.",
+  "inventory.option.createLocation": "Crear almacén",
+  "inventory.option.noSupplies": "No hay insumos registrados.",
+  "inventory.option.createSupply": "Registrar insumo",
+  "inventory.option.noCenters": "No hay centros disponibles.",
+  "inventory.option.noOwners": "No hay personas que puedan responsabilizarse de este lugar.",
+  "inventory.option.noWarehouses": "No hay almacenes.",
 } as const satisfies AreaCatalog<"inventory">;

@@ -204,4 +204,13 @@ export const inventory = {
   "inventory.labels.truncated": "Showing the first {count}. Search by code to narrow down.",
   "inventory.labels.card": "QR labels",
   "inventory.labels.cardHint": "Print labels for lots, bags, egg paddles, ovitraps and motorcycles.",
+  "inventory.option.pickCenterFirst": "Choose the center first",
+  "inventory.option.pickQuadrantFirst": "Choose the quadrant first",
+  "inventory.option.noLocations": "There are no warehouses in this center.",
+  "inventory.option.createLocation": "Create warehouse",
+  "inventory.option.noSupplies": "There are no supplies yet.",
+  "inventory.option.createSupply": "Add supply",
+  "inventory.option.noCenters": "There are no centers available.",
+  "inventory.option.noOwners": "No one can take charge of this place.",
+  "inventory.option.noWarehouses": "There are no warehouses.",
 } satisfies Record<keyof typeof Spanish, string>;

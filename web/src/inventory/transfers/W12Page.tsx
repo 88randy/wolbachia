@@ -6,7 +6,6 @@ import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryCode, useInventoryContext } from "../use-inventory-context";
 import { TransferList } from "./TransferList";
 import { W13Page } from "./W13Page";
-import { PageFrame } from "../../components/templates/PageFrame";
 export function W12Page() {
   const { t } = useTranslation();
   const scope = useInventoryContext();
@@ -16,13 +15,9 @@ export function W12Page() {
   const hasScope = hasCenterScope(me.scope);
   if (!hasScope) return <InlineNotice tone="warning">{t("transfers.page.denied")}</InlineNotice>;
   const owner = JSON.stringify([scope.base, code]);
-  return (
-    <PageFrame>
-      {code ? (
-        <W13Page key={owner} code={code} scope={scope} />
-      ) : (
-        <TransferList key={scope.context} scope={scope} />
-      )}
-    </PageFrame>
+  return code ? (
+    <W13Page key={owner} code={code} scope={scope} />
+  ) : (
+    <TransferList key={scope.context} scope={scope} />
   );
 }
