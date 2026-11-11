@@ -110,3 +110,21 @@ export const QUADRANT_LOOKUP: LookupSource = {
       .slice(0, PAGE);
   },
 };
+
+/** External PCR laboratories by name. The endpoint has no search, so the page is filtered here. */
+export const EXTERNAL_LAB_LOOKUP: LookupSource = {
+  id: "external-labs",
+  permission: "pcr.read",
+  fetch: async (client, search, signal) => {
+    const page = unwrap(
+      await client.GET("/api/v1/external-labs/", {
+        params: { query: { page_size: LOCAL_PAGE } },
+        signal,
+      }),
+    );
+    return page.results
+      .map((lab) => ({ value: lab.id, label: lab.name }))
+      .filter((option) => matches(option.label, search))
+      .slice(0, PAGE);
+  },
+};

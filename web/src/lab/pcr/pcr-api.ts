@@ -1,6 +1,7 @@
 import { ApiError, unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
+import { EXTERNAL_LAB_LOOKUP } from "../../lookups/lookup-sources";
 import { toFilterParams } from "../../data-table/table-state";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
 import { orgScopedQueryOptions } from "../../session/org-scoped-query";
@@ -47,6 +48,14 @@ export const PCR_TABLE: TableQueryConfig = {
         value: status,
         labelKey: `pcr.status.${status}` as MessageKey,
       })),
+    },
+    {
+      kind: "text",
+      key: "external_lab",
+      labelKey: "pcr.filter.lab",
+      maxLength: 36,
+      input: "lookup",
+      lookup: EXTERNAL_LAB_LOOKUP,
     },
     {
       kind: "text",
@@ -132,7 +141,11 @@ export function labsOptions(scope: LabScope, page = 1, activeOnly = false) {
       unwrap(
         await scope.client.GET("/api/v1/external-labs/", {
           params: {
-            query: { page, page_size: activeOnly ? 100 : PAGE_SIZE, ...(activeOnly ? { active: true } : {}) },
+            query: {
+              page,
+              page_size: activeOnly ? 100 : PAGE_SIZE,
+              ...(activeOnly ? { active: true } : {}),
+            },
           },
           signal,
         }),

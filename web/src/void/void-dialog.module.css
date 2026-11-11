@@ -104,3 +104,7 @@
   color: inherit;
   font: inherit;
 }
+
+.dialogWide {
+  width: min(40rem, calc(100vw - var(--space-3)));
+}

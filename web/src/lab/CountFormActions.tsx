@@ -10,8 +10,7 @@ function PrimaryAction({ form }: { form: ReturnType<typeof useCountForm> }) {
   if (kind === "confirm" || kind === "uncertain")
     return (
       <Button
-        size="xl"
-        className="flex-1 text-base"
+        size="lg"
         onClick={() => {
           void form.submit(kind === "confirm");
         }}
@@ -21,13 +20,7 @@ function PrimaryAction({ form }: { form: ReturnType<typeof useCountForm> }) {
       </Button>
     );
   return (
-    <Button
-      type="submit"
-      size="xl"
-      className="flex-1 text-base"
-      loading={form.write.isBusy}
-      aria-disabled={kind === "conflict"}
-    >
+    <Button type="submit" size="lg" loading={form.write.isBusy} aria-disabled={kind === "conflict"}>
       {t("lab.count.save")} <kbd aria-hidden="true">{t("lab.count.enterKey")}</kbd>
     </Button>
   );
@@ -37,11 +30,10 @@ function PrimaryAction({ form }: { form: ReturnType<typeof useCountForm> }) {
 export function CountFormActions({ form }: { form: ReturnType<typeof useCountForm> }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-wrap gap-3">
-      <PrimaryAction form={form} />
+    <div className="flex flex-wrap items-center justify-end gap-3">
       <Tooltip content={t("lab.count.damagedBlocked")}>
         <Button
-          size="xl"
+          size="lg"
           variant="secondary"
           aria-disabled="true"
           leadingIcon={<TriangleAlert aria-hidden="true" />}
@@ -49,6 +41,7 @@ export function CountFormActions({ form }: { form: ReturnType<typeof useCountFor
           {t("lab.count.damaged")}
         </Button>
       </Tooltip>
+      <PrimaryAction form={form} />
     </div>
   );
 }

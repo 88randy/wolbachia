@@ -1,6 +1,9 @@
 import type { AreaCatalog } from "../area";
 export const trainings = {
   "trainings.workspace.title": "Capacitaciones",
+  "trainings.tab.courses": "Cursos",
+  "trainings.tab.requirements": "Requisitos",
+  "trainings.tab.people": "Personas",
   "trainings.workspace.evaluations": "Cédulas de evaluación",
   "trainings.workspace.denied":
     "No tienes acceso a capacitaciones en este alcance. Solicita el permiso y el alcance a Administración.",

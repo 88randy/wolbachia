@@ -18,7 +18,7 @@
   gap: var(--space-2);
 }
 .countInput {
-  width: 100%;
+  width: min(100%, 16rem);
   box-sizing: border-box;
   min-height: 84px;
   padding: var(--space-2);
@@ -32,6 +32,25 @@
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+.field label {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-font-size);
+  font-weight: 600;
+}
+.field p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
+}
+.field select {
+  max-width: 24rem;
+}
+.countInputCompact {
+  width: min(100%, 12rem);
+  min-height: 56px;
+  font-size: 28px;
+  text-align: left;
 }
 .field select,
 .field textarea {

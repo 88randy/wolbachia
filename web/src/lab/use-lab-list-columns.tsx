@@ -1,4 +1,4 @@
-import { useShowCenter } from "../lookups/use-center-scope";
+import { useCenterColumns } from "../data-table/center-column";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
@@ -123,32 +123,16 @@ function useSampleTailColumns(): DataTableColumn<SampleRow>[] {
   ];
 }
 
-function useSampleWhereColumns(): DataTableColumn<SampleRow>[] {
-  const showCenter = useShowCenter();
-  return [
-    ...(showCenter
-      ? [
-          {
-            id: "center",
-            headerKey: "lab.col.center" as const,
-            cell: (row: SampleRow) => <LabName kind="center" id={row.center_id} />,
-          },
-        ]
-      : []),
+export function useSampleColumns(): DataTableColumn<SampleRow>[] {
+  const { t } = useTranslation();
+  const format = useFormatDateTime();
+  const base: DataTableColumn<SampleRow>[] = [
+    { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
     {
       id: "quadrant",
       headerKey: "lab.col.quadrant",
       cell: (row) => <LabName kind="quadrant" id={row.quadrant_id} />,
     },
-  ];
-}
-
-export function useSampleColumns(): DataTableColumn<SampleRow>[] {
-  const { t } = useTranslation();
-  const format = useFormatDateTime();
-  return [
-    { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
-    ...useSampleWhereColumns(),
     {
       id: "received",
       headerKey: "lab.col.received",
@@ -166,6 +150,7 @@ export function useSampleColumns(): DataTableColumn<SampleRow>[] {
     },
     ...useSampleTailColumns(),
   ];
+  return useCenterColumns(base, (row) => row.center_id, { after: "code" });
 }
 
 export function MaterialNotice({ row }: { row: MaterialRow }) {

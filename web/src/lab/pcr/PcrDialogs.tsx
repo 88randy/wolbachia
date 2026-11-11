@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { todayIn, zonedLocalToIso } from "../../format/time-zone";
 import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { TextField } from "../../forms/TextField";
+import { DateField } from "../../ui/DateField";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
 import { DialogFooter } from "../../ui/DialogFooter";
@@ -74,15 +75,12 @@ export function ShipDialog({ batch, open, onOpenChange }: ControlledProps) {
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
+          <DateField
             id="pcr-ship-date"
-            type="date"
             label={t("pcr.ship.date")}
             value={date}
             max={todayIn(timeZone)}
-            onChange={(event) => {
-              setDate(event.currentTarget.value);
-            }}
+            onChange={setDate}
           />
           <TextField
             id="pcr-ship-tracking"
@@ -160,15 +158,12 @@ export function ReceiveDialog({ batch, open, onOpenChange }: ControlledProps) {
         }}
       >
         <div className="max-w-60">
-          <TextField
+          <DateField
             id="pcr-receive-date"
-            type="date"
             label={t("pcr.receive.date")}
             value={date}
             max={todayIn(timeZone)}
-            onChange={(event) => {
-              setDate(event.currentTarget.value);
-            }}
+            onChange={setDate}
           />
         </div>
         {command.error && <InlineNotice tone="critical">{command.error}</InlineNotice>}
