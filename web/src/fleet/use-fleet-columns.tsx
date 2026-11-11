@@ -40,7 +40,7 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
   const identity = useIdentityColumns();
   const centerName = useCenterName();
   const showCenter = useShowCenter();
-  const columns = [
+  const columns: DataTableColumn<Motorcycle>[] = [
     ...identity,
     {
       id: "status",

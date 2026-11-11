@@ -10,7 +10,7 @@ import type { ReleaseDevice } from "./devices-query";
 /** Columns of W47: device, quadrant, source lot, status, its conditions and the date it was added. */
 export function useDeviceColumns(): readonly DataTableColumn<ReleaseDevice>[] {
   const format = useFormatDateTime();
-  const columns = useMemo(
+  const columns = useMemo<DataTableColumn<ReleaseDevice>[]>(
     () => [
       { id: "code", headerKey: "releases.devices.column.code", cell: (row) => row.code },
       {

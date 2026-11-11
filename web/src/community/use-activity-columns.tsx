@@ -12,7 +12,7 @@ import type { CommunityActivity } from "./community-query";
 export function useActivityColumns(): readonly DataTableColumn<CommunityActivity>[] {
   const { i18n } = useTranslation();
   const { language } = useLanguage();
-  const columns = useMemo(
+  const columns = useMemo<DataTableColumn<CommunityActivity>[]>(
     () => [
       { id: "activity_date", headerKey: "community.column.date", cell: (r) => r.activity_date },
       { id: "code", headerKey: "community.column.code", cell: (r) => r.code },

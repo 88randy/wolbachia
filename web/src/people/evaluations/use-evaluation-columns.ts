@@ -33,7 +33,7 @@ export function useEvaluationColumns(): DataTableColumn<Evaluation>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const labels = useTrainingLabels();
-  const columns = [
+  const columns: DataTableColumn<Evaluation>[] = [
     identityColumn(t),
     {
       id: "subject",
