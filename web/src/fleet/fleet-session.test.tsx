@@ -19,7 +19,6 @@ import {
   chooseMenuAction,
   pickDay,
   pickOption,
-  menuItem,
 } from "./fleet-test-helpers";
 import { observeFleetBody } from "../test/fleet-read-test-helpers";
 import { currentRevision } from "../session/session-revision";
