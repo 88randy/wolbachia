@@ -64,6 +64,11 @@ ERROR_COMPONENTS: dict[str, dict[str, Any]] = {
                 "format": "uuid",
                 "description": "Authorized geography point requiring a resolution, when applicable.",
             },
+            "params": {
+                "type": "object",
+                "additionalProperties": {"type": "integer"},
+                "description": "Values for the client message of `reason`, e.g. `{count}`.",
+            },
             "unblocked_by_role": {"type": "string"},
             "link": {"type": "string"},
         },

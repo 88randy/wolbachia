@@ -124,6 +124,16 @@ class Center(OrgScopedModel):
     code = models.CharField(max_length=50)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    deactivated_reason = models.CharField(max_length=500, blank=True)
 
     class Meta:
         ordering = ["code", "id"]

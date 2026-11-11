@@ -1850,14 +1850,10 @@ paths:
     get:
       operationId: centers_list
       description: |-
-        Resolves the active organization of the request and scopes every query to it.
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
 
-        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
-        `resolve_active_membership`. The organization comes from the user's membership, never from
-        the body: `organization_id` in a payload is ignored.
-
-        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
-        `APIView`s do not have.
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
       parameters:
       - in: header
         name: X-Organization
@@ -1873,6 +1869,11 @@ paths:
         schema:
           type: string
           maxLength: 50
+      - in: query
+        name: include_inactive
+        schema:
+          type: boolean
+          default: false
       - name: ordering
         required: false
         in: query
@@ -1907,7 +1908,45 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedCenterList'
+                $ref: '#/components/schemas/PaginatedCenterAdminList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: centers_create
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - centers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CenterCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterAdmin'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1919,14 +1958,10 @@ paths:
     get:
       operationId: centers_retrieve
       description: |-
-        Resolves the active organization of the request and scopes every query to it.
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
 
-        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
-        `resolve_active_membership`. The organization comes from the user's membership, never from
-        the body: `organization_id` in a payload is ignored.
-
-        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
-        `APIView`s do not have.
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
       parameters:
       - in: header
         name: X-Organization
@@ -1951,7 +1986,269 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Center'
+                $ref: '#/components/schemas/CenterAdmin'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: centers_partial_update
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCenterUpdateRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterAdmin'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/centers/{id}/deactivate/:
+    post:
+      operationId: centers_deactivate_create
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CenterDeactivateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterAdmin'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/centers/{id}/move-motorcycles/:
+    post:
+      operationId: centers_move_motorcycles_create
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CenterMoveMotorcyclesRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterMoveResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/centers/{id}/move-stock/:
+    post:
+      operationId: centers_move_stock_create
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CenterMoveStockRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterMoveResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/centers/{id}/reactivate/:
+    post:
+      operationId: centers_reactivate_create
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterAdmin'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/centers/{id}/readiness/:
+    get:
+      operationId: centers_readiness_retrieve
+      description: |-
+        Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+
+        Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+        over all centers, because a center outside a limited scope would be invisible to its creator.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this center.
+        required: true
+      tags:
+      - centers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CenterReadiness'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -20375,15 +20672,10 @@ components:
         * `low` - low
         * `medium` - medium
         * `high` - high
-    Center:
+    CenterAdmin:
       type: object
-      description: |-
-        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
-
-        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
-        never link a record to another organization's data. Relations to models that are not
-        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
-        build with `ImproperlyConfigured`.
+      description: A center as the organization admin manages it; counts come from
+        the queryset annotation.
       properties:
         id:
           type: string
@@ -20395,10 +20687,76 @@ components:
         name:
           type: string
           readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deactivated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        deactivated_reason:
+          type: string
+          readOnly: true
+        deactivated_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        quadrant_count:
+          type: integer
+          readOnly: true
+          default: 0
+        warehouse_count:
+          type: integer
+          readOnly: true
+          default: 0
+        motorcycle_count:
+          type: integer
+          readOnly: true
+          default: 0
       required:
       - code
+      - created_at
+      - deactivated_at
+      - deactivated_reason
       - id
+      - is_active
+      - motorcycle_count
       - name
+      - quadrant_count
+      - updated_at
+      - warehouse_count
+    CenterCreateRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - code
+      - name
+    CenterDeactivateRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 500
+      required:
+      - reason
     CenterInputRequest:
       type: object
       properties:
@@ -20413,6 +20771,97 @@ components:
       required:
       - code
       - name
+    CenterMoveMotorcyclesRequest:
+      type: object
+      properties:
+        destination_center:
+          type: string
+          format: uuid
+      required:
+      - destination_center
+    CenterMoveResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CenterMoveResult'
+      required:
+      - results
+    CenterMoveResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        location_id:
+          type: string
+          format: uuid
+        location_code:
+          type: string
+        transfer_code:
+          type: string
+        line_count:
+          type: integer
+        status:
+          $ref: '#/components/schemas/CenterMoveResultStatusEnum'
+        reason:
+          type: string
+      required:
+      - status
+    CenterMoveResultStatusEnum:
+      enum:
+      - moved
+      - prepared
+      - already_prepared
+      - failed
+      type: string
+      description: |-
+        * `moved` - moved
+        * `prepared` - prepared
+        * `already_prepared` - already_prepared
+        * `failed` - failed
+    CenterMoveStockRequest:
+      type: object
+      properties:
+        destination_location:
+          type: string
+          format: uuid
+      required:
+      - destination_location
+    CenterReadiness:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CenterReadinessRow'
+        prepared_transfer_count:
+          type: integer
+      required:
+      - prepared_transfer_count
+      - rows
+    CenterReadinessRow:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/KeyEnum'
+        count:
+          type: integer
+        is_blocking:
+          type: boolean
+        permission:
+          type: string
+        resolved_by_role:
+          type: string
+      required:
+      - count
+      - is_blocking
+      - key
+      - permission
+      - resolved_by_role
     CertificationRevocationRead:
       type: object
       description: |-
@@ -24771,6 +25220,20 @@ components:
           $ref: '#/components/schemas/SupplyJustification'
       required:
       - justification
+    KeyEnum:
+      enum:
+      - open_shifts
+      - stock
+      - motorcycles
+      - active_quadrants
+      - people_only_here
+      type: string
+      description: |-
+        * `open_shifts` - open_shifts
+        * `stock` - stock
+        * `motorcycles` - motorcycles
+        * `active_quadrants` - active_quadrants
+        * `people_only_here` - people_only_here
     LabBagSummary:
       type: object
       properties:
@@ -29005,7 +29468,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Catalog'
-    PaginatedCenterList:
+    PaginatedCenterAdminList:
       type: object
       required:
       - count
@@ -29027,7 +29490,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/Center'
+            $ref: '#/components/schemas/CenterAdmin'
     PaginatedCertificationRevocationReadList:
       type: object
       required:
@@ -30950,6 +31413,13 @@ components:
           minimum: 0
         requires_photo:
           type: boolean
+    PatchedCenterUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
     PatchedExternalLabUpdateRequest:
       type: object
       properties:
@@ -32552,6 +33022,9 @@ components:
       - organization.suspend
       - organization.reactivate
       - center.create
+      - center.update
+      - center.deactivate
+      - center.reactivate
       - admin.create
       - platform_admin.grant
       - platform_admin.revoke
@@ -32563,6 +33036,9 @@ components:
         * `organization.suspend` - Organization Suspend
         * `organization.reactivate` - Organization Reactivate
         * `center.create` - Center Create
+        * `center.update` - Center Update
+        * `center.deactivate` - Center Deactivate
+        * `center.reactivate` - Center Reactivate
         * `admin.create` - Admin Create
         * `platform_admin.grant` - Platform Admin Grant
         * `platform_admin.revoke` - Platform Admin Revoke
@@ -40647,6 +41123,11 @@ components:
           type: string
           format: uuid
           description: Authorized geography point requiring a resolution, when applicable.
+        params:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Values for the client message of `reason`, e.g. `{count}`.
         unblocked_by_role:
           type: string
         link:

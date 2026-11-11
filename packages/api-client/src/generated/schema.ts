@@ -691,18 +691,20 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Resolves the active organization of the request and scopes every query to it.
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
          *
-         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
-         *     `resolve_active_membership`. The organization comes from the user's membership, never from
-         *     the body: `organization_id` in a payload is ignored.
-         *
-         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
-         *     `APIView`s do not have.
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
          */
         get: operations["centers_list"];
         put?: never;
-        post?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        post: operations["centers_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -717,16 +719,128 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Resolves the active organization of the request and scopes every query to it.
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
          *
-         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
-         *     `resolve_active_membership`. The organization comes from the user's membership, never from
-         *     the body: `organization_id` in a payload is ignored.
-         *
-         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
-         *     `APIView`s do not have.
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
          */
         get: operations["centers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        patch: operations["centers_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/centers/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        post: operations["centers_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/centers/{id}/move-motorcycles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        post: operations["centers_move_motorcycles_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/centers/{id}/move-stock/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        post: operations["centers_move_stock_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/centers/{id}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        post: operations["centers_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/centers/{id}/readiness/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Centers of the organization. Nothing is deleted: a center is deactivated with a reason.
+         *
+         *     Every action is scoped to the centers the caller's grant covers; creating needs `center.create`
+         *     over all centers, because a center outside a limited scope would be invisible to its creator.
+         */
+        get: operations["centers_readiness_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7907,23 +8021,80 @@ export interface components {
          * @enum {string}
          */
         CategoryEnum: "low" | "medium" | "high";
-        /**
-         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
-         *
-         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
-         *     never link a record to another organization's data. Relations to models that are not
-         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
-         *     build with `ImproperlyConfigured`.
-         */
-        Center: {
+        /** @description A center as the organization admin manages it; counts come from the queryset annotation. */
+        CenterAdmin: {
             /** Format: uuid */
             readonly id: string;
             readonly code: string;
             readonly name: string;
+            readonly is_active: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: date-time */
+            readonly deactivated_at: string | null;
+            readonly deactivated_reason: string;
+            readonly deactivated_by_name?: string | null;
+            /** @default 0 */
+            readonly quadrant_count: number;
+            /** @default 0 */
+            readonly warehouse_count: number;
+            /** @default 0 */
+            readonly motorcycle_count: number;
+        };
+        CenterCreateRequest: {
+            code: string;
+            name: string;
+        };
+        CenterDeactivateRequest: {
+            reason: string;
         };
         CenterInputRequest: {
             code: string;
             name: string;
+        };
+        CenterMoveMotorcyclesRequest: {
+            /** Format: uuid */
+            destination_center: string;
+        };
+        CenterMoveResponse: {
+            results: components["schemas"]["CenterMoveResult"][];
+        };
+        CenterMoveResult: {
+            /** Format: uuid */
+            id?: string;
+            code?: string;
+            /** Format: uuid */
+            location_id?: string;
+            location_code?: string;
+            transfer_code?: string;
+            line_count?: number;
+            status: components["schemas"]["CenterMoveResultStatusEnum"];
+            reason?: string;
+        };
+        /**
+         * @description * `moved` - moved
+         *     * `prepared` - prepared
+         *     * `already_prepared` - already_prepared
+         *     * `failed` - failed
+         * @enum {string}
+         */
+        CenterMoveResultStatusEnum: "moved" | "prepared" | "already_prepared" | "failed";
+        CenterMoveStockRequest: {
+            /** Format: uuid */
+            destination_location: string;
+        };
+        CenterReadiness: {
+            rows: components["schemas"]["CenterReadinessRow"][];
+            prepared_transfer_count: number;
+        };
+        CenterReadinessRow: {
+            key: components["schemas"]["KeyEnum"];
+            count: number;
+            is_blocking: boolean;
+            permission: string;
+            resolved_by_role: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -9737,6 +9908,15 @@ export interface components {
         JustificationOutcome: {
             justification: components["schemas"]["SupplyJustification"];
         };
+        /**
+         * @description * `open_shifts` - open_shifts
+         *     * `stock` - stock
+         *     * `motorcycles` - motorcycles
+         *     * `active_quadrants` - active_quadrants
+         *     * `people_only_here` - people_only_here
+         * @enum {string}
+         */
+        KeyEnum: "open_shifts" | "stock" | "motorcycles" | "active_quadrants" | "people_only_here";
         LabBagSummary: {
             material?: components["schemas"]["LabMaterial"];
             status: components["schemas"]["LabBagSummaryStatusEnum"];
@@ -11522,7 +11702,7 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Catalog"][];
         };
-        PaginatedCenterList: {
+        PaginatedCenterAdminList: {
             /** @example 123 */
             count: number;
             /**
@@ -11535,7 +11715,7 @@ export interface components {
              * @example http://api.example.org/accounts/?page=2
              */
             previous?: string | null;
-            results: components["schemas"]["Center"][];
+            results: components["schemas"]["CenterAdmin"][];
         };
         PaginatedCertificationRevocationReadList: {
             /** @example 123 */
@@ -12766,6 +12946,9 @@ export interface components {
             sort?: number;
             requires_photo?: boolean;
         };
+        PatchedCenterUpdateRequest: {
+            name?: string;
+        };
         PatchedExternalLabUpdateRequest: {
             name?: string;
             contact?: string;
@@ -13399,12 +13582,15 @@ export interface components {
          *     * `organization.suspend` - Organization Suspend
          *     * `organization.reactivate` - Organization Reactivate
          *     * `center.create` - Center Create
+         *     * `center.update` - Center Update
+         *     * `center.deactivate` - Center Deactivate
+         *     * `center.reactivate` - Center Reactivate
          *     * `admin.create` - Admin Create
          *     * `platform_admin.grant` - Platform Admin Grant
          *     * `platform_admin.revoke` - Platform Admin Revoke
          * @enum {string}
          */
-        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "admin.create" | "platform_admin.grant" | "platform_admin.revoke";
+        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "center.update" | "center.deactivate" | "center.reactivate" | "admin.create" | "platform_admin.grant" | "platform_admin.revoke";
         PlatformOrganization: {
             readonly slug: string;
             readonly name: string;
@@ -16792,6 +16978,10 @@ export interface components {
              * @description Authorized geography point requiring a resolution, when applicable.
              */
             point?: string;
+            /** @description Values for the client message of `reason`, e.g. `{count}`. */
+            params?: {
+                [key: string]: number;
+            };
             unblocked_by_role: string;
             link: string;
         };
@@ -18262,6 +18452,7 @@ export interface operations {
             query?: {
                 /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
                 code?: string;
+                include_inactive?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -18285,7 +18476,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedCenterList"];
+                    "application/json": components["schemas"]["PaginatedCenterAdminList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterAdmin"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -18319,7 +18545,227 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Center"];
+                    "application/json": components["schemas"]["CenterAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCenterUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterDeactivateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_move_motorcycles_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterMoveMotorcyclesRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterMoveResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_move_stock_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterMoveStockRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterMoveResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    centers_readiness_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this center. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CenterReadiness"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
