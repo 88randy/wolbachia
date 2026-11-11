@@ -58,6 +58,9 @@ export function CaptureWizard(props: CaptureProps) {
             icon={ArrowRight}
             label={t("field.action.next")}
             disabled={model.isBusy || !flow.isDone}
+            disabledReason={t(
+              draft.step === "point" ? "field.hint.pickPoint" : "field.hint.answerStep",
+            )}
             onPress={flow.next}
           />
         )

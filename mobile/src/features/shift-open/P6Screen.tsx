@@ -31,6 +31,7 @@ export function P6Screen({ model }: { readonly model: M04Model }) {
           icon={ArrowRight}
           label={t("field.action.next")}
           disabled={model.isBusy || !isReady}
+          disabledReason={t("field.hint.odometer")}
           onPress={() => {
             void model.run(() => model.service.update({ step: "maps" }));
           }}

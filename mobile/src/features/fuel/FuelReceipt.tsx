@@ -1,7 +1,6 @@
 import { Camera } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { FuelReceiptPreview } from "./FuelReceiptPreview.tsx";
@@ -23,7 +22,7 @@ export function FuelReceipt({ model }: { readonly model: M11Model }) {
     void model.run(() => model.service.photo(draft.eventId));
   };
   const isDisabled = model.isBusy || !model.state?.ready;
-  const Button = draft.receipt ? SecondaryButton : PrimaryButton;
+  const Button = SecondaryButton;
   return (
     <>
       <SectionTitle title={t("mobile.fuel.receipt")} />

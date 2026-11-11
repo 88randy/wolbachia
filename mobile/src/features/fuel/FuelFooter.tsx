@@ -1,6 +1,5 @@
 import { Check, Plus } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import type { M11Model } from "./use-m-11.ts";
 
@@ -23,9 +22,6 @@ export function FuelFooter({ model }: { readonly model: M11Model }) {
   }
   return (
     <>
-      <AppText variant="caption" tone="secondary">
-        {t("mobile.fuel.saveHint")}
-      </AppText>
       <PrimaryButton
         icon={Check}
         label={t("courier.flow.fuel.done")}

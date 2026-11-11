@@ -1,7 +1,5 @@
-import { ClipboardList } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { EmptyState } from "../../ui/EmptyState.tsx";
 import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { IncidentHistoryRow } from "./IncidentHistoryRow.tsx";
 import type { M12Model } from "./use-m-12.ts";
@@ -12,7 +10,7 @@ export function IncidentHistory({ model }: { readonly model: M12Model }) {
   const incidents = model.state?.incidents ?? [];
   if (incidents.length === 0) {
     if (!model.state?.canRead) return null;
-    return <EmptyState icon={ClipboardList} title={t("mobile.incidents.noIncidents")} />;
+    return <AppText tone="secondary">{t("mobile.incidents.noIncidents")}</AppText>;
   }
   return (
     <>

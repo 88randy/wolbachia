@@ -1075,8 +1075,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.fuel.save": "Save fuel load",
   "mobile.fuel.working": "Saving on the phone…",
   "mobile.fuel.saveHint": "Save retains the load on this phone. Upload and review happen later.",
-  "mobile.fuel.inbox": "View upload and review in the inbox",
-  "mobile.incidents.title": "Report incident",
+  "mobile.fuel.inbox": "See what I sent",
+  "mobile.incidents.title": "Report a problem",
   "mobile.incidents.subtitle": "Local capture and conversation with your team",
   "mobile.incidents.emergency": "Emergency",
   "mobile.incidents.emergencyHint":
@@ -1133,8 +1133,7 @@ export const mobile: Record<keyof typeof source, string> = {
     "Only your reports available on the downloaded page. Refresh online for replies; this list may be incomplete.",
   "mobile.incidents.repliesUnavailable":
     "Team comments are retrieved online. Replying from mobile is not available yet.",
-  "mobile.incidents.noIncidents":
-    "None of your reports appear on this page yet. Save a report or refresh online.",
+  "mobile.incidents.noIncidents": "You have not reported anything today.",
   "mobile.incidents.readUnavailable":
     "The current context does not allow reading this conversation. Drafts remain saved.",
   "mobile.incidents.readFailed":

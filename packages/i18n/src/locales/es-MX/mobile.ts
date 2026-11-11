@@ -1104,8 +1104,8 @@ export const mobile = {
   "mobile.fuel.working": "Guardando en el teléfono…",
   "mobile.fuel.saveHint":
     "Guardar conserva la carga en este teléfono. El envío y la revisión ocurren después.",
-  "mobile.fuel.inbox": "Ver en Envíos",
-  "mobile.incidents.title": "Reportar incidente",
+  "mobile.fuel.inbox": "Ver lo que envié",
+  "mobile.incidents.title": "Reportar problema",
   "mobile.incidents.subtitle": "Captura local y conversación con tu equipo",
   "mobile.incidents.emergency": "Emergencia",
   "mobile.incidents.emergencyHint":
@@ -1163,8 +1163,7 @@ export const mobile = {
     "Solo tus reportes disponibles en la página descargada. Actualiza con conexión para consultar respuestas; esta lista puede estar incompleta.",
   "mobile.incidents.repliesUnavailable":
     "Los comentarios del equipo se consultan con conexión. La respuesta desde el móvil aún no está disponible.",
-  "mobile.incidents.noIncidents":
-    "Todavía no hay reportes tuyos en esta página. Guarda un reporte o actualiza con conexión.",
+  "mobile.incidents.noIncidents": "Aún no has reportado nada hoy.",
   "mobile.incidents.readUnavailable":
     "El contexto actual no permite consultar esta conversación. Los borradores siguen guardados.",
   "mobile.incidents.readFailed":

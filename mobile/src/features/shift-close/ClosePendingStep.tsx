@@ -7,7 +7,6 @@ import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { kitShadow } from "../../ui/kit-styles.ts";
-import { ChoiceRow } from "../field-ui/ChoiceRow.tsx";
 import { StepQuestion } from "../field-ui/StepQuestion.tsx";
 import { displayPointCode } from "../day/point-code.ts";
 import { CloseFrame } from "./CloseFrame.tsx";
@@ -28,6 +27,7 @@ export function ClosePendingStep({ model, draft, step, onNext }: StepProps) {
           icon={ArrowRight}
           label={t("field.action.next")}
           disabled={model.isBusy || !allSet}
+          disabledReason={t("field.hint.decidePending")}
           onPress={onNext}
         />
       }
@@ -35,6 +35,20 @@ export function ClosePendingStep({ model, draft, step, onNext }: StepProps) {
       <StepQuestion title={t("field.close.pendingQuestion")} hint={t("field.close.pendingHint")} />
       {pending.length === 0 ? (
         <InfoNotice tone="success" icon={CircleCheck} message={t("field.close.nonePending")} />
+      ) : null}
+      {pending.length > 1 ? (
+        <SecondaryButton
+          label={t("field.close.leaveAll")}
+          disabled={model.isBusy || allSet}
+          onPress={() => {
+            model.edit({
+              dispositions: {
+                ...draft.dispositions,
+                ...Object.fromEntries(pending.map((point) => [point.taskId, "leave_pending"])),
+              },
+            });
+          }}
+        />
       ) : null}
       {pending.map((point) => (
         <View
@@ -52,9 +66,9 @@ export function ClosePendingStep({ model, draft, step, onNext }: StepProps) {
               push({ name: "day" });
             }}
           />
-          <ChoiceRow
+          <SecondaryButton
+            icon={draft.dispositions[point.taskId] === "leave_pending" ? CircleCheck : undefined}
             label={t("field.close.leave")}
-            isSelected={draft.dispositions[point.taskId] === "leave_pending"}
             disabled={model.isBusy}
             onPress={() => {
               model.edit({

@@ -29,6 +29,7 @@ export function P4Screen({ model }: { readonly model: M04Model }) {
           icon={ArrowRight}
           label={t("field.action.next")}
           disabled={model.isBusy || !draft.motorcycle_code.trim()}
+          disabledReason={t("field.hint.pickMotorcycle")}
           onPress={() => {
             void model.run(() => model.service.update({ step: "checklist" }));
           }}
