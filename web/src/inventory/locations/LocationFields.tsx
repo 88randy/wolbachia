@@ -5,6 +5,8 @@ import { InventoryOptionSelect } from "../InventoryOptionSelect";
 import { inventoryFieldProps } from "../inventory-field-props";
 import type { InventoryFieldsProps } from "../inventory-form-types";
 import styles from "../inventory.module.css";
+import { FormSection } from "../../components/templates/FormSection";
+import { useQuadrantName, NO_NAME } from "../../lookups/use-reference-names";
 import { MapPointPicker } from "../../map-picker/MapPointPicker";
 function LocationCenter(props: InventoryFieldsProps) {
   const { t } = useTranslation();
@@ -29,10 +31,13 @@ function LocationCenter(props: InventoryFieldsProps) {
 function LocationQuadrant(props: InventoryFieldsProps) {
   const { t } = useTranslation();
   const center = props.values["center_id"] ?? "";
+  const quadrantName = useQuadrantName();
+  const known = quadrantName(props.values["quadrant_id"]);
   return (
     <InventoryOptionSelect
       key={center}
       id="inventory-quadrant_id"
+      currentLabel={known === NO_NAME ? t("inventory.option.quadrantSet") : known}
       label={t("inventory.field.quadrant")}
       request={{
         kind: "placements",
@@ -119,17 +124,24 @@ function LocationPlace(props: InventoryFieldsProps) {
   );
 }
 export function LocationFields(props: InventoryFieldsProps) {
+  const { t } = useTranslation();
   return (
-    <div className={styles.fields}>
-      <LocationIdentity {...props} />
-      <LocationCenter {...props} />
-      <LocationQuadrant {...props} />
-      <LocationOwner {...props} />
-      <LocationPlace {...props} />
-      <InventorySelectField
-        {...inventoryFieldProps(props, "is_insecticide_free")}
-        options={YES_NO}
-      />
-    </div>
+    <>
+      <FormSection title={t("inventory.section.locationData")}>
+        <div className={styles.fields}>
+          <LocationIdentity {...props} />
+          <LocationCenter {...props} />
+          <LocationQuadrant {...props} />
+          <LocationOwner {...props} />
+          <InventorySelectField
+            {...inventoryFieldProps(props, "is_insecticide_free")}
+            options={YES_NO}
+          />
+        </div>
+      </FormSection>
+      <FormSection title={t("inventory.section.locationPlace")}>
+        <LocationPlace {...props} />
+      </FormSection>
+    </>
   );
 }

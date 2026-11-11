@@ -230,4 +230,9 @@ export const inventory = {
   "inventory.lineItems.remove": "Quitar la línea {number}",
   "inventory.lineItems.add": "Agregar otro lote",
   "inventory.lineItems.noLots": "No hay lotes para elegir.",
+  "inventory.section.locationData": "Datos del lugar",
+  "inventory.section.locationPlace": "Dónde está",
+  "inventory.section.locationRecord": "Datos y ubicación",
+  "inventory.section.stockAndMovements": "Existencias y movimientos",
+  "inventory.option.quadrantSet": "Cuadrante asignado",
 } as const satisfies AreaCatalog<"inventory">;

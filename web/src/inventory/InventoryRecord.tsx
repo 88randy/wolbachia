@@ -171,8 +171,22 @@ function RecordStatus({ record }: { record: RecordValue }) {
     );
   return null;
 }
+function LocationRecord(props: ContentProps & { refresh: () => void; onSaved: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Card title={t("inventory.section.locationRecord")}>
+        <RecordEditor {...props} />
+      </Card>
+      <Card title={t("inventory.section.stockAndMovements")}>
+        <RecordFacts record={props.record} />
+      </Card>
+    </>
+  );
+}
 function RecordCard(props: ContentProps & { refresh: () => void; onSaved: () => void }) {
   const { t } = useTranslation();
+  if ("geometry" in props.record) return <LocationRecord {...props} />;
   return (
     <Card title={t("inventory.section.currentRecord")}>
       <div className={styles.content}>

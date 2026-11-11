@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
@@ -20,23 +19,6 @@ function ledgerSearch(row: StockRow) {
   return "lot" in row
     ? movementFiltersOf(row)
     : { lot: row.lot_id, piece: row.piece_id ?? "none", unit: row.unit };
-}
-function operationColumn(location: Schemas["Location"]): Column {
-  return {
-    id: "operation",
-    headerKey: "inventory.field.operation",
-    cell: (row) =>
-      ("source_ids" in row ? row.source_ids : [row.operation_id]).map((operation) => (
-        <Link
-          key={operation}
-          to="/inventory/locations/$code"
-          params={{ code: location.code }}
-          search={{ center: location.center, view: "movements", ...ledgerSearch(row), operation }}
-        >
-          {operation}
-        </Link>
-      )),
-  };
 }
 function quantityColumn(context: Context): Column {
   const { location, movements, language } = context;
@@ -61,7 +43,7 @@ function identityColumns(context: Context): Column[] {
     {
       id: movements ? "lot_code" : "lot__code",
       headerKey: "inventory.field.code",
-      cell: (row) => row.lot_code,
+      cell: (row) => <span className="whitespace-nowrap">{row.lot_code}</span>,
       link: (row) => ({
         to: "/inventory/lots/$code",
         params: { code: row.lot_code },
@@ -69,20 +51,16 @@ function identityColumns(context: Context): Column[] {
       }),
     },
     quantityColumn(context),
-    unitColumn,
-    {
-      id: "piece_id",
-      headerKey: "inventory.field.piece",
-      cell: (row) => (row.piece_id ? row.lot_code : t("inventory.option.none")),
-    },
-    operationColumn(location),
+    unitColumn(t),
   ];
 }
-const unitColumn: Column = {
-  id: "unit",
-  headerKey: "inventory.field.unit",
-  cell: (row) => row.unit,
-};
+function unitColumn(t: Context["t"]): Column {
+  return {
+    id: "unit",
+    headerKey: "inventory.field.unit",
+    cell: (row) => (row.unit === "piece" ? t("transfers.new.unit.piece") : row.unit),
+  };
+}
 const sourceLabels: Record<string, MessageKey> = {
   lot_admission: "inventory.option.admission",
   transfer_dispatch: "inventory.source.dispatch",

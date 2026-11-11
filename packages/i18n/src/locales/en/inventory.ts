@@ -229,4 +229,9 @@ export const inventory = {
   "inventory.lineItems.remove": "Remove line {number}",
   "inventory.lineItems.add": "Add another lot",
   "inventory.lineItems.noLots": "There are no lots to choose from.",
+  "inventory.section.locationData": "Place details",
+  "inventory.section.locationPlace": "Where it is",
+  "inventory.section.locationRecord": "Details and location",
+  "inventory.section.stockAndMovements": "Stock and movements",
+  "inventory.option.quadrantSet": "Quadrant assigned",
 } satisfies Record<keyof typeof Spanish, string>;
