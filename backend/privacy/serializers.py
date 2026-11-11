@@ -4,7 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from core.time import server_now
+from core.time import localdate, server_now
 from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
 from privacy.portal import PORTAL_INDICATORS
 
@@ -100,7 +100,10 @@ class ArcoRequestSerializer(serializers.ModelSerializer[ArcoRequest]):
     def get_remaining_days(self, obj: ArcoRequest) -> int | None:
         if obj.status in {ArcoRequest.Status.RESOLVED, ArcoRequest.Status.REJECTED}:
             return None
-        return (obj.due_on - server_now().date()).days
+        organization = (
+            getattr(self.context.get("request"), "organization", None) or obj.organization
+        )
+        return (obj.due_on - localdate(organization)).days
 
 
 class ArcoCreateSerializer(serializers.Serializer[Any]):

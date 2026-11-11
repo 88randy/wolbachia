@@ -12,6 +12,7 @@ import {
   weekLoadsOptions,
 } from "./scheduling-queries";
 import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
+import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 /** How the current epi week is going, step by step: what the home screen shows on each card. */
 export function useCycleStatus() {
@@ -19,7 +20,7 @@ export function useCycleStatus() {
   const identity = useSessionIdentity();
   const me = useMe();
   const can = useCan();
-  const today = todayIn(me.organization?.timezone ?? "UTC");
+  const today = todayIn(me.organization?.timezone ?? DEFAULT_TIME_ZONE);
   const week = weekStartOf(today, me.organization?.epi_week ?? "iso");
   const days = daysOfWeek(week);
   const canRead = can("schedule.read");

@@ -9,6 +9,7 @@ from uuid import uuid5
 
 from django.utils import timezone
 
+from core.time import localdate
 from geography.models import Quadrant
 from inventory.allocations.commands import AssignmentWrite, ConfigurationWrite
 from inventory.allocations.services import write_assignment
@@ -118,7 +119,7 @@ def _lot_values(
             species="Aedes aegypti (demo)",
             strain="demo strain",
             generation="F0",
-            laid_on=timezone.localdate(),
+            laid_on=localdate(location.organization),
             estimated_organism_count=Decimal("5000"),
         )
     return values
@@ -214,7 +215,7 @@ def ensure_courier_plan(
         "command_id": uuid5(NAMESPACE, f"assignment-command:{courier.user_id}"),
         "courier_id": courier.user_id,
         "origin_id": stock.location.pk,
-        "date": timezone.localdate(),
+        "date": localdate(actor.organization),
         "shift_id": None,
         "lines": lines,
     }

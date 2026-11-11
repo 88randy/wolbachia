@@ -6,6 +6,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import { useMe } from "../session/use-me";
 import { invalidateOrgScoped } from "../session/org-scoped-query";
 import { addDays, todayIn, weekStartOf } from "./week-dates";
+import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 type Source = Schemas["SourceEnum"];
 
@@ -26,7 +27,7 @@ export function useRiskImport() {
   const me = useMe();
   const queryClient = useQueryClient();
   const thisWeek = weekStartOf(
-    todayIn(me.organization?.timezone ?? "UTC"),
+    todayIn(me.organization?.timezone ?? DEFAULT_TIME_ZONE),
     me.organization?.epi_week ?? "iso",
   );
   const [step, setStep] = useState(1);

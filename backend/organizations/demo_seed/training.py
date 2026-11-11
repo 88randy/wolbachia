@@ -11,6 +11,7 @@ from uuid import UUID, uuid5
 from django.utils import timezone
 from PIL import Image
 
+from core.time import local_day_start, localdate
 from geography.models import Block, PointVersion, Quadrant, SamplingPoint
 from organizations.demo_seed.field import NAMESPACE
 from organizations.models import Membership, Organization
@@ -167,7 +168,8 @@ def _ensure_release_point(
             point=point,
             version=1,
             location=[round(east - 0.0004, 6), round(north - 0.0004, 6)],
-            effective_from=timezone.now() - timedelta(days=1, hours=timezone.localtime().hour),
+            effective_from=local_day_start(organization.timezone, localdate(organization))
+            - timedelta(days=1),
         )
     return point
 
@@ -178,7 +180,7 @@ def ensure_release_task(actor: UploadActor, permit: Permit, courier: Membership)
     values = {
         "point_id": point.pk,
         "courier_id": courier.user_id,
-        "due_date": timezone.localdate(),
+        "due_date": localdate(actor.organization),
         "expected_revision": permit_revision(permit),
     }
     schedule_release(actor, permit.pk, values)

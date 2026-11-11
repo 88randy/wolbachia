@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from core.exceptions import FieldValidationError
 from core.pagination import StreamCursorPagination
-from core.time import server_now
+from core.time import localdate, server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.models import Membership, Organization
 from privacy import portal
@@ -258,7 +258,7 @@ class ArcoRequestViewSet(
         payload = ArcoCreateSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         data = payload.validated_data
-        received = data.get("received_on") or server_now().date()
+        received = data.get("received_on") or localdate(request.organization)  # type: ignore[attr-defined]
         created = ArcoRequest.objects.create(
             organization=request.organization,  # type: ignore[attr-defined]
             created_by=request.user,

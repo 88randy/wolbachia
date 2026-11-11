@@ -1,3 +1,4 @@
+import { calendarDayOf, todayIn } from "../format/time-zone";
 import { unwrap } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { LabScope } from "./lab-query";
@@ -35,6 +36,7 @@ export function bagCodeOptions(scope: LabScope, id: string) {
   });
 }
 
-export function isToday(iso: string): boolean {
-  return new Date(iso).toDateString() === new Date().toDateString();
+/** Whether an instant falls on today's date in the organization's zone. */
+export function isToday(iso: string, timeZone: string, now: Date = new Date()): boolean {
+  return calendarDayOf(iso, timeZone) === todayIn(timeZone, now);
 }

@@ -1,13 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { RelativeTime } from "../analytics/RelativeTime";
-import { useMe } from "../session/use-me";
 import type { DataTableColumn } from "../data-table/table-types";
 import { NotificationMessage } from "./NotificationMessage";
 import type { Notification } from "./notification-query";
+import { useOrganizationTimeZone } from "../format/use-time-zone";
 
 export function useNotificationColumns(): DataTableColumn<Notification>[] {
   const { t } = useTranslation();
-  const timezone = useMe().organization?.timezone ?? "UTC";
+  const timezone = useOrganizationTimeZone();
   return [
     {
       id: "message",
