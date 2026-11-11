@@ -236,4 +236,10 @@ export const inventory = {
   "inventory.option.quadrantSet": "Quadrant assigned",
   "inventory.unit.days": "{count} days",
   "inventory.field.shelfLifeSeconds": "Shelf life",
+  "inventory.blocker.signatureRequired":
+    "In this organization the courier must sign on the warehouse screen.",
+  "inventory.blocker.signaturePhoneOnly":
+    "In this organization the courier signs on their phone, not on this screen.",
+  "inventory.blocker.alreadyReleased":
+    "This delivery was already handed out and signed. It is not signed twice.",
 } satisfies Record<keyof typeof Spanish, string>;

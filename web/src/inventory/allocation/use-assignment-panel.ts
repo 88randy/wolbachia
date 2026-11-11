@@ -14,6 +14,7 @@ import type { IntentResult } from "./allocation-intent";
 import { signatureState } from "./reconciliation-equation";
 import { useAllocationCommand } from "./use-allocation-command";
 import { useAssignmentDraft } from "./use-assignment-draft";
+import { useSignatureMode } from "./use-signature-mode";
 
 type Assignment = Schemas["SupplyAssignmentRead"];
 export type DeliveryStatus = "planned" | "released" | "cancelled" | "received";
@@ -77,7 +78,9 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
     const next = saved ? draft.revision(saved) : draft.draft();
     if (next) void command.send(next);
   };
-  const release = () => {
+  const mode = useSignatureMode();
+  /** `withSignature` false leaves the delivery waiting for the courier's phone. */
+  const release = (withSignature = true) => {
     if (!saved) return;
     const clientId = crypto.randomUUID();
     void command.send({
@@ -87,9 +90,10 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
         command_id: crypto.randomUUID(),
         assignment_id: saved.id,
         expected_revision: saved.revision,
-        evidence: signature ? [{ role: "signature" as const, upload_id: clientId }] : [],
+        evidence:
+          withSignature && signature ? [{ role: "signature" as const, upload_id: clientId }] : [],
       },
-      ...(signature
+      ...(withSignature && signature
         ? {
             attachment: {
               file: new File([signature], "signature.png", { type: "image/png" }),
@@ -100,7 +104,7 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
     });
   };
   return {
-    ...{ suggestion, lots, origins, saved, frame, draft, command, status, isEditable },
+    ...{ suggestion, lots, origins, saved, frame, draft, command, status, isEditable, mode },
     ...{
       create: save,
       release,

@@ -202,4 +202,17 @@ export const allocation = {
     "Todas las entregas de material a repartidores. Abre una para editarla, firmarla o anularla.",
   "allocation.delivery.new": "Nueva entrega",
   "allocation.delivery.cancelOf": "entrega del {date}",
+  "allocation.delivery.saveUnsigned": "Guardar sin firma: el repartidor firmará en su teléfono",
+  "allocation.delivery.handOverPhone": "Entregar: el repartidor firmará en su teléfono",
+  "allocation.delivery.phoneMode":
+    "En esta organización el repartidor firma en su teléfono al recibir el material.",
+  "allocation.delivery.pendingPhone":
+    "Por firmar en el teléfono: el repartidor debe firmar la recepción en su teléfono.",
+  "allocation.delivery.signature.signed": "Firmada",
+  "allocation.delivery.signature.pending_phone": "Por firmar en el teléfono",
+  "allocation.delivery.channel.warehouse_screen":
+    "En la pantalla del almacén, capturada por {name}",
+  "allocation.delivery.channel.courier_device": "En el teléfono del repartidor ({name})",
+  "allocation.delivery.channel.waiting": "Esperando al repartidor",
+  "allocation.delivery.next.pendingPhone": "Falta la firma en el teléfono del repartidor",
 } as const satisfies AreaCatalog<"allocation">;

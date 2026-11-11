@@ -37,6 +37,18 @@ export function DeliveryTimeline({ assignment }: { assignment: Schemas["SupplyAs
           })}
         />
       )}
+      {life?.signature && (
+        <Entry
+          title={t(`allocation.delivery.signature.${life.signature.state}`)}
+          detail={
+            life.signature.channel
+              ? t(`allocation.delivery.channel.${life.signature.channel}`, {
+                  name: life.signature.captured_by ?? "—",
+                })
+              : t("allocation.delivery.channel.waiting")
+          }
+        />
+      )}
       {status === "received" && <Entry title={t("allocation.delivery.timeline.received")} />}
       {life?.cancelled_at && (
         <Entry

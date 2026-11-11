@@ -362,7 +362,16 @@ class SupplyFrameSerializer(serializers.Serializer[Any]):
     lines = SupplyFrameLineSerializer(many=True)
 
 
+class AssignmentSignatureSerializer(serializers.Serializer[Any]):
+    state = serializers.ChoiceField(choices=["signed", "pending_phone"])
+    channel = serializers.ChoiceField(
+        choices=["warehouse_screen", "courier_device"], allow_null=True
+    )
+    captured_by = serializers.CharField(allow_null=True)
+
+
 class AssignmentLifecycleSerializer(serializers.Serializer[Any]):
+    signature = AssignmentSignatureSerializer(allow_null=True)
     status = serializers.ChoiceField(choices=["planned", "released", "cancelled", "received"])
     release_id = serializers.UUIDField(allow_null=True)
     released_at = serializers.DateTimeField(allow_null=True)

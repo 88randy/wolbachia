@@ -118,4 +118,6 @@ export const rules = {
   "rules.status.superseded": "Anterior",
   "rules.status.voided": "Anulada",
   "rules.param.maxGpsAccuracyM": "Precisión GPS máxima (m)",
+  "rules.param.deliverySignatureMode":
+    "Dónde firma el repartidor la entrega (0 = donde pueda, 1 = en el almacén, 2 = en su teléfono)",
 } as const satisfies AreaCatalog<"rules">;

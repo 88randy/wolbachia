@@ -117,4 +117,6 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.status.superseded": "Superseded",
   "rules.status.voided": "Voided",
   "rules.param.maxGpsAccuracyM": "Maximum GPS accuracy (m)",
+  "rules.param.deliverySignatureMode":
+    "Where the courier signs a delivery (0 = either, 1 = warehouse, 2 = phone)",
 };

@@ -140,7 +140,7 @@ def projection_assignments(rows: QuerySet[SupplyAssignment]) -> QuerySet[SupplyA
     )
     receipts = (
         SupplyEvent.objects.filter(kind="receive", source_link__isnull=False)
-        .select_related("receipt__signature", "source_link", "void_audit")
+        .select_related("receipt__signature", "source_link", "void_audit", "created_by")
         .order_by("revision")
         .prefetch_related(
             Prefetch("receipt__lines", queryset=SupplyReceiptLine.objects.order_by("pk"))
@@ -212,8 +212,21 @@ def assignment_lifecycle(
     status = "planned"
     if release is not None:
         status = "cancelled" if cancellation is not None else "received" if received else "released"
+    from inventory.allocations.signature_mode import signature_facts
+
+    receivers = [
+        _person(event.created_by)
+        for event in getattr(assignment, "_supply_receipt_events", [])
+        if getattr(event, "created_by", None) is not None
+    ]
+    signature = (
+        None
+        if release is None
+        else signature_facts(release.proof, receivers[-1] if receivers else None)
+    )
     return {
         "status": status,
+        "signature": signature,
         "release_id": None if release is None else str(release.pk),
         "released_at": None if release is None else release.created_at.isoformat(),
         "released_by_name": None if release is None else _person(release.created_by),

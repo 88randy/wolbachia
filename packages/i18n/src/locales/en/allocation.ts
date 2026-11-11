@@ -200,4 +200,17 @@ export const allocation: Record<keyof typeof spanish, string> = {
     "All deliveries of material to couriers. Open one to edit, sign or void it.",
   "allocation.delivery.new": "New delivery",
   "allocation.delivery.cancelOf": "delivery of {date}",
+  "allocation.delivery.saveUnsigned":
+    "Save without signature: the courier will sign on their phone",
+  "allocation.delivery.handOverPhone": "Hand over: the courier will sign on their phone",
+  "allocation.delivery.phoneMode":
+    "In this organization the courier signs on their phone when receiving the material.",
+  "allocation.delivery.pendingPhone":
+    "Pending phone signature: the courier must sign the reception on their phone.",
+  "allocation.delivery.signature.signed": "Signed",
+  "allocation.delivery.signature.pending_phone": "Pending phone signature",
+  "allocation.delivery.channel.warehouse_screen": "On the warehouse screen, captured by {name}",
+  "allocation.delivery.channel.courier_device": "On the courier's phone ({name})",
+  "allocation.delivery.channel.waiting": "Waiting for the courier",
+  "allocation.delivery.next.pendingPhone": "The courier still has to sign on their phone",
 };

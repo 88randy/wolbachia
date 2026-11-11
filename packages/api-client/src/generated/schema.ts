@@ -7598,6 +7598,7 @@ export interface components {
             blockers: components["schemas"]["Blocker"][];
         };
         AssignmentLifecycle: {
+            signature: components["schemas"]["AssignmentSignature"] | null;
             status: components["schemas"]["AssignmentLifecycleStatusEnum"];
             /** Format: uuid */
             release_id: string | null;
@@ -7682,6 +7683,17 @@ export interface components {
             /** Format: date-time */
             valid_from: string;
         };
+        AssignmentSignature: {
+            state: components["schemas"]["AssignmentSignatureStateEnum"];
+            channel: (components["schemas"]["ChannelEnum"] | components["schemas"]["NullEnum"]) | null;
+            captured_by: string | null;
+        };
+        /**
+         * @description * `signed` - signed
+         *     * `pending_phone` - pending_phone
+         * @enum {string}
+         */
+        AssignmentSignatureStateEnum: "signed" | "pending_phone";
         /**
          * @description * `field_event` - field_event
          *     * `motorcycle_fault` - motorcycle_fault
@@ -8243,6 +8255,12 @@ export interface components {
             sampling_points: components["schemas"]["SamplingPointChange"][];
             ovitraps: components["schemas"]["OvitrapChange"][];
         };
+        /**
+         * @description * `warehouse_screen` - warehouse_screen
+         *     * `courier_device` - courier_device
+         * @enum {string}
+         */
+        ChannelEnum: "warehouse_screen" | "courier_device";
         Chart: {
             key: string;
             kind: components["schemas"]["ChartKindEnum"];

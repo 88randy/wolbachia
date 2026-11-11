@@ -36,6 +36,14 @@ function FormBody(props: {
   return (
     <div className="flex min-w-0 flex-col gap-5">
       {note && <InlineNotice tone="info">{t(note)}</InlineNotice>}
+      {panel.saved && panel.isEditable && panel.mode === "phone" && (
+        <InlineNotice tone="info">{t("allocation.delivery.phoneMode")}</InlineNotice>
+      )}
+      {panel.saved &&
+        panel.status === "released" &&
+        panel.saved.lifecycle?.signature?.state === "pending_phone" && (
+          <InlineNotice tone="warning">{t("allocation.delivery.pendingPhone")}</InlineNotice>
+        )}
       {panel.isEditable && (
         <AssignmentDelivery
           draft={panel.draft}
@@ -44,7 +52,7 @@ function FormBody(props: {
           isOriginFixed={panel.saved !== null}
         />
       )}
-      {panel.saved && panel.isEditable && (
+      {panel.saved && panel.isEditable && panel.mode !== "phone" && (
         <SignaturePad
           id="signature-pad"
           label={t("ui.signaturePad.signer", { name: props.courierName })}

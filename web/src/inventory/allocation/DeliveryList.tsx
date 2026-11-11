@@ -79,7 +79,10 @@ function useColumns(): DataTableColumn<Row>[] {
 
 function nextKey(row: Row) {
   const status = statusOf(row);
-  if (status === "released") return "allocation.delivery.next.released" as const;
+  if (status === "released")
+    return row.lifecycle?.signature?.state === "pending_phone"
+      ? ("allocation.delivery.next.pendingPhone" as const)
+      : ("allocation.delivery.next.released" as const);
   if (status === "received") return "allocation.delivery.next.received" as const;
   if (status === "cancelled") return "allocation.delivery.next.cancelled" as const;
   return "allocation.delivery.next.planned" as const;

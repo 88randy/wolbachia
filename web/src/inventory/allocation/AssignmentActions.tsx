@@ -60,7 +60,8 @@ export function AssignmentActions({
       </FormActions>
     );
   const isBlocked = draft.blockers.length > 0;
-  const needsSignature = !panel.signatureBlob;
+  const isPhoneOnly = panel.mode === "phone";
+  const needsSignature = !isPhoneOnly && !panel.signatureBlob;
   const reason = isBlocked
     ? t(draft.blockers[0] ?? "allocation.assignment.blockerLines")
     : saved && needsSignature
@@ -82,16 +83,28 @@ export function AssignmentActions({
       >
         {t(saved ? "allocation.delivery.saveChanges" : "allocation.assignment.create")}
       </Button>
+      {saved && panel.mode === "either" && (
+        <Button
+          variant="secondary"
+          loading={command.isBusy}
+          aria-disabled={isBlocked || undefined}
+          onClick={() => {
+            if (!isBlocked) panel.release(false);
+          }}
+        >
+          {t("allocation.delivery.saveUnsigned")}
+        </Button>
+      )}
       {saved && (
         <Button
           loading={command.isBusy}
           aria-disabled={isBlocked || needsSignature || undefined}
           aria-describedby={reason ? id : undefined}
           onClick={() => {
-            if (!isBlocked && !needsSignature) panel.release();
+            if (!isBlocked && !needsSignature) panel.release(!isPhoneOnly);
           }}
         >
-          {t("allocation.assignment.release")}
+          {t(isPhoneOnly ? "allocation.delivery.handOverPhone" : "allocation.assignment.release")}
         </Button>
       )}
     </FormActions>

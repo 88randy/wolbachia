@@ -19708,6 +19708,10 @@ components:
     AssignmentLifecycle:
       type: object
       properties:
+        signature:
+          allOf:
+          - $ref: '#/components/schemas/AssignmentSignature'
+          nullable: true
         status:
           $ref: '#/components/schemas/AssignmentLifecycleStatusEnum'
         release_id:
@@ -19740,6 +19744,7 @@ components:
       - cancelled_at
       - release_id
       - released_at
+      - signature
       - status
     AssignmentLifecycleStatusEnum:
       enum:
@@ -19882,6 +19887,31 @@ components:
       - revision
       - schedule_revision
       - valid_from
+    AssignmentSignature:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/AssignmentSignatureStateEnum'
+        channel:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        captured_by:
+          type: string
+          nullable: true
+      required:
+      - captured_by
+      - channel
+      - state
+    AssignmentSignatureStateEnum:
+      enum:
+      - signed
+      - pending_phone
+      type: string
+      description: |-
+        * `signed` - signed
+        * `pending_phone` - pending_phone
     AttachmentTargetKindEnum:
       enum:
       - field_event
@@ -21288,6 +21318,14 @@ components:
       - rules_version
       - sampling_points
       - supplies
+    ChannelEnum:
+      enum:
+      - warehouse_screen
+      - courier_device
+      type: string
+      description: |-
+        * `warehouse_screen` - warehouse_screen
+        * `courier_device` - courier_device
     Chart:
       type: object
       properties:
