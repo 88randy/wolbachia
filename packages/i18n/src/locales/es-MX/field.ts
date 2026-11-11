@@ -19,6 +19,7 @@ export const field = {
   "field.capture.photoPlaceQuestion": "Toma una foto de la ovitrampa colocada",
   "field.capture.photoPlaceHint": "Que se vea la ovitrampa en su lugar.",
   "field.capture.photoThumb": "Foto {number}",
+  "field.hint.takePhoto": "Toma una foto de la ovitrampa colocada para seguir.",
   "field.hint.scanLabel": "Escanea la etiqueta para seguir.",
   "field.scan.question.label": "Escanea la etiqueta de la ovitrampa",
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",

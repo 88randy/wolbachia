@@ -19,6 +19,7 @@ export const field = {
   "field.capture.photoPlaceQuestion": "Take a photo of the placed ovitrap",
   "field.capture.photoPlaceHint": "Show the ovitrap in its place.",
   "field.capture.photoThumb": "Photo {number}",
+  "field.hint.takePhoto": "Take a photo of the placed ovitrap to continue.",
   "field.hint.scanLabel": "Scan the label to continue.",
   "field.scan.question.label": "Scan the ovitrap label",
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",

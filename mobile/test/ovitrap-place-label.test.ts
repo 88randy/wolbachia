@@ -20,6 +20,9 @@ void test("placing asks for the label before the photo, then the preparation", a
   assert.deepEqual(capturePages(draft), ["point", "label", "photo", "prepare", "confirm"]);
   assert.deepEqual(detailPages(draft), ["label", "photo"]);
   assert.equal(isPageDone(draft, "label"), false);
+  assert.equal(isPageDone(draft, "photo"), false);
+  const photo = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: "file:///p.jpg" };
+  assert.equal(isPageDone({ ...draft, evidence: [photo] }, "photo"), true);
 });
 
 void test("a scanned label becomes the ovitrap identity of the placement", async () => {

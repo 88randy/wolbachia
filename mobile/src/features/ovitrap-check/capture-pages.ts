@@ -70,10 +70,10 @@ function isBagValid(draft: Draft): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9_-]{0,49}$/.test(draft.bagCode) && draft.paddleType !== null;
 }
 
-/** The label must be scanned; the photo of a placed trap is asked for but never blocks. */
+/** The label must be scanned and the placed trap must have its photo before moving on. */
 function isEvidencePageDone(draft: Draft, page: "label" | "photo"): boolean {
   if (page === "label") return draft.labelScanned === true;
-  return draft.mode === "place" || draft.evidence.length > 0;
+  return draft.evidence.length > 0;
 }
 
 /** Whether the courier has answered what this page asks, so "Siguiente" can be pressed. */

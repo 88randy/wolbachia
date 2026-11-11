@@ -16,6 +16,7 @@ import { useCaptureFlow } from "./use-capture-flow.ts";
 const HINTS: Readonly<Record<string, MessageKey>> = {
   point: "field.hint.pickPoint",
   label: "field.hint.scanLabel",
+  photo: "field.hint.takePhoto",
   prepare: "field.hint.checkSteps",
 };
 function isSaveBlocked(props: CaptureProps): boolean {
