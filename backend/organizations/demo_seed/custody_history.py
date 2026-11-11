@@ -419,6 +419,8 @@ def ensure_stock_and_releases(
     for name in people.COURIER_USERNAMES[1:]:
         inventory.ensure_courier_plan(admin, members[name], stock, biological=False)
     training.ensure_release_task(admin, permit, couriers[0])
+    second = inventory.ensure_second_warehouse(admin, quadrants, members["demo-warehouse"])
+    inventory.ensure_demo_transfer(admin, stock, second)
 
 
 def _history(
