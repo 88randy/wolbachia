@@ -7,6 +7,7 @@ import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
 import { useSessionIdentity } from "../session/use-session-identity";
+import { NewUserButton } from "./NewUserButton";
 import { usersQueryOptions } from "./users-query";
 import type { Person } from "./users-query";
 import { USERS_PAGE_SIZE, USERS_TABLE } from "./users-table";
@@ -24,7 +25,11 @@ export function W48UsersPage() {
   const query = useQuery(usersQueryOptions(client, identity, controller.state));
   const columns = useUserColumns(usePeopleLookups());
   return (
-    <ListPage title={t("users.page.title")} description={t("users.page.description")}>
+    <ListPage
+      title={t("users.page.title")}
+      description={t("users.page.description")}
+      actions={<NewUserButton />}
+    >
       <FilterBar controller={controller} />
       <DataTable
         caption={t("users.table.caption")}

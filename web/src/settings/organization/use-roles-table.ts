@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useApiClient } from "../../api/ApiClientProvider";
@@ -22,13 +23,18 @@ export function useRolesTable() {
   );
   const [editing, setEditing] = useState<Profile | null>(null);
   const [returnFocusId, setReturnFocusId] = useState<string | undefined>();
+  const [copying, setCopying] = useState<Profile | null>(null);
   const [isSaved, setSaved] = useState(false);
   const codes = permissionCodes(me.permissions, query.data?.results ?? []);
-  const columns = useRoleColumns(codes, (profile) => {
-    setReturnFocusId(document.activeElement?.id);
-    setEditing(profile);
-    setSaved(false);
-  });
+  const columns = useRoleColumns(
+    codes,
+    (profile) => {
+      setReturnFocusId(document.activeElement?.id);
+      setEditing(profile);
+      setSaved(false);
+    },
+    setCopying,
+  );
   const close = () => {
     setEditing(null);
   };
@@ -37,5 +43,25 @@ export function useRolesTable() {
     setSaved(true);
   };
   const rows = pageTableData(query, controller.state.page, ADMIN_PAGE_SIZE);
-  return { controller, columns, codes, returnFocusId, editing, close, saved, isSaved, rows };
+  const copied = () => {
+    setCopying(null);
+    setSaved(true);
+  };
+  const closeCopy = () => {
+    setCopying(null);
+  };
+  return {
+    controller,
+    columns,
+    codes,
+    returnFocusId,
+    editing,
+    close,
+    saved,
+    isSaved,
+    rows,
+    copying,
+    copied,
+    closeCopy,
+  };
 }

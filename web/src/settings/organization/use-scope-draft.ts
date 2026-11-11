@@ -6,6 +6,14 @@ export function useScopeDraft(target: EditTarget) {
   const [permissions, setPermissions] = useState(
     target.kind === "role" ? target.record.permissions : [],
   );
+  const [profiles, setProfiles] = useState(
+    target.kind === "membership" ? target.record.profiles : [],
+  );
+  function toggleProfile(id: string) {
+    setProfiles((previous) =>
+      previous.includes(id) ? previous.filter((value) => value !== id) : [...previous, id],
+    );
+  }
   function toggle(permission: string) {
     setPermissions((previous) =>
       previous.includes(permission)
@@ -13,5 +21,5 @@ export function useScopeDraft(target: EditTarget) {
         : [...previous, permission].sort(),
     );
   }
-  return { ...dimensions, permissions, toggle };
+  return { ...dimensions, permissions, toggle, profiles, toggleProfile };
 }

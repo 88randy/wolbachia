@@ -15,6 +15,7 @@ import { StatusPill } from "../ui/StatusPill";
 import { personQueryOptions } from "./users-query";
 import { usePeopleLookups } from "./use-people-lookups";
 import { RfcField } from "./RfcField";
+import { PersonActions } from "./PersonActions";
 import { RevokeSessionsButton } from "./RevokeSessionsButton";
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -53,12 +54,18 @@ export function W49PersonPage({ id }: { id: string }) {
       }
       description={[profiles, lookups.centerName(person.center_id)].filter(Boolean).join(" · ")}
       actions={
-        can("user.revoke_device_sessions") && person.is_active ? (
-          <RevokeSessionsButton personId={person.id} name={person.display_name} />
-        ) : undefined
+        <>
+          <PersonActions person={person} />
+          {can("user.revoke_device_sessions") && person.is_active && (
+            <RevokeSessionsButton personId={person.id} name={person.display_name} />
+          )}
+        </>
       }
       aside={
         <Card title={t("users.record.summary")}>
+          {!person.is_active && (
+            <InlineNotice tone="warning">{t("users.action.blockedInactive")}</InlineNotice>
+          )}
           <InlineNotice tone="info">{t("users.revoke.help")}</InlineNotice>
         </Card>
       }

@@ -29,6 +29,13 @@ export const MEMBERS_TABLE: TableQueryConfig = {
   filters: [
     VIEW_FILTER,
     {
+      key: "profiles",
+      kind: "text",
+      labelKey: "users.members.filterProfile",
+      input: "hidden",
+      maxLength: 36,
+    },
+    {
       key: "is_active",
       kind: "select",
       labelKey: "orgAdmin.members.status",
