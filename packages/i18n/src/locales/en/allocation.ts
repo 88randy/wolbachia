@@ -73,8 +73,10 @@ export const allocation: Record<keyof typeof spanish, string> = {
     "This lot is identified by piece; piece write-off is not available on this screen yet.",
   "allocation.lab.title": "Lab biological write-offs",
   "allocation.assignment.title": "Courier allocation",
-  "allocation.assignment.description": "Hand each courier the day's material (ovitraps, paddles, supplies). Pick a courier, review what is suggested and scan the lots you give them.",
-  "allocation.assignment.hint": "This is the material each courier carries. Which quadrants each one covers is decided in Scheduling, under «Quadrants by courier».",
+  "allocation.assignment.description":
+    "Hand each courier the day's material (ovitraps, paddles, supplies). Pick a courier, review what is suggested and scan the lots you give them.",
+  "allocation.assignment.hint":
+    "This is the material each courier carries. Which quadrants each one covers is decided in Scheduling, under «Quadrants by courier».",
   "allocation.assignment.couriers": "Couriers",
   "allocation.assignment.deliveryCaption": "Suggested and delivered per supply",
   "allocation.assignment.suggested": "Suggested",

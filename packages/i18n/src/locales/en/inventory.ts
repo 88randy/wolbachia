@@ -178,7 +178,8 @@ export const inventory = {
   "inventory.map.attribution": "OpenStreetMap contributors",
   "inventory.map.coordinates": "Coordinates",
   "inventory.labels.title": "QR labels",
-  "inventory.labels.description": "Pick what to print, tick the records and send the sheet to the printer.",
+  "inventory.labels.description":
+    "Pick what to print, tick the records and send the sheet to the printer.",
   "inventory.labels.kind.lots": "Lots",
   "inventory.labels.kind.bags": "Bags",
   "inventory.labels.kind.paddles": "Egg paddles",
@@ -203,7 +204,8 @@ export const inventory = {
   "inventory.labels.loadError": "The records could not be loaded.",
   "inventory.labels.truncated": "Showing the first {count}. Search by code to narrow down.",
   "inventory.labels.card": "QR labels",
-  "inventory.labels.cardHint": "Print labels for lots, bags, egg paddles, ovitraps and motorcycles.",
+  "inventory.labels.cardHint":
+    "Print labels for lots, bags, egg paddles, ovitraps and motorcycles.",
   "inventory.option.pickCenterFirst": "Choose the center first",
   "inventory.option.pickQuadrantFirst": "Choose the quadrant first",
   "inventory.option.noLocations": "There are no warehouses in this center.",

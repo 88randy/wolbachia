@@ -74,8 +74,10 @@ export const allocation = {
     "Este lote se identifica por pieza; la baja por pieza aún no está disponible en esta pantalla.",
   "allocation.lab.title": "Bajas biológicas del laboratorio",
   "allocation.assignment.title": "Asignación a repartidores",
-  "allocation.assignment.description": "Entrega a cada repartidor el material del día (ovitrampas, papeletas, insumos). Elige un repartidor, revisa lo que se sugiere y escanea los lotes que le das.",
-  "allocation.assignment.hint": "Esto es el material que lleva cada repartidor. Qué cuadrantes atiende cada uno se decide en Programación, en «Cuadrantes por repartidor».",
+  "allocation.assignment.description":
+    "Entrega a cada repartidor el material del día (ovitrampas, papeletas, insumos). Elige un repartidor, revisa lo que se sugiere y escanea los lotes que le das.",
+  "allocation.assignment.hint":
+    "Esto es el material que lleva cada repartidor. Qué cuadrantes atiende cada uno se decide en Programación, en «Cuadrantes por repartidor».",
   "allocation.assignment.couriers": "Repartidores",
   "allocation.assignment.deliveryCaption": "Sugerido y entregado por insumo",
   "allocation.assignment.suggested": "Sugerido",

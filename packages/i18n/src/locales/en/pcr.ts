@@ -51,7 +51,8 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.wizard.step1": "Choose the laboratory and what to look for",
   "pcr.wizard.step1Hint": "The external laboratory receives the samples and returns the results.",
   "pcr.wizard.step2": "Choose the samples",
-  "pcr.wizard.step2Hint": "Only samples without a result that are not in another shipment are shown.",
+  "pcr.wizard.step2Hint":
+    "Only samples without a result that are not in another shipment are shown.",
   "pcr.wizard.step3": "Review and create the test",
   "pcr.wizard.step3Hint": "Afterwards you can mark it ready to ship.",
   "pcr.wizard.lab": "External laboratory",
@@ -118,7 +119,8 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.action.void": "Void test",
   "pcr.action.done": "Done",
   "pcr.ship.title": "Record shipment",
-  "pcr.ship.description": "Write down the carrier's tracking number and, if you have it, a photo or PDF of the receipt.",
+  "pcr.ship.description":
+    "Write down the carrier's tracking number and, if you have it, a photo or PDF of the receipt.",
   "pcr.ship.date": "Shipping date",
   "pcr.ship.carrier": "Carrier (optional)",
   "pcr.ship.tracking": "Tracking number",
@@ -130,9 +132,11 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.reason.undoTitle": "Undo last step",
   "pcr.reason.undoDescription": "The step stays in the history as undone, with your reason.",
   "pcr.reason.voidTitle": "Void test",
-  "pcr.reason.voidDescription": "The test stays in the history as voided and its samples are released.",
+  "pcr.reason.voidDescription":
+    "The test stays in the history as voided and its samples are released.",
   "pcr.reason.voidResultTitle": "Void result",
-  "pcr.reason.voidResultDescription": "The result stays struck through in the history. Then you can enter the right one.",
+  "pcr.reason.voidResultDescription":
+    "The result stays struck through in the history. Then you can enter the right one.",
   "pcr.reason.label": "Reason",
   "pcr.reason.hint": "Explain what happened (at least 10 letters).",
   "pcr.results.title": "Load results",
@@ -140,7 +144,8 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.results.tabCsv": "Upload file",
   "pcr.results.tabGrid": "Enter by hand",
   "pcr.results.template": "Download template",
-  "pcr.results.templateHint": "The template already lists this test's samples. Fill in result, serotype and Ct and save it as CSV.",
+  "pcr.results.templateHint":
+    "The template already lists this test's samples. Fill in result, serotype and Ct and save it as CSV.",
   "pcr.results.chooseFile": "Choose CSV file",
   "pcr.results.previewTitle": "File review",
   "pcr.results.previewSummary": "{valid} rows ready · {errors} with problems",
@@ -178,7 +183,8 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.file.typePdf": "The report must be a PDF.",
   "pcr.error.generic": "We could not save. Try again.",
   "pcr.error.pcr_transition_invalid": "The test changed status. We now show its current status.",
-  "pcr.error.pcr_results_incomplete": "Some samples are missing results, so the test cannot be closed.",
+  "pcr.error.pcr_results_incomplete":
+    "Some samples are missing results, so the test cannot be closed.",
   "pcr.error.pcr_sample_unavailable": "Some sample is no longer available. Check the list.",
   "pcr.error.pcr_lab_unavailable": "The laboratory is no longer active.",
   "pcr.error.pcr_lab_name_taken": "A laboratory with that name already exists.",
@@ -187,10 +193,13 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.error.pcr_batch_void_blocked": "It cannot be voided: the test already has results.",
   "pcr.error.pcr_batch_voided": "The test is already voided.",
   "pcr.error.pcr_batch_closed": "The test is already closed.",
-  "pcr.error.pcr_result_locked": "A valid Wolbachia result cannot be voided: it already counts in prevalence.",
+  "pcr.error.pcr_result_locked":
+    "A valid Wolbachia result cannot be voided: it already counts in prevalence.",
   "pcr.error.pcr_results_invalid": "Some rows have problems. Check them before saving.",
-  "pcr.error.pcr_results_not_expected": "Results are loaded once the laboratory has received the samples.",
-  "pcr.error.pcr_report_not_expected": "The report is uploaded once the laboratory has received the samples.",
+  "pcr.error.pcr_results_not_expected":
+    "Results are loaded once the laboratory has received the samples.",
+  "pcr.error.pcr_report_not_expected":
+    "The report is uploaded once the laboratory has received the samples.",
   "pcr.error.pcr_file_not_ready": "The file did not finish uploading. Choose it again.",
   "pcr.error.pcr_file_type_invalid": "The file type is not valid.",
   "pcr.error.pcr_file_already_used": "That file was already used in another record.",

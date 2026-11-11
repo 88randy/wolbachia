@@ -1,12 +1,12 @@
 import type { discrepancies as Spanish } from "../es-MX/discrepancies.ts";
 export const discrepancies = {
-  "discrepancies.page.title": "Discrepancies",
+  "discrepancies.page.title": "Differences",
   "discrepancies.page.denied":
     "You do not have permission or scope to read discrepancies. Request access from an administrator.",
   "discrepancies.page.readError": "The discrepancy could not be loaded. Try again.",
   "discrepancies.field.code": "Number",
-  "discrepancies.field.search": "Search discrepancies",
-  "discrepancies.field.transfer": "Transfer",
+  "discrepancies.field.search": "Search differences",
+  "discrepancies.field.transfer": "Shipment",
   "discrepancies.field.status": "Status",
   "discrepancies.field.createdAt": "Recorded",
   "discrepancies.status.open": "Open",
@@ -18,7 +18,7 @@ export const discrepancies = {
     "Only this discrepancy's holds are shown. Closing it preserves other records' holds; the server confirms availability.",
   "discrepancies.holds.active": "Pending hold",
   "discrepancies.holds.released": "Hold resolved by this discrepancy",
-  "discrepancies.actions.back": "Back to discrepancies",
+  "discrepancies.actions.back": "Back to differences",
   "discrepancies.history.title": "Signed manifests and history",
   "discrepancies.history.hash": "Original manifest hash",
   "discrepancies.history.bulk": "By lot",
@@ -28,7 +28,7 @@ export const discrepancies = {
   "discrepancies.event.dispatch": "Signed dispatch",
   "discrepancies.event.receive": "Signed receipt",
   "discrepancies.event.resolution": "Resolution",
-  "discrepancies.close.title": "Resolve discrepancy",
+  "discrepancies.close.title": "Resolve the difference",
   "discrepancies.close.reason": "Resolution reason",
   "discrepancies.close.reasonHint": "Describe the resolution. Minimum length: {min} characters.",
   "discrepancies.close.outcome": "How this line was resolved",

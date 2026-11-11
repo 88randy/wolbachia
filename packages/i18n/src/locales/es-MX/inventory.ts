@@ -181,7 +181,8 @@ export const inventory = {
   "inventory.map.attribution": "Colaboradores de OpenStreetMap",
   "inventory.map.coordinates": "Coordenadas",
   "inventory.labels.title": "Etiquetas QR",
-  "inventory.labels.description": "Elige qué imprimir, marca los registros y manda la hoja a la impresora.",
+  "inventory.labels.description":
+    "Elige qué imprimir, marca los registros y manda la hoja a la impresora.",
   "inventory.labels.kind.lots": "Lotes",
   "inventory.labels.kind.bags": "Bolsas",
   "inventory.labels.kind.paddles": "Papeletas",
