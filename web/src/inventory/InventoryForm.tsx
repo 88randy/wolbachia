@@ -29,7 +29,9 @@ function Fields({ kind, fields }: { kind: InventoryKind; fields: InventoryFields
   if (kind === "supplies")
     return (
       <>
-        <SupplyIdentityFields {...fields} />
+        <FormSection title={t("inventory.section.supplyData")}>
+          <SupplyIdentityFields {...fields} />
+        </FormSection>
         <SupplyProtocolFields {...fields} />
       </>
     );

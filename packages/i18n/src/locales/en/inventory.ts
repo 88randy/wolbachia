@@ -242,4 +242,5 @@ export const inventory = {
     "In this organization the courier signs on their phone, not on this screen.",
   "inventory.blocker.alreadyReleased":
     "This delivery was already handed out and signed. It is not signed twice.",
+  "inventory.section.supplyData": "Supply details",
 } satisfies Record<keyof typeof Spanish, string>;

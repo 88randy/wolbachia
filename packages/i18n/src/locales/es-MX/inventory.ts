@@ -242,4 +242,5 @@ export const inventory = {
   "inventory.blocker.signaturePhoneOnly":
     "En esta organización el repartidor firma en su teléfono, no en esta pantalla.",
   "inventory.blocker.alreadyReleased": "Esta entrega ya se entregó y firmó. No se firma dos veces.",
+  "inventory.section.supplyData": "Datos del insumo",
 } as const satisfies AreaCatalog<"inventory">;
