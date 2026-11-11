@@ -13,6 +13,8 @@ interface UploadCall {
   signal: AbortSignal;
   requireCurrent: () => void;
   onAuthorized: (id: string) => void;
+  /** Bind the upload to a prepared inventory operation that declared it. */
+  context?: { kind: "inventory_intent"; id: string };
 }
 const MAX_BYTES = 10 * 1024 * 1024;
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
@@ -58,7 +60,12 @@ async function authorize(
     );
   return unwrap(
     await call.client.POST("/api/v1/field/uploads/", {
-      body: { ...metadata, size_bytes: call.evidence.file.size, client_id: call.evidence.clientId },
+      body: {
+        ...metadata,
+        size_bytes: call.evidence.file.size,
+        client_id: call.evidence.clientId,
+        ...(call.context ? { context: call.context } : {}),
+      },
       signal: call.signal,
     }),
   );
@@ -116,7 +123,7 @@ async function finalize(call: UploadCall, id: string) {
   const answer = unwrap(
     await call.client.POST("/api/v1/field/uploads/{id}/finalize/", {
       params: { path: { id } },
-      body: {},
+      body: call.context ? { context: call.context } : {},
       signal: call.signal,
     }),
   );

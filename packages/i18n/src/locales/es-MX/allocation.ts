@@ -107,7 +107,7 @@ export const allocation = {
   "allocation.assignment.noPermission": "No tienes permiso para asignar material.",
   "allocation.assignment.saved": "Asignación guardada (revisión {revision}).",
   "allocation.assignment.create": "Guardar entrega",
-  "allocation.assignment.release": "Enviar a firma del repartidor",
+  "allocation.assignment.release": "Registrar entrega",
   "allocation.assignment.released": "Enviada a firma del repartidor.",
   "allocation.assignment.created": "Asignación guardada.",
   "allocation.assignment.blockerOrigin": "Elige la ubicación de origen.",
@@ -154,4 +154,6 @@ export const allocation = {
   "allocation.assignment.summaryTitle": "Lo que lleva hoy",
   "allocation.assignment.summaryEmpty": "Cuando agregues lotes, aquí verás cuánto se entrega.",
   "allocation.assignment.configureLink": "Configurar en el catálogo de insumos",
+  "allocation.assignment.needsSignature":
+    "El repartidor firma en el recuadro para registrar la entrega.",
 } as const satisfies AreaCatalog<"allocation">;

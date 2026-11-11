@@ -1,5 +1,6 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient, Schemas } from "@wolbachia/api-client";
+import { uploadTransferEvidence } from "../transfers/transfer-evidence";
 
 export type PrepareBody = Schemas["PrepareInventoryIntentRequest"];
 export type IntentTarget =
@@ -10,6 +11,8 @@ export interface PreparedDraft {
   body: PrepareBody;
   target: IntentTarget;
   intentId?: string;
+  /** Evidence the intent declared (by its `clientId`); uploaded bound to the intent before running it. */
+  attachment?: { file: File; clientId: string };
 }
 export interface AssignDraft {
   body: Schemas["CreateAssignmentRequest"];
@@ -93,5 +96,14 @@ export async function runIntent(
   }
   const intentId = draft.intentId ?? (await prepare(call, draft));
   remember(draft, intentId);
+  if (draft.attachment)
+    await uploadTransferEvidence({
+      client: call.client,
+      evidence: draft.attachment,
+      signal: call.signal,
+      requireCurrent: () => undefined,
+      onAuthorized: () => undefined,
+      context: { kind: "inventory_intent", id: intentId },
+    });
   return execute({ call, target: draft.target, intentId });
 }

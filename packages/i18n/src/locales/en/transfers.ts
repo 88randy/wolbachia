@@ -108,4 +108,7 @@ export const transfers: Record<keyof typeof spanish, string> = {
   "transfers.receive.received": "Arrived",
   "transfers.receive.missing": "Missing {quantity}",
   "transfers.receive.extras": "Something arrived that was not on the list",
+  "transfers.write.dispatchNeedsSignature": "Sign in the box to be able to send.",
+  "transfers.write.receiveNeedsSignature": "Sign in the box to confirm the reception.",
+  "transfers.receive.needsPhotos": "Upload the photo of what is missing on each flagged line.",
 };

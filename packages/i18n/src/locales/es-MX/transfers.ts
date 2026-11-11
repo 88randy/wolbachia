@@ -110,4 +110,7 @@ export const transfers = {
   "transfers.receive.received": "Llegaron",
   "transfers.receive.missing": "Faltan {quantity}",
   "transfers.receive.extras": "Llegó algo que no venía en la lista",
+  "transfers.write.dispatchNeedsSignature": "Firma en el recuadro para poder enviar.",
+  "transfers.write.receiveNeedsSignature": "Firma en el recuadro para confirmar la recepción.",
+  "transfers.receive.needsPhotos": "Sube la foto de lo que faltó en cada línea marcada.",
 } as const satisfies AreaCatalog<"transfers">;

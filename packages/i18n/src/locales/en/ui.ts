@@ -23,4 +23,13 @@ export const ui: Record<keyof typeof esMX, string> = {
   "ui.preview.voided": "Demo void recorded",
   "ui.toast.label": "Notifications",
   "ui.toast.blocking": "Notifications that need attention",
+  "ui.signaturePad.placeholder": "Sign here",
+  "ui.signaturePad.clear": "Clear",
+  "ui.signaturePad.ready": "Signature ready",
+  "ui.signaturePad.hint": "Sign with your finger or the mouse.",
+  "ui.signaturePad.tooShort": "The signature is too short. Sign again.",
+  "ui.signaturePad.failed": "The signature could not be saved. Try again.",
+  "ui.signaturePad.signer": "Signature: {name}",
+  "ui.signaturePad.noPermission":
+    "Your profile cannot save signatures. Ask an administrator to give you that permission.",
 };

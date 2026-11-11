@@ -106,7 +106,7 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.assignment.noPermission": "You do not have permission to allocate material.",
   "allocation.assignment.saved": "Assignment saved (revision {revision}).",
   "allocation.assignment.create": "Save delivery",
-  "allocation.assignment.release": "Send for the courier's signature",
+  "allocation.assignment.release": "Record delivery",
   "allocation.assignment.released": "Sent for the courier's signature.",
   "allocation.assignment.created": "Assignment saved.",
   "allocation.assignment.blockerOrigin": "Choose the origin location.",
@@ -153,4 +153,5 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.assignment.summaryEmpty":
     "When you add lots, you will see here how much is handed out.",
   "allocation.assignment.configureLink": "Set it up in the supply catalog",
+  "allocation.assignment.needsSignature": "The courier signs in the box to record the delivery.",
 };
