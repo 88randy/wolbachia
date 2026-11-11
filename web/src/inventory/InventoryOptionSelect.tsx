@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { Schemas } from "@wolbachia/api-client";
+import { useCan } from "../session/use-can";
 import { Combobox } from "../ui/Combobox";
 import { ErrorState } from "../ui/ErrorState";
 import { useInventoryContext } from "./use-inventory-context";
@@ -88,13 +89,17 @@ function useChoice(props: Props) {
   return { query, options, find, change };
 }
 type Model = ReturnType<typeof useChoice>;
+function createPermission(to: LinkProps["to"]) {
+  return to === "/inventory/supplies" ? "supply_type.create" : "location.create";
+}
 function EmptyMessage({ input }: { input: Props }) {
   const { t } = useTranslation();
+  const can = useCan();
   if (!input.empty) return undefined;
   return (
     <span className="flex flex-col items-center gap-1 px-2 py-1 text-center">
       <span>{t(input.empty.message)}</span>
-      {input.empty.action && (
+      {input.empty.action && can(createPermission(input.empty.action.to)) && (
         <Link to={input.empty.action.to} className="font-semibold">
           {t(input.empty.action.label)}
         </Link>

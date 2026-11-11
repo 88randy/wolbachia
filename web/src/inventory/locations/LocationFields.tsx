@@ -6,6 +6,7 @@ import { inventoryFieldProps } from "../inventory-field-props";
 import type { InventoryFieldsProps } from "../inventory-form-types";
 import styles from "../inventory.module.css";
 import { FormSection } from "../../components/templates/FormSection";
+import { useCan } from "../../session/use-can";
 import { useQuadrantName, NO_NAME } from "../../lookups/use-reference-names";
 import { MapPointPicker } from "../../map-picker/MapPointPicker";
 function LocationCenter(props: InventoryFieldsProps) {
@@ -31,7 +32,7 @@ function LocationCenter(props: InventoryFieldsProps) {
 function LocationQuadrant(props: InventoryFieldsProps) {
   const { t } = useTranslation();
   const center = props.values["center_id"] ?? "";
-  const quadrantName = useQuadrantName();
+  const quadrantName = useQuadrantName(useCan()("quadrant.read"));
   const known = quadrantName(props.values["quadrant_id"]);
   return (
     <InventoryOptionSelect

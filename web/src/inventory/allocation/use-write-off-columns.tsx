@@ -1,3 +1,4 @@
+import { useCan } from "../../session/use-can";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import type { DataTableColumn } from "../../data-table/table-types";
@@ -24,14 +25,14 @@ function RpbiPill({ isVerified }: { isVerified: boolean }) {
   );
 }
 
-function targetColumns(lots: Directories["lots"]): Column[] {
+function targetColumns(lots: Directories["lots"], canReadLots: boolean): Column[] {
   return [
     {
       id: "target",
       headerKey: "allocation.writeOff.fieldTarget",
       cell: (row) =>
         row.kind === "lot" ? lotLabel(lots, row.lot_id) : <LabName kind="bag" id={row.bag_id} />,
-      link: (row) => (row.kind === "lot" ? { to: "/inventory/lots" } : undefined),
+      link: (row) => (row.kind === "lot" && canReadLots ? { to: "/inventory/lots" } : undefined),
     },
     { id: "reason", headerKey: "allocation.field.reason", cell: (row) => row.reason_code },
   ];
@@ -40,7 +41,7 @@ function targetColumns(lots: Directories["lots"]): Column[] {
 export function useWriteOffColumns({ lots, people }: Directories) {
   const { language } = useLanguage();
   const formatDay = useFormatCalendarDate();
-  const [target, reason] = targetColumns(lots);
+  const [target, reason] = targetColumns(lots, useCan()("lot.read"));
   const quantity = (row: WriteOff) =>
     row.kind === "lot" ? formatInventoryQuantity(row.quantity, language) : "—";
   const columns: Column[] = [

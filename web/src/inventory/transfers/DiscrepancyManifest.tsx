@@ -1,6 +1,7 @@
 ﻿import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { NO_NAME } from "../../lookups/use-reference-names";
+import { useQuantityText } from "../use-quantity-text";
 import styles from "../inventory.module.css";
 
 type Lines = readonly Schemas["TransferLine"][];
@@ -41,12 +42,13 @@ export function DiscrepancyManifest({
   lines: Lines;
 }) {
   const rows = useManifestRows(manifest, lines);
+  const quantityText = useQuantityText();
   return (
     <dl className={styles.summary}>
       {rows.map((row) => (
         <div key={row.id}>
           <dt>{row.label}</dt>
-          <dd>{row.quantity}</dd>
+          <dd>{quantityText(row.quantity)}</dd>
         </div>
       ))}
     </dl>

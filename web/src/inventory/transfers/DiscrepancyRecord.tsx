@@ -9,6 +9,7 @@ import { DiscrepancyHistory } from "./DiscrepancyHistory";
 import { DiscrepancyResolveForm } from "./DiscrepancyResolveForm";
 import { DiscrepancyCommandNotice } from "./DiscrepancyCommandNotice";
 import { useDiscrepancyRecord } from "./discrepancy-use-record";
+import { useBreadcrumbLabel } from "../../shell/breadcrumb-labels";
 import { discrepancyFolio } from "./discrepancy-labels";
 import { isDiscrepancyDenied } from "./discrepancy-query";
 import type { Discrepancy } from "./discrepancy-query";
@@ -38,6 +39,7 @@ function DiscrepancyDetail({
   record: Discrepancy;
 }) {
   const { t } = useTranslation();
+  useBreadcrumbLabel(`/inventory/discrepancies/${record.code}`, discrepancyFolio(record.code));
   return (
     <DetailPage
       title={discrepancyFolio(record.code)}

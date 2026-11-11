@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Disclosure } from "../../ui/Disclosure";
 import { TransferScanner } from "./TransferScanner";
 import { ReceptionLine } from "./ReceptionLine";
 import { useTransferReception } from "./use-transfer-reception";
@@ -27,14 +28,11 @@ export function TransferReception(props: TransferRecordProps) {
           />
         ))}
       </ul>
-      <details>
-        <summary className="cursor-pointer text-sm font-semibold text-action-strong">
-          {t("transfers.receive.extras")}
-        </summary>
-        <div className="mt-3 max-w-md">
+      <Disclosure title={t("transfers.receive.extras")}>
+        <div className="max-w-md">
           <TransferScanner model={model} isBlocked={controls.isScanBlocked} />
         </div>
-      </details>
+      </Disclosure>
       <div className="flex min-w-0 flex-col gap-3 border-t border-line pt-4">
         <TransferReceiptSignature
           scope={props.scope}

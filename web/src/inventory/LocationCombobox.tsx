@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useCan } from "../session/use-can";
 import { Combobox } from "../ui/Combobox";
 import { useLocationDirectory } from "./use-location-directory";
 
@@ -12,6 +13,7 @@ export function LocationCombobox(props: {
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
+  const canCreate = useCan()("location.create");
   const query = useLocationDirectory();
   const rows = query.data ?? [];
   const isRepeated = (name: string) => rows.filter((row) => row.name === name).length > 1;
@@ -36,9 +38,11 @@ export function LocationCombobox(props: {
         emptyMessage={
           <span className="flex flex-col items-center gap-1 px-2 py-1 text-center">
             <span>{t("inventory.option.noWarehouses")}</span>
-            <Link to="/inventory/locations" className="font-semibold">
-              {t("inventory.option.createLocation")}
-            </Link>
+            {canCreate && (
+              <Link to="/inventory/locations" className="font-semibold">
+                {t("inventory.option.createLocation")}
+              </Link>
+            )}
           </span>
         }
         onValueChange={props.onChange}

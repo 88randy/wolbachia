@@ -23,10 +23,11 @@ export function useCenterName(): (id: Id) => string {
 }
 
 /** `quadrantName(id)`: the quadrant code (its human name), or "—". */
-export function useQuadrantName(): (id: Id) => string {
+export function useQuadrantName(isAllowed = true): (id: Id) => string {
   const client = useApiClient();
   const identity = useSessionIdentity();
-  const quadrants = useQuery(quadrantsOptions(client, identity)).data;
+  const options = quadrantsOptions(client, identity);
+  const quadrants = useQuery({ ...options, enabled: options.enabled !== false && isAllowed }).data;
   const names = useMemo(
     () => new Map((quadrants ?? []).map((quadrant) => [quadrant.id, quadrant.code])),
     [quadrants],

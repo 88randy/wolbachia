@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { OverflowAction } from "../../components/templates/OverflowMenu";
 import { DataTable } from "../../data-table/DataTable";
+import { useCan } from "../../session/use-can";
 import { useSessionIdentity } from "../../session/use-session-identity";
 import { useReconciliationColumns } from "./use-reconciliation-columns";
 import type { useReconciliationView } from "./use-reconciliation-view";
@@ -18,11 +19,12 @@ export function ReconciliationTable({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const identity = useSessionIdentity();
+  const can = useCan();
   const columns = useReconciliationColumns(view);
   const canJustify = identity.permissions?.includes("inventory.reconcile") === true;
   const rowMenu = (row: ReconciliationRow): OverflowAction[] => {
     const hasDifference = row.state === "difference";
-    return [
+    const actions: (OverflowAction | false)[] = [
       {
         id: "justify",
         label: t(
@@ -37,7 +39,7 @@ export function ReconciliationTable({
           onJustify(row);
         },
       },
-      {
+      can("inventory.allocate") && {
         id: "delivery",
         label: t("allocation.reconciliation.menu.seeDelivery"),
         onSelect: () => {
@@ -48,7 +50,7 @@ export function ReconciliationTable({
           });
         },
       },
-      {
+      can("discrepancy.read") && {
         id: "differences",
         label: t("allocation.reconciliation.openDiscrepancy"),
         disabled: !hasDifference,
@@ -57,6 +59,7 @@ export function ReconciliationTable({
         },
       },
     ];
+    return actions.filter((action): action is OverflowAction => action !== false);
   };
   return (
     <DataTable

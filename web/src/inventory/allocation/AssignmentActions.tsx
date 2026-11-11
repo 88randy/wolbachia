@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FormActions } from "../../components/templates/FormGrid";
+import { useCan } from "../../session/use-can";
 import { buttonVariants } from "../../ui/button-variants";
 import { Button } from "../../ui/Button";
 import { CancelDeliveryDialog } from "./CancelDeliveryDialog";
@@ -43,10 +44,11 @@ export function AssignmentActions({
   courierName: string;
 }) {
   const { t } = useTranslation();
+  const canReconcile = useCan()("inventory.reconcile");
   const id = useId();
   const { command, draft, saved, status } = panel;
   if (status === "received")
-    return (
+    return !canReconcile ? null : (
       <FormActions>
         <Link to="/inventory/reconciliations" className={buttonVariants({ variant: "primary" })}>
           {t("allocation.delivery.goReconcile")}
