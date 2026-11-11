@@ -9,7 +9,8 @@ export const scheduling = {
   "scheduling.home.week": "Semana {week} · del {from} al {to}",
   "scheduling.home.next": "Sigue: {step}",
   "scheduling.home.nextBadge": "Sigue este paso",
-  "scheduling.home.waiting": "Los pasos que faltan los hacen otras personas de tu equipo. Aquí puedes ver cómo van.",
+  "scheduling.home.waiting":
+    "Los pasos que faltan los hacen otras personas de tu equipo. Aquí puedes ver cómo van.",
   "scheduling.home.allDone": "Todo está al día esta semana.",
   "scheduling.home.loading": "Revisando cómo va la semana…",
   "scheduling.home.stepOf": "Paso {number}",
@@ -23,7 +24,8 @@ export const scheduling = {
     "Dile al sistema qué manzanas son más urgentes esta semana: riesgo alto, medio o bajo.",
   "scheduling.step.risk.done": "Manzanas con riesgo: {count}.",
   "scheduling.step.risk.pending": "Todavía no se carga el riesgo de esta semana.",
-  "scheduling.step.risk.noPermission": "Tu perfil no puede cargar la lista: pide a quien administra el riesgo que la suba.",
+  "scheduling.step.risk.noPermission":
+    "Tu perfil no puede cargar la lista: pide a quien administra el riesgo que la suba.",
   "scheduling.step.risk.load": "Cargar lista de riesgo",
   "scheduling.step.risk.see": "Ver el riesgo",
   "scheduling.step.assign.title": "Repartir los cuadrantes entre repartidores",
@@ -84,12 +86,14 @@ export const scheduling = {
     "Antes de armarla, carga el riesgo de la semana y reparte los cuadrantes. Después presiona «Armar la semana».",
   "scheduling.plan.noTasksReadOnly":
     "Cuando quien administra la programación arme la semana, aquí verás los puntos de cada día.",
-  "scheduling.plan.allDone": "No quedan puntos pendientes esta semana: todo lo programado ya se visitó.",
+  "scheduling.plan.allDone":
+    "No quedan puntos pendientes esta semana: todo lo programado ya se visitó.",
   "scheduling.plan.noWork": "Sin pendientes ese día",
   "scheduling.plan.openDay": "{name}, {day}: puntos pendientes {count}",
   "scheduling.plan.overTarget": "Pasa de la meta",
   "scheduling.plan.today": "Hoy",
-  "scheduling.plan.pastBanner": "Hay puntos de días anteriores que no se visitaron ({count}). Pásalos a otro repartidor para que no se pierdan.",
+  "scheduling.plan.pastBanner":
+    "Hay puntos de días anteriores que no se visitaron ({count}). Pásalos a otro repartidor para que no se pierdan.",
   "scheduling.plan.pastAction": "Reasignar pendientes",
   "scheduling.plan.pastPick": "Mostrar {name}, {day}",
   "scheduling.generate.action": "Armar la semana",
@@ -117,7 +121,8 @@ export const scheduling = {
   "scheduling.legend.title": "Qué significa cada acción",
   "scheduling.legend.check": "Revisar: recoger la papeleta de una ovitrampa que ya está puesta.",
   "scheduling.legend.place": "Colocar: poner una ovitrampa nueva en el punto.",
-  "scheduling.legend.release": "Liberar: soltar mosquitos con Wolbachia en el punto (requiere permiso).",
+  "scheduling.legend.release":
+    "Liberar: soltar mosquitos con Wolbachia en el punto (requiere permiso).",
   "scheduling.legend.risk": "Urgencia de la manzana:",
 
   "scheduling.risk.high": "Alto",
@@ -154,7 +159,8 @@ export const scheduling = {
   "scheduling.import.step2": "Sube el archivo",
   "scheduling.import.step2Hint": "Un archivo CSV con un renglón por manzana.",
   "scheduling.import.step3": "Revisa antes de aplicar",
-  "scheduling.import.step3Hint": "Todavía no cambia nada. Los cambios se hacen hasta que presiones Aplicar.",
+  "scheduling.import.step3Hint":
+    "Todavía no cambia nada. Los cambios se hacen hasta que presiones Aplicar.",
   "scheduling.import.stepName1": "Origen",
   "scheduling.import.stepName2": "Archivo",
   "scheduling.import.stepName3": "Revisión",
@@ -180,11 +186,13 @@ export const scheduling = {
   "scheduling.import.summaryByRisk": "Altas: {high} · Medias: {medium} · Bajas: {low}",
   "scheduling.import.willDo":
     "Al aplicar, el riesgo de esas manzanas en la semana {week} cambia y los puntos se ordenan con él. Lo anterior queda guardado en el historial.",
-  "scheduling.import.errorsTitle": "Renglones con problemas: {count}. Corrige el archivo y vuelve a subirlo.",
+  "scheduling.import.errorsTitle":
+    "Renglones con problemas: {count}. Corrige el archivo y vuelve a subirlo.",
   "scheduling.import.errorRow": "Renglón {row}:",
   "scheduling.import.fixFile": "Subir otro archivo",
   "scheduling.import.confirmTitle": "¿Aplicar el riesgo de la semana {week}?",
-  "scheduling.import.confirmText": "Cambiará el riesgo de las manzanas del archivo ({count}) y los puntos de esa semana se ordenarán con él. Puedes cargar otra lista después; la anterior queda en el historial.",
+  "scheduling.import.confirmText":
+    "Cambiará el riesgo de las manzanas del archivo ({count}) y los puntos de esa semana se ordenarán con él. Puedes cargar otra lista después; la anterior queda en el historial.",
   "scheduling.import.applied": "Listo. Manzanas actualizadas: {count}.",
   "scheduling.import.nextStep": "Siguiente paso",
   "scheduling.import.nextText": "Ahora reparte los cuadrantes entre los repartidores.",
@@ -206,7 +214,8 @@ export const scheduling = {
   "scheduling.import.error.unknown": "Este renglón no se pudo revisar.",
 
   "scheduling.reassign.title": "Reasignar los pendientes de {name}",
-  "scheduling.reassign.subtitle": "Reasignar es pasar los puntos que no se visitaron a otro repartidor. Puntos pendientes de {name} en este día: {count}.",
+  "scheduling.reassign.subtitle":
+    "Reasignar es pasar los puntos que no se visitaron a otro repartidor. Puntos pendientes de {name} en este día: {count}.",
   "scheduling.reassign.to": "Pasarlos a",
   "scheduling.reassign.choose": "Elige a quién",
   "scheduling.reassign.option": "{name} ({load} pendientes ese día)",
@@ -216,7 +225,8 @@ export const scheduling = {
   "scheduling.reassign.blocked": "Solo quien administra la programación puede reasignar.",
   "scheduling.reassign.apply": "Reasignar puntos ({count})",
   "scheduling.reassign.confirmTitle": "¿Pasar los puntos pendientes a {to}?",
-  "scheduling.reassign.confirmText": "Los puntos pendientes de {from} ({count}) pasarán a {to}. {from} ya no los verá en su teléfono. Los puntos que ya se visitaron no cambian.",
+  "scheduling.reassign.confirmText":
+    "Los puntos pendientes de {from} ({count}) pasarán a {to}. {from} ya no los verá en su teléfono. Los puntos que ya se visitaron no cambian.",
   "scheduling.reassign.confirm": "Sí, reasignar",
   "scheduling.reassign.done": "Listo. Los pendientes ya están con otro repartidor.",
 
@@ -249,8 +259,10 @@ export const scheduling = {
   "scheduling.assign.move": "Mover a…",
   "scheduling.assign.moveAria": "Mover el cuadrante {code} a otro repartidor",
   "scheduling.assign.unassign": "Dejar sin repartidor",
-  "scheduling.assign.moved": "{code} ahora es de {name}. Los puntos ya programados esta semana siguen con su repartidor anterior.",
-  "scheduling.assign.movedNone": "{code} quedó sin repartidor. Los puntos ya programados esta semana siguen con su repartidor anterior.",
+  "scheduling.assign.moved":
+    "{code} ahora es de {name}. Los puntos ya programados esta semana siguen con su repartidor anterior.",
+  "scheduling.assign.movedNone":
+    "{code} quedó sin repartidor. Los puntos ya programados esta semana siguen con su repartidor anterior.",
   "scheduling.assign.undo": "Deshacer",
   "scheduling.assign.undone": "Listo, {code} volvió con {name}.",
   "scheduling.assign.undoneNone": "Listo, {code} volvió a quedar sin repartidor.",
@@ -270,7 +282,8 @@ export const scheduling = {
   "scheduling.intervention.empty": "Todavía no hay intervenciones registradas",
   "scheduling.intervention.emptyHelp":
     "Cuando otra institución fumigue o aplique larvicida, anótalo aquí con las manzanas que cubrió.",
-  "scheduling.intervention.emptyReadOnly": "Cuando alguien registre una intervención, aparecerá aquí.",
+  "scheduling.intervention.emptyReadOnly":
+    "Cuando alguien registre una intervención, aparecerá aquí.",
   "scheduling.intervention.new": "Registrar intervención",
   "scheduling.intervention.newHint":
     "Anota qué se aplicó, quién lo hizo, cuándo y en qué manzanas. No se puede borrar: si te equivocas, registra otra.",

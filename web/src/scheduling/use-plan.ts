@@ -7,13 +7,10 @@ import { useSessionIdentity } from "../session/use-session-identity";
 import { loadTable } from "./load-table";
 import { MAX_PAGE, scheduleOptions, weekLoadsOptions } from "./scheduling-queries";
 import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
+import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 /** Pending points of days before today, and the first courier and day that still has some. */
-function pastPending(
-  days: readonly string[],
-  loads: ReturnType<typeof loadTable>,
-  today: string,
-) {
+function pastPending(days: readonly string[], loads: ReturnType<typeof loadTable>, today: string) {
   let count = 0;
   let first: { day: string; courier: string } | undefined;
   for (const day of days.filter((date) => date < today)) {
@@ -32,7 +29,7 @@ export function usePlan() {
   const identity = useSessionIdentity();
   const me = useMe();
   const search: Record<string, string | undefined> = useSearch({ strict: false });
-  const today = todayIn(me.organization?.timezone ?? "UTC");
+  const today = todayIn(me.organization?.timezone ?? DEFAULT_TIME_ZONE);
   const week = weekStartOf(search["week"] ?? today, me.organization?.epi_week ?? "iso");
   const days = daysOfWeek(week);
   const requestedDay = search["day"];

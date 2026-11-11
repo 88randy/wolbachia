@@ -7,15 +7,59 @@ export const hub = {
   "hub.home.shortcuts": "Accesos rápidos",
   "hub.card.open": "Abrir",
 
-  "hub.inventory.description": "Insumos, lotes, ubicaciones y movimientos del almacén.",
-  "hub.inventory.transfers": "Envía y recibe material entre ubicaciones.",
-  "hub.inventory.discrepancies": "Diferencias entre lo enviado y lo recibido.",
-  "hub.inventory.assignments": "Entrega material a repartidores y centros.",
-  "hub.inventory.reconciliations": "Cuadra lo entregado contra lo usado.",
-  "hub.inventory.writeOffs": "Da de baja material dañado o vencido.",
-  "hub.inventory.supplies": "Tipos de insumo y sus reglas de uso.",
-  "hub.inventory.lots": "Lotes recibidos, caducidad y condiciones.",
-  "hub.inventory.locations": "Almacenes, centros y puntos de resguardo.",
+  "hub.inventory.description":
+    "Aquí ves el camino del material: llega, se guarda, se mueve y se entrega.",
+  "hub.inventory.daily": "Trabajo de todos los días",
+  "hub.inventory.setup": "Configuración",
+  "hub.inventory.setupHint": "Se hace una vez, o cuando abres un almacén o un insumo nuevo.",
+  "hub.inventory.setupMissing":
+    "Antes de empezar, crea al menos un almacén y registra los insumos que manejas (abajo, en Configuración).",
+  "hub.inventory.pill.waiting": "Por atender",
+  "hub.inventory.pill.attention": "Necesita atención",
+  "hub.inventory.step.receive.title": "Recibir insumos",
+  "hub.inventory.step.receive.text":
+    "Registra lo que llega: qué insumo es, cuánto, cuándo caduca y en qué almacén se guarda.",
+  "hub.inventory.step.receive.empty": "Todavía no hay lotes. Registra el primero.",
+  "hub.inventory.step.receive.count": "Lotes registrados: {count}",
+  "hub.inventory.step.receive.action": "Recibir insumos",
+  "hub.inventory.step.stock.title": "Existencias",
+  "hub.inventory.step.stock.text":
+    "Mira qué hay en cada almacén y todo lo que ha entrado y salido.",
+  "hub.inventory.step.stock.count": "Almacenes y ubicaciones: {count}",
+  "hub.inventory.step.stock.action": "Ver existencias",
+  "hub.inventory.step.move.title": "Mover entre almacenes",
+  "hub.inventory.step.move.text":
+    "Manda material de un almacén a otro y confirma lo que llegó, pieza por pieza.",
+  "hub.inventory.step.move.count": "Por enviar: {toSend}. Por recibir: {toReceive}.",
+  "hub.inventory.step.move.action": "Mover material",
+  "hub.inventory.step.differences.title": "Diferencias",
+  "hub.inventory.step.differences.text":
+    "Cuando lo que llegó no coincide con lo que salió, aquí se revisa y se resuelve.",
+  "hub.inventory.step.differences.none": "No hay diferencias abiertas.",
+  "hub.inventory.step.differences.count": "Diferencias sin resolver: {count}",
+  "hub.inventory.step.differences.action": "Ver diferencias",
+  "hub.inventory.step.deliver.title": "Entregar a repartidores",
+  "hub.inventory.step.deliver.text":
+    "Elige al repartidor, revisa lo que le toca ese día y entrégale los lotes.",
+  "hub.inventory.step.deliver.action": "Entregar material",
+  "hub.inventory.step.reconcile.title": "Cuadrar entregas",
+  "hub.inventory.step.reconcile.text":
+    "Al final del día compara lo que se entregó con lo que se usó y lo que regresó.",
+  "hub.inventory.step.reconcile.action": "Cuadrar el día",
+  "hub.inventory.step.writeOff.title": "Mermas y bajas",
+  "hub.inventory.step.writeOff.text":
+    "Da de baja el material caducado, dañado o perdido, con su motivo y su evidencia.",
+  "hub.inventory.step.writeOff.action": "Registrar una baja",
+  "hub.inventory.setup.locations.title": "Almacenes",
+  "hub.inventory.setup.locations.text":
+    "Los lugares donde se guarda el material, con su responsable y su mapa.",
+  "hub.inventory.setup.locations.empty": "No hay almacenes. Crea el primero.",
+  "hub.inventory.setup.locations.count": "Registrados: {count}",
+  "hub.inventory.setup.supplies.title": "Catálogo de insumos",
+  "hub.inventory.setup.supplies.text":
+    "Los tipos de insumo que manejas: paletas, bolsas, huevos y sus reglas de uso.",
+  "hub.inventory.setup.supplies.empty": "No hay insumos. Registra el primero.",
+  "hub.inventory.setup.supplies.count": "Registrados: {count}",
 
   "hub.operations.description": "Turnos, revisiones y reubicaciones del trabajo de campo.",
   "hub.operations.reviews": "Registros que necesitan una decisión.",

@@ -10,12 +10,16 @@
 }
 
 .proof input,
-.proof select,
-.proof button {
+.proof select {
   width: 100%;
   max-width: 100%;
   min-width: 0;
   white-space: normal;
+}
+
+.proof button {
+  justify-self: start;
+  max-width: 100%;
 }
 
 .lines {

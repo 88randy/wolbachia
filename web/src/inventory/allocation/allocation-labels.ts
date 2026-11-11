@@ -14,8 +14,3 @@ export function courierLabel(
 ) {
   return people?.find((person) => person.id === courierId)?.display_name ?? NO_NAME;
 }
-
-/** Today as YYYY-MM-DD in the organization's time zone. */
-export function organizationToday(timeZone: string, now = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
-}

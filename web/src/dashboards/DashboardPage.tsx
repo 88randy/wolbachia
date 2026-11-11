@@ -6,7 +6,6 @@ import { useApiClient } from "../api/ApiClientProvider";
 import { PageFrame } from "../components/templates/PageFrame";
 import { PageHeader } from "../components/templates/PageHeader";
 import { useFormatDateTime } from "../format/use-format-date-time";
-import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { useDocumentTitle } from "../shell/use-document-title";
 import { CardSkeleton } from "../ui/CardSkeleton";
@@ -22,6 +21,7 @@ import { dashboardOptions } from "./dashboard-query";
 import type { DashboardKind } from "./dashboard-query";
 import { IndicatorCards } from "./IndicatorCards";
 import { useDashboardText } from "./use-dashboard-text";
+import { useOrganizationTimeZone } from "../format/use-time-zone";
 
 interface DashboardPageProps {
   kind: DashboardKind;
@@ -41,7 +41,7 @@ export function DashboardPage(props: DashboardPageProps) {
   useDocumentTitle(title);
   const client = useApiClient();
   const identity = useSessionIdentity();
-  const timeZone = useMe().organization?.timezone ?? "UTC";
+  const timeZone = useOrganizationTimeZone();
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
   const filters = readDashboardFilters(search, defaultPeriod);

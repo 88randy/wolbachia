@@ -1,15 +1,13 @@
 import { useCallback } from "react";
 import { useLanguage } from "../i18n/use-language";
-import { useMe } from "../session/use-me";
+import { useOrganizationTimeZone } from "./use-time-zone";
 import { formatCalendarDate, formatDate } from "./format-date";
 import { formatNumber } from "./format-number";
-
-const FALLBACK_TIME_ZONE = "UTC";
 
 /** `format(iso)`: a moment as a date, in the organization's time zone and the interface language. */
 export function useFormatDate(): (iso: string) => string {
   const { language } = useLanguage();
-  const timeZone = useMe().organization?.timezone ?? FALLBACK_TIME_ZONE;
+  const timeZone = useOrganizationTimeZone();
   return useCallback((iso) => formatDate(iso, language, timeZone), [language, timeZone]);
 }
 

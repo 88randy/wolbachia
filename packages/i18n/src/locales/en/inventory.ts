@@ -74,7 +74,8 @@ export const inventory = {
   "inventory.state.noPermission": "You do not have permission for this action.",
   "inventory.state.deactivate":
     "Versions and existing lots are retained. The supply will no longer be available for new lots.",
-  "inventory.state.draft": "Incomplete data is saved as a draft and does not create stock.",
+  "inventory.state.draft":
+    "If data is missing it is saved as a draft and does not count in stock until completed.",
   "inventory.state.noBlockers": "No safety blockers are reported. This does not execute dispatch.",
   "inventory.status.draft": "Draft · not dispatchable",
   "inventory.status.blocked": "Blocked",
@@ -178,7 +179,8 @@ export const inventory = {
   "inventory.map.attribution": "OpenStreetMap contributors",
   "inventory.map.coordinates": "Coordinates",
   "inventory.labels.title": "QR labels",
-  "inventory.labels.description": "Pick what to print, tick the records and send the sheet to the printer.",
+  "inventory.labels.description":
+    "Pick what to print, tick the records and send the sheet to the printer.",
   "inventory.labels.kind.lots": "Lots",
   "inventory.labels.kind.bags": "Bags",
   "inventory.labels.kind.paddles": "Egg paddles",
@@ -203,5 +205,20 @@ export const inventory = {
   "inventory.labels.loadError": "The records could not be loaded.",
   "inventory.labels.truncated": "Showing the first {count}. Search by code to narrow down.",
   "inventory.labels.card": "QR labels",
-  "inventory.labels.cardHint": "Print labels for lots, bags, egg paddles, ovitraps and motorcycles.",
+  "inventory.labels.cardHint":
+    "Print labels for lots, bags, egg paddles, ovitraps and motorcycles.",
+  "inventory.option.pickCenterFirst": "Choose the center first",
+  "inventory.option.pickQuadrantFirst": "Choose the quadrant first",
+  "inventory.option.noLocations": "There are no warehouses in this center.",
+  "inventory.option.createLocation": "Create warehouse",
+  "inventory.option.noSupplies": "There are no supplies yet.",
+  "inventory.option.createSupply": "Add supply",
+  "inventory.option.noCenters": "There are no centers available.",
+  "inventory.option.noOwners": "No one can take charge of this place.",
+  "inventory.option.noWarehouses": "There are no warehouses.",
+  "inventory.section.lotWhat": "What arrives",
+  "inventory.section.lotWhere": "Where it is kept and when it expires",
+  "inventory.section.lotBiological": "Biological material details",
+  "inventory.section.lotBiologicalHint":
+    "Fill them in only if the lot is eggs or mosquitoes. Otherwise leave them empty.",
 } satisfies Record<keyof typeof Spanish, string>;

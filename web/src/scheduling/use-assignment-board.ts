@@ -12,6 +12,7 @@ import { assignmentsOptions, weekLoadsOptions } from "./scheduling-queries";
 import { useCouriers } from "./use-directories";
 import { useMoveQuadrant } from "./use-scheduling-writes";
 import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
+import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 type Row = Schemas["Assignment"];
 
@@ -35,7 +36,7 @@ export function useAssignmentBoard() {
   const { showToast } = useToast();
   const move = useMoveQuadrant();
   const [dragging, setDragging] = useState<string | null>(null);
-  const today = todayIn(me.organization?.timezone ?? "UTC");
+  const today = todayIn(me.organization?.timezone ?? DEFAULT_TIME_ZONE);
   const week = weekStartOf(today, me.organization?.epi_week ?? "iso");
   const days = daysOfWeek(week);
   const query = useQuery(assignmentsOptions(client, identity));
@@ -44,7 +45,8 @@ export function useAssignmentBoard() {
   const { nameOf, ids } = useCouriers(rows.flatMap((row) => (row.courier ? [row.courier] : [])));
   const loads = loadTable(days, weekLoads.data);
   const peakOf = (id: string) => Math.max(0, ...days.map((day) => loads.get(id)?.get(day) ?? 0));
-  const pendingOf = (id: string) => days.reduce((sum, day) => sum + (loads.get(id)?.get(day) ?? 0), 0);
+  const pendingOf = (id: string) =>
+    days.reduce((sum, day) => sum + (loads.get(id)?.get(day) ?? 0), 0);
   const columns: BoardColumn[] = [
     ...ids
       .map((id) => ({

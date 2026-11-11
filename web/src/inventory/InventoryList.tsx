@@ -12,6 +12,7 @@ import { applyPatch } from "../data-table/table-state";
 import { inventoryListOptions } from "./inventory-query";
 import { INVENTORY_TABLES, INVENTORY_PAGE_SIZE } from "./inventory-table";
 import { useInventoryContext } from "./use-inventory-context";
+import { useCenterColumns } from "../data-table/center-column";
 import { useInventoryColumns } from "./use-inventory-columns";
 import type { InventoryKind, InventoryRecord } from "./inventory-links";
 import { InventoryCreateDialog } from "./InventoryCreateDialog";
@@ -32,7 +33,11 @@ export function InventoryList({ kind }: { kind: InventoryKind }) {
   const controller = useInventoryTable(kind);
   const scope = useInventoryContext();
   const query = useQuery(inventoryListOptions(scope, kind, controller.state));
-  const columns = useInventoryColumns(kind);
+  const base = useInventoryColumns(kind);
+  const withCenter = useCenterColumns(base, (row) => ("center" in row ? row.center : null), {
+    after: "name",
+  });
+  const columns = kind === "supplies" ? base : withCenter;
   const locations = query.data?.results.every((row) => "geometry" in row) ? query.data.results : [];
   const title = t(`inventory.page.${kind}`);
   return (

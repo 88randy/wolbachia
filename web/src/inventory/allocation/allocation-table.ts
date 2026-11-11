@@ -6,6 +6,23 @@ const date: FilterDefinition = {
   labelKey: "allocation.filter.date",
   kind: "text",
   maxLength: 10,
+  input: "hidden",
+};
+const createdFrom: FilterDefinition = {
+  key: "created_at_from",
+  labelKey: "allocation.filter.from",
+  kind: "text",
+  maxLength: 50,
+  input: "date-from",
+  dateFormat: "datetime",
+};
+const createdBefore: FilterDefinition = {
+  key: "created_at_before",
+  labelKey: "allocation.filter.before",
+  kind: "text",
+  maxLength: 50,
+  input: "date-to",
+  dateFormat: "datetime",
 };
 const base = {
   paging: "page",
@@ -20,7 +37,8 @@ export const RECONCILIATION_TABLE: TableQueryConfig = { ...base, filters: [date]
 export const WRITE_OFF_TABLE: TableQueryConfig = {
   ...base,
   filters: [
-    date,
+    createdFrom,
+    createdBefore,
     {
       key: "kind",
       labelKey: "allocation.writeOff.fieldKind",

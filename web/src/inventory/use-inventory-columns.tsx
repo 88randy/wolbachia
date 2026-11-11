@@ -152,7 +152,8 @@ export function useInventoryColumns(kind: InventoryKind): Column[] {
     {
       id: "unit",
       headerKey: "inventory.field.unit",
-      cell: (row: InventoryRecord) => ("unit" in row ? row.unit : null),
+      cell: (row: InventoryRecord) =>
+        "unit" in row ? (row.unit === "piece" ? t("transfers.new.unit.piece") : row.unit) : null,
     },
     statusColumn(t),
   ];

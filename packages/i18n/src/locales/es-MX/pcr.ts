@@ -3,7 +3,8 @@ import type { AreaCatalog } from "../area.ts";
 
 export const pcr = {
   "pcr.list.title": "Pruebas PCR",
-  "pcr.list.description": "Muestras enviadas a laboratorios externos para detectar Wolbachia y dengue.",
+  "pcr.list.description":
+    "Muestras enviadas a laboratorios externos para detectar Wolbachia y dengue.",
   "pcr.list.new": "Nueva prueba",
   "pcr.list.labs": "Laboratorios",
   "pcr.list.search": "Buscar por código o laboratorio",
@@ -49,7 +50,8 @@ export const pcr = {
   "pcr.home.card": "Envíos de muestras a laboratorios externos y sus resultados.",
   "pcr.wizard.title": "Nueva prueba PCR",
   "pcr.wizard.step1": "Elige el laboratorio y qué se va a buscar",
-  "pcr.wizard.step1Hint": "El laboratorio externo recibirá las muestras y regresará los resultados.",
+  "pcr.wizard.step1Hint":
+    "El laboratorio externo recibirá las muestras y regresará los resultados.",
   "pcr.wizard.step2": "Elige las muestras",
   "pcr.wizard.step2Hint": "Solo aparecen muestras sin resultado que no están en otro envío.",
   "pcr.wizard.step3": "Revisa y crea la prueba",
@@ -85,7 +87,8 @@ export const pcr = {
   "pcr.detail.progress": "Avance",
   "pcr.detail.samples": "Muestras ({count})",
   "pcr.detail.results": "Resultados",
-  "pcr.detail.noResults": "Aún no hay resultados. Cárgalos cuando llegue el informe del laboratorio.",
+  "pcr.detail.noResults":
+    "Aún no hay resultados. Cárgalos cuando llegue el informe del laboratorio.",
   "pcr.detail.report": "Informe del laboratorio",
   "pcr.detail.noReport": "Todavía no se ha subido el informe.",
   "pcr.detail.uploadReport": "Subir informe (PDF)",
@@ -118,7 +121,8 @@ export const pcr = {
   "pcr.action.void": "Anular prueba",
   "pcr.action.done": "Listo",
   "pcr.ship.title": "Registrar envío",
-  "pcr.ship.description": "Anota la guía de la paquetería y, si la tienes, una foto o PDF del comprobante.",
+  "pcr.ship.description":
+    "Anota la guía de la paquetería y, si la tienes, una foto o PDF del comprobante.",
   "pcr.ship.date": "Fecha de envío",
   "pcr.ship.carrier": "Paquetería (opcional)",
   "pcr.ship.tracking": "Número de guía",
@@ -130,9 +134,11 @@ export const pcr = {
   "pcr.reason.undoTitle": "Deshacer último paso",
   "pcr.reason.undoDescription": "El paso queda en el historial como deshecho, con tu motivo.",
   "pcr.reason.voidTitle": "Anular prueba",
-  "pcr.reason.voidDescription": "La prueba queda en el historial como anulada y sus muestras se liberan.",
+  "pcr.reason.voidDescription":
+    "La prueba queda en el historial como anulada y sus muestras se liberan.",
   "pcr.reason.voidResultTitle": "Anular resultado",
-  "pcr.reason.voidResultDescription": "El resultado queda tachado en el historial. Después puedes capturar el correcto.",
+  "pcr.reason.voidResultDescription":
+    "El resultado queda tachado en el historial. Después puedes capturar el correcto.",
   "pcr.reason.label": "Motivo",
   "pcr.reason.hint": "Explica qué pasó (mínimo 10 letras).",
   "pcr.results.title": "Cargar resultados",
@@ -140,7 +146,8 @@ export const pcr = {
   "pcr.results.tabCsv": "Subir archivo",
   "pcr.results.tabGrid": "Capturar a mano",
   "pcr.results.template": "Descargar plantilla",
-  "pcr.results.templateHint": "La plantilla ya trae las muestras de esta prueba. Llena resultado, serotipo y Ct y guárdala como CSV.",
+  "pcr.results.templateHint":
+    "La plantilla ya trae las muestras de esta prueba. Llena resultado, serotipo y Ct y guárdala como CSV.",
   "pcr.results.chooseFile": "Elegir archivo CSV",
   "pcr.results.previewTitle": "Revisión del archivo",
   "pcr.results.previewSummary": "{valid} filas listas · {errors} con problemas",
@@ -154,7 +161,8 @@ export const pcr = {
   "pcr.results.noSerotype": "Sin serotipo",
   "pcr.results.reportTitle": "Informe del laboratorio (PDF)",
   "pcr.results.reportHint": "Súbelo para que quede junto a los resultados.",
-  "pcr.results.notExpected": "Los resultados se cargan cuando el laboratorio ya recibió las muestras.",
+  "pcr.results.notExpected":
+    "Los resultados se cargan cuando el laboratorio ya recibió las muestras.",
   "pcr.labs.title": "Laboratorios externos",
   "pcr.labs.description": "Laboratorios a los que se envían muestras para prueba PCR.",
   "pcr.labs.new": "Nuevo laboratorio",
@@ -178,7 +186,8 @@ export const pcr = {
   "pcr.file.typePdf": "El informe debe ser un PDF.",
   "pcr.error.generic": "No pudimos guardar. Intenta de nuevo.",
   "pcr.error.pcr_transition_invalid": "La prueba cambió de estado. Ya mostramos su estado actual.",
-  "pcr.error.pcr_results_incomplete": "Faltan resultados de algunas muestras para cerrar la prueba.",
+  "pcr.error.pcr_results_incomplete":
+    "Faltan resultados de algunas muestras para cerrar la prueba.",
   "pcr.error.pcr_sample_unavailable": "Alguna muestra ya no está disponible. Revisa la lista.",
   "pcr.error.pcr_lab_unavailable": "El laboratorio ya no está activo.",
   "pcr.error.pcr_lab_name_taken": "Ya existe un laboratorio con ese nombre.",
@@ -187,10 +196,13 @@ export const pcr = {
   "pcr.error.pcr_batch_void_blocked": "No se puede anular: la prueba ya tiene resultados.",
   "pcr.error.pcr_batch_voided": "La prueba ya está anulada.",
   "pcr.error.pcr_batch_closed": "La prueba ya está cerrada.",
-  "pcr.error.pcr_result_locked": "Un resultado válido de Wolbachia no se puede anular: ya cuenta en la prevalencia.",
+  "pcr.error.pcr_result_locked":
+    "Un resultado válido de Wolbachia no se puede anular: ya cuenta en la prevalencia.",
   "pcr.error.pcr_results_invalid": "Algunas filas tienen problemas. Revísalas antes de guardar.",
-  "pcr.error.pcr_results_not_expected": "Los resultados se cargan cuando el laboratorio ya recibió las muestras.",
-  "pcr.error.pcr_report_not_expected": "El informe se sube cuando el laboratorio ya recibió las muestras.",
+  "pcr.error.pcr_results_not_expected":
+    "Los resultados se cargan cuando el laboratorio ya recibió las muestras.",
+  "pcr.error.pcr_report_not_expected":
+    "El informe se sube cuando el laboratorio ya recibió las muestras.",
   "pcr.error.pcr_file_not_ready": "El archivo no terminó de subirse. Vuelve a elegirlo.",
   "pcr.error.pcr_file_type_invalid": "El tipo de archivo no es válido.",
   "pcr.error.pcr_file_already_used": "Ese archivo ya se usó en otro registro.",

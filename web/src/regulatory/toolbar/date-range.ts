@@ -1,3 +1,5 @@
+import { zonedDayStart } from "../../format/time-zone";
+
 /** Calendar days travel as `YYYY-MM-DD` in the URL and the API; the picker works with local dates. */
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -13,15 +15,15 @@ export function fromIsoDay(value: string | undefined): Date | undefined {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
-/** Start of the given day in the zone of the browser, as an instant for the API. */
-export function startOfDayInstant(isoDay: string): string | undefined {
-  return fromIsoDay(isoDay)?.toISOString();
+/** Start of the given day in the organization's zone, as an instant for the API. */
+export function startOfDayInstant(isoDay: string, timeZone: string): string | undefined {
+  return zonedDayStart(isoDay, timeZone) ?? undefined;
 }
 
 /** Start of the day AFTER the given one: the `created_before` filter of the API is exclusive. */
-export function endOfDayInstant(isoDay: string): string | undefined {
+export function endOfDayInstant(isoDay: string, timeZone: string): string | undefined {
   const day = fromIsoDay(isoDay);
   if (day === undefined) return undefined;
   day.setDate(day.getDate() + 1);
-  return day.toISOString();
+  return zonedDayStart(toIsoDay(day), timeZone) ?? undefined;
 }

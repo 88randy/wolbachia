@@ -2,6 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Select } from "../../forms/Select";
 import { WriteOffCodeLookup } from "./WriteOffCodeLookup";
+import { WriteOffLotPicker } from "./WriteOffLotPicker";
 import { WriteOffLotFields } from "./WriteOffLotFields";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { WriteOffForm, WriteOffKind } from "./use-write-off-form";
@@ -31,7 +32,7 @@ export function WriteOffTargetFields({ form }: { form: WriteOffForm }) {
           }}
         />
       )}
-      <WriteOffCodeLookup form={form} />
+      {form.kind === "lot" ? <WriteOffLotPicker form={form} /> : <WriteOffCodeLookup form={form} />}
       <WriteOffLotFields form={form} />
     </>
   );
