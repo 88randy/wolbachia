@@ -140,6 +140,8 @@ export function assignmentFrameOptions(scope: AllocationScope, assignmentId: str
   return {
     ...options,
     enabled:
-      options.enabled && scope.identity.permissions?.includes("inventory.reconcile") === true,
+      options.enabled &&
+      assignmentId !== "" &&
+      scope.identity.permissions?.includes("inventory.reconcile") === true,
   };
 }

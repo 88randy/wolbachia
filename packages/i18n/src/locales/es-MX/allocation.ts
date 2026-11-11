@@ -13,7 +13,7 @@ export const allocation = {
   "allocation.command.uncertain":
     "No se confirmó el resultado. Reintenta el mismo envío: no genera un segundo registro.",
   "allocation.command.offline": "Sin conexión. Nada se envía hasta recuperarla.",
-  "allocation.reconciliation.title": "Conciliación diaria",
+  "allocation.reconciliation.title": "Cuadrar entregas",
   "allocation.reconciliation.equation":
     "Diferencia = asignado − usado − devuelto − merma. Se muestra con signo, ícono y texto; nunca solo con color.",
   "allocation.reconciliation.shiftIndependent":
@@ -73,7 +73,7 @@ export const allocation = {
   "allocation.writeOff.blockerPiece":
     "Este lote se identifica por pieza; la baja por pieza aún no está disponible en esta pantalla.",
   "allocation.lab.title": "Bajas biológicas del laboratorio",
-  "allocation.assignment.title": "Asignación a repartidores",
+  "allocation.assignment.title": "Entregar a repartidores",
   "allocation.assignment.description":
     "Entrega a cada repartidor el material del día (ovitrampas, papeletas, insumos). Elige un repartidor, revisa lo que se sugiere y escanea los lotes que le das.",
   "allocation.assignment.hint":
@@ -88,8 +88,8 @@ export const allocation = {
   "allocation.assignment.stateOver": "Sobran {count}",
   "allocation.assignment.stateUnsuggested": "Sin sugerencia",
   "allocation.assignment.stateInvalid": "Cantidad no válida",
-  "allocation.assignment.origin": "Ubicación de origen",
-  "allocation.assignment.scan": "Escanea o escribe el código del lote",
+  "allocation.assignment.origin": "Almacén de salida",
+  "allocation.assignment.scan": "Escanear el código del lote",
   "allocation.assignment.addLot": "Agregar lote",
   "allocation.assignment.scanResultNotFound": "No se encontró ese lote en tu alcance.",
   "allocation.assignment.scanResultDuplicate": "Ese lote ya está en la entrega.",
@@ -98,7 +98,7 @@ export const allocation = {
   "allocation.assignment.scanResultFailed": "No se pudo buscar el lote. Inténtalo de nuevo.",
   "allocation.assignment.lineQuantity": "Cantidad entregada del lote {code}",
   "allocation.assignment.removeLine": "Quitar el lote {code} del borrador",
-  "allocation.assignment.panelTitle": "Asignar a {name}",
+  "allocation.assignment.panelTitle": "Entrega para {name}",
   "allocation.assignment.suggestionError": "No se pudo cargar la sugerencia.",
   "allocation.assignment.noSchedule":
     "No hay programación para esta fecha, así que no hay sugerencia. Puedes entregar con tu criterio.",
@@ -106,8 +106,8 @@ export const allocation = {
     "Faltan equivalencias de material en la configuración; no se calcula sugerencia.",
   "allocation.assignment.noPermission": "No tienes permiso para asignar material.",
   "allocation.assignment.saved": "Asignación guardada (revisión {revision}).",
-  "allocation.assignment.create": "Guardar asignación",
-  "allocation.assignment.release": "Enviar a firma",
+  "allocation.assignment.create": "Guardar entrega",
+  "allocation.assignment.release": "Enviar a firma del repartidor",
   "allocation.assignment.released": "Enviada a firma del repartidor.",
   "allocation.assignment.created": "Asignación guardada.",
   "allocation.assignment.blockerOrigin": "Elige la ubicación de origen.",
@@ -115,11 +115,26 @@ export const allocation = {
   "allocation.assignment.blockerQuantity": "Cada lote necesita una cantidad mayor que cero.",
   "allocation.assignment.couriersError": "No se pudo cargar la lista de repartidores.",
   "allocation.assignment.noCouriers": "No hay repartidores activos en tu alcance.",
-  "allocation.assignment.pickCourier": "Elige un repartidor para ver su asignación.",
+  "allocation.assignment.pickCourier":
+    "Elige a un repartidor para ver y preparar lo que se le entrega.",
   "allocation.signature.title": "Firma del repartidor",
   "allocation.signature.unassigned": "Sin asignar",
   "allocation.signature.pending": "Esperando firma en el teléfono",
   "allocation.signature.verified": "Recibido y firmado",
   "allocation.signature.unknown": "Estado de firma no disponible",
   "allocation.signature.sent": "Enviado a firma",
+  "allocation.assignment.courier": "Repartidor",
+  "allocation.assignment.courierPlaceholder": "Elige al repartidor",
+  "allocation.assignment.couriersDenied":
+    "Tu perfil no puede ver la lista de repartidores. Pide a administración que te dé ese permiso.",
+  "allocation.assignment.lotPicker": "Agregar un lote",
+  "allocation.assignment.originPlaceholder": "Elige el almacén del que sale el material",
+  "allocation.assignment.sectionOrigin": "De dónde sale",
+  "allocation.assignment.sectionLots": "Qué se entrega",
+  "allocation.assignment.sectionLotsHint":
+    "Primero va el lote que caduca antes. También puedes escanear el código del lote.",
+  "allocation.assignment.expires": "Caduca el {date}",
+  "allocation.assignment.firstOut": "Sale primero",
+  "allocation.assignment.noLots": "No hay lotes disponibles para entregar.",
+  "allocation.assignment.lineQuantityShort": "Cantidad",
 } as const satisfies AreaCatalog<"allocation">;

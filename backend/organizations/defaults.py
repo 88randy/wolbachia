@@ -253,6 +253,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "warehouse": (
         HOME_READ,
+        USER_OPERATIONAL_READ,  # pick the courier to hand material to
         ALLOCATE,
         RECONCILE,
         WRITE_OFF,
