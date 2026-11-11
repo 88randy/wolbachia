@@ -20,6 +20,8 @@ import {
   fleetFault,
   historyPage,
   settleFleet,
+  chooseMenuAction,
+  menuItem,
 } from "./fleet-test-helpers";
 const RECORD = `${LIST}/M-03`;
 const UNBLOCK = `POST /api/v1/motorcycles/${motorcycle().id}/unblock/`;
@@ -230,7 +232,7 @@ describe("W21 motorcycle record", () => {
         },
       },
     });
-    const opener = await screen.findByRole("button", { name: "Desbloquear" });
+    const opener = await menuItem("Desbloquear");
     opener.focus();
     await userEvent.keyboard("{Enter}");
     expect(document.activeElement).toBe(
@@ -284,7 +286,7 @@ describe("W21 motorcycle record", () => {
           [UNBLOCK]: apiError(status, code),
         },
       });
-      await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
+      await chooseMenuAction("Desbloquear");
       await userEvent.type(within(screen.getByRole("dialog")).getByRole("textbox"), REASON);
       await userEvent.click(
         within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
@@ -314,7 +316,7 @@ describe("W21 motorcycle record", () => {
         [VOID]: apiError(409, "motorcycle_in_use"),
       },
     });
-    await userEvent.click(await screen.findByRole("button", { name: "Anular" }));
+    await chooseMenuAction("Anular");
     await userEvent.type(await otherReasonField(), REASON);
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Anular" }),
@@ -375,8 +377,11 @@ describe("W21 motorcycle record", () => {
       if (tab === "services" || tab === "responsibility")
         expect(query.get("include_voided")).toBe("true");
       if (tab === "services" || tab === "responsibility") {
-        const toggle = screen.getByRole<HTMLInputElement>("switch", { name: "Incluir anulados" });
-        expect(toggle.checked).toBe(true);
+        await userEvent.click(screen.getByRole("button", { name: "Filtros" }));
+        const toggle = await screen.findByRole<HTMLInputElement>("switch", {
+          name: "Incluir anulados",
+        });
+        expect(toggle.getAttribute("aria-checked") ?? String(toggle.checked)).toBe("true");
         await userEvent.click(toggle);
         await screen.findByText("Aquí todavía no hay registros");
         expect(api.requests.some((row) => row.path.includes("include_voided=false"))).toBe(true);
@@ -413,7 +418,7 @@ describe("W21 motorcycle record", () => {
     expect(screen.getByText("Datos insuficientes")).toBeDefined();
     expect(screen.queryByText("44.00 km/L")).toBeNull();
     known = true;
-    await userEvent.click(screen.getByRole("button", { name: "Actualizar ficha" }));
+    await chooseMenuAction("Actualizar ficha");
     await screen.findByText("44.00 km/L");
     await userEvent.click(screen.getByRole("link", { name: source }));
     await screen.findByRole("table", { name: "Servicios" });
@@ -437,9 +442,9 @@ describe("W21 motorcycle record", () => {
         routes: { "GET /api/v1/incidents/": () => historyPage([fleetFault()]) },
       });
       const label = language === "en" ? "Unblock" : "Desbloquear";
-      await screen.findByRole("button", { name: label });
+      await menuItem(label);
       expect(await axe(app.container)).toHaveNoViolations();
-      await userEvent.click(screen.getByRole("button", { name: label }));
+      await chooseMenuAction(label);
       expect(await axe(screen.getByRole("dialog"))).toHaveNoViolations();
       await userEvent.click(
         within(screen.getByRole("dialog")).getByRole("button", {

@@ -16,6 +16,10 @@ import {
   historyPage,
   fleetEvidenceApi,
   settleFleet,
+  chooseMenuAction,
+  pickDay,
+  pickOption,
+  menuItem,
 } from "./fleet-test-helpers";
 import { createApiClient } from "@wolbachia/api-client";
 import { createHash } from "node:crypto";
@@ -276,11 +280,8 @@ describe("fleet action boundaries", () => {
     await userEvent.click(dialog.getByRole("button", { name: "Registrar servicio" }));
     expect(api.requests.some((request) => request.method === "POST")).toBe(false);
     await userEvent.clear(dialog.getByRole("spinbutton", { name: "Odómetro (km)" }));
-    await userEvent.selectOptions(
-      dialog.getByRole("combobox", { name: "Tipo de servicio" }),
-      "inspection",
-    );
-    await userEvent.type(dialog.getByLabelText("Fecha del servicio"), "2026-11-01");
+    await pickOption(dialog, "Tipo de servicio", "Inspección");
+    await pickDay(dialog, "Fecha del servicio", "2026-11-01");
     await userEvent.type(dialog.getByRole("spinbutton", { name: "Odómetro (km)" }), "12600");
     await userEvent.type(
       dialog.getByRole("textbox", { name: "Observaciones" }),
@@ -376,16 +377,12 @@ describe("fleet action boundaries", () => {
         voided_at: isVoided ? "2026-10-02T12:00:00Z" : null,
       });
       await openFleet({ path: `${LIST}/M-03`, routes: { [GET]: pageOf([item]) } });
-      const button = await screen.findByRole("button", { name: "Desbloquear" });
-      expect(button.getAttribute("aria-disabled")).toBe("true");
-      const description = document.getElementById(button.getAttribute("aria-describedby") ?? "");
-      expect(description?.textContent).toContain(isVoided ? "está anulada" : "no está bloqueada");
-      await userEvent.click(button);
+      const unblock = await menuItem(/^Desbloquear/);
+      expect(unblock.getAttribute("aria-disabled")).toBe("true");
+      expect(unblock.textContent).toContain(isVoided ? "está anulada" : "no está bloqueada");
+      await userEvent.click(unblock);
       expect(screen.queryByRole("dialog")).toBeNull();
-      if (isVoided)
-        expect(screen.getByRole("button", { name: "Anular" }).getAttribute("aria-disabled")).toBe(
-          "true",
-        );
+      if (isVoided) expect((await menuItem(/^Anular/)).getAttribute("aria-disabled")).toBe("true");
     },
   );
   test.each([false, true])(
@@ -402,7 +399,7 @@ describe("fleet action boundaries", () => {
           },
         },
       });
-      await userEvent.click(await screen.findByRole("button", { name: "Anular" }));
+      await chooseMenuAction("Anular");
       await userEvent.type(await otherReasonField(), REASON);
       await userEvent.click(
         within(screen.getByRole("dialog")).getByRole("button", { name: "Anular" }),
@@ -419,11 +416,11 @@ describe("fleet action boundaries", () => {
   );
   test("local unblock wording does not change the next void dialog", async () => {
     await openFleet({ path: `${LIST}/M-03` });
-    await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
+    await chooseMenuAction("Desbloquear");
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }),
     );
-    await userEvent.click(screen.getByRole("button", { name: "Anular" }));
+    await chooseMenuAction("Anular");
     expect(screen.getByRole("dialog", { name: "Anular M-03" })).toBeDefined();
     expect(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Anular" }),

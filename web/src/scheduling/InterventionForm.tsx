@@ -144,8 +144,8 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
               label={t("scheduling.intervention.from")}
               value={from}
               onChange={setFrom}
+              error={missing(from)}
             />
-            {missing(from) && <p className="m-0 mt-1 text-xs text-critical-fg">{required}</p>}
           </FormField>
           <FormField width="short">
             <DateField
@@ -153,10 +153,8 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
               label={t("scheduling.intervention.to")}
               value={to}
               onChange={setTo}
+              error={missing(to) ?? rangeError}
             />
-            {(missing(to) ?? rangeError) && (
-              <p className="m-0 mt-1 text-xs text-critical-fg">{missing(to) ?? rangeError}</p>
-            )}
           </FormField>
         </FormGrid>
       </FormSection>

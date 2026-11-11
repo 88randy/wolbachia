@@ -1,7 +1,9 @@
 import { useId } from "react";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useModalDialog } from "../session/use-modal-dialog";
 import dialog from "../void/void-dialog.module.css";
+import styles from "./fleet.module.css";
 import { CreateMotorcycleForm } from "./CreateMotorcycleForm";
 import { useCreateMotorcycle } from "./use-create-motorcycle";
 function handleClose(dialog: HTMLDialogElement, isBusy: boolean, onClose: () => void) {
@@ -27,7 +29,7 @@ export function CreateMotorcycleDialog({ onClose, onCreated }: Props) {
   return (
     <dialog
       ref={ref}
-      className={dialog.dialog}
+      className={cn(dialog.dialog, styles.wide)}
       aria-labelledby={id}
       onCancel={(event) => {
         event.preventDefault();
