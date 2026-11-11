@@ -10,7 +10,8 @@
     "build": "npm run tokens:css && vite build",
     "preview": "vite preview",
     "test": "npm run tokens:css && vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "tutorials:record": "playwright test -c playwright.tutorials.config.ts"
   },
   "dependencies": {
     "@dnd-kit/dom": "0.5.3",

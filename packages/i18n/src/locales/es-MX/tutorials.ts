@@ -88,7 +88,7 @@ export const tutorials = {
   "tutorials.courierDelivery.prepare.caption": "Elige al repartidor, el almacén y los lotes.",
   "tutorials.courierDelivery.sign.label": "Firma del repartidor",
   "tutorials.courierDelivery.sign.caption":
-    "Toca Registrar entrega. El repartidor firma en su teléfono.",
+    "Registra la entrega. El repartidor firma aquí o en su teléfono.",
   "tutorials.courierDelivery.mistake.label": "¿Te equivocaste?",
   "tutorials.courierDelivery.mistake.caption": "Revisa que lo entregado sea lo correcto.",
   "tutorials.courierDelivery.void.label": "Anular",

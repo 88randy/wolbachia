@@ -86,7 +86,7 @@ export const tutorials: Record<keyof typeof source, string> = {
   "tutorials.courierDelivery.prepare.caption": "Pick the courier, the warehouse and the lots.",
   "tutorials.courierDelivery.sign.label": "Courier signs",
   "tutorials.courierDelivery.sign.caption":
-    "Tap Register delivery. The courier signs on their phone.",
+    "Register the delivery. The courier signs here or on their phone.",
   "tutorials.courierDelivery.mistake.label": "Made a mistake?",
   "tutorials.courierDelivery.mistake.caption": "Check that what was handed over is correct.",
   "tutorials.courierDelivery.void.label": "Void",

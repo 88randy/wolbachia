@@ -12,7 +12,7 @@ interface ClipPlayerProps {
 }
 
 const FRAME_CLASS =
-  "flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-surface-muted";
+  "flex aspect-video max-h-[38dvh] w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-surface-muted";
 
 /** Plays or pauses the video element whenever the step or the play state changes. */
 function useClipPlayback(isPlaying: boolean, video: string | undefined) {
