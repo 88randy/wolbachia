@@ -1196,8 +1196,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.readFailed":
     "Could not read local state. Retry; you can lock access without deleting your captures.",
   "mobile.settings.version": "Running app version",
-  "mobile.settings.updaterUnavailable":
-    "Updater unavailable. There is no verified manifest or installation receipt; contact support.",
+  "mobile.settings.updaterUnavailable": "We could not check for an update. Contact support.",
   "mobile.settings.support": "Organization support contact",
   "mobile.settings.supportUnavailable": "No contact configured. Ask your supervisor for help.",
   "mobile.settings.pendingWork": "Work retained on this phone",
@@ -1237,6 +1236,12 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.nextKeepWorkingReview":
     "You can continue; today's records will be in review, no blame.",
   "mobile.global.nextEnableLocation": "Turn on location in the phone settings.",
+  "mobile.global.fixEnableLocation": "Turn on location",
+  "mobile.global.fixAllowLocation": "Allow location",
+  "mobile.global.fixAllowCamera": "Allow camera",
+  "mobile.global.fixOpenSettings": "Open settings",
+  "mobile.global.fixFreeSpace": "Free up space",
+  "mobile.global.fixNetwork": "Open network settings",
   "mobile.global.nextWaitForFix": "Wait a few seconds, in the open if you can.",
   "mobile.global.nextChargeOrSaveBattery": "Charge the phone or lower the brightness.",
   "mobile.global.nextKeepWorkingSaved": "Keep working; what is saved on the phone is not lost.",

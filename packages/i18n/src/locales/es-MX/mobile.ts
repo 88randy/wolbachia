@@ -1228,7 +1228,7 @@ export const mobile = {
     "No pudimos consultar el estado local. Reintenta; puedes bloquear el acceso sin borrar tus capturas.",
   "mobile.settings.version": "Versión de la app en ejecución",
   "mobile.settings.updaterUnavailable":
-    "Actualizador no disponible. No hay un manifiesto ni un recibo de instalación verificado; consulta a soporte.",
+    "No pudimos revisar si hay una actualización. Consulta a soporte.",
   "mobile.settings.support": "Contacto de soporte de la organización",
   "mobile.settings.supportUnavailable": "No hay contacto configurado. Pide apoyo a tu supervisor.",
   "mobile.settings.pendingWork": "Trabajo conservado en el teléfono",
@@ -1253,7 +1253,7 @@ export const mobile = {
   "mobile.global.causeUpdateAvailable": "Hay una versión nueva de la app.",
   "mobile.global.causeClockSkew":
     "La hora del teléfono no coincide con la de la oficina; tus registros quedarán en revisión.",
-  "mobile.global.causeGpsOff": "La ubicación está apagada.",
+  "mobile.global.causeGpsOff": "Tu ubicación está apagada.",
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
   "mobile.global.causeGpsUnreliable":
     "Aún no hay una ubicación confiable; la velocidad no se puede confirmar.",
@@ -1266,7 +1266,13 @@ export const mobile = {
   "mobile.global.nextInstallWhenSignal": "Seguirás trabajando; se instalará cuando haya señal.",
   "mobile.global.nextInstallWhenClosing": "Instálala al cerrar jornada.",
   "mobile.global.nextKeepWorkingReview": "Puedes seguir; lo de hoy quedará en revisión, sin culpa.",
-  "mobile.global.nextEnableLocation": "Activa la ubicación en los ajustes del teléfono.",
+  "mobile.global.nextEnableLocation": "Actívala en los ajustes del teléfono.",
+  "mobile.global.fixEnableLocation": "Activar ubicación",
+  "mobile.global.fixAllowLocation": "Dar permiso",
+  "mobile.global.fixAllowCamera": "Dar permiso",
+  "mobile.global.fixOpenSettings": "Abrir ajustes",
+  "mobile.global.fixFreeSpace": "Liberar espacio",
+  "mobile.global.fixNetwork": "Abrir ajustes de red",
   "mobile.global.nextWaitForFix": "Espera unos segundos, a cielo abierto si puedes.",
   "mobile.global.nextChargeOrSaveBattery": "Carga el teléfono o baja el brillo.",
   "mobile.global.nextKeepWorkingSaved":

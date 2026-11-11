@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Paths } from "expo-file-system";
 
 import { useServices } from "../../app/services-context.ts";
@@ -23,6 +23,8 @@ export interface M16Model {
   readonly rules: SafetyRules;
   readonly globals: readonly GlobalState[];
   readonly isSpeedLocked: boolean;
+  /** Reads the location setting again now (after a permission prompt or a trip to settings). */
+  readonly recheckLocation: () => void;
 }
 
 /** One local fix stream feeds the lock; it is independent from the upload ping cadence. */
@@ -32,7 +34,8 @@ export function useM16(): M16Model {
   const session = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   const rules = useSafetyRules(sync.lastSyncAt);
   const isShiftOpen = useShiftOpen(sync.lastSyncAt);
-  const location = useDayLocation(day.location, isShiftOpen);
+  const [recheck, setRecheck] = useState(0);
+  const location = useDayLocation(day.location, isShiftOpen, recheck);
   const safety = useSafetyState(location, rules);
   const storage = useStorageLevel();
   const globals = useMemo(
@@ -51,7 +54,10 @@ export function useM16(): M16Model {
       }),
     [safety, session.phase, session.hasClockSkew, storage, location, sync.isOnline, isShiftOpen],
   );
-  return { safety, rules, globals, isSpeedLocked: safety.lockCause !== null };
+  const recheckLocation = useCallback(() => {
+    setRecheck((value) => value + 1);
+  }, []);
+  return { safety, rules, globals, isSpeedLocked: safety.lockCause !== null, recheckLocation };
 }
 
 function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
