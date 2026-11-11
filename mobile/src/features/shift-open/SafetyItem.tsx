@@ -24,7 +24,11 @@ export function SafetyItem({ item, check, onChange }: Props) {
   const label = locale === "en" && item.label_en ? item.label_en : item.label_es;
   const isFault = check !== undefined && check.result !== "ok";
   const set = (result: Check["result"]) => {
-    onChange({ item: item.code, result, ...(check?.note === undefined ? {} : { note: check.note }) });
+    onChange({
+      item: item.code,
+      result,
+      ...(check?.note === undefined ? {} : { note: check.note }),
+    });
   };
   const needsNote = isFault ? check.result === "severe" : false;
   return (

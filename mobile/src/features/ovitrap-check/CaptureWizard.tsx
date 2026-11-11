@@ -1,6 +1,7 @@
 import { ArrowRight, Save } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
+import { CameraPermissionFix } from "../../system-settings/CameraPermissionFix.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
@@ -58,6 +59,7 @@ export function CaptureWizard(props: CaptureProps) {
       }
     >
       {model.errorKey ? <InfoNotice tone="danger" message={t("field.capture.problem")} /> : null}
+      <CameraPermissionFix errorKey={model.errorKey} />
       <CaptureNotices {...props} />
       <CapturePageBody page={flow.page} {...props} />
     </ScreenScaffold>

@@ -568,7 +568,7 @@ export const mobile = {
   "mobile.day.loading": "Cargando puntos guardados…",
   "mobile.day.updating": "Actualizando…",
   "mobile.day.readFailed": "No pudimos leer los puntos guardados. Intenta leerlos otra vez.",
-  "mobile.day.mapFailed": "No pudimos verificar el mapa guardado. Intenta de nuevo o usa la lista.",
+  "mobile.day.mapFailed": "No pudimos abrir el mapa guardado. Intenta de nuevo o usa la lista.",
   "mobile.day.actionFailed":
     "No pudimos completar la acción local. Intenta otra vez; tus registros siguen guardados.",
   "mobile.day.backHome": "Volver al inicio",
@@ -605,8 +605,7 @@ export const mobile = {
   "mobile.day.unknownStatus": "Estado por confirmar",
   "mobile.day.phoneSaved": "Guardado en el teléfono",
   "mobile.day.serverReceived": "Recibido en la oficina · revisión aparte",
-  "mobile.day.receiptRejected":
-    "Captura rechazada. Consulta el detalle en Envíos.",
+  "mobile.day.receiptRejected": "Captura rechazada. Consulta el detalle en Envíos.",
   "mobile.day.captureInReview": "Captura en revisión de la oficina",
   "mobile.day.reviewUnconfirmed": "Revisión de la oficina sin confirmar",
   "mobile.day.place": "Colocar",
@@ -634,9 +633,9 @@ export const mobile = {
   "mobile.day.noLocation": "Este punto todav\u00eda no tiene ubicaci\u00f3n. Puedes usar la lista.",
   "mobile.day.noMap": "No tienes el mapa guardado",
   "mobile.day.noMapHint":
-    "No hay un archivo de mapa verificado disponible. Intenta verificar de nuevo o usa la lista de puntos.",
-  "mobile.day.retryMap": "Verificar mapa otra vez",
-  "mobile.day.outsideCoverage": "Fuera de la cobertura descargada",
+    "No hay un mapa guardado en el teléfono. Conéctate a internet y vuelve a intentar, o usa la lista de puntos.",
+  "mobile.day.retryMap": "Intentar con el mapa otra vez",
+  "mobile.day.outsideCoverage": "Fuera del área del mapa guardado",
   "mobile.day.attribution": "© OpenStreetMap contributors",
   "mobile.day.mapLabel": "Mapa sin conexión de puntos asignados",
   "mobile.day.locationDenied": "Ubicación no autorizada. Puedes seguir con la lista.",
@@ -695,22 +694,21 @@ export const mobile = {
     "Es menor que el último km conocido. Revisa la lectura; puedes continuar sin perderla. La oficina podrá ponerla en revisión.",
   "mobile.shiftOpen.mapsTitle": "Paso 4 de 4 · Preparar mapa",
   "mobile.shiftOpen.mapReady":
-    "Mapa verificado y con cobertura. Puedes continuar si la revisión de la moto está completa.",
+    "Mapa guardado en el teléfono. Puedes continuar si la revisión de la moto está completa.",
   "mobile.shiftOpen.mapUnavailable":
-    "El mapa aún no está listo. Esta versión no tiene el manifiesto de mapas. No puedes salir; vuelve a intentar cuando esté disponible.",
-  "mobile.shiftOpen.mapPreparing":
-    "Preparando mapa. La salida sigue bloqueada hasta verificar archivos y cobertura.",
+    "El mapa todavía no está disponible. Conéctate a internet y vuelve a intentar.",
+  "mobile.shiftOpen.mapPreparing": "Guardando el mapa en el teléfono. Todavía no puedes salir.",
   "mobile.shiftOpen.mapFailed":
     "No se pudo preparar el mapa. Conservamos el avance. Revisa la conexión y vuelve a intentar.",
   "mobile.shiftOpen.mapIncomplete":
-    "Faltan archivos verificados o cobertura. Vuelve a preparar el mapa antes de salir.",
+    "Al mapa guardado le faltan partes. Vuelve a guardarlo antes de salir.",
   "mobile.shiftOpen.mapProgress": "Avance de preparación (%):",
   "mobile.shiftOpen.recordSevere": "Guardar falla grave · No salir",
   "mobile.shiftOpen.severe":
     "No puedes salir con esta moto. Guarda la falla grave y avisa a tu supervisor para que gestione la liberación de flota. Guardarla no confirma que la oficina la recibió.",
   "mobile.shiftOpen.editChecklist": "Volver a elegir moto y revisar",
   "mobile.shiftOpen.motorcycle":
-    "Confirma el código de la moto. Si la copia local indica un bloqueo, pide ayuda a tu supervisor.",
+    "Confirma el código de la moto. Si el teléfono dice que está bloqueada, pide ayuda a tu supervisor.",
   "mobile.shiftOpen.checklist": "Contesta todos los puntos de seguridad antes de continuar.",
   "mobile.shiftOpen.noteGate": "Describe la falla grave o el motivo de Otro antes de guardar.",
   "mobile.shiftOpen.photo":
@@ -718,10 +716,11 @@ export const mobile = {
   "mobile.shiftOpen.odometer":
     "Escribe los kilómetros como un número entero. Conservamos lo que escribiste.",
   "mobile.shiftOpen.map":
-    "La salida requiere un mapa con archivos verificados y cobertura completa. Vuelve a intentar la preparación.",
+    "Falta guardar el mapa en el teléfono. Conéctate a internet y vuelve a intentar.",
   "mobile.shiftOpen.rejected":
     "La oficina rechazó la apertura. Revisa el resultado en Envíos y consulta a tu supervisor antes de salir.",
-  "mobile.shiftOpen.phoneSaved": "Tu jornada está abierta. La oficina la recibirá cuando haya internet.",
+  "mobile.shiftOpen.phoneSaved":
+    "Tu jornada está abierta. La oficina la recibirá cuando haya internet.",
   "mobile.shiftOpen.serverReceived": "La oficina ya recibió tu jornada.",
   "mobile.shiftOpen.reviewPending":
     "Revisión posterior: sin confirmación de resolución en esta versión.",
@@ -1194,8 +1193,7 @@ export const mobile = {
     "No se pudo abrir la llamada. Usa la app Teléfono del dispositivo y busca ayuda cuando sea seguro. El reporte se conserva.",
   "mobile.incidents.contactMissing":
     "No hay un teléfono laboral validado disponible. No se configuró un número de emergencias para esta app.",
-  "mobile.incidents.callFallback":
-    "En una emergencia, llama también al 911.",
+  "mobile.incidents.callFallback": "En una emergencia, llama también al 911.",
   "mobile.history.title": "Mi historial",
   "mobile.history.search": "Buscar código o referencia",
   "mobile.history.partial":
@@ -1230,7 +1228,7 @@ export const mobile = {
     "No pudimos consultar el estado local. Reintenta; puedes bloquear el acceso sin borrar tus capturas.",
   "mobile.settings.version": "Versión de la app en ejecución",
   "mobile.settings.updaterUnavailable":
-    "Actualizador no disponible. No hay un manifiesto ni un recibo de instalación verificado; consulta a soporte.",
+    "No pudimos revisar si hay una actualización. Consulta a soporte.",
   "mobile.settings.support": "Contacto de soporte de la organización",
   "mobile.settings.supportUnavailable": "No hay contacto configurado. Pide apoyo a tu supervisor.",
   "mobile.settings.pendingWork": "Trabajo conservado en el teléfono",
@@ -1255,7 +1253,7 @@ export const mobile = {
   "mobile.global.causeUpdateAvailable": "Hay una versión nueva de la app.",
   "mobile.global.causeClockSkew":
     "La hora del teléfono no coincide con la de la oficina; tus registros quedarán en revisión.",
-  "mobile.global.causeGpsOff": "La ubicación está apagada.",
+  "mobile.global.causeGpsOff": "Tu ubicación está apagada.",
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
   "mobile.global.causeGpsUnreliable":
     "Aún no hay una ubicación confiable; la velocidad no se puede confirmar.",
@@ -1268,7 +1266,13 @@ export const mobile = {
   "mobile.global.nextInstallWhenSignal": "Seguirás trabajando; se instalará cuando haya señal.",
   "mobile.global.nextInstallWhenClosing": "Instálala al cerrar jornada.",
   "mobile.global.nextKeepWorkingReview": "Puedes seguir; lo de hoy quedará en revisión, sin culpa.",
-  "mobile.global.nextEnableLocation": "Activa la ubicación en los ajustes del teléfono.",
+  "mobile.global.nextEnableLocation": "Actívala en los ajustes del teléfono.",
+  "mobile.global.fixEnableLocation": "Activar ubicación",
+  "mobile.global.fixAllowLocation": "Dar permiso",
+  "mobile.global.fixAllowCamera": "Dar permiso",
+  "mobile.global.fixOpenSettings": "Abrir ajustes",
+  "mobile.global.fixFreeSpace": "Liberar espacio",
+  "mobile.global.fixNetwork": "Abrir ajustes de red",
   "mobile.global.nextWaitForFix": "Espera unos segundos, a cielo abierto si puedes.",
   "mobile.global.nextChargeOrSaveBattery": "Carga el teléfono o baja el brillo.",
   "mobile.global.nextKeepWorkingSaved":

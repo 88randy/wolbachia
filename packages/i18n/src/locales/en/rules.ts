@@ -32,6 +32,7 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.param.reminderBeforeEnd": "Reminder before the shift ends",
   "rules.param.maxPaddleReuses": "Maximum egg paddle reuses",
   "rules.param.revisitInterval": "Revisit interval",
+  "rules.param.departureRequiresOfflineMap": "Departure requires saved map (1 = yes, 0 = no)",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "meters",

@@ -109,6 +109,11 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed(
         "revisit_interval_days", ValueType.INTEGER, Unit.DAYS, 7, Decimal(1), Decimal(28)
     ),
+    # Boolean stored as 0/1. The offline map pack is recommended, not required, until the tile
+    # source is chosen (client decision delegated); 1 restores the blocking departure gate.
+    ParameterSeed(
+        "departure_requires_offline_map", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(1)
+    ),
 )
 
 

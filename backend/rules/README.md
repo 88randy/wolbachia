@@ -54,6 +54,11 @@ MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
 | reminder_minutes_before_end | 60 | min | 5 | 180 |
 | max_paddle_reuses | 2 | count | 0 | 2 |
 | revisit_interval_days | 7 | day | 1 | 28 |
+| departure_requires_offline_map | 0 | count | 0 | 1 |
+
+`departure_requires_offline_map` is a boolean stored as 0/1. With 0 (default) the courier can
+depart without a saved offline map pack and the app uses online tiles; with 1 departure stays
+blocked until the pack is verified.
 
 Seed reruns add versions only when none exist and preserve all existing versions,
 including deactivated/voided history. Bounds are reviewed definitions and are

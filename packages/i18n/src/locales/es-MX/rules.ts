@@ -32,6 +32,7 @@ export const rules = {
   "rules.param.reminderBeforeEnd": "Aviso antes del fin de la jornada",
   "rules.param.maxPaddleReuses": "Reutilizaciones máximas de la papeleta",
   "rules.param.revisitInterval": "Intervalo entre revisitas",
+  "rules.param.departureRequiresOfflineMap": "La salida exige mapa guardado (1 = sí, 0 = no)",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "metros",

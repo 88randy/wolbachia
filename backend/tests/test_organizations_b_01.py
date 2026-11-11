@@ -238,6 +238,7 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "reminder_minutes_before_end": (60, "min", 5, 180),
         "max_paddle_reuses": (2, "count", 0, 2),
         "revisit_interval_days": (7, "day", 1, 28),
+        "departure_requires_offline_map": (0, "count", 0, 1),
     }
     parameters = RuleParameter.objects.filter(organization=organization).prefetch_related(
         "versions"

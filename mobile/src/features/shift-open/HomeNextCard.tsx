@@ -1,4 +1,12 @@
-import { Bike, CircleCheck, Hourglass, PencilLine, Play, Route } from "lucide-react-native";
+import {
+  Bike,
+  CircleCheck,
+  Hourglass,
+  PencilLine,
+  Play,
+  Route,
+  TriangleAlert,
+} from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import type { MessageKey } from "@wolbachia/i18n";
 
@@ -35,6 +43,11 @@ const COPY: Readonly<Record<HomeNext, CardCopy>> = {
     body: "courier.home.retryBody",
     action: "courier.home.retryAction",
   },
+  blocked: {
+    icon: TriangleAlert,
+    title: "courier.home.blockedTitle",
+    action: "courier.home.blockedMapAction",
+  },
   route: {
     icon: Route,
     title: "courier.home.routeTitle",
@@ -63,7 +76,7 @@ export function HomeNextCard({
     <BigActionCard
       icon={copy.icon}
       title={t(copy.title)}
-      body={copy.body ? t(copy.body) : undefined}
+      body={model.reasonKey ? t(model.reasonKey) : copy.body ? t(copy.body) : undefined}
       actionLabel={copy.action && model.go ? t(copy.action) : undefined}
       onPress={model.go ?? undefined}
       disabled={isBusy}

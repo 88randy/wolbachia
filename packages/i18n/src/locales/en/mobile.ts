@@ -560,7 +560,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.loading": "Loading saved points…",
   "mobile.day.updating": "Updating…",
   "mobile.day.readFailed": "Could not read saved points. Try reading them again.",
-  "mobile.day.mapFailed": "Could not verify the saved map. Retry or use the list.",
+  "mobile.day.mapFailed": "We could not open the saved map. Try again or use the list.",
   "mobile.day.actionFailed":
     "Could not complete the local action. Retry; your records remain saved.",
   "mobile.day.backHome": "Back to home",
@@ -619,9 +619,9 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.noLocation": "No location for this point yet. You can still use the list.",
   "mobile.day.noMap": "No saved map",
   "mobile.day.noMapHint":
-    "No verified map file is available. Retry verification or use the point list.",
-  "mobile.day.retryMap": "Reverify map",
-  "mobile.day.outsideCoverage": "Outside downloaded coverage",
+    "There is no saved map on the phone. Connect to the internet and try again, or use the list of points.",
+  "mobile.day.retryMap": "Try the map again",
+  "mobile.day.outsideCoverage": "Outside the saved map area",
   "mobile.day.attribution": "© OpenStreetMap contributors",
   "mobile.day.mapLabel": "Offline map of assigned points",
   "mobile.day.locationDenied": "Location permission denied. You can keep using the list.",
@@ -678,29 +678,28 @@ export const mobile: Record<keyof typeof source, string> = {
     "This is below the last known reading. Check it; you can continue without losing it. The office may flag it for review.",
   "mobile.shiftOpen.mapsTitle": "Step 4 of 4 · Prepare map",
   "mobile.shiftOpen.mapReady":
-    "Map verified with coverage. You may continue once the motorcycle checklist is complete.",
+    "Map saved on the phone. You can continue if the motorcycle check is complete.",
   "mobile.shiftOpen.mapUnavailable":
-    "The map is not ready. This build has no map manifest. You cannot depart; retry when it is available.",
-  "mobile.shiftOpen.mapPreparing":
-    "Preparing map. Departure stays blocked until files and coverage are verified.",
+    "The map is not available yet. Connect to the internet and try again.",
+  "mobile.shiftOpen.mapPreparing": "Saving the map on the phone. You cannot depart yet.",
   "mobile.shiftOpen.mapFailed":
     "Map preparation failed. Progress is retained. Check your connection and retry.",
   "mobile.shiftOpen.mapIncomplete":
-    "Verified files or coverage are missing. Prepare the map again before departure.",
+    "The saved map is missing parts. Save it again before departing.",
   "mobile.shiftOpen.mapProgress": "Preparation progress (%):",
   "mobile.shiftOpen.recordSevere": "Save severe fault · Do not depart",
   "mobile.shiftOpen.severe":
     "You cannot depart with this motorcycle. Save the severe fault and contact your supervisor to arrange fleet clearance. Saving does not confirm office receipt.",
   "mobile.shiftOpen.editChecklist": "Return to motorcycle selection and checklist",
   "mobile.shiftOpen.motorcycle":
-    "Confirm the motorcycle code. If the local copy shows a block, ask your supervisor for help.",
+    "Confirm the motorcycle code. If the phone says it is blocked, ask your supervisor for help.",
   "mobile.shiftOpen.checklist": "Answer every safety item before continuing.",
   "mobile.shiftOpen.noteGate": "Describe the severe fault or Other before saving.",
   "mobile.shiftOpen.photo":
     "The list requires a photo. Capture it before departure; this build has no camera support.",
   "mobile.shiftOpen.odometer": "Enter kilometers as a whole number. Your input is retained.",
   "mobile.shiftOpen.map":
-    "Departure requires verified map files and full coverage. Retry preparation.",
+    "The map still needs to be saved on the phone. Connect to the internet and try again.",
   "mobile.shiftOpen.rejected":
     "The office rejected the opening. Check Uploads for the outcome and contact your supervisor before departure.",
   "mobile.shiftOpen.phoneSaved": "Saved on phone · Awaiting office receipt",
@@ -1197,8 +1196,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.readFailed":
     "Could not read local state. Retry; you can lock access without deleting your captures.",
   "mobile.settings.version": "Running app version",
-  "mobile.settings.updaterUnavailable":
-    "Updater unavailable. There is no verified manifest or installation receipt; contact support.",
+  "mobile.settings.updaterUnavailable": "We could not check for an update. Contact support.",
   "mobile.settings.support": "Organization support contact",
   "mobile.settings.supportUnavailable": "No contact configured. Ask your supervisor for help.",
   "mobile.settings.pendingWork": "Work retained on this phone",
@@ -1238,6 +1236,12 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.nextKeepWorkingReview":
     "You can continue; today's records will be in review, no blame.",
   "mobile.global.nextEnableLocation": "Turn on location in the phone settings.",
+  "mobile.global.fixEnableLocation": "Turn on location",
+  "mobile.global.fixAllowLocation": "Allow location",
+  "mobile.global.fixAllowCamera": "Allow camera",
+  "mobile.global.fixOpenSettings": "Open settings",
+  "mobile.global.fixFreeSpace": "Free up space",
+  "mobile.global.fixNetwork": "Open network settings",
   "mobile.global.nextWaitForFix": "Wait a few seconds, in the open if you can.",
   "mobile.global.nextChargeOrSaveBattery": "Charge the phone or lower the brightness.",
   "mobile.global.nextKeepWorkingSaved": "Keep working; what is saved on the phone is not lost.",

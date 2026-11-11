@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import type { LocationSource, LocationState } from "./location.ts";
 /** A generation cancels late permission/watch promises when the app backgrounds or the screen unmounts. */
-export function useDayLocation(source: LocationSource, isShiftOpen: boolean): LocationState {
+export function useDayLocation(
+  source: LocationSource,
+  isShiftOpen: boolean,
+  recheck = 0,
+): LocationState {
   const [state, setState] = useState<LocationState>({ kind: "unavailable" });
   useEffect(
     () => subscribeLocation({ source, isShiftOpen, publish: setState }),
-    [source, isShiftOpen],
+    // `recheck` restarts the source so a new permission or setting is read at once.
+    [source, isShiftOpen, recheck],
   );
   return state;
 }

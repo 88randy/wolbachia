@@ -22,12 +22,16 @@ import { ActionGrid } from "../../ui/ActionGrid.tsx";
 import type { ActionTileTone } from "../../ui/ActionTile.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { lockReasonKey } from "./home-lock.ts";
+import type { HomeLock } from "./home-lock.ts";
 
 interface HomeTilesProps {
   /** A local shift that allows capture exists (same rule the old P3 entries used). */
   readonly canCapture: boolean;
   /** The shift is open (or closed on the phone): Cerrar día opens its flow or summary. */
   readonly hasShift: boolean;
+  /** Why the capture tiles are off; drives the single notice and the line under each tile. */
+  readonly lock: HomeLock;
 }
 
 /** Which local fact enables a tile: a capture-ready shift, any shift, or always. */
@@ -87,8 +91,35 @@ const COMMUNITY_TILE: TileSpec = {
   gate: "always",
 };
 
+/** One short line under a disabled tile: what is missing, in plain words. */
+function lockedHintKey(gate: Gate, lock: HomeLock): MessageKey {
+  if (gate === "shift") return "courier.tile.lockedNoShift";
+  return lock.kind === "blocked" ? "courier.tile.lockedBlocked" : "courier.tile.lockedNoShift";
+}
+
+interface TileContext {
+  readonly t: (key: MessageKey) => string;
+  readonly push: (route: Route) => void;
+  readonly isOpen: Readonly<Record<Gate, boolean>>;
+  readonly lock: HomeLock;
+}
+
+function tileItem(spec: TileSpec, { t, push, isOpen, lock }: TileContext) {
+  return {
+    key: spec.labelKey,
+    icon: spec.icon,
+    label: t(spec.labelKey),
+    tone: spec.tone,
+    disabled: !isOpen[spec.gate],
+    hint: isOpen[spec.gate] ? undefined : t(lockedHintKey(spec.gate, lock)),
+    onPress: () => {
+      push(spec.route);
+    },
+  };
+}
+
 /** "Otras acciones" grid of Mi día: two tiles per row, emergency always available. */
-export function HomeTiles({ canCapture, hasShift }: HomeTilesProps) {
+export function HomeTiles({ canCapture, hasShift, lock }: HomeTilesProps) {
   const t = useT();
   const { push } = useNavigation();
   const { auth } = useServices();
@@ -99,23 +130,15 @@ export function HomeTiles({ canCapture, hasShift }: HomeTilesProps) {
     shift: hasShift,
     always: true,
   };
+  const reasonKey = canCapture ? null : lockReasonKey(lock);
   const specs = canSeeCommunity ? [...TILES, COMMUNITY_TILE] : TILES;
-  const items = specs.map((spec) => ({
-    key: spec.labelKey,
-    icon: spec.icon,
-    label: t(spec.labelKey),
-    tone: spec.tone,
-    disabled: !isOpen[spec.gate],
-    onPress: () => {
-      push(spec.route);
-    },
-  }));
+  const items = specs.map((spec) => tileItem(spec, { t, push, isOpen, lock }));
   return (
     <View className="gap-3">
       <AppText variant="bodyStrong" tone="secondary" accessibilityRole="header">
         {t("courier.home.tools")}
       </AppText>
-      {canCapture ? null : <InfoNotice message={t("courier.home.needsShift")} />}
+      {reasonKey ? <InfoNotice message={t(reasonKey)} /> : null}
       <ActionGrid items={items} />
     </View>
   );

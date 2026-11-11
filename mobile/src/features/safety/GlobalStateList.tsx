@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { FixButton } from "./FixButton.tsx";
 import { causeKey, levelKey, nextKey } from "./copy.ts";
 import type { GlobalState } from "./global-state.ts";
 
@@ -31,11 +32,13 @@ export function GlobalStateList({
   return (
     <View className="gap-2 p-2">
       {states.slice(0, MAX_SHOWN).map((state) => (
-        <InfoNotice
-          key={state.cause}
-          tone={isCalm ? "info" : TONES[state.level]}
-          message={stateMessage(state, isCalm, t)}
-        />
+        <View key={state.cause} className="gap-2">
+          <InfoNotice
+            tone={isCalm ? "info" : TONES[state.level]}
+            message={stateMessage(state, isCalm, t)}
+          />
+          <FixButton cause={state.cause} />
+        </View>
       ))}
       {states.length > MAX_SHOWN ? (
         <AppText variant="caption">

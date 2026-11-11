@@ -35,7 +35,10 @@ export function P4Screen({ model }: { readonly model: M04Model }) {
         />
       }
     >
-      <StepQuestion title={t("field.open.motorcycleQuestion")} hint={t("field.open.motorcycleHint")} />
+      <StepQuestion
+        title={t("field.open.motorcycleQuestion")}
+        hint={t("field.open.motorcycleHint")}
+      />
       {hasList ? (
         <>
           <MotorcycleScanner

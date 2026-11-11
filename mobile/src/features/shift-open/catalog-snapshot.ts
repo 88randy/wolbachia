@@ -80,3 +80,12 @@ export function readRulesSnapshot(value: unknown): {
     throw new Error("Malformed rules snapshot.");
   return { version: value.version, parameters: value.parameters };
 }
+
+/** Rule `departure_requires_offline_map` (0/1). Missing, malformed or 0 means "recommended, not required". */
+export function readRequiresOfflineMap(rules: unknown): boolean {
+  if (!isRecord(rules) || !Array.isArray(rules.parameters)) return false;
+  const rule = rules.parameters.find(
+    (entry: unknown) => isRecord(entry) && entry.key === "departure_requires_offline_map",
+  ) as Record<string, unknown> | undefined;
+  return rule?.value === 1;
+}

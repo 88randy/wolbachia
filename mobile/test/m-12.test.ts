@@ -311,6 +311,7 @@ void test("M12 no operational shift is wire null for an accident and cannot auth
           opening: null,
           catalog: null,
           map: null,
+          requiresOfflineMap: false,
           gate: null,
           canDepart: false,
           hasOdometerWarning: false,
