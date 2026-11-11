@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Now
 
 from core.models import ImmutableMixin, OrgScopedModel
 from organizations.validators import (
@@ -124,6 +125,17 @@ class Center(OrgScopedModel):
     code = models.CharField(max_length=50)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    # Database defaults keep inserts from code that predates these columns working.
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    deactivated_reason = models.CharField(max_length=500, blank=True, db_default="")
 
     class Meta:
         ordering = ["code", "id"]

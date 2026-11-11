@@ -22,6 +22,7 @@ from accounts.models import User
 from accounts.services import create_user_without_password
 from core.exceptions import FieldValidationError
 from core.time import server_now
+from organizations.centers import CenterSpec, create_center
 from organizations.defaults import DefaultsPlan, seed_organization_defaults
 from organizations.models import Center, Organization, Profile, all_scope
 from organizations.services import (
@@ -46,12 +47,6 @@ Action = PlatformAuditEntry.Action
 PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"  # noqa: S105
 PASSWORD_GROUPS = 4
 PASSWORD_GROUP_LENGTH = 4
-
-
-@dataclass(frozen=True)
-class CenterSpec:
-    code: str
-    name: str
 
 
 @dataclass(frozen=True)
@@ -179,23 +174,7 @@ def _deliver_credentials(user: User, delivery: Delivery) -> str | None:
 
 
 def _create_center(organization: Organization, spec: CenterSpec, actor: User) -> Center:
-    if Center.objects.filter(organization=organization, code__iexact=spec.code).exists():
-        raise FieldValidationError("code", "center_code_taken")
-    try:
-        with transaction.atomic():
-            center = Center.objects.create(
-                organization=organization, code=spec.code, name=spec.name, created_by=actor
-            )
-    except IntegrityError as error:
-        raise FieldValidationError("code", "center_code_taken") from error
-    record(
-        Action.CENTER_CREATE,
-        actor,
-        organization,
-        center.pk,
-        {"code": center.code, "name": center.name},
-    )
-    return center
+    return create_center(organization, spec, actor)
 
 
 def provision_organization(actor: User, request: ProvisionRequest) -> ProvisionResult:
