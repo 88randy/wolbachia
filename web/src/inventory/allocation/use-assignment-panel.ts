@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import {
@@ -36,12 +37,14 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
   const frame = useQuery(assignmentFrameOptions(scope, saved?.id ?? ""));
   const draft = useAssignmentDraft(scope, { courierId, date });
   const command = useAllocationCommand(scope);
+  const [signature, setSignature] = useState<Blob | null>(null);
   const create = () => {
     const next = draft.draft();
     if (next) void command.send(next);
   };
   const release = () => {
     if (!saved) return;
+    const clientId = crypto.randomUUID();
     void command.send({
       target: { kind: "release", assignmentId: saved.id },
       body: {
@@ -49,11 +52,28 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
         command_id: crypto.randomUUID(),
         assignment_id: saved.id,
         expected_revision: saved.revision,
-        evidence: [],
+        evidence: signature ? [{ role: "signature" as const, upload_id: clientId }] : [],
       },
+      ...(signature
+        ? {
+            attachment: {
+              file: new File([signature], "signature.png", { type: "image/png" }),
+              clientId,
+            },
+          }
+        : {}),
     });
   };
-  const signature = signatureOf(saved, command.result, frame.data);
-  return { suggestion, lots, origins, saved, frame, draft, command, signature, create, release };
+  const signatureState = signatureOf(saved, command.result, frame.data);
+  return {
+    ...{ suggestion, lots, origins, saved, frame, draft, command },
+    ...{
+      create,
+      release,
+      signature: signatureState,
+      signatureBlob: signature,
+      setSignatureBlob: setSignature,
+    },
+  };
 }
 export type AssignmentPanelState = ReturnType<typeof useAssignmentPanel>;

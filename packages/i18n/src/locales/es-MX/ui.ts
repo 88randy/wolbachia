@@ -24,4 +24,13 @@ export const ui = {
   "ui.preview.voided": "Anulación de muestra registrada",
   "ui.toast.label": "Avisos",
   "ui.toast.blocking": "Avisos que requieren atención",
+  "ui.signaturePad.placeholder": "Firma aquí",
+  "ui.signaturePad.clear": "Borrar",
+  "ui.signaturePad.ready": "Firma lista",
+  "ui.signaturePad.hint": "Firma con el dedo o el mouse.",
+  "ui.signaturePad.tooShort": "La firma es muy corta. Vuelve a firmar.",
+  "ui.signaturePad.failed": "No se pudo guardar la firma. Inténtalo de nuevo.",
+  "ui.signaturePad.signer": "Firma: {name}",
+  "ui.signaturePad.noPermission":
+    "Tu perfil no puede guardar firmas. Pide a administración que te dé ese permiso.",
 } as const satisfies AreaCatalog<"ui">;

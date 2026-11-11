@@ -9,18 +9,30 @@ export function AssignmentActions({ panel }: { panel: AssignmentPanelState }) {
   const { t } = useTranslation();
   const id = useId();
   const { command, draft } = panel;
-  if (panel.saved)
+  if (panel.saved) {
+    const isSent = command.result?.kind === "release";
+    const needsSignature = !panel.signatureBlob && !isSent;
     return (
       <FormActions>
+        {needsSignature && (
+          <p id={id} className="m-0 mr-auto text-[13px] text-ink-2">
+            {t("allocation.assignment.needsSignature")}
+          </p>
+        )}
         <Button
           loading={command.isBusy}
-          disabled={command.result?.kind === "release"}
-          onClick={panel.release}
+          disabled={isSent}
+          aria-disabled={needsSignature || undefined}
+          aria-describedby={needsSignature ? id : undefined}
+          onClick={() => {
+            if (!needsSignature) panel.release();
+          }}
         >
           {t("allocation.assignment.release")}
         </Button>
       </FormActions>
     );
+  }
   const isBlocked = draft.blockers.length > 0;
   return (
     <FormActions>

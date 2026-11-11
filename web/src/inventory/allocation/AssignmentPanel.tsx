@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { Card } from "../../ui/Card";
+import { SignaturePad } from "../../ui/SignaturePad";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { AssignmentActions } from "./AssignmentActions";
 import { AssignmentDelivery } from "./AssignmentDelivery";
@@ -13,11 +14,30 @@ import { useAssignmentPanel } from "./use-assignment-panel";
 import type { AssignmentPanelState } from "./use-assignment-panel";
 import type { AllocationScope } from "./allocation-query";
 
-function FormBody({ panel, canAllocate }: { panel: AssignmentPanelState; canAllocate: boolean }) {
+function FormBody(props: {
+  panel: AssignmentPanelState;
+  canAllocate: boolean;
+  scope: AllocationScope;
+  courierName: string;
+}) {
   const { t } = useTranslation();
+  const { panel, canAllocate } = props;
   if (panel.saved)
     return (
-      <p className="m-0">{t("allocation.assignment.saved", { revision: panel.saved.revision })}</p>
+      <div className="flex min-w-0 flex-col gap-4">
+        <p className="m-0">
+          {t("allocation.assignment.saved", { revision: panel.saved.revision })}
+        </p>
+        {canAllocate && panel.command.result?.kind !== "release" && (
+          <SignaturePad
+            id="signature-pad"
+            label={t("ui.signaturePad.signer", { name: props.courierName })}
+            disabled={panel.command.isBusy}
+            isReady={panel.signatureBlob !== null}
+            onChange={panel.setSignatureBlob}
+          />
+        )}
+      </div>
     );
   if (!canAllocate)
     return <InlineNotice tone="info">{t("allocation.assignment.noPermission")}</InlineNotice>;
@@ -64,7 +84,12 @@ export function AssignmentPanel(props: {
     <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_28rem]">
       <Card title={title} headingLevel={2}>
         <div className="flex min-w-0 flex-col gap-4">
-          <FormBody panel={panel} canAllocate={props.canAllocate} />
+          <FormBody
+            panel={panel}
+            canAllocate={props.canAllocate}
+            scope={props.scope}
+            courierName={props.courier.display_name}
+          />
           <CommandFeedback command={panel.command} successKey={success} />
           {props.canAllocate && <AssignmentActions panel={panel} />}
         </div>
