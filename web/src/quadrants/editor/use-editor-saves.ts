@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function, complexity, max-depth -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useToast } from "../../ui/toast-context";
@@ -43,7 +43,13 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
   const [reason, setReason] = useState("");
   const [isSaving, setSaving] = useState(false);
 
-  const issues = useMemo(() => shapeIssues(data, editor.shapes), [data, editor.shapes]);
+  const liveIssues = useMemo(() => shapeIssues(data, editor.shapes), [data, editor.shapes]);
+  // The save refreshes the lists before the draft lets go of its shapes. The refreshed lists
+  // already hold what this save created, so checking names against them would call the draft a
+  // duplicate of itself. While saving, the issues are the ones found when the save started.
+  const startIssues = useRef(liveIssues);
+  if (!isSaving) startIssues.current = liveIssues;
+  const issues = isSaving ? startIssues.current : liveIssues;
   const outside = useMemo(() => outsidePoints(data, editor.shapes), [data, editor.shapes]);
   const undecided = outside.filter((item) => !item.movedTo && !decisions[item.point.id]);
   const needsReason = outside.length > 0;

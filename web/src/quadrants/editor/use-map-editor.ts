@@ -28,7 +28,8 @@ const MIN_CORNERS_OPEN_RING = 2;
 const FIT_PADDING = 56;
 
 function modeFor(tool: EditorTool): string {
-  if (tool === "quadrant" || tool === "block") return DRAW_MODES.polygon;
+  if (tool === "quadrant") return DRAW_MODES.polygon;
+  if (tool === "block") return DRAW_MODES.block;
   if (tool === "sampling" || tool === "release") return DRAW_MODES.point;
   return DRAW_MODES.select;
 }
@@ -79,6 +80,7 @@ export function useMapEditor(data: EditorData) {
   const [history, setHistory] = useState<History>(INITIAL_HISTORY);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [vertexCount, setVertexCount] = useState(0);
+  const [showMeasures, setShowMeasures] = useState(true);
   const mapRef = useRef<MapLibreMap | null>(null);
   const historyRef = useRef(history);
   const toolRef = useRef(tool);
@@ -218,8 +220,11 @@ export function useMapEditor(data: EditorData) {
         record(upsertShape(presentNow(), { ...known, geometry }), "commit");
         return;
       }
-      if (context.mode === DRAW_MODES.polygon && geometry.type === "Polygon") {
-        const polygonKind: ShapeKind = toolRef.current === "block" ? "block" : "quadrant";
+      if (
+        (context.mode === DRAW_MODES.polygon || context.mode === DRAW_MODES.block) &&
+        geometry.type === "Polygon"
+      ) {
+        const polygonKind: ShapeKind = context.mode === DRAW_MODES.block ? "block" : "quadrant";
         const shape: DraftShape = {
           key,
           kind: polygonKind,
@@ -254,12 +259,13 @@ export function useMapEditor(data: EditorData) {
       }
     };
     const onChange = () => {
-      if (draw.getMode() !== DRAW_MODES.polygon) return;
+      const mode = draw.getMode();
+      if (mode !== DRAW_MODES.polygon && mode !== DRAW_MODES.block) return;
       const drawing = draw
         .getSnapshot()
         .find(
           (item: GeoJSONStoreFeatures) =>
-            item.properties["mode"] === DRAW_MODES.polygon && !item.properties[DRAFT_FLAG],
+            item.properties["mode"] === mode && !item.properties[DRAFT_FLAG],
         );
       const ring = drawing?.geometry.type === "Polygon" ? drawing.geometry.coordinates[0] : [];
       // An open ring repeats the cursor and closing positions.
@@ -413,6 +419,10 @@ export function useMapEditor(data: EditorData) {
       mapRef.current.fitBounds(bounds, { padding: FIT_PADDING, duration: 400, maxZoom: 18 });
   }, []);
 
+  const toggleMeasures = useCallback(() => {
+    setShowMeasures((current) => !current);
+  }, []);
+
   const pending = useMemo(() => changedShapes(present), [present]);
   const selected = present.shapes.find((item) => item.key === selectedKey) ?? null;
 
@@ -428,6 +438,8 @@ export function useMapEditor(data: EditorData) {
     selected,
     selectedKey,
     vertexCount,
+    showMeasures,
+    toggleMeasures,
     canUndo: history.past.length > 0 || vertexCount > 0,
     canRedo: history.future.length > 0,
     undo,

@@ -70,6 +70,7 @@ export function MapEditorWorkspace({ scope, focusCode, startTool }: Props) {
     onHelp: () => {
       setHelpOpen((open) => !open);
     },
+    isBusy: saves.isBusy,
   });
   const viewQuadrants = focus ? [focus] : data.quadrants;
   const pickedQuadrant = editor.selected?.kind === "quadrant" ? editor.selected.saved : null;
@@ -106,6 +107,7 @@ export function MapEditorWorkspace({ scope, focusCode, startTool }: Props) {
         <EditorToolbar
           editor={editor}
           allowed={allowed}
+          isBusy={saves.isBusy}
           isHelpOpen={isHelpOpen}
           onHelpChange={setHelpOpen}
         />

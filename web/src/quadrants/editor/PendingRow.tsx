@@ -46,18 +46,21 @@ function IconAction({
   label,
   icon: Icon,
   onClick,
+  isDisabled,
 }: {
   label: string;
   icon: LucideIcon;
   onClick: () => void;
+  isDisabled: boolean;
 }) {
   return (
     <Tooltip content={label}>
       <button
         type="button"
         aria-label={label}
+        disabled={isDisabled}
         onClick={onClick}
-        className="inline-flex size-8 items-center justify-center rounded-lg text-ink-2 hover:bg-tint hover:text-action-strong"
+        className="inline-flex size-8 items-center justify-center rounded-lg text-ink-2 hover:bg-tint hover:text-action-strong disabled:cursor-not-allowed disabled:opacity-45"
       >
         <Icon aria-hidden="true" className="size-4" />
       </button>
@@ -100,6 +103,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
         <IconAction
           label={t("mapEditor.action.show")}
           icon={Crosshair}
+          isDisabled={saves.isBusy}
           onClick={() => {
             editor.select(shape.key);
           }}
@@ -108,6 +112,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
           <IconAction
             label={t("mapEditor.action.remove")}
             icon={X}
+            isDisabled={saves.isBusy}
             onClick={() => {
               editor.removeShape(shape.key);
             }}
@@ -116,6 +121,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
           <IconAction
             label={t("mapEditor.action.revert")}
             icon={Undo2}
+            isDisabled={saves.isBusy}
             onClick={() => {
               editor.revertShape(shape.key);
             }}
@@ -134,6 +140,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
           )}
           value={shape.code}
           maxLength={50}
+          disabled={saves.isBusy}
           onChange={(event) => {
             editor.updateShape(shape.key, { code: event.target.value });
           }}
@@ -150,6 +157,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
           <SelectMenu
             id={`map-editor-center-${shape.key}`}
             value={shape.centerId}
+            disabled={saves.isBusy}
             placeholder={t("mapEditor.field.centerPlaceholder")}
             options={data.centers.map((item) => ({ value: item.id, label: item.name }))}
             onValueChange={(value) => {

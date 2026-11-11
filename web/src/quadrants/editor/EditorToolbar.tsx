@@ -6,6 +6,7 @@ import {
   MousePointer2,
   PenLine,
   Redo2,
+  Ruler,
   Scan,
   Trash2,
   Undo2,
@@ -15,7 +16,14 @@ import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { EditorTool } from "./editor-model";
 import type { MapEditor } from "./use-map-editor";
-import { KEY_DELETE, KEY_FIT, KEY_REDO, KEY_UNDO, TOOL_KEYS } from "./editor-shortcuts";
+import {
+  KEY_DELETE,
+  KEY_FIT,
+  KEY_MEASURES,
+  KEY_REDO,
+  KEY_UNDO,
+  TOOL_KEYS,
+} from "./editor-shortcuts";
 import { ShortcutsHelp } from "./ShortcutsHelp";
 import { ToolbarButton } from "./ToolbarButton";
 
@@ -54,14 +62,16 @@ const TOOLS: readonly {
 interface Props {
   editor: MapEditor;
   allowed: ReadonlySet<EditorTool>;
+  /** A save is in flight: nothing can be edited until it ends. */
+  isBusy: boolean;
   isHelpOpen: boolean;
   onHelpChange: (open: boolean) => void;
 }
 
 /** Tools on the left, history and view on the right. Every button names its shortcut. */
-export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Props) {
+export function EditorToolbar({ editor, allowed, isBusy, isHelpOpen, onHelpChange }: Props) {
   const { t } = useTranslation();
-  const canRemove = editor.selected !== null && editor.selected.saved === null;
+  const canRemove = !isBusy && editor.selected !== null && editor.selected.saved === null;
   return (
     <div
       role="toolbar"
@@ -76,6 +86,7 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
             label={t(item.label)}
             shortcut={TOOL_KEYS[item.tool]}
             isActive={editor.tool === item.tool}
+            isDisabled={isBusy}
             onClick={() => {
               editor.setTool(item.tool);
             }}
@@ -88,7 +99,7 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
         label={t("mapEditor.action.undoStep")}
         shortcut={KEY_UNDO}
         isIconOnly
-        isDisabled={!editor.canUndo}
+        isDisabled={isBusy || !editor.canUndo}
         onClick={editor.undo}
       />
       <ToolbarButton
@@ -96,7 +107,7 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
         label={t("mapEditor.action.redoStep")}
         shortcut={KEY_REDO}
         isIconOnly
-        isDisabled={!editor.canRedo}
+        isDisabled={isBusy || !editor.canRedo}
         onClick={editor.redo}
       />
       <ToolbarButton
@@ -119,6 +130,18 @@ export function EditorToolbar({ editor, allowed, isHelpOpen, onHelpChange }: Pro
           editor.fit();
         }}
       />
+      <ToolbarButton
+        icon={Ruler}
+        label={t("mapEditor.action.measures")}
+        shortcut={KEY_MEASURES}
+        isActive={editor.showMeasures}
+        onClick={editor.toggleMeasures}
+      />
+      {isBusy && (
+        <span role="status" className="px-2 text-[13px] font-semibold text-action-strong">
+          {t("mapEditor.saving")}
+        </span>
+      )}
       <div className="ml-auto">
         <ShortcutsHelp isOpen={isHelpOpen} onOpenChange={onHelpChange} />
       </div>

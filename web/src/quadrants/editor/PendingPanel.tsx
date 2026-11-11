@@ -48,7 +48,12 @@ export function PendingPanel({ data, editor, saves }: Props) {
             ))}
           </ul>
           <OutsideDecisions saves={saves} />
-          {saves.blockedKey && (
+          {saves.isBusy && (
+            <p className="m-0 text-xs text-ink-2" role="status">
+              {t("mapEditor.savingHint")}
+            </p>
+          )}
+          {saves.blockedKey && !saves.isBusy && (
             <p className="m-0 text-xs text-ink-2" role="status">
               {t(saves.blockedKey)}
             </p>
@@ -62,7 +67,7 @@ export function PendingPanel({ data, editor, saves }: Props) {
                 aria-keyshortcuts={KEY_SAVE}
                 onClick={() => void saves.saveAll()}
               >
-                {t("mapEditor.action.saveChanges")}
+                {saves.isBusy ? t("mapEditor.saving") : t("mapEditor.action.saveChanges")}
               </Button>
             </Tooltip>
             <Button

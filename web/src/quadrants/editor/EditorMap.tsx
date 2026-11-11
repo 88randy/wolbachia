@@ -15,7 +15,10 @@ import { editorFeatures, initialView } from "./editor-features";
 import { centroid } from "./geo-math";
 import { geometryOf } from "./editor-model";
 import type { ShapeKind } from "./editor-draft";
-import { createEditorDraw } from "./terra-draw";
+import { createEditorDraw, dashBlockOutlines } from "./terra-draw";
+import { useMeasurements } from "./use-measurements";
+import { MeasurePanel } from "./MeasurePanel";
+import { lengthText } from "./measure";
 
 const QUADRANT_FILL = "editor-quadrant-fill";
 const SAMPLING = "editor-sampling";
@@ -63,9 +66,10 @@ export default function EditorMap({
   canEdit,
   onFailure,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const colors = useMapTheme();
-  const { setDraw, tool, load, shapes, mapRef } = editor;
+  const { setDraw, tool, load, shapes, mapRef, showMeasures } = editor;
+  const measurements = useMeasurements(editor.draw);
   const [hovered, setHovered] = useState<string | null>(null);
   // A new style object would make MapLibre reload the style and drop the Terra Draw layers.
   const mapStyle = useMemo(
@@ -133,6 +137,7 @@ export default function EditorMap({
           mapRef.current = event.target;
           const instance = createEditorDraw(event.target, colors);
           instance.on("ready", () => {
+            dashBlockOutlines(event.target);
             setDraw(instance);
           });
           instance.start();
@@ -236,6 +241,26 @@ export default function EditorMap({
             }}
           />
         </Source>
+        {showMeasures &&
+          measurements.labels.map((item) => (
+            <Marker
+              key={item.id}
+              longitude={item.at[0]}
+              latitude={item.at[1]}
+              anchor="center"
+              style={{ pointerEvents: "none" }}
+            >
+              <span
+                className={
+                  item.isLive
+                    ? "pointer-events-none rounded-md border border-action bg-surface px-1.5 py-px text-xs font-bold text-action-strong tabular-nums shadow-card"
+                    : "pointer-events-none rounded-md border border-line bg-surface/95 px-1.5 py-px text-xs font-semibold text-ink tabular-nums shadow-card"
+                }
+              >
+                {lengthText(t, i18n.language, item.meters)}
+              </span>
+            </Marker>
+          ))}
         {labels.map((item) => (
           <Marker key={item.id} longitude={item.at[0]} latitude={item.at[1]} anchor="center">
             <span className="pointer-events-none rounded-md bg-surface/90 px-1.5 py-0.5 text-xs font-bold text-ink shadow-card">
@@ -244,6 +269,7 @@ export default function EditorMap({
           </Marker>
         ))}
       </Map>
+      {measurements.summary && <MeasurePanel summary={measurements.summary} />}
       <p className="absolute right-2 bottom-2 m-0 rounded bg-surface/90 px-2 py-0.5 text-xs text-ink-2">
         <a href={OSM_COPYRIGHT} target="_blank" rel="noreferrer">
           {t("geography.map.attribution")}

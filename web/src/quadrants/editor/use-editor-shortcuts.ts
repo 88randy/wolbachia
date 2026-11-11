@@ -8,6 +8,8 @@ interface Options {
   allowed: ReadonlySet<EditorTool>;
   onSave: () => void;
   onHelp: () => void;
+  /** A save is in flight: only the view shortcuts keep working. */
+  isBusy: boolean;
 }
 
 const TOOL_BY_KEY: Readonly<Record<string, EditorTool>> = {
@@ -36,7 +38,7 @@ export function useEditorShortcuts(options: Options) {
   latest.current = options;
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const { editor, allowed, onSave, onHelp } = latest.current;
+      const { editor, allowed, onSave, onHelp, isBusy } = latest.current;
       const key = event.key.toLowerCase();
       const isCommand = event.ctrlKey || event.metaKey;
       if (isCommand && key === "s") {
@@ -45,6 +47,7 @@ export function useEditorShortcuts(options: Options) {
         return;
       }
       if (isTyping(event.target) || event.altKey) return;
+      if (isBusy && key !== "l" && key !== "f" && event.key !== "?") return;
       if (isCommand) {
         if (key === "z") {
           event.preventDefault();
@@ -62,6 +65,7 @@ export function useEditorShortcuts(options: Options) {
         return;
       }
       if (key === "f") editor.fit();
+      else if (key === "l") editor.toggleMeasures();
       else if (event.key === "?") {
         // The page help replaces the global one while the editor is open.
         event.stopImmediatePropagation();
