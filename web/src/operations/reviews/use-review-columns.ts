@@ -4,14 +4,16 @@ import type { DataTableColumn } from "../../data-table/table-types";
 import type { ReviewRow } from "./review-query";
 import { reviewKindKey } from "./review-labels";
 import { reviewEventKey } from "./review-event-label";
+import { useReviewReason } from "./use-review-reason";
 import { useCouriers } from "../../scheduling/use-directories";
 
 export function useReviewColumns(): DataTableColumn<ReviewRow>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const courierName = useCouriers([]).nameOf;
+  const reason = useReviewReason();
   return [
-    { id: "code", headerKey: "reviews.workspace.causeColumn", cell: (row) => row.code },
+    { id: "code", headerKey: "reviews.workspace.causeColumn", cell: (row) => reason(row.code) },
     {
       id: "event_type",
       headerKey: "reviews.workspace.event",

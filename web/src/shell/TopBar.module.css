@@ -152,3 +152,17 @@
     max-width: none;
   }
 }
+
+/* The shortcut chip never wraps; below 1180 px the search keeps its room and drops the chip. */
+.shortcut {
+  flex: none;
+  white-space: nowrap;
+}
+.search {
+  min-width: 9rem;
+}
+@media (max-width: 1180px) {
+  .shortcut {
+    display: none;
+  }
+}

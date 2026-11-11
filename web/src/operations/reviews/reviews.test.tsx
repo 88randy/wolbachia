@@ -102,7 +102,7 @@ test("409 retains reason, refreshes original and current evidence, and requires 
   await userEvent.type(input, "Review original evidence");
   await userEvent.click(screen.getByRole("button", { name: "Aceptar" }));
   await userEvent.click(screen.getAllByRole("button", { name: "Aceptar" }).at(-1) as HTMLElement);
-  await screen.findByText("review_revision_conflict");
+  await screen.findByText("Alguien más cambió esta revisión; actualiza antes de decidir");
   expect((input as HTMLInputElement).value).toBe("Review original evidence");
   const current = { ...initial, decision_state: { ...initial.decision_state, revision: 2 } };
   api.setRoute(DETAIL, Response.json(current));
@@ -170,13 +170,13 @@ test("forbidden decisions are hidden and unknown or foreign reviews show the sam
 
 test("a definitive list denial hides previously accepted rows during refresh", async () => {
   const { api, app } = await open();
-  await screen.findByRole("link", { name: `Revisar evento ${ID}` });
+  await screen.findByRole("link", { name: /^Revisar evento / });
   api.setRoute(LIST, apiError(403, "permission_denied"));
   await act(async () => {
     await invalidateOrgScoped(app.queryClient, "reviews");
   });
   await screen.findByRole("alert");
-  expect(screen.queryByRole("link", { name: `Revisar evento ${ID}` })).toBeNull();
+  expect(screen.queryByRole("link", { name: /^Revisar evento / })).toBeNull();
 });
 
 test.each([503, 403, 404])(

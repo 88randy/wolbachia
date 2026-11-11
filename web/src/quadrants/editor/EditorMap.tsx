@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
+import { CodeLabels } from "./CodeLabels";
 import type { MapLayerMouseEvent } from "react-map-gl/maplibre";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -262,13 +263,7 @@ export default function EditorMap({
           </Marker>
         ))}
         <AreaLabels quadrants={quadrants} blocks={blocks} hiddenIds={hiddenSet} hasCodeLabels />
-        {labels.map((item) => (
-          <Marker key={item.id} longitude={item.at[0]} latitude={item.at[1]} anchor="center">
-            <span className="pointer-events-none rounded-md bg-surface/90 px-1.5 py-0.5 text-xs font-bold text-ink shadow-card">
-              {item.code}
-            </span>
-          </Marker>
-        ))}
+        <CodeLabels labels={labels} />
         <MapAttribution source={source.attribution} />
       </Map>
       {measurements.summary && <MeasurePanel summary={measurements.summary} />}

@@ -6,6 +6,8 @@ import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { StatusPill } from "../../ui/StatusPill";
 import { useFormatDateTime } from "../../format/use-format-date-time";
+import { formatCalendarDate } from "../../format/format-date";
+import { useLanguage } from "../../i18n/use-language";
 import { fieldKeys, blockerKeys } from "../inventory-fields";
 import styles from "../inventory.module.css";
 import { ProtocolFacts } from "../ProtocolFacts";
@@ -66,6 +68,7 @@ function CustodyFacts() {
 export function LotSafetySummary({ lot }: { lot: Lot }) {
   const { t } = useTranslation();
   const format = useFormatDateTime();
+  const { language } = useLanguage();
   const protocol = lotProtocolOf(lot);
   return (
     <Card title={t("inventory.section.safety")}>
@@ -78,7 +81,11 @@ export function LotSafetySummary({ lot }: { lot: Lot }) {
         </div>
         <p>
           {t("inventory.field.expiry")}:{" "}
-          {lot.expiry ? format(lot.expiry) : t("inventory.state.unconfigured")}
+          {lot.expiry_date
+            ? formatCalendarDate(lot.expiry_date, language)
+            : lot.expiry
+              ? format(lot.expiry)
+              : t("inventory.state.unconfigured")}
         </p>
         <p>
           {t("inventory.section.protocol")}: {protocol?.name || t("inventory.state.unconfigured")}
