@@ -1,3 +1,4 @@
+import { InAppCameraHost } from "../attachments/InAppCameraHost.tsx";
 import { AuthGate } from "./AuthGate.tsx";
 
 import { SafetyLayer } from "../features/safety/SafetyLayer.tsx";
@@ -17,6 +18,7 @@ export function AppShell() {
           <AuthGate>
             <SafetyLayer>
               <ScreenRouter />
+              <InAppCameraHost />
             </SafetyLayer>
           </AuthGate>
         </NavigationProvider>
