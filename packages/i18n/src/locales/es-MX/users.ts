@@ -49,6 +49,8 @@ export const users = {
 
   "users.new.action": "Nuevo usuario",
   "users.new.title": "Nuevo usuario",
+  "users.new.sectionData": "Datos de la persona",
+  "users.new.sectionAccess": "Centro y perfil",
   "users.new.name": "Nombre completo",
   "users.new.username": "Usuario para iniciar sesión",
   "users.new.email": "Correo de trabajo (opcional)",

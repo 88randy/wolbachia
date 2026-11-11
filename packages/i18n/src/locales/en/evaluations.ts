@@ -13,14 +13,15 @@ export const evaluations: Record<keyof typeof source, string> = {
     "Record observations and inspect results with their original rubric. The server calculates the result; an evaluation does not certify training.",
   "evaluations.page.denied":
     "You cannot access this context. Ask an administrator to review your permissions and scope.",
+  "evaluations.tab.new": "New evaluation",
+  "evaluations.tab.history": "History",
+  "evaluations.tab.notice": "Notices to human resources",
   "evaluations.page.private":
     "Evaluation history requires evaluation read permission. Entry permission does not grant access to history.",
-  "evaluations.page.identifiers":
-    "This service does not yet provide an authorized person and context directory for this task. Use exact identifiers; no names or private details are looked up.",
   "evaluations.rubric.percent": "%",
   "evaluations.rubric.separator": " · ",
   "evaluations.rubric.title": "Rubric and versions",
-  "evaluations.rubric.code": "Exact rubric code",
+  "evaluations.rubric.code": "Rubric",
   "evaluations.rubric.lookup": "Look up rubric",
   "evaluations.rubric.version": "Rubric version",
   "evaluations.rubric.select": "Use this version",
@@ -37,7 +38,7 @@ export const evaluations: Record<keyof typeof source, string> = {
     "Recording this observation retains an immutable attempt and may initiate a training notice. Review the person, context, rubric and answers.",
   "evaluations.form.review": "Review and save",
   "evaluations.form.invalid":
-    "Review identifiers, the time zone and scores from 0 to 100. Your fields have been kept.",
+    "Review the person, the center, the date and the scores from 0 to 100. Your fields have been kept.",
   "evaluations.form.failed":
     "We could not confirm the record. Your fields have been kept. Check history before starting another attempt; nothing is resent automatically.",
   "evaluations.form.retry": "I checked history; enable another attempt",

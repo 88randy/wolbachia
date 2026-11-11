@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import type { DataTableColumn } from "../data-table/table-types";
-import { useShowCenter } from "../lookups/use-center-scope";
+import { useCenterColumns } from "../data-table/center-column";
 import { StatusPill } from "../ui/StatusPill";
 import type { Person } from "./users-query";
 import type { PeopleLookups } from "./use-people-lookups";
@@ -12,8 +12,7 @@ import type { PeopleLookups } from "./use-people-lookups";
 /** W48 columns: name (opens W49), profiles, center, masked RFC and status. */
 export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn<Person>[] {
   const { t } = useTranslation();
-  const showCenter = useShowCenter();
-  return useMemo(() => {
+  const base = useMemo(() => {
     const columns: DataTableColumn<Person>[] = [
       {
         id: "display_name",
@@ -32,11 +31,6 @@ export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn
         id: "profiles",
         headerKey: "users.column.profiles",
         cell: (person) => lookups.profilesOf(person.membership_id) || "—",
-      },
-      {
-        id: "center",
-        headerKey: "users.column.center",
-        cell: (person) => lookups.centerName(person.center_id),
       },
       {
         id: "rfc",
@@ -61,9 +55,9 @@ export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn
         ),
       },
     ];
-    return columns.filter(
-      (column) =>
-        (lookups.hasProfiles || column.id !== "profiles") && (showCenter || column.id !== "center"),
-    );
-  }, [t, lookups, showCenter]);
+    return columns.filter((column) => lookups.hasProfiles || column.id !== "profiles");
+  }, [t, lookups]);
+  return useCenterColumns(base, (person) => person.center_id, {
+    after: lookups.hasProfiles ? "profiles" : "display_name",
+  });
 }

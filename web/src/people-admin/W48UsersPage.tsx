@@ -35,6 +35,7 @@ export function W48UsersPage() {
         caption={t("users.table.caption")}
         columns={columns}
         getRowId={getPersonId}
+        rowLink={(person) => ({ to: "/settings/users/$id", params: { id: person.id } })}
         controller={controller}
         data={pageTableData(query, controller.state.page, USERS_PAGE_SIZE)}
       />

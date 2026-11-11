@@ -49,6 +49,8 @@ export const users: Record<keyof typeof source, string> = {
 
   "users.new.action": "New user",
   "users.new.title": "New user",
+  "users.new.sectionData": "Personal details",
+  "users.new.sectionAccess": "Center and profile",
   "users.new.name": "Full name",
   "users.new.username": "Sign-in username",
   "users.new.email": "Work email (optional)",
