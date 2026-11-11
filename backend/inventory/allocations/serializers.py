@@ -307,6 +307,12 @@ class SupplyQuerySerializer(SupplyDateRangeQuerySerializer):
     assignment = serializers.UUIDField(required=False)
 
 
+class AssignmentQuerySerializer(SupplyQuerySerializer):
+    status = serializers.ChoiceField(
+        choices=["planned", "released", "cancelled", "received"], required=False
+    )
+
+
 class SupplySuggestionQuerySerializer(serializers.Serializer[Any]):
     date = serializers.DateField()
     courier = serializers.UUIDField(required=False)
@@ -356,6 +362,26 @@ class SupplyFrameSerializer(serializers.Serializer[Any]):
     lines = SupplyFrameLineSerializer(many=True)
 
 
+class AssignmentSignatureSerializer(serializers.Serializer[Any]):
+    state = serializers.ChoiceField(choices=["signed", "pending_phone"])
+    channel = serializers.ChoiceField(
+        choices=["warehouse_screen", "courier_device"], allow_null=True
+    )
+    captured_by = serializers.CharField(allow_null=True)
+
+
+class AssignmentLifecycleSerializer(serializers.Serializer[Any]):
+    signature = AssignmentSignatureSerializer(allow_null=True)
+    status = serializers.ChoiceField(choices=["planned", "released", "cancelled", "received"])
+    release_id = serializers.UUIDField(allow_null=True)
+    released_at = serializers.DateTimeField(allow_null=True)
+    released_by_name = serializers.CharField(allow_null=True)
+    cancelled_at = serializers.DateTimeField(allow_null=True)
+    cancelled_by_name = serializers.CharField(allow_null=True)
+    cancel_reason_code = serializers.CharField(allow_null=True)
+    cancel_reason = serializers.CharField(allow_null=True)
+
+
 class SupplyAssignmentReadSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     courier_id = serializers.UUIDField()
@@ -366,6 +392,7 @@ class SupplyAssignmentReadSerializer(serializers.Serializer[Any]):
     version_id = serializers.UUIDField()
     planning_proof = serializers.DictField()
     lines = AssignmentLineSerializer(many=True)
+    lifecycle = AssignmentLifecycleSerializer(required=False)
 
 
 class AssignmentOutcomeSerializer(serializers.Serializer[Any]):

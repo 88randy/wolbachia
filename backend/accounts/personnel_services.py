@@ -17,6 +17,7 @@ from accounts.revocation import Revocation, cancel_final_uploads, revoke_active
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc, encrypt_rfc, rotate_rfc
 from core.exceptions import FieldValidationError
 from core.time import server_now
+from core.void_reason import validate_void_reason
 from organizations.exceptions import AdministrationBusyError, StaleRevisionError
 from organizations.models import Center, Membership, Organization
 from organizations.services import deactivate_personnel_membership, effective_scope
@@ -117,7 +118,9 @@ def _origin(actor: UploadActor) -> str:
     )
 
 
-def _receipt(actor: UploadActor, person: Personnel, action: str) -> None:
+def _receipt(  # noqa: PLR0913 -- the receipt and its optional reason
+    actor: UploadActor, person: Personnel, action: str, reason: str = ""
+) -> None:
     AccessLog.objects.create(
         organization=actor.organization,
         created_by=actor.user,
@@ -127,6 +130,7 @@ def _receipt(actor: UploadActor, person: Personnel, action: str) -> None:
         action=action,
         origin=_origin(actor),
         revision=person.revision,
+        reason=reason,
     )
 
 
@@ -352,8 +356,14 @@ def issue_temporary_password(actor: UploadActor, user_id: UUID) -> str:
     return password
 
 
-def deactivate_personnel(actor: UploadActor, user_id: UUID, expected_revision: int) -> Personnel:
-    """End only this membership and its sessions, atomically with the last-admin guard."""
+def deactivate_personnel(  # noqa: PLR0913 -- the command, its revision and its reason
+    actor: UploadActor, user_id: UUID, expected_revision: int, reason: str
+) -> Personnel:
+    """End only this membership and its sessions, atomically with the last-admin guard.
+
+    `reason` follows the void-reason rule (required, minimum length) and is kept on the receipt.
+    """
+    reason = validate_void_reason(reason, "reason")
     with personnel_transaction(actor, user_id):
         person = _locked_person(actor, user_id, "user.deactivate")
         _check_revision(person, expected_revision)
@@ -370,7 +380,7 @@ def deactivate_personnel(actor: UploadActor, user_id: UUID, expected_revision: i
         ).update(final_upload_deadline=None)
         person.revision += 1
         person.save(update_fields=["revision"])
-        _receipt(actor, person, AccessLog.Action.DEACTIVATE)
+        _receipt(actor, person, AccessLog.Action.DEACTIVATE, reason)
     return person
 
 

@@ -32,6 +32,26 @@ const base = {
   supportsVoided: false,
 } as const;
 
+export const DELIVERY_TABLE: TableQueryConfig = {
+  ...base,
+  filters: [
+    {
+      key: "status",
+      labelKey: "allocation.delivery.col.status",
+      kind: "select",
+      presentation: "segmented",
+      options: [
+        { value: "planned", labelKey: "allocation.delivery.status.planned" },
+        { value: "released", labelKey: "allocation.delivery.status.released" },
+        { value: "received", labelKey: "allocation.delivery.status.received" },
+        { value: "cancelled", labelKey: "allocation.delivery.status.cancelled" },
+      ],
+    },
+    createdFrom,
+    createdBefore,
+  ],
+};
+
 export const RECONCILIATION_TABLE: TableQueryConfig = { ...base, filters: [date] };
 
 export const WRITE_OFF_TABLE: TableQueryConfig = {

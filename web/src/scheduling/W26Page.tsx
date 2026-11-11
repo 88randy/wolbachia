@@ -33,7 +33,8 @@ export function W26Page() {
     .map((id) => ({ id, name: nameOf(id), load: plan.loads.get(id)?.get(plan.day) ?? 0 }));
   const canManage = can("schedule.manage");
   const past = plan.pastPending;
-  const isPastShown = past.first !== undefined && plan.day === past.first.day && selected === past.first.courier;
+  const isPastShown =
+    past.first !== undefined && plan.day === past.first.day && selected === past.first.courier;
   return (
     <DetailPage
       code={t("scheduling.plan.weekRange", {
@@ -101,7 +102,9 @@ export function W26Page() {
               )
             }
           >
-            <p className="font-semibold">{t("scheduling.plan.pastBanner", { count: past.count })}</p>
+            <p className="font-semibold">
+              {t("scheduling.plan.pastBanner", { count: past.count })}
+            </p>
           </InlineNotice>
         )
       }
@@ -113,7 +116,9 @@ export function W26Page() {
           <ScheduleMatrix
             plan={plan}
             nameOf={nameOf}
-            emptyAction={canManage ? <GenerateWeekButton week={plan.week} variant="secondary" /> : undefined}
+            emptyAction={
+              canManage ? <GenerateWeekButton week={plan.week} variant="secondary" /> : undefined
+            }
           />
           {plan.taskCount > 0 && (
             <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

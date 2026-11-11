@@ -2,7 +2,7 @@ import { GripVertical, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { cn } from "@/lib/utils";
-import { EntityName } from "../lookups/EntityName";
+import { CenterChip } from "./CenterChip";
 import { SelectMenu } from "../ui/SelectMenu";
 
 type Row = Schemas["Assignment"];
@@ -53,9 +53,8 @@ export function QuadrantCard({
         )}
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-[15px] leading-6 font-semibold text-ink">{row.code}</span>
-          <span className="text-xs text-ink-2">
-            {t("scheduling.assign.center", { name: "" })}
-            <EntityName kind="center" id={row.center_id} />
+          <span className="mt-0.5 flex">
+            <CenterChip id={row.center_id} />
           </span>
         </div>
         {isSaving && (

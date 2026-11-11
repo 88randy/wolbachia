@@ -4,6 +4,7 @@ import type { Schemas } from "@wolbachia/api-client";
 import { useApiClient } from "../api/ApiClientProvider";
 import { ListPage } from "../components/templates/ListPage";
 import { DataTable } from "../data-table/DataTable";
+import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import type { DataTableColumn, TableQueryConfig } from "../data-table/table-types";
 import { useTableUrlState } from "../data-table/use-table-url-state";
@@ -19,8 +20,25 @@ const PAGE_SIZE = 25;
 const TABLE: TableQueryConfig = {
   paging: "page",
   pageSize: PAGE_SIZE,
-  filters: [],
-  sortableIds: [],
+  filters: [
+    {
+      kind: "text",
+      key: "date_from",
+      labelKey: "scheduling.intervention.from",
+      input: "date-from",
+      dateFormat: "date",
+      maxLength: 10,
+    },
+    {
+      kind: "text",
+      key: "date_to",
+      labelKey: "scheduling.intervention.to",
+      input: "date-to",
+      dateFormat: "date",
+      maxLength: 10,
+    },
+  ],
+  sortableIds: ["date_from", "created_at"],
   supportsVoided: false,
 };
 
@@ -35,7 +53,7 @@ export function W32Page() {
   const formatDay = useFormatCalendarDate();
   const formatNumber = useFormatNumber();
   const controller = useTableUrlState(TABLE);
-  const query = useQuery(interventionsOptions(client, identity, controller.state.page, PAGE_SIZE));
+  const query = useQuery(interventionsOptions(client, identity, controller.state, PAGE_SIZE));
   const types = useQuery(interventionTypesOptions(client, identity)).data ?? [];
   const canCreate = can("intervention.create");
   const isEmpty = query.isSuccess && query.data.count === 0;
@@ -54,7 +72,7 @@ export function W32Page() {
       cell: (row) => formatNumber(row.blocks.length),
     },
     {
-      id: "dates",
+      id: "date_from",
       headerKey: "scheduling.intervention.dates",
       cell: (row) =>
         t("scheduling.intervention.range", {
@@ -81,13 +99,16 @@ export function W32Page() {
           action={canCreate ? <NewInterventionDialog variant="secondary" /> : undefined}
         />
       ) : (
-        <DataTable
-          caption={t("scheduling.intervention.title")}
-          columns={columns}
-          controller={controller}
-          getRowId={(row) => row.id}
-          data={pageTableData(query, controller.state.page, PAGE_SIZE)}
-        />
+        <>
+          <FilterBar controller={controller} />
+          <DataTable
+            caption={t("scheduling.intervention.title")}
+            columns={columns}
+            controller={controller}
+            getRowId={(row) => row.id}
+            data={pageTableData(query, controller.state.page, PAGE_SIZE)}
+          />
+        </>
       )}
     </ListPage>
   );

@@ -2,6 +2,7 @@ import { ApiError, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
+import type { TableState } from "../data-table/table-types";
 
 export const MAX_PAGE = 200;
 
@@ -90,19 +91,40 @@ export function quadrantsOptions(client: ApiClient, identity: SessionIdentity) {
   });
 }
 
+/** The part of a table state the scheduling reads depend on. */
+export type ListState = Pick<TableState, "page" | "filters"> &
+  Partial<Pick<TableState, "sort" | "isSortExplicit">>;
+
+/** The explicit sort of a table as the API `ordering` value. */
+function orderingOf(state: ListState): string | undefined {
+  const sort = state.sort;
+  if (!state.isSortExplicit || !sort) return undefined;
+  return `${sort.direction === "desc" ? "-" : ""}${sort.id}`;
+}
+
 export function risksOptions(
   client: ApiClient,
   identity: SessionIdentity,
   week: string,
-  page: number,
+  state: ListState,
   pageSize: number,
 ) {
+  const code = state.filters["code"];
+  const ordering = orderingOf(state);
   return orgScopedQueryOptions(identity, {
-    key: ["risk", "list", week, page, pageSize],
+    key: ["risk", "list", week, state.page, pageSize, code ?? null, ordering ?? null],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/risk-categories/", {
-          params: { query: { week, page, page_size: pageSize } },
+          params: {
+            query: {
+              week,
+              page: state.page,
+              page_size: pageSize,
+              ...(code ? { code } : {}),
+              ...(ordering ? { ordering } : {}),
+            },
+          },
           signal,
         }),
       ),
@@ -112,15 +134,34 @@ export function risksOptions(
 export function interventionsOptions(
   client: ApiClient,
   identity: SessionIdentity,
-  page: number,
+  state: ListState,
   pageSize: number,
 ) {
+  const from = state.filters["date_from"];
+  const to = state.filters["date_to"];
+  const ordering = orderingOf(state);
   return orgScopedQueryOptions(identity, {
-    key: ["interventions", "list", page, pageSize],
+    key: [
+      "interventions",
+      "list",
+      state.page,
+      pageSize,
+      from ?? null,
+      to ?? null,
+      ordering ?? null,
+    ],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/third-party-interventions/", {
-          params: { query: { page, page_size: pageSize } },
+          params: {
+            query: {
+              page: state.page,
+              page_size: pageSize,
+              ...(from ? { date_from: from } : {}),
+              ...(to ? { date_to: to } : {}),
+              ...(ordering ? { ordering } : {}),
+            },
+          },
           signal,
         }),
       ),

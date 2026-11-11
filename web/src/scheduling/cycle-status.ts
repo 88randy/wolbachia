@@ -66,10 +66,7 @@ function canDo(step: CycleStep, abilities: Abilities): boolean {
 }
 
 /** The first step of 1-4 that is not done and that this person can do. */
-export function nextStep(
-  steps: readonly CycleStep[],
-  abilities: Abilities,
-): CycleStep | undefined {
+export function nextStep(steps: readonly CycleStep[], abilities: Abilities): CycleStep | undefined {
   return steps.find(
     (step) => step.id !== "intervention" && step.state !== "done" && canDo(step, abilities),
   );

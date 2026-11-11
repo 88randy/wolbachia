@@ -6,8 +6,16 @@ export const RISK_PAGE_SIZE = 25;
 export const RISK_TABLE: TableQueryConfig = {
   paging: "page",
   pageSize: RISK_PAGE_SIZE,
-  filters: [],
-  sortableIds: [],
+  filters: [
+    {
+      kind: "text",
+      key: "code",
+      labelKey: "scheduling.risk.blockSearch",
+      input: "search",
+      maxLength: 64,
+    },
+  ],
+  sortableIds: ["block__code", "category"],
   supportsVoided: false,
 };
 

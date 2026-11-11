@@ -237,4 +237,9 @@ export const inventory = {
   "inventory.option.quadrantSet": "Cuadrante asignado",
   "inventory.unit.days": "{count} días",
   "inventory.field.shelfLifeSeconds": "Vida útil",
+  "inventory.blocker.signatureRequired":
+    "En esta organización el repartidor debe firmar en la pantalla del almacén.",
+  "inventory.blocker.signaturePhoneOnly":
+    "En esta organización el repartidor firma en su teléfono, no en esta pantalla.",
+  "inventory.blocker.alreadyReleased": "Esta entrega ya se entregó y firmó. No se firma dos veces.",
 } as const satisfies AreaCatalog<"inventory">;

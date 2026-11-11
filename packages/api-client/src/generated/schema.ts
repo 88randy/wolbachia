@@ -7430,6 +7430,7 @@ export interface components {
             readonly origin: components["schemas"]["AccessLogOriginEnum"];
             readonly result: components["schemas"]["AccessLogResultEnum"];
             readonly revision: number;
+            readonly reason: string;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -7597,6 +7598,28 @@ export interface components {
             target: number;
             blockers: components["schemas"]["Blocker"][];
         };
+        AssignmentLifecycle: {
+            signature: components["schemas"]["AssignmentSignature"] | null;
+            status: components["schemas"]["AssignmentLifecycleStatusEnum"];
+            /** Format: uuid */
+            release_id: string | null;
+            /** Format: date-time */
+            released_at: string | null;
+            released_by_name?: string | null;
+            /** Format: date-time */
+            cancelled_at: string | null;
+            cancelled_by_name?: string | null;
+            cancel_reason_code: string | null;
+            cancel_reason: string | null;
+        };
+        /**
+         * @description * `planned` - planned
+         *     * `released` - released
+         *     * `cancelled` - cancelled
+         *     * `received` - received
+         * @enum {string}
+         */
+        AssignmentLifecycleStatusEnum: "planned" | "released" | "cancelled" | "received";
         AssignmentLine: {
             /** Format: uuid */
             id: string;
@@ -7661,6 +7684,17 @@ export interface components {
             /** Format: date-time */
             valid_from: string;
         };
+        AssignmentSignature: {
+            state: components["schemas"]["AssignmentSignatureStateEnum"];
+            channel: (components["schemas"]["ChannelEnum"] | components["schemas"]["NullEnum"]) | null;
+            captured_by: string | null;
+        };
+        /**
+         * @description * `signed` - signed
+         *     * `pending_phone` - pending_phone
+         * @enum {string}
+         */
+        AssignmentSignatureStateEnum: "signed" | "pending_phone";
         /**
          * @description * `field_event` - field_event
          *     * `motorcycle_fault` - motorcycle_fault
@@ -8222,6 +8256,12 @@ export interface components {
             sampling_points: components["schemas"]["SamplingPointChange"][];
             ovitraps: components["schemas"]["OvitrapChange"][];
         };
+        /**
+         * @description * `warehouse_screen` - warehouse_screen
+         *     * `courier_device` - courier_device
+         * @enum {string}
+         */
+        ChannelEnum: "warehouse_screen" | "courier_device";
         Chart: {
             key: string;
             kind: components["schemas"]["ChartKindEnum"];
@@ -13546,9 +13586,11 @@ export interface components {
             readonly revision: number;
             readonly is_active: boolean;
             readonly has_rfc: boolean;
+            readonly deactivation_reason: string | null;
         };
-        PersonnelRevisionRequest: {
+        PersonnelDeactivateRequest: {
             expected_revision: number;
+            reason: string;
         };
         PersonnelWriteRequest: {
             /** Format: uuid */
@@ -16173,6 +16215,7 @@ export interface components {
                 [key: string]: unknown;
             };
             lines: components["schemas"]["AssignmentLine"][];
+            lifecycle?: components["schemas"]["AssignmentLifecycle"];
         };
         SupplyBundle: {
             /** Format: uuid */
@@ -16192,6 +16235,7 @@ export interface components {
                 [key: string]: unknown;
             };
             lines: components["schemas"]["AssignmentLine"][];
+            lifecycle?: components["schemas"]["AssignmentLifecycle"];
             /** Format: uuid */
             organization_id: string;
             /** Format: uuid */
@@ -19031,6 +19075,13 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /**
+                 * @description * `planned` - planned
+                 *     * `released` - released
+                 *     * `cancelled` - cancelled
+                 *     * `received` - received
+                 */
+                status?: "planned" | "released" | "cancelled" | "received";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -30201,7 +30252,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonnelRevisionRequest"];
+                "application/json": components["schemas"]["PersonnelDeactivateRequest"];
             };
         };
         responses: {

@@ -55,6 +55,10 @@ MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
 | max_paddle_reuses | 2 | count | 0 | 2 |
 | revisit_interval_days | 7 | day | 1 | 28 |
 | departure_requires_offline_map | 0 | count | 0 | 1 |
+| delivery_signature_mode | 0 | count | 0 | 2 |
+
+`delivery_signature_mode` says where the courier signs a supply delivery: 0 = either (default,
+whichever happens first completes it), 1 = on the warehouse screen, 2 = on the courier's phone.
 
 `departure_requires_offline_map` is a boolean stored as 0/1. With 0 (default) the courier can
 depart without a saved offline map pack and the app uses online tiles; with 1 departure stays

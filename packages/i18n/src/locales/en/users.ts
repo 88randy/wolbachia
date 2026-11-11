@@ -96,6 +96,9 @@ export const users: Record<keyof typeof source, string> = {
   "users.deactivate.consequence":
     "Their membership ends and their sessions close, including the phone. Nothing is deleted: it stays in the history.",
   "users.deactivate.confirm": "Deactivate",
+  "users.deactivate.reasonLabel": "Reason for deactivation",
+  "users.deactivate.reasonHint": "Required. At least {count} characters.",
+  "users.record.deactivationReason": "Deactivation reason",
   "users.deactivate.done": "{name} is deactivated.",
   "users.reactivate.done": "{name} is active again.",
 

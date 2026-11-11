@@ -52,9 +52,7 @@ export function SchedulingHome() {
         <>
           {nextCard ? (
             <InlineNotice tone="info">
-              <p className="font-semibold">
-                {t("scheduling.home.next", { step: nextCard.title })}
-              </p>
+              <p className="font-semibold">{t("scheduling.home.next", { step: nextCard.title })}</p>
             </InlineNotice>
           ) : status.isWaiting ? (
             <InlineNotice tone="info">

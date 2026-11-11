@@ -1,26 +1,17 @@
-import { useTranslation } from "react-i18next";
 import type { Motorcycle } from "./fleet-query";
 import { MotorcycleReasonDialog } from "./MotorcycleReasonDialog";
 import { UnblockDialog } from "./UnblockDialog";
-import { MotorcycleActionControls } from "./MotorcycleActionControls";
-import { useMotorcycleActions } from "./use-motorcycle-actions";
-export function MotorcycleActions({
+import type { useMotorcycleActions } from "./use-motorcycle-actions";
+
+/** Unblock and void dialogs; the buttons live in the header menu. */
+export function MotorcycleActionDialogs({
   motorcycle,
-  isUnverified,
+  actions,
 }: {
   motorcycle: Motorcycle;
-  isUnverified: boolean;
+  actions: ReturnType<typeof useMotorcycleActions>;
 }) {
-  const { t } = useTranslation();
-  const actions = useMotorcycleActions(motorcycle, isUnverified);
   const ReasonDialog = actions.action === "unblock" ? UnblockDialog : MotorcycleReasonDialog;
-  return (
-    <>
-      <MotorcycleActionControls actions={actions} />
-      <p role="status">{actions.hasSucceeded ? t("fleet.action.saved") : ""}</p>
-      {actions.action !== undefined && actions.hasPermission && (
-        <ReasonDialog motorcycle={motorcycle} onDone={actions.done} onCancel={actions.close} />
-      )}
-    </>
-  );
+  if (actions.action === undefined || !actions.hasPermission) return null;
+  return <ReasonDialog motorcycle={motorcycle} onDone={actions.done} onCancel={actions.close} />;
 }

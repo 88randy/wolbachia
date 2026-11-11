@@ -5,8 +5,8 @@ import type { Schemas } from "@wolbachia/api-client";
 import { ScopeDialog } from "../settings/organization/ScopeDialog";
 import { useCan } from "../session/use-can";
 import { Button } from "../ui/Button";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { InlineNotice } from "../ui/InlineNotice";
+import { DeactivateDialog } from "./DeactivateDialog";
 import { TemporaryPasswordDialog } from "./TemporaryPasswordDialog";
 import { usePersonActions } from "./use-person-actions";
 
@@ -56,16 +56,24 @@ export function PersonActions({ person }: { person: Schemas["Personnel"] }) {
         </Button>
       )}
       {can("user.deactivate") && person.is_active && (
-        <ConfirmDialog
-          trigger={
-            <Button variant="destructive" leadingIcon={<UserX aria-hidden="true" />}>
-              {t("users.action.deactivate")}
-            </Button>
-          }
-          title={t("users.deactivate.title", { name: person.display_name })}
-          consequence={t("users.deactivate.consequence")}
-          actionLabel={t("users.deactivate.confirm")}
-          onConfirm={() => void actions.deactivate()}
+        <Button
+          variant="destructive"
+          leadingIcon={<UserX aria-hidden="true" />}
+          onClick={() => {
+            actions.setDeactivateOpen(true);
+          }}
+        >
+          {t("users.action.deactivate")}
+        </Button>
+      )}
+      {actions.isDeactivateOpen && (
+        <DeactivateDialog
+          name={person.display_name}
+          isBusy={writer.isBusy}
+          onConfirm={(reason) => void actions.deactivate(reason)}
+          onClose={() => {
+            actions.setDeactivateOpen(false);
+          }}
         />
       )}
       {writer.error && (

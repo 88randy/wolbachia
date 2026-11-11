@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 import { DetailPage } from "../components/templates/DetailPage";
+import { Button } from "../ui/Button";
 import type { MotorcycleDetail } from "./fleet-query";
 import type { FleetRecordScope } from "./use-fleet-scope";
 import { FleetTabs } from "./FleetTabs";
@@ -7,10 +9,13 @@ import { canFleetAction } from "./use-fleet-scope";
 import type { useFleetOperations } from "./use-fleet-operations";
 import { FleetRecordOperations } from "./FleetRecordOperations";
 import { MotorcycleSummary } from "./MotorcycleSummary";
-import { MotorcycleHeaderActions, MotorcycleNotices } from "./MotorcycleRecordHeader";
+import { MotorcycleNotices } from "./MotorcycleRecordHeader";
+import { MotorcycleActionDialogs } from "./MotorcycleActions";
 import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
 import { useFleetTabs } from "./use-fleet-tabs";
 import type { FleetTab } from "./use-fleet-tabs";
+import { useMotorcycleActions } from "./use-motorcycle-actions";
+import { useMotorcycleMenu } from "./use-motorcycle-menu";
 
 interface Props {
   motorcycle: MotorcycleDetail;
@@ -42,34 +47,50 @@ function MotorcycleBody({ screen, tab }: { screen: Props; tab: FleetTab }) {
     />
   );
 }
+/** The one primary action of the header; blocked, it says why on hover and to screen readers. */
+function ServiceAction({ operations }: Pick<Props, "operations">) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      aria-disabled={operations.isUnverified}
+      title={operations.isUnverified ? t("fleet.action.blocked") : undefined}
+      onClick={operations.openService}
+    >
+      {t("fleet.action.service")}
+    </Button>
+  );
+}
+function useBackLink(search: Record<string, string>) {
+  const { t } = useTranslation();
+  return { label: t("fleet.record.back"), link: { to: "/fleet/motorcycles", search } } as const;
+}
 /** W21: the motorcycle detail page. Tabs live in the URL; every history tab is a server table. */
 export function MotorcycleScreen(props: Props) {
   const tabs = useFleetTabs();
-  const { motorcycle, error, isRefreshing } = props;
+  const back = useBackLink(tabs.listSearch);
+  const { motorcycle, error, isRefreshing, operations, scope } = props;
+  const actions = useMotorcycleActions(motorcycle, error !== null || isRefreshing);
+  const menu = useMotorcycleMenu(actions, props.onRetry);
+  const isVerified = error === null && !isRefreshing;
   return (
     <DetailPage
       code={motorcycle.plate || undefined}
       centerId={motorcycle.center}
       title={motorcycle.code}
-      status={
-        error === null && !isRefreshing ? (
-          <MotorcycleStatusBadge motorcycle={motorcycle} compact />
-        ) : undefined
-      }
+      back={back}
+      status={isVerified ? <MotorcycleStatusBadge motorcycle={motorcycle} compact /> : undefined}
       actions={
-        <>
-          <MotorcycleHeaderActions {...props} listSearch={tabs.listSearch} />
-          <FleetRecordOperations
-            motorcycle={motorcycle}
-            scope={props.scope}
-            operations={props.operations}
-          />
-        </>
+        canFleetAction(scope, motorcycle.center, "motorcycle.manage") && (
+          <ServiceAction operations={operations} />
+        )
       }
+      moreActions={menu}
       notices={<MotorcycleNotices {...props} />}
     >
       <FleetTabs code={motorcycle.code} />
       <MotorcycleBody screen={props} tab={tabs.tab} />
+      <MotorcycleActionDialogs motorcycle={motorcycle} actions={actions} />
+      <FleetRecordOperations scope={scope} operations={operations} />
     </DetailPage>
   );
 }

@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import AccessLog, Personnel
@@ -16,6 +17,7 @@ class PersonnelSerializer(OrgScopedModelSerializer):
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
     is_active = serializers.BooleanField(source="membership.is_active", read_only=True)
     has_rfc = serializers.SerializerMethodField()
+    deactivation_reason = serializers.SerializerMethodField()
 
     class Meta:
         model = Personnel
@@ -31,11 +33,36 @@ class PersonnelSerializer(OrgScopedModelSerializer):
             "revision",
             "is_active",
             "has_rfc",
+            "deactivation_reason",
         ]
         read_only_fields = fields
 
     def get_has_rfc(self, obj: Personnel) -> bool:
         return bool(obj.rfc_ciphertext)
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_deactivation_reason(self, obj: Personnel) -> str | None:
+        """The reason of the latest deactivation while the membership is inactive, else null.
+
+        Lists annotate it (`last_deactivation_reason`); a single record reads its receipt.
+        """
+        if obj.membership.is_active:
+            return None
+        if hasattr(obj, "last_deactivation_reason"):
+            return obj.last_deactivation_reason or None
+        reason = (
+            AccessLog.objects.filter(target=obj, action=AccessLog.Action.DEACTIVATE)
+            .order_by("-created_at", "-id")
+            .values_list("reason", flat=True)
+            .first()
+        )
+        return reason or None
+
+
+class PersonnelDeactivateSerializer(serializers.Serializer[Any]):
+    expected_revision = serializers.IntegerField(min_value=1)
+    # Validated by the void-reason rule in the service (`void_reason_too_short`, ...).
+    reason = serializers.CharField(trim_whitespace=False, allow_blank=True)
 
 
 class PersonnelWriteSerializer(serializers.Serializer[Any]):
@@ -62,10 +89,6 @@ class PersonnelWriteSerializer(serializers.Serializer[Any]):
                 {"membership_id": "Choose membership_id or username."}
             )
         return attrs
-
-
-class PersonnelRevisionSerializer(serializers.Serializer[Any]):
-    expected_revision = serializers.IntegerField(min_value=1)
 
 
 class TemporaryPasswordSerializer(serializers.Serializer[Any]):
@@ -131,6 +154,7 @@ class AccessLogSerializer(OrgScopedModelSerializer):
             "origin",
             "result",
             "revision",
+            "reason",
             "created_at",
         ]
         read_only_fields = fields

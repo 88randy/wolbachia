@@ -154,4 +154,63 @@ export const allocation: Record<keyof typeof spanish, string> = {
     "When you add lots, you will see here how much is handed out.",
   "allocation.assignment.configureLink": "Set it up in the supply catalog",
   "allocation.assignment.needsSignature": "The courier signs in the box to record the delivery.",
+  "allocation.delivery.status.planned": "To hand out",
+  "allocation.delivery.status.released": "Handed out",
+  "allocation.delivery.status.received": "Received",
+  "allocation.delivery.status.cancelled": "Voided",
+  "allocation.delivery.timeline.planned": "Delivery prepared",
+  "allocation.delivery.timeline.revision": "Version {number}",
+  "allocation.delivery.timeline.released": "Handed out with signature",
+  "allocation.delivery.timeline.by": "{name} · {when}",
+  "allocation.delivery.timeline.received": "The courier received the material",
+  "allocation.delivery.timeline.cancelled": "Delivery voided",
+  "allocation.delivery.timeline.cancelDetail": "{name} · {when}. Reason: {reason}",
+  "allocation.delivery.cancel": "Void delivery",
+  "allocation.delivery.cancelHint":
+    "Frees the reserved material. Nothing is deleted: the reason, who and when are kept.",
+  "allocation.delivery.cancelRedo": "Void and hand out again",
+  "allocation.delivery.cancelledNote":
+    "This delivery was voided. You can fix it and hand it out again.",
+  "allocation.delivery.releasedNote":
+    "The material is already with the courier. If something is wrong, void the delivery with a reason.",
+  "allocation.delivery.receivedNote":
+    "The courier already received the material. What is left is matched at the end of the day.",
+  "allocation.delivery.cancelBlocked":
+    "It cannot be voided: the courier already received the material on their phone.",
+  "allocation.delivery.saveChanges": "Save changes",
+  "allocation.delivery.revised": "Changes saved.",
+  "allocation.delivery.originFixed":
+    "Leaves from {name}. To change the warehouse, void this delivery and create another.",
+  "allocation.delivery.goReconcile": "Match the day's deliveries",
+  "allocation.delivery.historyTitle": "History",
+  "allocation.delivery.col.courier": "Courier",
+  "allocation.delivery.col.date": "Day",
+  "allocation.delivery.col.origin": "Leaves from",
+  "allocation.delivery.col.lines": "Lots",
+  "allocation.delivery.col.status": "Status",
+  "allocation.delivery.col.next": "What is next",
+  "allocation.delivery.next.planned": "Still to hand out with signature",
+  "allocation.delivery.next.released": "Waiting for the courier to receive it",
+  "allocation.delivery.next.received": "Match at the end of the day",
+  "allocation.delivery.next.cancelled": "Can be fixed and handed out again",
+  "allocation.delivery.menu.open": "Open",
+  "allocation.delivery.menu.edit": "Edit",
+  "allocation.delivery.menu.cancelNotYet": "Void delivery (not handed out yet)",
+  "allocation.delivery.listDescription":
+    "All deliveries of material to couriers. Open one to edit, sign or void it.",
+  "allocation.delivery.new": "New delivery",
+  "allocation.delivery.cancelOf": "delivery of {date}",
+  "allocation.delivery.saveUnsigned":
+    "Save without signature: the courier will sign on their phone",
+  "allocation.delivery.handOverPhone": "Hand over: the courier will sign on their phone",
+  "allocation.delivery.phoneMode":
+    "In this organization the courier signs on their phone when receiving the material.",
+  "allocation.delivery.pendingPhone":
+    "Pending phone signature: the courier must sign the reception on their phone.",
+  "allocation.delivery.signature.signed": "Signed",
+  "allocation.delivery.signature.pending_phone": "Pending phone signature",
+  "allocation.delivery.channel.warehouse_screen": "On the warehouse screen, captured by {name}",
+  "allocation.delivery.channel.courier_device": "On the courier's phone ({name})",
+  "allocation.delivery.channel.waiting": "Waiting for the courier",
+  "allocation.delivery.next.pendingPhone": "The courier still has to sign on their phone",
 };

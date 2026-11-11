@@ -2632,6 +2632,21 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: status
+        schema:
+          enum:
+          - planned
+          - released
+          - cancelled
+          - received
+          type: string
+          minLength: 1
+        description: |-
+          * `planned` - planned
+          * `released` - released
+          * `cancelled` - cancelled
+          * `received` - received
       tags:
       - courier-assignments
       security:
@@ -18350,7 +18365,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PersonnelRevisionRequest'
+              $ref: '#/components/schemas/PersonnelDeactivateRequest'
         required: true
       security:
       - cookieAuth: []
@@ -19332,6 +19347,9 @@ components:
         revision:
           type: integer
           readOnly: true
+        reason:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -19345,6 +19363,7 @@ components:
       - id
       - origin
       - quadrant_id
+      - reason
       - result
       - revision
       - target_id
@@ -19690,6 +19709,59 @@ components:
       - quadrant
       - revision
       - target
+    AssignmentLifecycle:
+      type: object
+      properties:
+        signature:
+          allOf:
+          - $ref: '#/components/schemas/AssignmentSignature'
+          nullable: true
+        status:
+          $ref: '#/components/schemas/AssignmentLifecycleStatusEnum'
+        release_id:
+          type: string
+          format: uuid
+          nullable: true
+        released_at:
+          type: string
+          format: date-time
+          nullable: true
+        released_by_name:
+          type: string
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_by_name:
+          type: string
+          nullable: true
+        cancel_reason_code:
+          type: string
+          nullable: true
+        cancel_reason:
+          type: string
+          nullable: true
+      required:
+      - cancel_reason
+      - cancel_reason_code
+      - cancelled_at
+      - release_id
+      - released_at
+      - signature
+      - status
+    AssignmentLifecycleStatusEnum:
+      enum:
+      - planned
+      - released
+      - cancelled
+      - received
+      type: string
+      description: |-
+        * `planned` - planned
+        * `released` - released
+        * `cancelled` - cancelled
+        * `received` - received
     AssignmentLine:
       type: object
       properties:
@@ -19819,6 +19891,31 @@ components:
       - revision
       - schedule_revision
       - valid_from
+    AssignmentSignature:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/AssignmentSignatureStateEnum'
+        channel:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        captured_by:
+          type: string
+          nullable: true
+      required:
+      - captured_by
+      - channel
+      - state
+    AssignmentSignatureStateEnum:
+      enum:
+      - signed
+      - pending_phone
+      type: string
+      description: |-
+        * `signed` - signed
+        * `pending_phone` - pending_phone
     AttachmentTargetKindEnum:
       enum:
       - field_event
@@ -21225,6 +21322,14 @@ components:
       - rules_version
       - sampling_points
       - supplies
+    ChannelEnum:
+      enum:
+      - warehouse_screen
+      - courier_device
+      type: string
+      description: |-
+        * `warehouse_screen` - warehouse_screen
+        * `courier_device` - courier_device
     Chart:
       type: object
       properties:
@@ -32957,8 +33062,13 @@ components:
         has_rfc:
           type: boolean
           readOnly: true
+        deactivation_reason:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - center_id
+      - deactivation_reason
       - display_name
       - has_rfc
       - id
@@ -32969,14 +33079,17 @@ components:
       - revision
       - work_email
       - work_phone
-    PersonnelRevisionRequest:
+    PersonnelDeactivateRequest:
       type: object
       properties:
         expected_revision:
           type: integer
           minimum: 1
+        reason:
+          type: string
       required:
       - expected_revision
+      - reason
     PersonnelWriteRequest:
       type: object
       properties:
@@ -39329,6 +39442,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssignmentLine'
+        lifecycle:
+          $ref: '#/components/schemas/AssignmentLifecycle'
       required:
       - courier_id
       - date
@@ -39371,6 +39486,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssignmentLine'
+        lifecycle:
+          $ref: '#/components/schemas/AssignmentLifecycle'
         organization_id:
           type: string
           format: uuid

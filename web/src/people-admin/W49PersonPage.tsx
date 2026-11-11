@@ -58,6 +58,18 @@ export function W49PersonPage({ id }: { id: string }) {
           {!person.is_active && (
             <InlineNotice tone="warning">{t("users.action.blockedInactive")}</InlineNotice>
           )}
+          {person.deactivation_reason && (
+            <DescriptionGrid
+              columns={2}
+              items={[
+                {
+                  label: t("users.record.deactivationReason"),
+                  value: <span className="whitespace-pre-line">{person.deactivation_reason}</span>,
+                  wide: true,
+                },
+              ]}
+            />
+          )}
           <InlineNotice tone="info">{t("users.revoke.help")}</InlineNotice>
         </Card>
       }

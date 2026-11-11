@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Any
 
-from django.db.models import F, QuerySet
+from django.db.models import F, OuterRef, QuerySet, Subquery
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_variables
@@ -25,8 +25,8 @@ from accounts.personnel_serializers import (
     AccessLogFilterSerializer,
     AccessLogSerializer,
     OperationalPersonnelSerializer,
+    PersonnelDeactivateSerializer,
     PersonnelFilterSerializer,
-    PersonnelRevisionSerializer,
     PersonnelSerializer,
     PersonnelWriteSerializer,
     RfcRevealSerializer,
@@ -99,7 +99,12 @@ class PersonnelViewSet(
                     rows = rows.filter(**{f"{name}_id": query.validated_data[name]})
             if "is_active" in query.validated_data:
                 rows = rows.filter(membership__is_active=query.validated_data["is_active"])
-        return rows
+        latest_deactivation = AccessLog.objects.filter(
+            target=OuterRef("pk"), action=AccessLog.Action.DEACTIVATE
+        ).order_by("-created_at", "-id")
+        return rows.annotate(
+            last_deactivation_reason=Subquery(latest_deactivation.values("reason")[:1])
+        )
 
     @extend_schema(parameters=[PersonnelFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -124,16 +129,17 @@ class PersonnelViewSet(
         )
         return Response(PersonnelSerializer(person).data)
 
-    @extend_schema(request=PersonnelRevisionSerializer, responses=PersonnelSerializer)
+    @extend_schema(request=PersonnelDeactivateSerializer, responses=PersonnelSerializer)
     @action(detail=True, methods=["post"])
     def deactivate(self, request: Request, pk: str | None = None) -> Response:
         person = self.get_object()
-        payload = PersonnelRevisionSerializer(data=request.data)
+        payload = PersonnelDeactivateSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         person = deactivate_personnel(
             actor_from_request(request),
             person.membership.user_id,
             payload.validated_data["expected_revision"],
+            payload.validated_data["reason"],
         )
         return Response(PersonnelSerializer(person).data)
 

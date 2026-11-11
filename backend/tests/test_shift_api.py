@@ -237,18 +237,59 @@ def test_a_scoped_supervisor_still_cannot_see_a_shift_outside_their_scope(
     assert str(visible.pk) in ids(client.get(SHIFTS))
 
 
-def test_a_filtered_list_checks_scope_only_on_the_matching_rows(
-    org_a: Organization, make_member: MemberFactory
+def test_an_organization_wide_reader_lists_shifts_in_constant_queries(
+    org_a: Organization, make_member: MemberFactory, django_assert_max_num_queries: Any
 ) -> None:
+    """Regression: the list replayed the events of every shift, row by row (about 20 s on QA)."""
     from django.db import connection
     from django.test.utils import CaptureQueriesContext
 
-    for _ in range(6):
-        ShiftFactory(organization=org_a, is_closed=True)
     ShiftFactory(organization=org_a)
     client = supervisor_client(org_a, make_member)
-    with CaptureQueriesContext(connection) as everything:
-        client.get(SHIFTS)
-    with CaptureQueriesContext(connection) as only_open:
-        assert len(ids(client.get(SHIFTS + "?status=open"))) == 1
-    assert len(only_open) < len(everything)
+    with CaptureQueriesContext(connection) as few:
+        assert len(ids(client.get(SHIFTS))) == 1
+    for _ in range(8):
+        ShiftFactory(organization=org_a, is_closed=True)
+    with django_assert_max_num_queries(len(few)):
+        assert len(ids(client.get(SHIFTS))) == 9
+
+
+def test_a_scoped_reader_runs_the_exact_check_only_on_shifts_of_their_centers(
+    org_a: Organization, make_member: MemberFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from organizations.models import Center
+    from shifts import validation
+    from tests.factories import MotorcycleFactory
+
+    mine = Center.objects.create(organization=org_a, code="MINE", name="Mine")
+    other = Center.objects.create(organization=org_a, code="OTHER", name="Other")
+    visible = ShiftFactory(
+        organization=org_a, motorcycle=MotorcycleFactory(organization=org_a, center=mine)
+    )
+    for _ in range(4):
+        ShiftFactory(
+            organization=org_a, motorcycle=MotorcycleFactory(organization=org_a, center=other)
+        )
+    user, membership = make_member(org_a, (SHIFT_READ,))
+    scope = {
+        "centers": {"mode": "selected", "ids": [str(mine.pk)]},
+        "quadrants": {"mode": "all", "ids": []},
+    }
+    membership.scope = scope
+    membership.save(update_fields=["scope"])
+    for profile in membership.profiles.all():
+        profile.scope = scope
+        profile.save(update_fields=["scope"])
+    checked: list[str] = []
+    exact = validation.shift_scope_allows
+
+    def counting(scope_: Any, shift: Any, permission: str) -> bool:  # noqa: ANN401
+        checked.append(str(shift.pk))
+        return exact(scope_, shift, permission)
+
+    monkeypatch.setattr(validation, "shift_scope_allows", counting)
+    client = APIClient()
+    client.force_authenticate(user)
+
+    assert ids(client.get(SHIFTS)) == [str(visible.pk)]
+    assert checked == [str(visible.pk)]

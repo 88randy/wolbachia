@@ -124,9 +124,9 @@ export const fleet = {
   "fleet.summary.metrics": "Mileage and service",
   "fleet.summary.openService": "View service",
   "fleet.summary.createdAt": "Created at",
-  "fleet.summary.createdBy": "Creator reference",
+  "fleet.summary.createdBy": "Registered by",
   "fleet.summary.voidedAt": "Voided at",
-  "fleet.summary.voidedBy": "Voiding author reference",
+  "fleet.summary.voidedBy": "Voided by",
   "fleet.summary.historyGap": "This status does not certify an authorized departure or allocation.",
   "fleet.unblock.title": "Unblock {record}",
   "fleet.unblock.hint":
@@ -156,4 +156,10 @@ export const fleet = {
   "fleet.fuel.receiptAttached": "Receipt attached",
   "fleet.clear.evidenceItem": "Evidence {number}",
   "fleet.clear.reviewedBy": "Reviewed by",
+  "fleet.row.open": "View record",
+  "fleet.summary.identity": "Motorcycle details",
+  "fleet.menu.needsRefresh": "refresh the record first",
+  "fleet.menu.voided": "the motorcycle is voided",
+  "fleet.menu.notBlocked": "the motorcycle is not blocked",
+  "fleet.menu.reason": "{action} ({reason})",
 } satisfies Record<keyof typeof Spanish, string>;

@@ -9,7 +9,7 @@ const TONE = { high: "critical", medium: "warning", low: "success" } as const;
 export function useRiskColumns(): readonly DataTableColumn<Risk>[] {
   const { t } = useTranslation();
   return [
-    { id: "code", headerKey: "scheduling.risk.block", cell: (row) => row.code },
+    { id: "block__code", headerKey: "scheduling.risk.block", cell: (row) => row.code },
     {
       id: "category",
       headerKey: "scheduling.risk.category",
