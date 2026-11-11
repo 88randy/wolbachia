@@ -587,7 +587,7 @@ class SupplyReceiptBundleSerializer(serializers.Serializer[Any]):
     event_id = serializers.UUIDField()
     source_event_id = serializers.UUIDField()
     release_id = serializers.UUIDField()
-    signature_upload_id = serializers.UUIDField()
+    signature_upload_id = serializers.UUIDField(allow_null=True)
     voided = serializers.BooleanField()
     lines = ActualSupplyLineSerializer(many=True)
 

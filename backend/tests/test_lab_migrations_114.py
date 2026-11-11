@@ -267,9 +267,9 @@ def insert_genuine_legacy_lab_observation(apps, context, bag):
 def assert_lab_sql_dependencies_precede_empty_plan_guard(loader):
     plan = loader.graph.forwards_plan(("lab", "0002_append_only_guards"))
     rules = ("rules", "0004_void_reason_code")
-    assert rules in plan, (
-        "Lab SQL rule functions require Rules tables and void columns on an empty database"
-    )
+    assert (
+        rules in plan
+    ), "Lab SQL rule functions require Rules tables and void columns on an empty database"
     assert plan.index(rules) < plan.index(("lab", "0002_append_only_guards"))
 
 
