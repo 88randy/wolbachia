@@ -18,9 +18,11 @@ interface Props {
 }
 export function MapCanvas({ features, source, visible, onFailure }: Props) {
   const { t } = useTranslation();
+  const view = initialMapView(features);
+  const viewKey = "bounds" in view ? JSON.stringify(view.bounds) : "world";
   const options = {
     locale: { "Map.Title": t("geography.map.label") },
-    initialViewState: initialMapView(features),
+    initialViewState: view,
     mapStyle: baseMapStyle(source),
     maxZoom: MAX_MAP_ZOOM,
     // Vite bundles the v6 worker and its shared ESM dependencies into one same-origin asset.
@@ -33,7 +35,7 @@ export function MapCanvas({ features, source, visible, onFailure }: Props) {
   };
   return (
     <div className={styles.canvas}>
-      <Map {...options}>
+      <Map key={viewKey} {...options}>
         <GeographyLayers features={features} visible={visible} />
         <AreaLabels quadrants={features.quadrants} blocks={features.blocks} />
         <MapAttribution source={source.attribution} />

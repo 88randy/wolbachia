@@ -9,7 +9,6 @@ import { QuadrantHistory } from "./QuadrantHistory";
 import { BlocksTable } from "./BlocksTable";
 import { PointsTable } from "./PointsTable";
 import { BlockTools } from "./BlockTools";
-import styles from "./geography.module.css";
 interface Props {
   scope: GeographyScope;
   quadrant: Schemas["Quadrant"];
@@ -21,7 +20,7 @@ export function W24Page({ scope, quadrant }: Props) {
   const controller = useTableUrlState(config, { ignoredPrefixes: ["history_"] });
   const view = controller.state.filters["view"] ?? "history";
   return (
-    <section className={styles.card} aria-label={t("geography.points.title")}>
+    <section className="flex min-w-0 flex-col gap-4" aria-label={t("geography.points.title")}>
       <FilterBar controller={controller} />
       {view === "history" && <QuadrantHistory scope={scope} quadrant={quadrant.id} />}
       {view === "blocks" && (

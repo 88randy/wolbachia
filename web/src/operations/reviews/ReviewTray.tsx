@@ -7,6 +7,7 @@ import { useTableUrlState } from "../../data-table/use-table-url-state";
 import { REVIEW_TABLE, reviewTableQuery } from "./review-table";
 import { reviewListOptions, REVIEW_PAGE_SIZE } from "./review-query";
 import type { ReviewScope } from "./review-query";
+import { useReviewReason } from "./use-review-reason";
 import { useReviewColumns } from "./use-review-columns";
 import { operationTableData } from "../read-access";
 const TABLE_SCOPE = { ignoredPrefixes: ["item"] };
@@ -18,6 +19,7 @@ export function ReviewTray({ scope }: { scope: ReviewScope }) {
   const controller = table;
   const query = useQuery(reviewListOptions(scope, reviewTableQuery(table.state)));
   const columns = useReviewColumns();
+  const reason = useReviewReason();
   return (
     <>
       <FilterBar controller={controller} />
@@ -29,7 +31,7 @@ export function ReviewTray({ scope }: { scope: ReviewScope }) {
         data={operationTableData(query, table.state.page, REVIEW_PAGE_SIZE)}
         rowActions={(row) => (
           <Link to="/operations/reviews" search={{ ...search, item: row.id }}>
-            {t("reviews.workspace.open", { id: row.code })}
+            {t("reviews.workspace.open", { id: reason(row.code) })}
           </Link>
         )}
       />

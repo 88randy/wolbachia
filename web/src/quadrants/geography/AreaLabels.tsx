@@ -9,6 +9,9 @@ import { compactAreaText } from "./area-format";
 /** Quadrant labels appear once a quadrant is big enough on screen; blocks need more zoom. */
 const QUADRANT_MIN_ZOOM = 13;
 const BLOCK_MIN_ZOOM = 15;
+/** On a narrow map (a 1024 px window) labels collide, so they wait for a closer zoom. */
+const NARROW_MAP_PX = 720;
+const NARROW_BLOCK_MIN_ZOOM = 17;
 /** Below the quadrant code label the editor draws at the same center. */
 const QUADRANT_OFFSET: [number, number] = [0, 16];
 
@@ -23,7 +26,12 @@ interface Props {
   hasCodeLabels?: boolean;
 }
 
-function useZoom(): number {
+function useIsNarrow(): boolean {
+  const { current: map } = useMap();
+  return (map?.getContainer().clientWidth ?? NARROW_MAP_PX + 1) < NARROW_MAP_PX;
+}
+
+export function useZoom(): number {
   const { current: map } = useMap();
   const [zoom, setZoom] = useState(() => map?.getZoom() ?? 0);
   useEffect(() => {
@@ -47,6 +55,8 @@ function useZoom(): number {
 export function AreaLabels({ quadrants = [], blocks = [], hiddenIds, hasCodeLabels }: Props) {
   const { t, i18n } = useTranslation();
   const zoom = useZoom();
+  const isNarrow = useIsNarrow();
+  const blockZoom = isNarrow ? NARROW_BLOCK_MIN_ZOOM : BLOCK_MIN_ZOOM;
   const items = useMemo(() => {
     const of = (records: readonly Measured[], kind: "quadrant" | "block") =>
       records.flatMap((record) => {
@@ -55,10 +65,12 @@ export function AreaLabels({ quadrants = [], blocks = [], hiddenIds, hasCodeLabe
         return [{ id: record.id, kind, area: version.area_m2, at: centroid(version.geometry) }];
       });
     return [
-      ...(zoom >= QUADRANT_MIN_ZOOM ? of(quadrants, "quadrant") : []),
-      ...(zoom >= BLOCK_MIN_ZOOM ? of(blocks, "block") : []),
+      ...(zoom >= QUADRANT_MIN_ZOOM && !(isNarrow && hasCodeLabels)
+        ? of(quadrants, "quadrant")
+        : []),
+      ...(zoom >= blockZoom ? of(blocks, "block") : []),
     ];
-  }, [quadrants, blocks, hiddenIds, zoom]);
+  }, [quadrants, blocks, hiddenIds, zoom, isNarrow, blockZoom, hasCodeLabels]);
   return (
     <>
       {items.map((item) => (
