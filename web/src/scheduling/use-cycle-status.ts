@@ -15,6 +15,8 @@ import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
 import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 /** How the current epi week is going, step by step: what the home screen shows on each card. */
+const FIRST_ROW = { page: 1, filters: {} };
+
 export function useCycleStatus() {
   const client = useApiClient();
   const identity = useSessionIdentity();
@@ -24,11 +26,14 @@ export function useCycleStatus() {
   const week = weekStartOf(today, me.organization?.epi_week ?? "iso");
   const days = daysOfWeek(week);
   const canRead = can("schedule.read");
-  const risk = useQuery({ ...risksOptions(client, identity, week, 1, 1), enabled: canRead });
+  const risk = useQuery({
+    ...risksOptions(client, identity, week, FIRST_ROW, 1),
+    enabled: canRead,
+  });
   const assignments = useQuery({ ...assignmentsOptions(client, identity), enabled: canRead });
   const loads = useQuery({ ...weekLoadsOptions(client, identity, week, days), enabled: canRead });
   const interventions = useQuery({
-    ...interventionsOptions(client, identity, 1, 1),
+    ...interventionsOptions(client, identity, FIRST_ROW, 1),
     enabled: can("intervention.read"),
   });
   const rows = assignments.data?.results ?? [];

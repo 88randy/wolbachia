@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { ListPage } from "../components/templates/ListPage";
 import { DataTable } from "../data-table/DataTable";
+import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
 import { useFormatCalendarDate } from "../format/use-formatters";
@@ -36,9 +37,7 @@ export function W27Page() {
     me.organization?.epi_week ?? "iso",
   );
   const controller = useTableUrlState(RISK_TABLE, RISK_TABLE_SCOPE);
-  const query = useQuery(
-    risksOptions(client, identity, week, controller.state.page, RISK_PAGE_SIZE),
-  );
+  const query = useQuery(risksOptions(client, identity, week, controller.state, RISK_PAGE_SIZE));
   const columns = useRiskColumns();
   const canImport = can("risk_import.apply");
   const isEmpty = query.isSuccess && query.data.count === 0;
@@ -90,13 +89,16 @@ export function W27Page() {
           action={canImport ? importLink("primary") : undefined}
         />
       ) : (
-        <DataTable
-          caption={t("scheduling.risk.caption")}
-          columns={columns}
-          controller={controller}
-          getRowId={(row) => row.id}
-          data={pageTableData(query, controller.state.page, RISK_PAGE_SIZE)}
-        />
+        <>
+          <FilterBar controller={controller} />
+          <DataTable
+            caption={t("scheduling.risk.caption")}
+            columns={columns}
+            controller={controller}
+            getRowId={(row) => row.id}
+            data={pageTableData(query, controller.state.page, RISK_PAGE_SIZE)}
+          />
+        </>
       )}
     </ListPage>
   );

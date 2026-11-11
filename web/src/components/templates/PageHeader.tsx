@@ -15,7 +15,7 @@ export interface PageHeaderProps {
 export function PageHeader({ title, description, status, actions, eyebrow }: PageHeaderProps) {
   return (
     <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-[min(100%,20rem)] flex-1 flex-col gap-1">
         {eyebrow && <p className="m-0 text-xs font-semibold text-ink-3">{eyebrow}</p>}
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <h1 className="m-0 min-w-0 text-2xl leading-8 font-bold tracking-tight text-ink [overflow-wrap:anywhere]">

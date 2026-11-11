@@ -5,6 +5,7 @@ export type Risk = "high" | "medium" | "low" | "none";
 
 export interface TaskGroup {
   quadrant: string;
+  center: string;
   /** The highest risk of the quadrant's points that day. */
   risk: Risk;
   /** Where that highest risk comes from (official list or company rule), when known. */
@@ -34,6 +35,7 @@ export function groupByQuadrant(
   for (const task of tasks) {
     const group = groups.get(task.quadrant_id) ?? {
       quadrant: task.quadrant_id,
+      center: task.center_id,
       risk: "none" as Risk,
       source: null,
       protocol: null,
@@ -56,6 +58,7 @@ export function groupByQuadrant(
   }
   return [...groups.values()].sort(
     (a, b) =>
-      RISK_ORDER[a.risk] - RISK_ORDER[b.risk] || codeOf(a.quadrant).localeCompare(codeOf(b.quadrant)),
+      RISK_ORDER[a.risk] - RISK_ORDER[b.risk] ||
+      codeOf(a.quadrant).localeCompare(codeOf(b.quadrant)),
   );
 }

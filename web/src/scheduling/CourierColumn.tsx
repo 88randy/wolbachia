@@ -7,13 +7,7 @@ import { QuadrantCard } from "./QuadrantCard";
 import type { AssignmentBoard, BoardColumn } from "./use-assignment-board";
 
 /** One courier: name, load against target, and the quadrants they cover. A drop target. */
-export function CourierColumn({
-  column,
-  board,
-}: {
-  column: BoardColumn;
-  board: AssignmentBoard;
-}) {
+export function CourierColumn({ column, board }: { column: BoardColumn; board: AssignmentBoard }) {
   const { t } = useTranslation();
   const [isOver, setIsOver] = useState(false);
   const headingId = `col-${column.courier ?? "none"}`;

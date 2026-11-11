@@ -13,6 +13,7 @@ import { StatusPill } from "../ui/StatusPill";
 import { ACTION_ICON, ACTION_ORDER, RISK_TONE } from "./action-meta";
 import { groupByQuadrant } from "./group-tasks";
 import type { TaskGroup } from "./group-tasks";
+import { CenterChip } from "./CenterChip";
 import { ScheduleLegend } from "./ScheduleLegend";
 import { useQuadrantCodes } from "./use-directories";
 import type { Plan } from "./use-plan";
@@ -80,7 +81,10 @@ export function ScheduleDayList({
             tone="info"
             action={
               can("risk_import.apply") && (
-                <Link to="/scheduling/risk/import" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                <Link
+                  to="/scheduling/risk/import"
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
                   {t("scheduling.step.risk.load")}
                 </Link>
               )
@@ -105,6 +109,7 @@ export function ScheduleDayList({
                     {t(`scheduling.risk.${group.risk}`)}
                   </StatusPill>
                   <span className="font-semibold text-ink">{codeOf(group.quadrant)}</span>
+                  <CenterChip id={group.center} />
                   <span className="text-xs text-ink-2 tabular-nums">
                     {t("scheduling.day.points", { count: group.total })}
                   </span>
