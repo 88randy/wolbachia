@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
-import { Select } from "../forms/Select";
+import { QuickFilter } from "../data-table/QuickFilter";
+import type { SelectFilter } from "../data-table/table-types";
 import type { ReceptionView } from "./reception-table";
 
 interface ReceptionViewSelectProps {
@@ -7,23 +7,23 @@ interface ReceptionViewSelectProps {
   canRead: boolean;
   onChange: (value: string) => void;
 }
+
+/** The reception views as status tabs (same segmented control as the other lists). */
 export function ReceptionViewSelect({ view, canRead, onChange }: ReceptionViewSelectProps) {
-  const { t } = useTranslation();
-  const options = [
-    { value: "received", label: t("labReception.table.received") },
-    { value: "noPaddle", label: t("labReception.table.noPaddle") },
-    ...(canRead ? [{ value: "expected", label: t("labReception.table.expected") }] : []),
-    { value: "discrepancies", label: t("labReception.table.discrepancies") },
-  ];
+  const filter: SelectFilter = {
+    kind: "select",
+    key: "view",
+    labelKey: "labReception.filters.status",
+    presentation: "segmented",
+    defaultValue: "received",
+    options: [
+      { value: "received", labelKey: "labReception.table.received" },
+      { value: "noPaddle", labelKey: "labReception.table.noPaddle" },
+      ...(canRead ? [{ value: "expected", labelKey: "labReception.table.expected" } as const] : []),
+      { value: "discrepancies", labelKey: "labReception.table.discrepancies" },
+    ],
+  };
   return (
-    <Select
-      id="reception-view"
-      label={t("labReception.filters.status")}
-      value={view}
-      onChange={(event) => {
-        onChange(event.target.value);
-      }}
-      options={options}
-    />
+    <QuickFilter filter={filter} value={view} onChange={(next) => onChange(next ?? "received")} />
   );
 }

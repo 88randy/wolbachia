@@ -19,7 +19,7 @@ export function ReceptionScanForm({ actions, scanner }: ReceptionScanFormProps) 
         ref={scanner.input}
         id="bag-scan"
         label={t("labReception.scan.label")}
-        hint={t("labReception.scan.hint")}
+        aria-describedby="bag-scan-hint"
         value={scanner.code}
         onChange={(event) => {
           scanner.setCode(event.target.value);
@@ -30,6 +30,9 @@ export function ReceptionScanForm({ actions, scanner }: ReceptionScanFormProps) 
       <Button type="submit" aria-disabled={actions.isReviewRequired || !actions.canSubmit}>
         {t("labReception.scan.submit")}
       </Button>
+      <p id="bag-scan-hint" className={styles.scanHint}>
+        {t("labReception.scan.hint")}
+      </p>
     </form>
   );
 }

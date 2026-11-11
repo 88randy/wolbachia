@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { InlineNotice } from "../ui/InlineNotice";
 import { NoPermissionState } from "../states/NoPermissionState";
 import { ReceptionHeader } from "./ReceptionHeader";
 import { ReceptionScanner } from "./ReceptionScanner";
@@ -19,7 +18,6 @@ export function ReceptionWorkspace() {
   return (
     <PageFrame>
       <ReceptionHeader canCount={canCount} />
-      <InlineNotice>{t("labReception.page.scope")}</InlineNotice>
       <ReceptionScanner actions={actions} />
       <ReceptionNoPaddle actions={actions} />
       <ReceptionSummary state={controller.state} />
