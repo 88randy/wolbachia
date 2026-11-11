@@ -31,7 +31,22 @@ function modeFor(tool: EditorTool): string {
   if (tool === "quadrant") return DRAW_MODES.polygon;
   if (tool === "block") return DRAW_MODES.block;
   if (tool === "sampling" || tool === "release") return DRAW_MODES.point;
+  if (tool === "measure") return DRAW_MODES.ruler;
   return DRAW_MODES.select;
+}
+
+/** Drop every ruler line; they live only in Terra Draw, never in the draft. Returns how many. */
+function removeRulerLines(draw: TerraDraw): number {
+  const ids = draw
+    .getSnapshot()
+    // Only the lines: their corner markers go with them (deleting both throws).
+    .filter(
+      (item) => item.properties["mode"] === DRAW_MODES.ruler && item.geometry.type === "LineString",
+    )
+    .map((item) => item.id)
+    .filter((id): id is string | number => id !== undefined);
+  if (ids.length) draw.removeFeatures(ids);
+  return ids.length;
 }
 
 /** Suggested name of a new shape, counting the names already used in the draft. */
@@ -80,7 +95,8 @@ export function useMapEditor(data: EditorData) {
   const [history, setHistory] = useState<History>(INITIAL_HISTORY);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [vertexCount, setVertexCount] = useState(0);
-  const [showMeasures, setShowMeasures] = useState(true);
+  /** Bumped when ruler lines are removed: Terra Draw emits no change event for that. */
+  const [rulerRevision, setRulerRevision] = useState(0);
   const mapRef = useRef<MapLibreMap | null>(null);
   const historyRef = useRef(history);
   const toolRef = useRef(tool);
@@ -128,6 +144,11 @@ export function useMapEditor(data: EditorData) {
       vertexRef.current = 0;
       setVertexCount(0);
       if (!draw) return;
+      // Leaving the ruler ends its line in progress and clears every ruler line.
+      if (draw.getMode() === DRAW_MODES.ruler) {
+        draw.setMode(DRAW_MODES.idle);
+        if (removeRulerLines(draw) > 0) setRulerRevision((current) => current + 1);
+      }
       draw.setMode(modeFor(next));
     },
     [draw],
@@ -209,6 +230,8 @@ export function useMapEditor(data: EditorData) {
   useEffect(() => {
     if (!draw) return;
     const onFinish = (id: string | number, context: { mode: string }) => {
+      // The ruler only measures: its lines never enter the draft, the undo steps or a save.
+      if (context.mode === DRAW_MODES.ruler) return;
       const key = String(id);
       const feature = draw.getSnapshotFeature(id);
       const geometry = feature ? roundedGeometry(feature.geometry) : null;
@@ -321,10 +344,25 @@ export function useMapEditor(data: EditorData) {
     setVertexCount(0);
   }, [draw]);
 
-  /** Enter: Terra Draw closes the polygon on a key event from its canvas. */
+  /** Escape with the ruler: clear its lines, or leave the ruler when there are none. */
+  const clearRuler = useCallback(() => {
+    if (!draw) return;
+    draw.setMode(DRAW_MODES.idle);
+    const removed = removeRulerLines(draw);
+    if (removed > 0) setRulerRevision((current) => current + 1);
+    if (removed === 0) {
+      toolRef.current = "select";
+      setToolState("select");
+      draw.setMode(DRAW_MODES.select);
+      return;
+    }
+    draw.setMode(DRAW_MODES.ruler);
+  }, [draw]);
+
+  /** Enter: Terra Draw closes the polygon (or ends the ruler line) on a key event from its canvas. */
   const finishDrawing = useCallback(() => {
     const canvas = mapRef.current?.getCanvas();
-    if (canvas && vertexRef.current >= 3)
+    if (canvas && (vertexRef.current >= 3 || toolRef.current === "measure"))
       canvas.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
   }, []);
 
@@ -419,10 +457,6 @@ export function useMapEditor(data: EditorData) {
       mapRef.current.fitBounds(bounds, { padding: FIT_PADDING, duration: 400, maxZoom: 18 });
   }, []);
 
-  const toggleMeasures = useCallback(() => {
-    setShowMeasures((current) => !current);
-  }, []);
-
   const pending = useMemo(() => changedShapes(present), [present]);
   const selected = present.shapes.find((item) => item.key === selectedKey) ?? null;
 
@@ -438,8 +472,7 @@ export function useMapEditor(data: EditorData) {
     selected,
     selectedKey,
     vertexCount,
-    showMeasures,
-    toggleMeasures,
+    rulerRevision,
     canUndo: history.past.length > 0 || vertexCount > 0,
     canRedo: history.future.length > 0,
     undo,
@@ -452,6 +485,7 @@ export function useMapEditor(data: EditorData) {
     updateShape,
     settle,
     cancelDrawing,
+    clearRuler,
     finishDrawing,
     fit,
     fitQuadrant,

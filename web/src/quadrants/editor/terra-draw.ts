@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import {
   TerraDraw,
+  TerraDrawLineStringMode,
   TerraDrawModeUndoRedo,
   TerraDrawPointMode,
   TerraDrawPolygonMode,
@@ -20,6 +21,8 @@ export const DRAW_MODES = {
   block: "block",
   point: "point",
   select: "select",
+  /** Throwaway measuring lines: never part of the draft, never saved. */
+  ruler: "ruler",
   idle: "static",
 } as const;
 
@@ -35,6 +38,10 @@ const BLOCK_WIDTH = 1.5;
 const BLOCK_DASH = [2, 2];
 const SOLID_DASH = [1, 0];
 const DRAW_OUTLINE_LAYER = "td-polygon-outline";
+/** Ruler: thin dotted gray, so it never looks like a quadrant or a block. */
+const RULER_WIDTH = 1.5;
+const RULER_DASH: [number, number] = [1, 2];
+const RULER_POINT = 4;
 
 /**
  * Terra Draw outlines are solid. Blocks (mode "block": drawing, editing and unsaved) get the
@@ -103,6 +110,25 @@ export function createEditorDraw(map: MapLibreMap, colors: Colors): TerraDraw {
         showCoordinatePoints: true,
       }),
       new TerraDrawPointMode({ styles: pointStyles }),
+      new TerraDrawLineStringMode({
+        modeName: DRAW_MODES.ruler,
+        // Escape belongs to the editor: it clears every ruler line, not just the one in progress.
+        keyEvents: { cancel: null, finish: "Enter" },
+        showCoordinatePoints: true,
+        styles: {
+          lineStringColor: hex(colors.text.secondary),
+          lineStringWidth: RULER_WIDTH,
+          lineStringDash: RULER_DASH,
+          closingPointColor: hex(colors.surface),
+          closingPointOutlineColor: hex(colors.text.secondary),
+          closingPointWidth: RULER_POINT,
+          closingPointOutlineWidth: 1,
+          coordinatePointColor: hex(colors.surface),
+          coordinatePointOutlineColor: hex(colors.text.secondary),
+          coordinatePointWidth: RULER_POINT,
+          coordinatePointOutlineWidth: 1,
+        },
+      }),
       new TerraDrawSelectMode({
         // Delete and the shortcuts belong to the editor, not to Terra Draw.
         keyEvents: { deselect: "Escape", delete: null, rotate: null, scale: null },

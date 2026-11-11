@@ -23,7 +23,7 @@ import { EditorLegend } from "./EditorLegend";
 const EditorMap = lazy(() => import("./EditorMap"));
 
 function allowedTools(scope: GeographyScope, isFocused: boolean): ReadonlySet<EditorTool> {
-  const tools = new Set<EditorTool>(["select"]);
+  const tools = new Set<EditorTool>(["select", "measure"]);
   if (scope.canCreateQuadrant && !isFocused) tools.add("quadrant");
   if (scope.canCreatePoint) tools.add("sampling");
   if (scope.canPublish) {

@@ -1,5 +1,7 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): map measurements, split after the demo. */
 import { useMemo } from "react";
-import { View } from "react-native";
+import { Text, View } from "react-native";
+import { useT } from "../i18n/I18nProvider.tsx";
 import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
 import { MapCanvas } from "./MapCanvas.tsx";
 import { MapFooter } from "./MapFooter.tsx";
@@ -35,6 +37,7 @@ export function MapView({
   showDirections = true,
 }: Props) {
   const { theme } = useTheme();
+  const t = useT();
   const styles = useStyles(createMapStyles);
   const { state, retry } = useMapTiles();
   const uri = state.kind === "ready" ? state.uri : null;
@@ -43,13 +46,20 @@ export function MapView({
     return <MapUnavailable isLoading={state.kind === "loading"} onRetry={retry} />;
   return (
     <View style={styles.root}>
-      <MapCanvas
-        mapStyle={mapStyle}
-        points={points}
-        zones={zones}
-        selectedId={selectedId}
-        onSelectPoint={(id) => onSelectPoint?.(id)}
-      />
+      <View style={styles.canvas}>
+        <MapCanvas
+          mapStyle={mapStyle}
+          points={points}
+          zones={zones}
+          selectedId={selectedId}
+          onSelectPoint={(id) => onSelectPoint?.(id)}
+        />
+        <View style={styles.attribution} pointerEvents="none">
+          <Text style={styles.attributionText} maxFontSizeMultiplier={1.3}>
+            {t("mobile.map.attribution")}
+          </Text>
+        </View>
+      </View>
       <MapFooter
         point={points.find((point) => point.id === selectedId) ?? null}
         showDirections={showDirections}

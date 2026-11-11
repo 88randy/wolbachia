@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { baseMapStyle } from "../../quadrants/geography/map-features";
 import { MAX_MAP_ZOOM } from "../../quadrants/geography/map-source";
 import type { MapSource } from "../../quadrants/geography/map-source";
+import { MapAttribution } from "../../quadrants/geography/MapAttribution";
 
 const POINT_ZOOM = 16;
 
@@ -31,6 +32,7 @@ export function ReleasePointMapCanvas({ point, source, onFailure }: Props) {
       <Marker anchor="bottom" longitude={point.lng} latitude={point.lat}>
         <MapPin aria-hidden="true" className="size-8 fill-action text-surface" />
       </Marker>
+      <MapAttribution source={source.attribution} />
     </Map>
   );
 }

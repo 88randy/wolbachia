@@ -78,6 +78,30 @@ def distance_m(first: list[float], second: list[float]) -> float:
     return 2 * EARTH_RADIUS_M * asin(sqrt(min(1.0, max(0.0, haversine))))
 
 
+def _ring_area_m2(ring: list[list[float]]) -> float:
+    """Signed spherical ring area (Chamberlain & Duquette, JPL 2007) on the mean-radius sphere."""
+    total = 0.0
+    for (lon1, lat1), (lon2, lat2) in zip(ring, ring[1:], strict=False):
+        total += radians(lon2 - lon1) * (2 + sin(radians(lat1)) + sin(radians(lat2)))
+    return total * EARTH_RADIUS_M**2 / 2
+
+
+def polygon_measurements(geometry: dict[str, Any]) -> tuple[float, float]:
+    """Geodesic (area m2, perimeter m) of a validated Polygon; holes subtract area, add perimeter.
+
+    Same sphere as distance_m, the analogue of ST_Area/ST_Perimeter on geography with
+    use_spheroid=false. Rings are summed edge by edge, so all rings count in the perimeter.
+    """
+    rings = geometry["coordinates"]
+    exterior, *holes = (abs(_ring_area_m2(ring)) for ring in rings)
+    perimeter = sum(
+        distance_m(first, second)
+        for ring in rings
+        for first, second in zip(ring, ring[1:], strict=False)
+    )
+    return max(0.0, exterior - sum(holes)), perimeter
+
+
 def _halves(polygon: Polygon) -> list[Polygon]:
     west, south, east, north = polygon.bounds
     if east - west >= north - south:

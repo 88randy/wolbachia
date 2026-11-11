@@ -18,6 +18,7 @@ const TOOL_BY_KEY: Readonly<Record<string, EditorTool>> = {
   b: "block",
   m: "sampling",
   r: "release",
+  l: "measure",
 };
 
 /** Text fields, lists and dialogs keep their own keys. */
@@ -65,7 +66,6 @@ export function useEditorShortcuts(options: Options) {
         return;
       }
       if (key === "f") editor.fit();
-      else if (key === "l") editor.toggleMeasures();
       else if (event.key === "?") {
         // The page help replaces the global one while the editor is open.
         event.stopImmediatePropagation();
@@ -77,9 +77,13 @@ export function useEditorShortcuts(options: Options) {
           editor.removeShape(editor.selectedKey);
         }
       } else if (key === "escape") {
-        if (editor.vertexCount > 0) editor.cancelDrawing();
+        if (editor.tool === "measure") editor.clearRuler();
+        else if (editor.vertexCount > 0) editor.cancelDrawing();
         else if (editor.tool !== "select") editor.setTool("select");
-      } else if (key === "enter" && (editor.tool === "quadrant" || editor.tool === "block")) {
+      } else if (
+        key === "enter" &&
+        (editor.tool === "quadrant" || editor.tool === "block" || editor.tool === "measure")
+      ) {
         if (document.activeElement !== editor.mapRef.current?.getCanvas()) editor.finishDrawing();
       }
     };

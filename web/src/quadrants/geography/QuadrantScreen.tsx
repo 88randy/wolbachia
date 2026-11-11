@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { List } from "lucide-react";
@@ -12,6 +11,7 @@ import { RecordLabels } from "./RecordLabels";
 import type { GeographyScope } from "./use-w-15";
 import { ReadOnlyQuadrantMap } from "./ReadOnlyQuadrantMap";
 import { W24Page } from "./W24Page";
+import { MeasureFacts } from "./MeasureFacts";
 import styles from "./geography.module.css";
 interface Props {
   scope: GeographyScope;
@@ -34,6 +34,7 @@ export function QuadrantScreen({ scope, quadrant }: Props) {
           </Link>
         }
       />
+      <MeasureFacts version={quadrant.current_version} />
       {canEdit ? (
         <MapEditorWorkspace scope={scope} focusCode={quadrant.code} />
       ) : (

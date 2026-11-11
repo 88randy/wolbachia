@@ -6,7 +6,9 @@ import type { MapLayerMouseEvent } from "react-map-gl/maplibre";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { baseMapStyle } from "../geography/map-features";
-import { MAX_MAP_ZOOM, OSM_COPYRIGHT } from "../geography/map-source";
+import { MAX_MAP_ZOOM } from "../geography/map-source";
+import { MapAttribution } from "../geography/MapAttribution";
+import { AreaLabels } from "../geography/AreaLabels";
 import type { MapSource } from "../geography/map-source";
 import { useMapTheme } from "../geography/use-map-theme";
 import type { EditorData } from "./use-editor-data";
@@ -68,8 +70,8 @@ export default function EditorMap({
 }: Props) {
   const { t, i18n } = useTranslation();
   const colors = useMapTheme();
-  const { setDraw, tool, load, shapes, mapRef, showMeasures } = editor;
-  const measurements = useMeasurements(editor.draw);
+  const { setDraw, tool, load, shapes, mapRef } = editor;
+  const measurements = useMeasurements(editor.draw, editor.rulerRevision);
   const [hovered, setHovered] = useState<string | null>(null);
   // A new style object would make MapLibre reload the style and drop the Terra Draw layers.
   const mapStyle = useMemo(
@@ -83,13 +85,10 @@ export default function EditorMap({
     .sort()
     .join(",");
   const { quadrants, blocks, points, releasePoints } = data;
+  const hiddenSet = useMemo(() => new Set(hiddenIds ? hiddenIds.split(",") : []), [hiddenIds]);
   const collections = useMemo(
-    () =>
-      editorFeatures(
-        { quadrants, blocks, points, releasePoints },
-        { recordIds: new Set(hiddenIds ? hiddenIds.split(",") : []) },
-      ),
-    [quadrants, blocks, points, releasePoints, hiddenIds],
+    () => editorFeatures({ quadrants, blocks, points, releasePoints }, { recordIds: hiddenSet }),
+    [quadrants, blocks, points, releasePoints, hiddenSet],
   );
   const labels = useMemo(
     () =>
@@ -241,26 +240,28 @@ export default function EditorMap({
             }}
           />
         </Source>
-        {showMeasures &&
-          measurements.labels.map((item) => (
-            <Marker
-              key={item.id}
-              longitude={item.at[0]}
-              latitude={item.at[1]}
-              anchor="center"
-              style={{ pointerEvents: "none" }}
-            >
-              <span
-                className={
-                  item.isLive
+        {measurements.labels.map((item) => (
+          <Marker
+            key={item.id}
+            longitude={item.at[0]}
+            latitude={item.at[1]}
+            anchor="center"
+            style={{ pointerEvents: "none" }}
+          >
+            <span
+              className={
+                item.isRuler
+                  ? "pointer-events-none rounded border border-dashed border-ink-2 bg-surface/90 px-1 text-[11px] font-semibold text-ink-2 tabular-nums"
+                  : item.isLive
                     ? "pointer-events-none rounded-md border border-action bg-surface px-1.5 py-px text-xs font-bold text-action-strong tabular-nums shadow-card"
                     : "pointer-events-none rounded-md border border-line bg-surface/95 px-1.5 py-px text-xs font-semibold text-ink tabular-nums shadow-card"
-                }
-              >
-                {lengthText(t, i18n.language, item.meters)}
-              </span>
-            </Marker>
-          ))}
+              }
+            >
+              {lengthText(t, i18n.language, item.meters)}
+            </span>
+          </Marker>
+        ))}
+        <AreaLabels quadrants={quadrants} blocks={blocks} hiddenIds={hiddenSet} hasCodeLabels />
         {labels.map((item) => (
           <Marker key={item.id} longitude={item.at[0]} latitude={item.at[1]} anchor="center">
             <span className="pointer-events-none rounded-md bg-surface/90 px-1.5 py-0.5 text-xs font-bold text-ink shadow-card">
@@ -268,14 +269,9 @@ export default function EditorMap({
             </span>
           </Marker>
         ))}
+        <MapAttribution source={source.attribution} />
       </Map>
       {measurements.summary && <MeasurePanel summary={measurements.summary} />}
-      <p className="absolute right-2 bottom-2 m-0 rounded bg-surface/90 px-2 py-0.5 text-xs text-ink-2">
-        <a href={OSM_COPYRIGHT} target="_blank" rel="noreferrer">
-          {t("geography.map.attribution")}
-        </a>{" "}
-        {source.attribution}
-      </p>
     </div>
   );
 }

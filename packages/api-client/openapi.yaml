@@ -20282,6 +20282,16 @@ components:
                 minItems: 4
               minItems: 1
           readOnly: true
+        area_m2:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        perimeter_m:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
         revision:
           type: integer
           readOnly: true
@@ -20303,12 +20313,14 @@ components:
           format: date-time
           readOnly: true
       required:
+      - area_m2
       - block
       - created_at
       - created_by
       - effective_from
       - geometry
       - id
+      - perimeter_m
       - revision
     BlockedReasonEnum:
       enum:
@@ -34125,6 +34137,16 @@ components:
                 minItems: 4
               minItems: 1
           readOnly: true
+        area_m2:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        perimeter_m:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
         revision:
           type: integer
           readOnly: true
@@ -34151,11 +34173,13 @@ components:
             $ref: '#/components/schemas/ExcludedPointResolution'
           readOnly: true
       required:
+      - area_m2
       - created_at
       - created_by
       - effective_from
       - geometry
       - id
+      - perimeter_m
       - point_resolutions
       - quadrant
       - revision

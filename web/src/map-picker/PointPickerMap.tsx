@@ -1,13 +1,13 @@
 /* eslint-disable max-lines-per-function -- one declarative map: context areas and a draggable pin. */
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin } from "lucide-react";
 import { baseMapStyle } from "../quadrants/geography/map-features";
-import { MAX_MAP_ZOOM, OSM_COPYRIGHT } from "../quadrants/geography/map-source";
+import { MAX_MAP_ZOOM } from "../quadrants/geography/map-source";
 import type { MapSource } from "../quadrants/geography/map-source";
+import { MapAttribution } from "../quadrants/geography/MapAttribution";
 import { useMapTheme } from "../quadrants/geography/use-map-theme";
 import type { PickerArea } from "./picker-types";
 
@@ -48,7 +48,6 @@ export default function PointPickerMap({
   onFailure,
   label,
 }: Props) {
-  const { t } = useTranslation();
   const colors = useMapTheme();
   const mapStyle = useMemo(
     () => baseMapStyle(source),
@@ -107,13 +106,8 @@ export default function PointPickerMap({
             />
           </Marker>
         )}
+        <MapAttribution source={source.attribution} />
       </Map>
-      <p className="absolute right-2 bottom-1 m-0 rounded bg-surface/90 px-2 text-xs text-ink-2">
-        <a href={OSM_COPYRIGHT} target="_blank" rel="noreferrer">
-          {t("geography.map.attribution")}
-        </a>{" "}
-        {source.attribution}
-      </p>
     </div>
   );
 }

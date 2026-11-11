@@ -8,6 +8,8 @@ import { baseMapStyle, initialMapView } from "./map-features";
 import { GeographyLayers } from "./GeographyLayers";
 import type { LayerVisibility } from "./use-map-display";
 import styles from "./geography.module.css";
+import { MapAttribution } from "./MapAttribution";
+import { AreaLabels } from "./AreaLabels";
 interface Props {
   features: MapProps;
   source: MapSource;
@@ -33,6 +35,8 @@ export function MapCanvas({ features, source, visible, onFailure }: Props) {
     <div className={styles.canvas}>
       <Map {...options}>
         <GeographyLayers features={features} visible={visible} />
+        <AreaLabels quadrants={features.quadrants} blocks={features.blocks} />
+        <MapAttribution source={source.attribution} />
       </Map>
     </div>
   );

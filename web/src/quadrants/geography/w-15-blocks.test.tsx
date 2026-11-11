@@ -27,6 +27,8 @@ const BLOCK: Schemas["Block"] = {
   current_version: {
     id: "block-version",
     block: BLOCK_ID,
+    area_m2: null,
+    perimeter_m: null,
     geometry: POLYGON,
     revision: 1,
     effective_from: CREATED_AT,

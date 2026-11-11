@@ -2,7 +2,7 @@
 import { useParams } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { OSM_COPYRIGHT, readMapSource } from "../quadrants/geography/map-source";
+import { readMapSource } from "../quadrants/geography/map-source";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { InlineNotice } from "../ui/InlineNotice";
@@ -64,11 +64,6 @@ export function PortalMap() {
               </Suspense>
             ) : (
               <InlineNotice tone="info">{t("portal.map.unavailable")}</InlineNotice>
-            )}
-            {canDraw && (
-              <a href={OSM_COPYRIGHT} className="text-xs text-ink-2">
-                {t("inventory.map.attribution")}
-              </a>
             )}
             <PortalZoneTable zones={zones} />
           </div>

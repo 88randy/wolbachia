@@ -11,14 +11,13 @@ export interface MeasureLabel {
   meters: number;
   /** The segment from the last corner to the cursor. */
   isLive: boolean;
+  /** A ruler segment (throwaway), drawn with its own quiet look. */
+  isRuler?: boolean;
 }
 
-export interface MeasureSummary {
-  kind: "quadrant" | "block";
-  isDrawing: boolean;
-  perimeter: number;
-  area: number;
-}
+export type MeasureSummary =
+  | { kind: "quadrant" | "block"; isDrawing: boolean; perimeter: number; area: number }
+  | { kind: "ruler"; isDrawing: boolean; total: number };
 
 export interface Measurements {
   labels: MeasureLabel[];
@@ -63,8 +62,41 @@ function measureSelected(feature: GeoJSONStoreFeatures): Measurements {
   };
 }
 
-/** What the map shows now: the polygon being drawn, or the selected one. */
+/**
+ * Ruler lines: every segment of every line, and the running total of the line in progress
+ * (or of the last one). While drawing, the last position of the line is the cursor.
+ */
+function measureRuler(draw: TerraDraw, lines: GeoJSONStoreFeatures[]): Measurements {
+  const isDrawing = draw.getMode() === DRAW_MODES.ruler;
+  const labels: MeasureLabel[] = [];
+  let total = 0;
+  lines.forEach((line, lineIndex) => {
+    const path = line.geometry.type === "LineString" ? line.geometry.coordinates : [];
+    const segments = segmentsOf(path);
+    const live = Boolean(line.properties["currentlyDrawing"]);
+    segments.forEach((item, index) => {
+      labels.push({
+        ...labelOf(
+          `r${String(lineIndex)}-${String(index)}`,
+          item,
+          live && index === segments.length - 1,
+        ),
+        isRuler: true,
+      });
+    });
+    total = segments.reduce((sum, item) => sum + item.meters, 0);
+  });
+  return { labels, summary: { kind: "ruler", isDrawing, total } };
+}
+
+/** What the map shows now: the ruler, the polygon being drawn, or the selected one. */
 function measure(draw: TerraDraw): Measurements {
+  const lines = draw
+    .getSnapshot()
+    .filter(
+      (item) => item.properties["mode"] === DRAW_MODES.ruler && item.geometry.type === "LineString",
+    );
+  if (lines.length) return measureRuler(draw, lines);
   const polygons = draw.getSnapshot().filter((item) => item.geometry.type === "Polygon");
   const drawing = polygons.find(
     (item) =>
@@ -80,7 +112,7 @@ function measure(draw: TerraDraw): Measurements {
 }
 
 /** Lengths, perimeter and area of the shape being drawn or edited, refreshed once per frame. */
-export function useMeasurements(draw: TerraDraw | null): Measurements {
+export function useMeasurements(draw: TerraDraw | null, revision = 0): Measurements {
   const [state, setState] = useState<Measurements>(NONE);
   useEffect(() => {
     if (!draw) return undefined;
@@ -93,6 +125,7 @@ export function useMeasurements(draw: TerraDraw | null): Measurements {
     const schedule = () => {
       if (frame === 0) frame = requestAnimationFrame(run);
     };
+    schedule();
     draw.on("change", schedule);
     draw.on("select", schedule);
     draw.on("deselect", schedule);
@@ -104,6 +137,6 @@ export function useMeasurements(draw: TerraDraw | null): Measurements {
       draw.off("finish", schedule);
       if (frame !== 0) cancelAnimationFrame(frame);
     };
-  }, [draw]);
+  }, [draw, revision]);
   return state;
 }

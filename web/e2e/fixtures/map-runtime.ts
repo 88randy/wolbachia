@@ -14,6 +14,8 @@ const QUADRANT: Schemas["Quadrant"] = {
   current_version: {
     id: "version-demo",
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     revision: 1,
     effective_from: CREATED_AT,
     created_at: CREATED_AT,

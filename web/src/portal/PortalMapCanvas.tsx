@@ -8,6 +8,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { baseMapStyle } from "../quadrants/geography/map-features";
 import { MAX_MAP_ZOOM } from "../quadrants/geography/map-source";
 import type { MapSource } from "../quadrants/geography/map-source";
+import { MapAttribution } from "../quadrants/geography/MapAttribution";
 import { LEVELS, LEVEL_PAINT, levelOf, maxReleases, patternImage } from "./zone-levels";
 import type { Zone } from "./portal-data";
 
@@ -89,6 +90,7 @@ export function PortalMapCanvas({
             ))}
           </Source>
         )}
+        <MapAttribution source={source.attribution} />
       </Map>
     </div>
   );
