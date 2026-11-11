@@ -26,6 +26,9 @@ function signatureOf(
   frame: Reconciliation | null | undefined,
 ) {
   if (saved === null) return "unassigned" as const;
+  const recorded = saved.lifecycle?.signature?.state;
+  if (recorded === "signed") return "verified" as const;
+  if (recorded === "pending_phone") return "pending" as const;
   if (frame?.frame) return signatureState(frame.frame.lines);
   return result?.kind === "release" ? ("sent" as const) : ("unknown" as const);
 }

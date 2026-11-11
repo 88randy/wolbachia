@@ -208,7 +208,8 @@ class SupplyReceivePayload(StrictPayloadSerializer):
     expected_revision = serializers.IntegerField(min_value=0)
     plan_revision = serializers.IntegerField(min_value=1)
     release_id = serializers.UUIDField()
-    signature_upload_id = serializers.UUIDField()
+    # Null only when the release already carries the warehouse-screen signature.
+    signature_upload_id = serializers.UUIDField(allow_null=True, default=None)
     actual_lines = serializers.ListSerializer[dict[str, Any]](
         child=ActualSupplyLineSerializer(), allow_empty=False, max_length=MAX_SUPPLY_ITEMS
     )

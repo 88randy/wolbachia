@@ -221,7 +221,7 @@ def assignment_lifecycle(
     ]
     signature = (
         None
-        if release is None
+        if release is None or cancellation is not None
         else signature_facts(release.proof, receivers[-1] if receivers else None)
     )
     return {

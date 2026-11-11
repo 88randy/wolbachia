@@ -95,6 +95,7 @@ export function DeliveryList() {
   const navigate = useNavigate();
   const controller = useTableUrlState(DELIVERY_TABLE);
   const query = useQuery(deliveryListOptions(scope, controller.state));
+  const formatDay = useFormatCalendarDate();
   const counts = useDeliveryCounts();
   const columns = useColumns();
   const [voiding, setVoiding] = useState<Row | null>(null);
@@ -156,7 +157,7 @@ export function DeliveryList() {
       {voiding && (
         <CancelDeliveryDialog
           assignment={voiding}
-          label={t("allocation.delivery.cancelOf", { date: voiding.date })}
+          label={t("allocation.delivery.cancelOf", { date: formatDay(voiding.date) })}
           onClose={() => {
             setVoiding(null);
           }}

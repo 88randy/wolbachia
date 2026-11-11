@@ -121,14 +121,27 @@ def _receive(ctx: EventContext, data: dict[str, Any], revision: int) -> SupplyEv
         "supply_assignment_changed"
     ):
         raise EventNeedsReview("supply_assignment_changed")
-    evidence = source_evidence(ctx, {"signature": [data["signature_upload_id"]]})
+    from inventory.allocations.signature_mode import (
+        delivery_signature_mode,
+        receipt_signature_problem,
+    )
+
+    declared = data.get("signature_upload_id")
+    problem = receipt_signature_problem(
+        delivery_signature_mode(ctx.organization),
+        declared is not None,
+        bool((release.proof or {}).get("signature")),
+    )
+    if problem is not None:
+        raise EventRejected(problem)
+    evidence = source_evidence(ctx, {"signature": [] if declared is None else [declared]})
     event = create_source_event(ctx, data, revision)
     receipt = SupplyReceipt.objects.create(
         organization=ctx.organization,
         created_by=ctx.user,
         event=event,
         release=release,
-        signature=evidence["signature"][0],
+        signature=evidence["signature"][0] if evidence["signature"] else None,
         observations=data["discrepancies"],
     )
     source = SupplyLedgerSource.objects.create(

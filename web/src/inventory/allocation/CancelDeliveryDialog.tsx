@@ -2,7 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import { useApiClient } from "../../api/ApiClientProvider";
 import { invalidateOrgScoped } from "../../session/org-scoped-query";
-import { VoidDialog, submitVoid, useVoidLimits } from "../../void";
+import { VoidDialog, submitVoid, useVoidLimits, useVoidReasonLabel } from "../../void";
+import { supplyNote } from "./use-reason-fields";
 import type { VoidChoice } from "../../void";
 
 /**
@@ -17,6 +18,7 @@ export function CancelDeliveryDialog(props: {
   const client = useApiClient();
   const cache = useQueryClient();
   const limits = useVoidLimits();
+  const labelOf = useVoidReasonLabel();
   const { assignment } = props;
   const releaseId = assignment.lifecycle?.release_id ?? "";
   const send = async (choice: VoidChoice) => {
@@ -27,7 +29,7 @@ export function CancelDeliveryDialog(props: {
         expected_revision: assignment.revision,
         release_id: releaseId,
         reason_code: choice.reasonCode,
-        reason: choice.reason,
+        reason: choice.reason || supplyNote(labelOf(choice.reasonCode)),
         evidence: [],
       },
     });

@@ -58,7 +58,9 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
                 "event_id": str(event.pk),
                 "source_event_id": str(event.source_link.source_event_id),
                 "release_id": str(receipt.release_id),
-                "signature_upload_id": str(receipt.signature.public_id),
+                "signature_upload_id": None
+                if receipt.signature is None
+                else str(receipt.signature.public_id),
                 "voided": hasattr(event, "void_audit"),
                 "lines": [
                     {
