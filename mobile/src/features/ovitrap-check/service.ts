@@ -38,6 +38,8 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly evidenceShift: () => Promise<CaptureShiftAuthorization>;
   readonly refresh?: () => Promise<void>;
+  /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
+  readonly publishAssignment?: () => Promise<void>;
 }
 interface StartInput {
   readonly mode: Draft["mode"];
@@ -139,6 +141,20 @@ export class OvitrapService {
     const facts = flags.isScopeBlocked ? await this.#deps.store.assignmentFacts() : null;
     return { ...flags, assignmentCode: facts && `${lastAssignmentOutcome()} ${facts}` };
   }
+  /**
+   * Every entry point (route, tile, scan) first makes the stored assignment current, and an unsent,
+   * unplaced draft takes it. It acts on the stored draft, so it needs no displayed identity.
+   */
+  async syncAssignment(): Promise<void> {
+    try {
+      await this.#deps.publishAssignment?.();
+    } catch {
+      return; // The reason is recorded for the on-screen code; the phone copy stays as it was.
+    }
+    const stored = await this.#deps.store.read();
+    if (stored.draft && !stored.event)
+      await this.#adoptCurrentAssignment(stored.draft, stored.draftVersion);
+  }
   async refresh(eventId: string | null): Promise<void> {
     assertCaptureIdentity(await this.#deps.store.read(), eventId);
     await this.#deps.refresh?.();
@@ -160,10 +176,15 @@ export class OvitrapService {
       true,
     );
   }
-  async #start(input: StartInput): Promise<Snapshot> {
-    const { mode, ovitrapId, isManual = false, eventId } = input;
+  async #syncedCapture(eventId: string | null): Promise<StoredCapture> {
+    await this.syncAssignment();
     const current = await this.#deps.store.read();
     assertCaptureIdentity(current, eventId);
+    return current;
+  }
+  async #start(input: StartInput): Promise<Snapshot> {
+    const { mode, ovitrapId, isManual = false, eventId } = input;
+    const current = await this.#syncedCapture(eventId);
     const shiftId = await this.#deps.shiftId();
     if (!shiftId) throw new ShiftBlockedError();
     const pending = await this.#pendingTarget(current, shiftId);

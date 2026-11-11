@@ -20,7 +20,8 @@ export function OvitrapScreen({ pointId }: { readonly pointId?: string }) {
   useEffect(() => {
     // Lists and rules download by themselves; offline, the copy on the phone is used.
     void service
-      .refresh(null)
+      .syncAssignment()
+      .then(() => service.refresh(null))
       .catch(() => undefined)
       .then(() => refresh().catch(() => undefined))
       .then(() => {

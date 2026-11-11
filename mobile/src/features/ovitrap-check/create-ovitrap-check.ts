@@ -67,5 +67,6 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     evidenceShift: () => readCaptureShift(deps.shiftOpen),
     refresh: () => download(deps, store),
+    publishAssignment: () => publishAssignment(deps.assignments, store),
   });
 }
