@@ -13,23 +13,23 @@ describe("tutorial definitions", () => {
   });
 
   it("has copy in both languages for every title, label and caption", () => {
-    for (const tutorial of Object.values(TUTORIALS)) {
-      for (const locale of ["es-MX", "en"] as const) {
-        expect(messages[locale][titleKey(tutorial.id)]).toBeTruthy();
-        for (const step of tutorial.steps) {
-          expect(messages[locale][stepKey(tutorial.id, step.id, "label")]).toBeTruthy();
-          expect(messages[locale][stepKey(tutorial.id, step.id, "caption")]).toBeTruthy();
-        }
-      }
+    const keys = Object.values(TUTORIALS).flatMap((tutorial) => [
+      titleKey(tutorial.id),
+      ...tutorial.steps.flatMap((step) => [
+        stepKey(tutorial.id, step.id, "label"),
+        stepKey(tutorial.id, step.id, "caption"),
+      ]),
+    ]);
+    for (const locale of ["es-MX", "en"] as const) {
+      for (const key of keys) expect(messages[locale][key]).toBeTruthy();
     }
   });
 
   it("only links to existing steps and lays every step out", () => {
     for (const tutorial of Object.values(TUTORIALS)) {
       const ids = new Set(tutorial.steps.map((step) => step.id));
-      for (const step of tutorial.steps) {
-        for (const link of step.next) expect(ids).toContain(linkTarget(link));
-      }
+      const targets = tutorial.steps.flatMap((step) => step.next.map(linkTarget));
+      for (const target of targets) expect(ids).toContain(target);
       expect(layoutFlow(tutorial).nodes).toHaveLength(tutorial.steps.length);
     }
   });

@@ -12,7 +12,7 @@ const USER = "demo-warehouse";
 /** Opens a combobox by its label and picks its first option. */
 async function pickFirst(actor: Actor, label: RegExp | string): Promise<void> {
   const { page } = actor;
-  await actor.click(page.getByRole("combobox", { name: label }).first());
+  await actor.click(page.getByRole("combobox", { name: label }).last());
   await actor.click(page.getByRole("option").first());
 }
 
@@ -24,6 +24,11 @@ async function openFirstRow(actor: Actor, quickFilter: RegExp): Promise<void> {
 
 const heading = (page: Page, name: string | RegExp) => page.getByRole("heading", { name }).first();
 
+/**
+ * NOT recorded yet: resolveDiscrepancy/outcome, reason, sign and confirm. The resolve form did not
+ * render for demo-warehouse or demo-admin on the QA discrepancy, so those steps are `hasClip: false`
+ * in the definition. Add scripts here and flip the flag once a user and a discrepancy show the form.
+ */
 export const INVENTORY_STEPS: Record<string, StepScript> = {
   "receiveSupplies/open": {
     user: USER,
@@ -111,38 +116,6 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
     run: async (a) => {
       await a.click(a.page.locator("tbody a").first());
       await a.point(heading(a.page, /Manifiestos e historial/));
-    },
-  },
-  "resolveDiscrepancy/outcome": {
-    user: USER,
-    start: "/inventory/discrepancies",
-    run: async (a) => {
-      await a.click(a.page.locator("tbody a").first());
-      await a.point(a.page.getByText(/Cómo se resolvió/).first());
-    },
-  },
-  "resolveDiscrepancy/reason": {
-    user: USER,
-    start: "/inventory/discrepancies",
-    run: async (a) => {
-      await a.click(a.page.locator("tbody a").first());
-      await a.point(a.page.getByText(/Motivo de la resolución/).first());
-    },
-  },
-  "resolveDiscrepancy/sign": {
-    user: USER,
-    start: "/inventory/discrepancies",
-    run: async (a) => {
-      await a.click(a.page.locator("tbody a").first());
-      await a.point(a.page.getByText(/firma de recibido/i).first());
-    },
-  },
-  "resolveDiscrepancy/confirm": {
-    user: USER,
-    start: "/inventory/discrepancies",
-    run: async (a) => {
-      await a.click(a.page.locator("tbody a").first());
-      await a.point(a.page.getByRole("button", { name: "Resolver" }).first());
     },
   },
 

@@ -37,10 +37,10 @@ export const INVENTORY_TUTORIALS = {
     steps: [
       { id: "open", next: ["review"] },
       { id: "review", next: ["outcome"] },
-      { id: "outcome", next: ["reason"] },
-      { id: "reason", next: ["sign"] },
-      { id: "sign", next: ["confirm"] },
-      { id: "confirm", next: [] },
+      { id: "outcome", hasClip: false, next: ["reason"] },
+      { id: "reason", hasClip: false, next: ["sign"] },
+      { id: "sign", hasClip: false, next: ["confirm"] },
+      { id: "confirm", hasClip: false, next: [] },
     ],
   },
   courierDelivery: {
