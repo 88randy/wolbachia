@@ -14,7 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 
-from accounts.models import AccessLog, Personnel
+from accounts.models import AccessLog, Personnel, User
 from accounts.personnel_selectors import (
     filter_access_log,
     operational_projection,
@@ -30,10 +30,12 @@ from accounts.personnel_serializers import (
     PersonnelSerializer,
     PersonnelWriteSerializer,
     RfcRevealSerializer,
+    TemporaryPasswordSerializer,
 )
 from accounts.personnel_services import (
     create_personnel,
     deactivate_personnel,
+    issue_temporary_password,
     reveal_personnel_rfc,
     update_personnel,
 )
@@ -65,6 +67,7 @@ class PersonnelViewSet(
         "partial_update": "user.update",
         "deactivate": "user.deactivate",
         "reveal_rfc": "user.reveal_rfc",
+        "temporary_password": "user.update",
         "operational": "user.operational_read",
     }
 
@@ -73,6 +76,8 @@ class PersonnelViewSet(
         self.throttle_scope = None
         if self.action == "reveal_rfc":
             self.throttle_scope = "rfc_reveal"
+        elif self.action == "temporary_password":
+            self.throttle_scope = "temporary_password"  # noqa: S105 -- a throttle scope name
         elif (
             self.action in {"create", "partial_update"}
             and isinstance(self.request.data, Mapping)
@@ -140,6 +145,24 @@ class PersonnelViewSet(
         rfc = reveal_personnel_rfc(actor_from_request(request), person.membership.user_id)
         return Response(
             RfcRevealSerializer({"rfc": rfc}).data, headers={"Cache-Control": "no-store"}
+        )
+
+    @extend_schema(request=None, responses=TemporaryPasswordSerializer)
+    @action(detail=True, methods=["post"], url_path="temporary-password")
+    @sensitive_variables()
+    def temporary_password(self, request: Request, pk: str | None = None) -> Response:
+        """Shown once; the user must replace it at the next sign in."""
+        person = self.get_object()
+        user_id = person.membership.user_id
+        password = issue_temporary_password(actor_from_request(request), user_id)
+        expires_at = User.objects.values_list("temporary_password_expires_at", flat=True).get(
+            pk=user_id
+        )
+        return Response(
+            TemporaryPasswordSerializer(
+                {"temporary_password": password, "expires_at": expires_at}
+            ).data,
+            headers={"Cache-Control": "no-store"},
         )
 
     @extend_schema(

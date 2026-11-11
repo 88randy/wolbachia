@@ -31,6 +31,7 @@ from organizations.serializers import (
     MeSerializer,
     OrganizationSettingsSerializer,
     OrganizationUpdateSerializer,
+    ProfileCopySerializer,
     ProfilePermissionSerializer,
     ProfileSerializer,
 )
@@ -38,6 +39,8 @@ from organizations.services import (
     MembershipChange,
     OrganizationChange,
     ProfileChange,
+    ProfileCopy,
+    copy_profile,
     create_managed_membership,
     update_membership,
     update_organization,
@@ -150,12 +153,32 @@ class ProfileViewSet(
     required_permissions = {
         "list": "role.read",
         "retrieve": "role.read",
+        "create": "role.update",
         "permissions": "role.update",
     }
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["slug", "label_es", "label_en"]
     ordering_fields = ["slug", "label_es", "label_en"]
     ordering = ["slug", "id"]
+
+    @extend_schema(request=ProfileCopySerializer, responses={201: ProfileSerializer})
+    def create(self, request: Request) -> Response:
+        """A custom profile always starts as a copy of an existing one."""
+        payload = ProfileCopySerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        source = get_object_or_404(
+            Profile.objects.filter(organization=request.organization),  # type: ignore[attr-defined]
+            pk=payload.validated_data["copy_from"],
+        )
+        created = copy_profile(
+            ProfileCopy(
+                actor=cast(User, request.user),
+                source=source,
+                label_es=payload.validated_data["label_es"],
+                label_en=payload.validated_data["label_en"],
+            )
+        )
+        return Response(ProfileSerializer(created).data, status=201)
 
     @extend_schema(request=ProfilePermissionSerializer, responses=ProfileSerializer)
     @action(detail=True, methods=["put"])
