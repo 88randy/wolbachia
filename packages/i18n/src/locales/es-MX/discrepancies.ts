@@ -1,12 +1,12 @@
 import type { AreaCatalog } from "../area.ts";
 export const discrepancies = {
-  "discrepancies.page.title": "Discrepancias",
+  "discrepancies.page.title": "Diferencias",
   "discrepancies.page.denied":
     "No tienes permiso o alcance para consultar discrepancias. Solicita acceso al administrador.",
   "discrepancies.page.readError": "No se pudo consultar la discrepancia. Vuelve a intentarlo.",
   "discrepancies.field.code": "Número",
-  "discrepancies.field.search": "Buscar discrepancias",
-  "discrepancies.field.transfer": "Transferencia",
+  "discrepancies.field.search": "Buscar diferencias",
+  "discrepancies.field.transfer": "Envío",
   "discrepancies.field.status": "Estado",
   "discrepancies.field.createdAt": "Registrada",
   "discrepancies.status.open": "Abierta",
@@ -18,7 +18,7 @@ export const discrepancies = {
     "Se muestran únicamente los bloqueos de esta discrepancia. Cerrarla conserva los bloqueos de otros registros; la disponibilidad se confirma al guardar.",
   "discrepancies.holds.active": "Bloqueo pendiente",
   "discrepancies.holds.released": "Bloqueo resuelto por esta discrepancia",
-  "discrepancies.actions.back": "Volver a discrepancias",
+  "discrepancies.actions.back": "Volver a diferencias",
   "discrepancies.history.title": "Manifiestos e historial firmados",
   "discrepancies.history.hash": "Huella del manifiesto original",
   "discrepancies.history.bulk": "Por lote",
@@ -28,7 +28,7 @@ export const discrepancies = {
   "discrepancies.event.dispatch": "Despacho firmado",
   "discrepancies.event.receive": "Recepción firmada",
   "discrepancies.event.resolution": "Resolución",
-  "discrepancies.close.title": "Resolver discrepancia",
+  "discrepancies.close.title": "Resolver la diferencia",
   "discrepancies.close.reason": "Motivo de la resolución",
   "discrepancies.close.reasonHint": "Describe cómo se resolvió. Longitud mínima: {min} caracteres.",
   "discrepancies.close.outcome": "Cómo se resolvió esta línea",

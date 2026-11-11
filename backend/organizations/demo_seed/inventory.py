@@ -50,11 +50,15 @@ class DemoStock:
 
 
 def _ensure_location(
-    actor: UploadActor, quadrant: Quadrant, owner: Membership, code: str = LOCATION_CODE
+    actor: UploadActor,
+    quadrant: Quadrant,
+    owner: Membership,
+    code: str = LOCATION_CODE,
+    name: str = "Almacén central",
 ) -> Location:
     existing = Location.objects.filter(organization=actor.organization, code=code).first()
     if existing is not None:
-        return existing
+        return _rename_location(actor, existing, name)
     version = revise_location(
         MasterChange(
             actor,
@@ -62,7 +66,7 @@ def _ensure_location(
                 "code": code,
                 "center_id": quadrant.center_id,
                 "quadrant_id": quadrant.pk,
-                "name": "Almacén central",
+                "name": name,
                 "kind": "warehouse",
                 "owner_id": owner.pk,
                 "geometry": {"type": "Point", "coordinates": [-89.5925, 20.9674]},
@@ -71,6 +75,18 @@ def _ensure_location(
         )
     )
     return version.location
+
+
+def _rename_location(actor: UploadActor, location: Location, name: str) -> Location:
+    """Older demo data named every storage point the same; give each its own name (once)."""
+    current = location.versions.order_by("-revision").first()
+    if current is None or location.code == LOCATION_CODE or current.name != "Almacén central":
+        return location
+    change = MasterChange(
+        actor, {"name": name}, identifier=location.pk, expected_revision=current.revision
+    )
+    revise_location(change)
+    return location
 
 
 def _supply_values(spec: SupplySpec) -> dict[str, Any]:
@@ -165,7 +181,9 @@ def ensure_quadrant_lot(
     A release device, its permit and its source lot must share the quadrant, so each release
     quadrant beyond the home one gets its own.
     """
-    location = _ensure_location(actor, quadrant, owner, f"LOC-MER-{number:02d}")
+    location = _ensure_location(
+        actor, quadrant, owner, f"LOC-MER-{number:02d}", f"Punto de resguardo {quadrant.code}"
+    )
     spec = SupplySpec("S-MER-WOLB", "Huevos con Wolbachia", "20", biological=True)
     return _ensure_lot(actor, spec, location, f"L-MER-WOLB-{number:02d}")
 
@@ -239,3 +257,44 @@ def ensure_transit_policies(actor: UploadActor) -> None:
         if CourierTransitPolicyVersion.objects.filter(supply_version__supply_type=supply).exists():
             continue
         _transit_policy(actor, supply)
+
+
+SECOND_WAREHOUSE_CODE = "LOC-MER-07"
+DEMO_TRANSFER_CODE = "T-DEMO-01"
+
+
+def ensure_second_warehouse(
+    actor: UploadActor, quadrants: dict[str, Quadrant], owner: Membership
+) -> Location:
+    """A second warehouse in the other center, so there is somewhere to move material to."""
+    home = quadrants[HOME_QUADRANT]
+    other = next((row for row in quadrants.values() if row.center_id != home.center_id), home)
+    return _ensure_location(actor, other, owner, SECOND_WAREHOUSE_CODE, "Almacén Poniente")
+
+
+def ensure_demo_transfer(actor: UploadActor, stock: DemoStock, destination: Location) -> None:
+    """One prepared shipment of bags from the central warehouse, waiting to be sent (writes)."""
+    from inventory.transfers.commands import PrepareTransferCommand
+    from inventory.transfers.models import Transfer
+    from inventory.transfers.services import prepare_transfer
+
+    if Transfer.objects.filter(organization=actor.organization, code=DEMO_TRANSFER_CODE).exists():
+        return
+    lot = stock.lots["S-MER-BAG"]
+    version = lot.supply.versions.order_by("-revision").first()
+    if version is None:
+        return
+    values = {
+        "code": DEMO_TRANSFER_CODE,
+        "origin_id": stock.location.pk,
+        "destination_id": destination.pk,
+        "lines": [
+            {
+                "lot_id": lot.pk,
+                "piece_id": None,
+                "unit_version_id": version.pk,
+                "quantity": Decimal("20"),
+            }
+        ],
+    }
+    prepare_transfer(PrepareTransferCommand(actor, values))

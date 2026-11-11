@@ -1,4 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../../components/templates/ListPage";
 import { DataTable } from "../../data-table/DataTable";
@@ -7,6 +9,8 @@ import { useTableUrlState } from "../../data-table/use-table-url-state";
 import { pageTableData } from "../../data-table/table-data";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
+import { buttonVariants } from "../../ui/button-variants";
+import { useCan } from "../../session/use-can";
 import { TRANSFER_TABLE } from "./transfer-table";
 import { transferListOptions, TRANSFER_PAGE_SIZE } from "./transfer-query";
 import type { Transfer, TransferScope } from "./transfer-query";
@@ -46,8 +50,19 @@ export function TransferList({ scope }: { scope: TransferScope }) {
   const controller = useTableUrlState(TRANSFER_TABLE);
   const query = useQuery(transferListOptions(scope, controller.state));
   const columns = useColumns();
+  const canCreate = useCan()("transfer.create");
   return (
-    <ListPage title={t("transfers.page.title")}>
+    <ListPage
+      title={t("transfers.page.title")}
+      actions={
+        canCreate && (
+          <Link to="/inventory/transfers/new" className={buttonVariants({ variant: "primary" })}>
+            <Plus aria-hidden="true" />
+            {t("transfers.new.action")}
+          </Link>
+        )
+      }
+    >
       <FilterBar controller={controller} />
       <DataTable
         caption={t("transfers.page.title")}

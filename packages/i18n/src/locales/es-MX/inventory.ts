@@ -76,7 +76,7 @@ export const inventory = {
   "inventory.state.deactivate":
     "Se conservarán las versiones y los lotes existentes. El insumo dejará de estar disponible para nuevos lotes.",
   "inventory.state.draft":
-    "Los datos incompletos se guardan como borrador; no generan existencias.",
+    "Si faltan datos, se guarda como borrador y no suma al inventario hasta completarlo.",
   "inventory.state.noBlockers":
     "No hay bloqueos de seguridad reportados. Esto no ejecuta un despacho.",
   "inventory.status.draft": "Borrador · no despachable",
@@ -181,7 +181,8 @@ export const inventory = {
   "inventory.map.attribution": "Colaboradores de OpenStreetMap",
   "inventory.map.coordinates": "Coordenadas",
   "inventory.labels.title": "Etiquetas QR",
-  "inventory.labels.description": "Elige qué imprimir, marca los registros y manda la hoja a la impresora.",
+  "inventory.labels.description":
+    "Elige qué imprimir, marca los registros y manda la hoja a la impresora.",
   "inventory.labels.kind.lots": "Lotes",
   "inventory.labels.kind.bags": "Bolsas",
   "inventory.labels.kind.paddles": "Papeletas",
@@ -207,4 +208,18 @@ export const inventory = {
   "inventory.labels.truncated": "Se muestran los primeros {count}. Busca por código para acotar.",
   "inventory.labels.card": "Etiquetas QR",
   "inventory.labels.cardHint": "Imprime etiquetas de lotes, bolsas, papeletas, ovitrampas y motos.",
+  "inventory.option.pickCenterFirst": "Primero elige el centro",
+  "inventory.option.pickQuadrantFirst": "Primero elige el cuadrante",
+  "inventory.option.noLocations": "No hay almacenes en este centro.",
+  "inventory.option.createLocation": "Crear almacén",
+  "inventory.option.noSupplies": "No hay insumos registrados.",
+  "inventory.option.createSupply": "Registrar insumo",
+  "inventory.option.noCenters": "No hay centros disponibles.",
+  "inventory.option.noOwners": "No hay personas que puedan responsabilizarse de este lugar.",
+  "inventory.option.noWarehouses": "No hay almacenes.",
+  "inventory.section.lotWhat": "Qué llega",
+  "inventory.section.lotWhere": "Dónde se guarda y cuándo caduca",
+  "inventory.section.lotBiological": "Datos del material biológico",
+  "inventory.section.lotBiologicalHint":
+    "Llénalos solo si el lote son huevos o mosquitos. Si no, déjalos vacíos.",
 } as const satisfies AreaCatalog<"inventory">;

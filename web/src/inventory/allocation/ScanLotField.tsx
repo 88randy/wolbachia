@@ -6,7 +6,6 @@ import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/InlineNotice";
 import type { ScanState } from "./use-assignment-draft";
-import styles from "../inventory.module.css";
 
 const SCAN_KEYS: Record<Exclude<ScanState, "idle" | "loading">, MessageKey> = {
   notFound: "allocation.assignment.scanResultNotFound",
@@ -44,8 +43,8 @@ export function ScanLotField({ scan, onAdd }: { scan: ScanState; onAdd: (code: s
     setCode("");
   };
   return (
-    <div>
-      <div className={styles.actions}>
+    <div className="max-w-md">
+      <div className="flex flex-wrap items-end gap-3">
         <TextField
           id={id}
           label={t("allocation.assignment.scan")}

@@ -20,6 +20,7 @@ import { W11Page } from "./locations/W11Page";
 import { W10Page } from "./lots/W10Page";
 import { W9Page } from "./lots/W9Page";
 import { W8Page } from "./supplies/W8Page";
+import { NewTransferPage } from "./transfers/new/NewTransferPage";
 import { W12Page } from "./transfers/W12Page";
 import { W14Page } from "./transfers/W14Page";
 
@@ -59,6 +60,11 @@ const inventoryRoutes = [
     crumb: "transfers.page.title",
     permission: "transfer.read",
     component: W12Page,
+  }),
+  inventoryRoute("/inventory/transfers/new", {
+    crumb: "transfers.new.title",
+    permission: "transfer.create",
+    component: NewTransferPage,
   }),
   inventoryRoute("/inventory/transfers/$code", { permission: "transfer.read", component: W12Page }),
   inventoryRoute("/inventory/discrepancies", {

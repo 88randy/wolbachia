@@ -14,6 +14,8 @@ import { LotPlacementFields } from "./lots/LotPlacementFields";
 import { LocationFields } from "./locations/LocationFields";
 import { LotProtocolSummary } from "./lots/LotProtocolSummary";
 import { Card } from "../ui/Card";
+import { FormActions } from "../components/templates/FormGrid";
+import { FormSection } from "../components/templates/FormSection";
 import { InventoryFacts } from "./InventoryFacts";
 interface Props {
   kind: InventoryKind;
@@ -23,6 +25,7 @@ interface Props {
   onSaved: (record: InventoryRecord) => void;
 }
 function Fields({ kind, fields }: { kind: InventoryKind; fields: InventoryFieldsProps }) {
+  const { t } = useTranslation();
   if (kind === "supplies")
     return (
       <>
@@ -33,9 +36,18 @@ function Fields({ kind, fields }: { kind: InventoryKind; fields: InventoryFields
   if (kind === "locations") return <LocationFields {...fields} />;
   return (
     <>
-      <LotIdentityFields {...fields} />
-      <LotBiologicalFields {...fields} />
-      <LotPlacementFields {...fields} />
+      <FormSection title={t("inventory.section.lotWhat")}>
+        <LotIdentityFields {...fields} />
+      </FormSection>
+      <FormSection title={t("inventory.section.lotWhere")}>
+        <LotPlacementFields {...fields} />
+      </FormSection>
+      <FormSection
+        title={t("inventory.section.lotBiological")}
+        description={t("inventory.section.lotBiologicalHint")}
+      >
+        <LotBiologicalFields {...fields} />
+      </FormSection>
       <LotProtocolSummary {...fields} />
     </>
   );
@@ -120,7 +132,7 @@ function SubmitAction({
       {t(key)}
     </Button>
   );
-  if (!onCancel) return submit;
+  if (!onCancel) return <FormActions>{submit}</FormActions>;
   return (
     <DialogFooter>
       <Button type="button" variant="secondary" disabled={busy} onClick={onCancel}>

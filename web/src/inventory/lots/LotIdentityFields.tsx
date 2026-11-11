@@ -17,6 +17,10 @@ function LotSupplyChoice(props: InventoryFieldsProps) {
       currentLabel={previous?.supply_version.label}
       disabled={props.disabled || Boolean(previous)}
       required
+      empty={{
+        message: "inventory.option.noSupplies",
+        action: { label: "inventory.option.createSupply", to: "/inventory/supplies" },
+      }}
       onChange={(value) => {
         props.setValue("supply_id", value);
       }}

@@ -16,6 +16,8 @@ function LocationCenter(props: InventoryFieldsProps) {
       value={props.values["center_id"] ?? ""}
       disabled={props.disabled || Boolean(props.previous)}
       required
+      autoPickOnly
+      empty={{ message: "inventory.option.noCenters" }}
       onChange={(value) => {
         props.setValue("center_id", value);
         props.setValue("quadrant_id", "");
@@ -40,6 +42,7 @@ function LocationQuadrant(props: InventoryFieldsProps) {
       value={props.values["quadrant_id"] ?? ""}
       disabled={props.disabled || Boolean(props.previous)}
       required
+      waitingFor="inventory.option.pickCenterFirst"
       onChange={(value) => {
         props.setValue("quadrant_id", value);
         props.setValue("owner_id", "");
@@ -65,6 +68,8 @@ function LocationOwner(props: InventoryFieldsProps) {
       currentLabel={previous?.owner_label}
       disabled={props.disabled}
       required
+      waitingFor="inventory.option.pickQuadrantFirst"
+      empty={{ message: "inventory.option.noOwners" }}
       onChange={(value) => {
         props.setValue("owner_id", value);
       }}

@@ -113,6 +113,10 @@ VOID_REASON_ITEMS = (
     ("data-entry-error", "Error de captura", "Data entry error", 10),
     ("duplicate-record", "Registro duplicado", "Duplicate record", 20),
     ("wrong-location", "Ubicación incorrecta", "Wrong location", 30),
+    # Reasons a write-off needs (the write-off form reads this catalog).
+    ("expired", "Caducado", "Expired", 40),
+    ("damaged", "Dañado", "Damaged", 50),
+    ("lost", "Perdido o robado", "Lost or stolen", 60),
 )
 
 

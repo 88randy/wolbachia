@@ -9,7 +9,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.home.week": "Week {week} · {from} to {to}",
   "scheduling.home.next": "Next: {step}",
   "scheduling.home.nextBadge": "Do this step next",
-  "scheduling.home.waiting": "The remaining steps are done by other people on your team. You can see how they are going here.",
+  "scheduling.home.waiting":
+    "The remaining steps are done by other people on your team. You can see how they are going here.",
   "scheduling.home.allDone": "Everything is up to date this week.",
   "scheduling.home.loading": "Checking how the week is going…",
   "scheduling.home.stepOf": "Step {number}",
@@ -23,7 +24,8 @@ export const scheduling: Record<keyof typeof source, string> = {
     "Tell the system which blocks are most urgent this week: high, medium or low risk.",
   "scheduling.step.risk.done": "Blocks with risk: {count}.",
   "scheduling.step.risk.pending": "This week's risk has not been loaded yet.",
-  "scheduling.step.risk.noPermission": "Your profile cannot load the list: ask whoever manages risk to upload it.",
+  "scheduling.step.risk.noPermission":
+    "Your profile cannot load the list: ask whoever manages risk to upload it.",
   "scheduling.step.risk.load": "Load risk list",
   "scheduling.step.risk.see": "See the risk",
   "scheduling.step.assign.title": "Share the quadrants among couriers",
@@ -84,12 +86,14 @@ export const scheduling: Record<keyof typeof source, string> = {
     "Before building it, load the week's risk and share the quadrants. Then press «Build the week».",
   "scheduling.plan.noTasksReadOnly":
     "Once whoever manages scheduling builds the week, you will see each day's points here.",
-  "scheduling.plan.allDone": "No points are pending this week: everything scheduled has been visited.",
+  "scheduling.plan.allDone":
+    "No points are pending this week: everything scheduled has been visited.",
   "scheduling.plan.noWork": "Nothing pending that day",
   "scheduling.plan.openDay": "{name}, {day}: pending points {count}",
   "scheduling.plan.overTarget": "Over the target",
   "scheduling.plan.today": "Today",
-  "scheduling.plan.pastBanner": "Some points from earlier days were not visited ({count}). Pass them to another courier so they are not lost.",
+  "scheduling.plan.pastBanner":
+    "Some points from earlier days were not visited ({count}). Pass them to another courier so they are not lost.",
   "scheduling.plan.pastAction": "Reassign pending points",
   "scheduling.plan.pastPick": "Show {name}, {day}",
   "scheduling.generate.action": "Build the week",
@@ -117,7 +121,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.legend.title": "What each action means",
   "scheduling.legend.check": "Check: collect the paddle from an ovitrap that is already placed.",
   "scheduling.legend.place": "Place: set a new ovitrap at the point.",
-  "scheduling.legend.release": "Release: release Wolbachia mosquitoes at the point (needs a permit).",
+  "scheduling.legend.release":
+    "Release: release Wolbachia mosquitoes at the point (needs a permit).",
   "scheduling.legend.risk": "Block urgency:",
 
   "scheduling.risk.high": "High",
@@ -185,7 +190,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.import.errorRow": "Row {row}:",
   "scheduling.import.fixFile": "Upload another file",
   "scheduling.import.confirmTitle": "Apply the risk for week {week}?",
-  "scheduling.import.confirmText": "The risk of the blocks in the file ({count}) will change and that week's points will be sorted with it. You can load another list later; the previous one stays in the history.",
+  "scheduling.import.confirmText":
+    "The risk of the blocks in the file ({count}) will change and that week's points will be sorted with it. You can load another list later; the previous one stays in the history.",
   "scheduling.import.applied": "Done. Blocks updated: {count}.",
   "scheduling.import.nextStep": "Next step",
   "scheduling.import.nextText": "Now share the quadrants among the couriers.",
@@ -208,7 +214,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.import.error.unknown": "This row could not be checked.",
 
   "scheduling.reassign.title": "Reassign {name}'s pending points",
-  "scheduling.reassign.subtitle": "Reassigning means passing the points that were not visited to another courier. Pending points of {name} on this day: {count}.",
+  "scheduling.reassign.subtitle":
+    "Reassigning means passing the points that were not visited to another courier. Pending points of {name} on this day: {count}.",
   "scheduling.reassign.to": "Pass them to",
   "scheduling.reassign.choose": "Choose who",
   "scheduling.reassign.option": "{name} ({load} pending that day)",
@@ -218,7 +225,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.reassign.blocked": "Only whoever manages scheduling can reassign.",
   "scheduling.reassign.apply": "Reassign points ({count})",
   "scheduling.reassign.confirmTitle": "Pass the pending points to {to}?",
-  "scheduling.reassign.confirmText": "The pending points of {from} ({count}) will go to {to}. {from} will no longer see them on their phone. Points that were already visited do not change.",
+  "scheduling.reassign.confirmText":
+    "The pending points of {from} ({count}) will go to {to}. {from} will no longer see them on their phone. Points that were already visited do not change.",
   "scheduling.reassign.confirm": "Yes, reassign",
   "scheduling.reassign.done": "Done. The pending points are now with another courier.",
 
@@ -251,8 +259,10 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.assign.move": "Move to…",
   "scheduling.assign.moveAria": "Move quadrant {code} to another courier",
   "scheduling.assign.unassign": "Leave without courier",
-  "scheduling.assign.moved": "{code} now belongs to {name}. Points already scheduled this week stay with their previous courier.",
-  "scheduling.assign.movedNone": "{code} was left without a courier. Points already scheduled this week stay with their previous courier.",
+  "scheduling.assign.moved":
+    "{code} now belongs to {name}. Points already scheduled this week stay with their previous courier.",
+  "scheduling.assign.movedNone":
+    "{code} was left without a courier. Points already scheduled this week stay with their previous courier.",
   "scheduling.assign.undo": "Undo",
   "scheduling.assign.undone": "Done, {code} is back with {name}.",
   "scheduling.assign.undoneNone": "Done, {code} is back to having no courier.",
@@ -272,7 +282,8 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.intervention.empty": "No interventions have been logged yet",
   "scheduling.intervention.emptyHelp":
     "When another institution sprays or applies larvicide, log it here with the blocks it covered.",
-  "scheduling.intervention.emptyReadOnly": "When someone logs an intervention, it will appear here.",
+  "scheduling.intervention.emptyReadOnly":
+    "When someone logs an intervention, it will appear here.",
   "scheduling.intervention.new": "Log an intervention",
   "scheduling.intervention.newHint":
     "Note what was applied, who did it, when and in which blocks. It cannot be deleted: if you make a mistake, log another one.",

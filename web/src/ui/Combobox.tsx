@@ -1,6 +1,6 @@
 import { Check, ChevronsUpDown, LoaderCircle } from "lucide-react";
 import { useState } from "react";
-import type { FocusEventHandler } from "react";
+import type { FocusEventHandler, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Command,
@@ -40,6 +40,8 @@ export interface ComboboxProps {
    */
   onSearch?: (search: string) => void;
   isLoading?: boolean;
+  /** Shown when the list is legitimately empty (for example a message with a "Create" link). */
+  emptyMessage?: ReactNode;
   onBlur?: FocusEventHandler<HTMLButtonElement>;
   className?: string;
 }
@@ -103,7 +105,7 @@ export function Combobox(props: ComboboxProps) {
                 <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
               </div>
             ) : (
-              <CommandEmpty>{t("table.empty.filteredTitle")}</CommandEmpty>
+              <CommandEmpty>{props.emptyMessage ?? t("table.empty.filteredTitle")}</CommandEmpty>
             )}
             {props.options.map((option) => (
               <CommandItem
