@@ -10,6 +10,7 @@ import { Button } from "../../ui/Button";
 import { baseMapStyle } from "../../quadrants/geography/map-features";
 import { MAX_MAP_ZOOM } from "../../quadrants/geography/map-source";
 import type { MapSource } from "../../quadrants/geography/map-source";
+import { MapAttribution } from "../../quadrants/geography/MapAttribution";
 import { useMapTheme } from "../../quadrants/geography/use-map-theme";
 import { initialView } from "../../quadrants/editor/editor-features";
 import { roundPolygon } from "../../quadrants/editor/geo-math";
@@ -101,7 +102,9 @@ export default function ZoneDrawMap({ source, quadrants, zone, onZone, onFailure
             });
             draw.start();
           }}
-        />
+        >
+          <MapAttribution source={source.attribution} />
+        </Map>
       </div>
       <div className="flex items-center justify-between gap-3">
         <p className="m-0 text-xs text-ink-2">

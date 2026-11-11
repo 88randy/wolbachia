@@ -7735,6 +7735,10 @@ export interface components {
                 type: "Polygon";
                 coordinates: number[][][];
             };
+            /** Format: double */
+            readonly area_m2: number | null;
+            /** Format: double */
+            readonly perimeter_m: number | null;
             readonly revision: number;
             /** Format: date-time */
             readonly effective_from: string;
@@ -13781,6 +13785,10 @@ export interface components {
                 type: "Polygon";
                 coordinates: number[][][];
             };
+            /** Format: double */
+            readonly area_m2: number | null;
+            /** Format: double */
+            readonly perimeter_m: number | null;
             readonly revision: number;
             /** Format: date-time */
             readonly effective_from: string;

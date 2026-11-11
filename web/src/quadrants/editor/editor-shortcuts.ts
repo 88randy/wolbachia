@@ -7,6 +7,7 @@ export const TOOL_KEYS: Readonly<Record<EditorTool, string>> = {
   block: "B",
   sampling: "M",
   release: "R",
+  measure: "L",
 };
 
 export const KEY_UNDO = "Ctrl+Z";
@@ -14,7 +15,6 @@ export const KEY_REDO = "Ctrl+Shift+Z";
 export const KEY_SAVE = "Ctrl+S";
 export const KEY_DELETE = "Supr";
 export const KEY_FIT = "F";
-export const KEY_MEASURES = "L";
 
 /** Rows of the "Atajos" popover: the keys and what they do. */
 export const SHORTCUT_ROWS: readonly { keys: string; label: MessageKey }[] = [
@@ -23,6 +23,7 @@ export const SHORTCUT_ROWS: readonly { keys: string; label: MessageKey }[] = [
   { keys: TOOL_KEYS.block, label: "mapEditor.keys.block" },
   { keys: TOOL_KEYS.sampling, label: "mapEditor.keys.sampling" },
   { keys: TOOL_KEYS.release, label: "mapEditor.keys.release" },
+  { keys: TOOL_KEYS.measure, label: "mapEditor.keys.measure" },
   { keys: "Enter", label: "mapEditor.keys.finish" },
   { keys: "Esc", label: "mapEditor.keys.cancel" },
   { keys: KEY_DELETE, label: "mapEditor.keys.delete" },
@@ -30,6 +31,5 @@ export const SHORTCUT_ROWS: readonly { keys: string; label: MessageKey }[] = [
   { keys: `${KEY_REDO} / Ctrl+Y`, label: "mapEditor.keys.redo" },
   { keys: KEY_SAVE, label: "mapEditor.keys.save" },
   { keys: KEY_FIT, label: "mapEditor.keys.fit" },
-  { keys: KEY_MEASURES, label: "mapEditor.keys.measures" },
   { keys: "?", label: "mapEditor.keys.help" },
 ];

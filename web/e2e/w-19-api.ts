@@ -167,6 +167,8 @@ const quadrant: Schemas["Quadrant"] = {
   current_version: {
     id: VERSION_ID,
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     revision: 3,
     effective_from: CLOCK,
     geometry: {

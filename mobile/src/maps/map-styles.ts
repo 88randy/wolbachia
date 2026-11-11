@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): map measurements, split after the demo. */
 import { radius, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { StyleSheet } from "react-native";
@@ -27,5 +28,16 @@ export const createMapStyles = (theme: Theme) =>
       backgroundColor: theme.color.surface,
     },
     footer: { padding: spacing[2], gap: spacing[1], backgroundColor: theme.color.surface },
-    attribution: { padding: spacing[0.5], backgroundColor: theme.color.surface },
+    canvas: { flex: 1 },
+    /** Small corner overlay: the ODbL credit stays visible without taking a row under the map. */
+    attribution: {
+      position: "absolute",
+      right: spacing[0.5],
+      bottom: spacing[0.5],
+      paddingHorizontal: spacing[0.5],
+      borderRadius: radius.sm,
+      backgroundColor: theme.color.surface,
+      opacity: 0.85,
+    },
+    attributionText: { fontSize: 11, lineHeight: 14, color: theme.color.text.secondary },
   });

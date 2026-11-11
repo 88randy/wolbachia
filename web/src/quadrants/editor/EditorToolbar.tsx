@@ -16,14 +16,7 @@ import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { EditorTool } from "./editor-model";
 import type { MapEditor } from "./use-map-editor";
-import {
-  KEY_DELETE,
-  KEY_FIT,
-  KEY_MEASURES,
-  KEY_REDO,
-  KEY_UNDO,
-  TOOL_KEYS,
-} from "./editor-shortcuts";
+import { KEY_DELETE, KEY_FIT, KEY_REDO, KEY_UNDO, TOOL_KEYS } from "./editor-shortcuts";
 import { ShortcutsHelp } from "./ShortcutsHelp";
 import { ToolbarButton } from "./ToolbarButton";
 
@@ -56,6 +49,11 @@ const TOOLS: readonly {
     tool: "release",
     icon: Flag,
     label: "mapEditor.toolShort.release",
+  },
+  {
+    tool: "measure",
+    icon: Ruler,
+    label: "mapEditor.toolShort.measure",
   },
 ];
 
@@ -129,13 +127,6 @@ export function EditorToolbar({ editor, allowed, isBusy, isHelpOpen, onHelpChang
         onClick={() => {
           editor.fit();
         }}
-      />
-      <ToolbarButton
-        icon={Ruler}
-        label={t("mapEditor.action.measures")}
-        shortcut={KEY_MEASURES}
-        isActive={editor.showMeasures}
-        onClick={editor.toggleMeasures}
       />
       {isBusy && (
         <span role="status" className="px-2 text-[13px] font-semibold text-action-strong">

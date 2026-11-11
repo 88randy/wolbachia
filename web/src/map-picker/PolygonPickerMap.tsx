@@ -8,8 +8,9 @@ import type { TerraDraw } from "terra-draw";
 import { RotateCcw } from "lucide-react";
 import { Button } from "../ui/Button";
 import { baseMapStyle } from "../quadrants/geography/map-features";
-import { MAX_MAP_ZOOM, OSM_COPYRIGHT } from "../quadrants/geography/map-source";
+import { MAX_MAP_ZOOM } from "../quadrants/geography/map-source";
 import type { MapSource } from "../quadrants/geography/map-source";
+import { MapAttribution } from "../quadrants/geography/MapAttribution";
 import type { Polygon } from "../quadrants/geography/geometry";
 import { useMapTheme } from "../quadrants/geography/use-map-theme";
 import { createEditorDraw, DRAW_MODES } from "../quadrants/editor/terra-draw";
@@ -131,13 +132,8 @@ export default function PolygonPickerMap(props: Props) {
               }}
             />
           </Source>
+          <MapAttribution source={source.attribution} />
         </Map>
-        <p className="absolute right-2 bottom-1 m-0 rounded bg-surface/90 px-2 text-xs text-ink-2">
-          <a href={OSM_COPYRIGHT} target="_blank" rel="noreferrer">
-            {t("geography.map.attribution")}
-          </a>{" "}
-          {source.attribution}
-        </p>
       </div>
       <div>
         <Button

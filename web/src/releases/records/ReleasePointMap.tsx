@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { OSM_COPYRIGHT, readMapSource } from "../../quadrants/geography/map-source";
+import { readMapSource } from "../../quadrants/geography/map-source";
 import type { MapSource } from "../../quadrants/geography/map-source";
 import { CardSkeleton } from "../../ui/CardSkeleton";
 import { InlineNotice } from "../../ui/InlineNotice";
@@ -41,9 +41,6 @@ function MapBox({ point, source, onFailure }: MapBoxProps) {
           <Canvas point={point} source={source} onFailure={onFailure} />
         </Suspense>
       </div>
-      <a className="text-xs text-ink-2" href={OSM_COPYRIGHT}>
-        {source.attribution === "" ? "OpenStreetMap" : source.attribution}
-      </a>
     </>
   );
 }

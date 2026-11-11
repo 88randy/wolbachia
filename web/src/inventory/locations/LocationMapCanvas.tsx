@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): map measurements, split after the demo. */
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -9,6 +10,7 @@ import { Package, ShieldCheck } from "lucide-react";
 import { baseMapStyle } from "../../quadrants/geography/map-features";
 import { MAX_MAP_ZOOM } from "../../quadrants/geography/map-source";
 import type { MapSource } from "../../quadrants/geography/map-source";
+import { MapAttribution } from "../../quadrants/geography/MapAttribution";
 import styles from "../inventory.module.css";
 type Location = Schemas["Location"];
 const markerPadding = {
@@ -90,6 +92,7 @@ export function LocationMapCanvas({
       {locations.map((location) => (
         <LocationMarker key={location.id} location={location} />
       ))}
+      <MapAttribution source={source.attribution} />
     </Map>
   );
 }

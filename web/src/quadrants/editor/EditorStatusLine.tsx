@@ -14,6 +14,7 @@ export function EditorStatusLine({ editor }: { editor: MapEditor }) {
   else if (editor.tool === "block") message = t("mapEditor.status.block");
   else if (editor.tool === "sampling") message = t("mapEditor.status.sampling");
   else if (editor.tool === "release") message = t("mapEditor.status.release");
+  else if (editor.tool === "measure") message = t("mapEditor.status.measure");
   else if (editor.selected)
     message = t(
       editor.selected.kind !== "sampling" && editor.selected.kind !== "release"

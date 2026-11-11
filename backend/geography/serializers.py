@@ -92,7 +92,6 @@ def author_name(record: OrgScopedModel) -> str | None:
     return user.get_full_name() or user.get_username()
 
 
-
 class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
     created_by_name = serializers.SerializerMethodField()
 
@@ -131,6 +130,8 @@ class QuadrantVersionSerializer(OrgScopedModelSerializer):
             "id",
             "quadrant",
             "geometry",
+            "area_m2",
+            "perimeter_m",
             "revision",
             "effective_from",
             "created_by",
@@ -156,6 +157,8 @@ class BlockVersionSerializer(OrgScopedModelSerializer):
             "id",
             "block",
             "geometry",
+            "area_m2",
+            "perimeter_m",
             "revision",
             "effective_from",
             "created_by",

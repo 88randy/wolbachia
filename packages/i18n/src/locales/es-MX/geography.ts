@@ -105,4 +105,11 @@ export const geography = {
   "geography.retire.hint":
     "El retiro se publica con el polígono y conserva la identidad y el historial del punto. El motivo se registra como evidencia.",
   "geography.retire.confirm": "Usar motivo de retiro",
+  "geography.field.area": "Área",
+  "geography.field.perimeter": "Perímetro",
+  "geography.measure.m": "{value} m",
+  "geography.measure.km": "{value} km",
+  "geography.measure.m2": "{value} m²",
+  "geography.measure.ha": "{value} ha",
+  "geography.measure.areaBoth": "{big} ({small})",
 } as const satisfies AreaCatalog<"geography">;

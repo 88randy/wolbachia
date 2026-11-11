@@ -43,6 +43,8 @@ vi.mock("react-map-gl/maplibre", () => ({
   },
   Source: () => null,
   Layer: () => null,
+  Marker: () => null,
+  useMap: () => ({ current: undefined }),
 }));
 
 afterEach(() => {

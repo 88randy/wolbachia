@@ -6,6 +6,7 @@ from uuid import UUID
 from django.db import models
 
 from core.models import ImmutableMixin, OrgScopedModel
+from geography.measured import MeasuredGeometryMixin
 
 
 class Quadrant(ImmutableMixin, OrgScopedModel):
@@ -27,12 +28,11 @@ class Quadrant(ImmutableMixin, OrgScopedModel):
         return self.pk
 
 
-class QuadrantVersion(ImmutableMixin, OrgScopedModel):
+class QuadrantVersion(MeasuredGeometryMixin, ImmutableMixin, OrgScopedModel):
     # Response metadata is computed under the same lock; never persisted.
     spacing_warnings: list[dict[str, object]]
 
     quadrant = models.ForeignKey(Quadrant, on_delete=models.PROTECT, related_name="versions")
-    geometry = models.JSONField()
     revision = models.PositiveIntegerField()
     effective_from = models.DateTimeField()
 
@@ -63,9 +63,8 @@ class Block(ImmutableMixin, OrgScopedModel):
         return self.quadrant.center_id
 
 
-class BlockVersion(ImmutableMixin, OrgScopedModel):
+class BlockVersion(MeasuredGeometryMixin, ImmutableMixin, OrgScopedModel):
     block = models.ForeignKey(Block, on_delete=models.PROTECT, related_name="versions")
-    geometry = models.JSONField()
     revision = models.PositiveIntegerField()
     effective_from = models.DateTimeField()
 

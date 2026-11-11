@@ -59,6 +59,8 @@ function initialVersion(): Schemas["QuadrantVersion"] {
   return {
     id: "version-1",
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     geometry: POLYGON,
     revision: 1,
     effective_from: CREATED_AT,

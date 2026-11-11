@@ -104,4 +104,11 @@ export const geography = {
   "geography.retire.hint":
     "Retirement is published with the polygon and preserves the point identity and history. The reason is recorded as evidence.",
   "geography.retire.confirm": "Use retirement reason",
+  "geography.field.area": "Area",
+  "geography.field.perimeter": "Perimeter",
+  "geography.measure.m": "{value} m",
+  "geography.measure.km": "{value} km",
+  "geography.measure.m2": "{value} m²",
+  "geography.measure.ha": "{value} ha",
+  "geography.measure.areaBoth": "{big} ({small})",
 } as const satisfies Record<keyof typeof Spanish, string>;
