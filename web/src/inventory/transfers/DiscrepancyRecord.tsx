@@ -9,6 +9,7 @@ import { DiscrepancyHistory } from "./DiscrepancyHistory";
 import { DiscrepancyResolveForm } from "./DiscrepancyResolveForm";
 import { DiscrepancyCommandNotice } from "./DiscrepancyCommandNotice";
 import { useDiscrepancyRecord } from "./discrepancy-use-record";
+import { discrepancyFolio } from "./discrepancy-labels";
 import { isDiscrepancyDenied } from "./discrepancy-query";
 import type { Discrepancy } from "./discrepancy-query";
 
@@ -39,7 +40,7 @@ function DiscrepancyDetail({
   const { t } = useTranslation();
   return (
     <DetailPage
-      title={record.code}
+      title={discrepancyFolio(record.code)}
       status={
         <StatusPill tone={record.status === "open" ? "warning" : "success"}>
           {t(`discrepancies.status.${record.status}`)}

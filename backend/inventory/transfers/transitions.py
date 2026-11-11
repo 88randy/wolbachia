@@ -315,6 +315,18 @@ def _receipt_lines(
     return legs
 
 
+def _next_folio(organization: Any) -> str:  # noqa: ANN401 -- the organization of the receipt
+    """A short human folio (DIF-0042), the next free number of the organization.
+
+    The receipt already holds the organization lock, so two receipts never pick the same one;
+    the unique code constraint still guards it.
+    """
+    number = Discrepancy.objects.filter(organization=organization).count() + 1
+    while Discrepancy.objects.filter(organization=organization, code=f"DIF-{number:04d}").exists():
+        number += 1
+    return f"DIF-{number:04d}"
+
+
 def _discrepancies(event: TransferEvent, lines: list[TransferLine], reconciliation: Any) -> None:  # noqa: ANN401 -- pure reconciliation result
     if not reconciliation.missing and not reconciliation.extras:
         return
@@ -324,7 +336,7 @@ def _discrepancies(event: TransferEvent, lines: list[TransferLine], reconciliati
         transfer=event.transfer,
         receipt_event=event,
     )
-    discrepancy.code = f"D-{discrepancy.pk.hex}"
+    discrepancy.code = _next_folio(event.organization)
     discrepancy.save(force_insert=True)
     index = {str(line.pk): line for line in lines}
     for key, quantity in reconciliation.missing.items():

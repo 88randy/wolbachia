@@ -17,6 +17,7 @@ import {
   discrepancyListOptions,
 } from "./discrepancy-query";
 import type { Discrepancy } from "./discrepancy-query";
+import { discrepancyFolio } from "./discrepancy-labels";
 
 function useColumns(): DataTableColumn<Discrepancy>[] {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ function useColumns(): DataTableColumn<Discrepancy>[] {
     {
       id: "code",
       headerKey: "discrepancies.field.code",
-      cell: (row) => row.code,
+      cell: (row) => discrepancyFolio(row.code),
       link: (row) => ({ to: "/inventory/discrepancies/$code", params: { code: row.code }, search }),
     },
     { id: "transfer", headerKey: "discrepancies.field.transfer", cell: (row) => row.transfer.code },
