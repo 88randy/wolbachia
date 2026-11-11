@@ -1,16 +1,18 @@
-import { Plus } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { FormActions, FormField, FormGrid } from "../../../components/templates/FormGrid";
 import { FormSection } from "../../../components/templates/FormSection";
 import { PageFrame } from "../../../components/templates/PageFrame";
 import { PageHeader } from "../../../components/templates/PageHeader";
+import { useLanguage } from "../../../i18n/use-language";
 import { useDocumentTitle } from "../../../shell/use-document-title";
 import { Button } from "../../../ui/Button";
 import { ErrorState } from "../../../ui/ErrorState";
 import { InlineNotice } from "../../../ui/InlineNotice";
+import { formatInventoryQuantity } from "../../format-inventory-quantity";
+import { LineItemEditor } from "../../line-items/LineItemEditor";
+import type { LineChoice } from "../../line-items/LineItemEditor";
 import { LocationCombobox } from "../../LocationCombobox";
-import { TransferLineRow } from "./TransferLineRow";
 import { useNewTransfer } from "./use-new-transfer";
 import type { NewTransfer } from "./use-new-transfer";
 
@@ -42,8 +44,23 @@ function RouteSection({ form }: { form: NewTransfer }) {
   );
 }
 
+function useChoices(form: NewTransfer): LineChoice[] {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  return [...form.stock.choices.values()].map((choice) => {
+    const unit = choice.unit === "piece" ? t("transfers.new.unit.piece") : choice.unit;
+    return {
+      value: choice.lotId,
+      label: `${choice.supplyLabel} · ${choice.lotCode}`,
+      unitText: unit,
+      availableText: `${formatInventoryQuantity(choice.available, language)} ${unit}`,
+    };
+  });
+}
+
 function ItemsSection({ form }: { form: NewTransfer }) {
   const { t } = useTranslation();
+  const choices = useChoices(form);
   const { stock, draft } = form;
   const hasOrigin = draft.originId !== "";
   return (
@@ -52,38 +69,19 @@ function ItemsSection({ form }: { form: NewTransfer }) {
       description={t(hasOrigin ? "transfers.new.itemsHint" : "transfers.new.pickOriginFirst")}
     >
       {hasOrigin && stock.isError && <ErrorState onRetry={stock.refetch} />}
-      {hasOrigin && !stock.isLoading && !stock.isError && stock.choices.size === 0 && (
+      {hasOrigin && !stock.isLoading && !stock.isError && choices.length === 0 && (
         <InlineNotice tone="warning">{t("transfers.new.noStock")}</InlineNotice>
       )}
-      {hasOrigin && stock.choices.size > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-4 p-0">
-          {draft.lines.map((line, index) => (
-            <TransferLineRow
-              key={line.key}
-              line={line}
-              index={index}
-              choices={stock.choices}
-              isDisabled={form.isBusy}
-              onChange={(next) => {
-                form.setLine(line.key, next);
-              }}
-              onRemove={() => {
-                form.removeLine(line.key);
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      {hasOrigin && stock.choices.size > 0 && (
-        <div>
-          <Button
-            variant="secondary"
-            leadingIcon={<Plus aria-hidden="true" />}
-            onClick={form.addLine}
-          >
-            {t("transfers.new.item.add")}
-          </Button>
-        </div>
+      {hasOrigin && choices.length > 0 && (
+        <LineItemEditor
+          idPrefix="transfer-line"
+          items={draft.lines}
+          choices={choices}
+          isDisabled={form.isBusy}
+          onChange={form.setLine}
+          onAdd={form.addLine}
+          onRemove={form.removeLine}
+        />
       )}
     </FormSection>
   );
@@ -97,7 +95,7 @@ export function NewTransferPage() {
   useDocumentTitle(t("transfers.new.title"));
   const isBlocked = form.blockers.length > 0;
   return (
-    <PageFrame width="narrow">
+    <PageFrame>
       <PageHeader title={t("transfers.new.title")} description={t("transfers.new.description")} />
       <form
         aria-label={t("transfers.new.title")}

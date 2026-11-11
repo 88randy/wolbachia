@@ -221,4 +221,12 @@ export const inventory = {
   "inventory.section.lotBiological": "Biological material details",
   "inventory.section.lotBiologicalHint":
     "Fill them in only if the lot is eggs or mosquitoes. Otherwise leave them empty.",
+  "inventory.lineItems.lot": "Lot",
+  "inventory.lineItems.available": "Available",
+  "inventory.lineItems.quantity": "Quantity",
+  "inventory.lineItems.lotOf": "Lot of line {number}",
+  "inventory.lineItems.quantityOf": "Quantity of line {number}",
+  "inventory.lineItems.remove": "Remove line {number}",
+  "inventory.lineItems.add": "Add another lot",
+  "inventory.lineItems.noLots": "There are no lots to choose from.",
 } satisfies Record<keyof typeof Spanish, string>;

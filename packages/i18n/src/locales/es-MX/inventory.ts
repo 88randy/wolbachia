@@ -222,4 +222,12 @@ export const inventory = {
   "inventory.section.lotBiological": "Datos del material biológico",
   "inventory.section.lotBiologicalHint":
     "Llénalos solo si el lote son huevos o mosquitos. Si no, déjalos vacíos.",
+  "inventory.lineItems.lot": "Lote",
+  "inventory.lineItems.available": "Disponible",
+  "inventory.lineItems.quantity": "Cantidad",
+  "inventory.lineItems.lotOf": "Lote de la línea {number}",
+  "inventory.lineItems.quantityOf": "Cantidad de la línea {number}",
+  "inventory.lineItems.remove": "Quitar la línea {number}",
+  "inventory.lineItems.add": "Agregar otro lote",
+  "inventory.lineItems.noLots": "No hay lotes para elegir.",
 } as const satisfies AreaCatalog<"inventory">;
