@@ -1,6 +1,7 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { CircleHelp } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
+import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { useMe } from "../session/use-me";
 import { Button } from "../ui/Button";
@@ -23,32 +24,57 @@ function NewDot() {
   );
 }
 
-function HowToTrigger({ tutorialId }: { tutorialId: TutorialId }) {
+interface TriggerProps {
+  isFinished: boolean;
+  onOpen: () => void;
+  ref: Ref<HTMLButtonElement>;
+}
+
+/** The ghost button of the header; hovering or focusing it preloads the modal chunk. */
+function TriggerButton({ isFinished, onOpen, ref }: TriggerProps) {
   const { t } = useTranslation();
+  return (
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="sm"
+      aria-haspopup="dialog"
+      leadingIcon={<CircleHelp aria-hidden="true" />}
+      onPointerEnter={() => void loadModal()}
+      onFocus={() => void loadModal()}
+      onClick={onOpen}
+    >
+      {t("tutorials.button.label")}
+      {!isFinished && <NewDot />}
+    </Button>
+  );
+}
+
+function HowToTrigger({ tutorialId }: { tutorialId: TutorialId }) {
   const userId = useMe().user.id;
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const isFinished = useIsFinished(userId, tutorialId);
-  const close = () => {
-    setIsOpen(false);
-  };
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-haspopup="dialog"
-        leadingIcon={<CircleHelp aria-hidden="true" />}
-        onPointerEnter={() => void loadModal()}
-        onFocus={() => void loadModal()}
-        onClick={() => {
+      <TriggerButton
+        isFinished={isFinished}
+        ref={buttonRef}
+        onOpen={() => {
           setIsOpen(true);
         }}
-      >
-        {t("tutorials.button.label")}
-        {!isFinished && <NewDot />}
-      </Button>
+      />
       <Suspense fallback={null}>
-        {isOpen && <TutorialModal tutorialId={tutorialId} userId={userId} onClose={close} />}
+        {isOpen && (
+          <TutorialModal
+            tutorialId={tutorialId}
+            userId={userId}
+            onClose={() => {
+              setIsOpen(false);
+            }}
+            returnFocus={() => buttonRef.current?.focus()}
+          />
+        )}
       </Suspense>
     </>
   );

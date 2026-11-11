@@ -54,6 +54,8 @@ interface TutorialModalProps {
   tutorialId: TutorialId;
   userId: string;
   onClose: () => void;
+  /** Puts focus back on the button that opened the modal. */
+  returnFocus: () => void;
 }
 
 /** Player state; reaching the end of a flow marks the tutorial as finished for this user. */
@@ -66,12 +68,18 @@ function useModalPlayer(tutorialId: TutorialId, userId: string) {
 }
 
 /** Title, step list and player. */
-function ModalContent({ tutorialId, userId }: { tutorialId: TutorialId; userId: string }) {
+function ModalContent({ tutorialId, userId, returnFocus }: Omit<TutorialModalProps, "onClose">) {
   const { t } = useTranslation();
   const tutorial = TUTORIALS[tutorialId];
   const player = useModalPlayer(tutorialId, userId);
   return (
-    <Primitive.Content className={MODAL_CLASS}>
+    <Primitive.Content
+      className={MODAL_CLASS}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        returnFocus();
+      }}
+    >
       <DialogHeader title={t("tutorials.modal.title", { title: t(titleKey(tutorialId)) })} />
       <Primitive.Description className={DIALOG_DESCRIPTION_CLASS}>
         {t("tutorials.modal.description")}
@@ -90,7 +98,7 @@ function ModalContent({ tutorialId, userId }: { tutorialId: TutorialId; userId: 
 }
 
 /** The how-to modal (a Radix dialog: focus trap, Esc, focus back to the button). Lazy-loaded. */
-export default function TutorialModal({ tutorialId, userId, onClose }: TutorialModalProps) {
+export default function TutorialModal({ onClose, ...content }: TutorialModalProps) {
   return (
     <Primitive.Root
       open
@@ -100,7 +108,7 @@ export default function TutorialModal({ tutorialId, userId, onClose }: TutorialM
     >
       <Primitive.Portal>
         <Primitive.Overlay className={OVERLAY_CLASS} />
-        <ModalContent tutorialId={tutorialId} userId={userId} />
+        <ModalContent {...content} />
       </Primitive.Portal>
     </Primitive.Root>
   );
