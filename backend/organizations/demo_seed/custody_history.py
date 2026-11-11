@@ -414,6 +414,7 @@ def ensure_stock_and_releases(
     if not seeded:
         _history(organization, members, quadrants, catalog_version, device, (today, zone, start))
     inventory.ensure_transit_policies(admin)
+    inventory.ensure_material_mappings(admin)
     _today_conditions(admin, organization)
     inventory.ensure_courier_plan(admin, members["demo-courier-1"], stock)
     for name in people.COURIER_USERNAMES[1:]:

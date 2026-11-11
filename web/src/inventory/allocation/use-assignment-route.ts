@@ -19,7 +19,8 @@ export function useAssignmentRoute() {
     date: ISO_DAY.test(requested) ? requested : today,
     courierId: textParam(search, "courier"),
     setDate: (date: string) => {
-      void navigate({ to: ".", search: { date } });
+      const courier = textParam(search, "courier");
+      void navigate({ to: ".", search: courier ? { date, courier } : { date } });
     },
   };
 }

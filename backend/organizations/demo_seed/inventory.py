@@ -326,3 +326,37 @@ def apply_inventory_additions(
             _rename_location(actor, location, f"Punto de resguardo {quadrant.code}")
     second = ensure_second_warehouse(actor, quadrants, owner)
     ensure_demo_transfer(actor, DemoStock(home, lots), second)
+    ensure_material_mappings(actor)
+
+
+MATERIAL_PER_TASK = (("place", "S-MER-PADDLE"), ("check", "S-MER-BAG"))
+
+
+def ensure_material_mappings(actor: UploadActor) -> None:
+    """How much material each task carries: one paddle to place a trap, one bag to check it.
+
+    Without these the courier delivery screen cannot suggest quantities (writes, idempotent).
+    """
+    from inventory.allocations.models import SupplyMaterialMappingVersion
+    from inventory.allocations.transit import publish_transit_configuration
+
+    for action, supply_code in MATERIAL_PER_TASK:
+        supply = SupplyType.objects.filter(
+            organization=actor.organization, code=supply_code
+        ).first()
+        version = supply.versions.order_by("-revision").first() if supply else None
+        if supply is None or version is None:
+            continue
+        if SupplyMaterialMappingVersion.objects.filter(
+            supply_version=version, action=action
+        ).exists():
+            continue
+        values = {
+            "supply_version_id": version.pk,
+            "expected_revision": 0,
+            "action": action,
+            "quantity": Decimal("1"),
+            "reference": "Synthetic demo configuration",
+            "is_active": True,
+        }
+        publish_transit_configuration(ConfigurationWrite(actor, supply.pk, values, mapping=True))

@@ -2,13 +2,10 @@ import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { FormSection } from "../../components/templates/FormSection";
 import { Combobox } from "../../ui/Combobox";
-import { DeliveredLines } from "./DeliveredLines";
-import { DeliveryTable } from "./DeliveryTable";
-import { LotPicker } from "./LotPicker";
-import { ScanLotField } from "./ScanLotField";
-import { compareDelivery } from "./delivery-compare";
+import { LineItemEditor } from "../line-items/LineItemEditor";
+import type { LineChoice } from "../line-items/LineItemEditor";
+import { LotAdder } from "./LotAdder";
 import type { AssignmentDraft } from "./use-assignment-draft";
-import type { Suggestion } from "./allocation-query";
 
 function OriginPicker({
   draft,
@@ -40,16 +37,27 @@ function OriginPicker({
   );
 }
 
-/** Choose the origin, add lots by name or scan, edit quantities and compare with the suggestion. */
+/** What each added lot shows: its name and the unit its quantity is counted in. */
+function useChoices(lots: readonly Schemas["Lot"][]): LineChoice[] {
+  const { t } = useTranslation();
+  return lots.map((lot) => ({
+    value: lot.id,
+    label: `${lot.supply_version.label} · ${lot.code}`,
+    unitText:
+      lot.supply_version.unit === "piece" ? t("transfers.new.unit.piece") : lot.supply_version.unit,
+  }));
+}
+
+/** The form of one delivery: where it leaves from, and which lots with how much of each. */
 export function AssignmentDelivery(props: {
   draft: AssignmentDraft;
-  suggestion: Suggestion | undefined;
   lots: readonly Schemas["Lot"][] | undefined;
   origins: readonly Schemas["Location"][];
 }) {
   const { t } = useTranslation();
-  const { draft, suggestion, lots, origins } = props;
-  const rows = compareDelivery(suggestion, draft.lines);
+  const { draft, origins } = props;
+  const lots = props.lots ?? [];
+  const choices = useChoices(lots);
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <FormSection title={t("allocation.assignment.sectionOrigin")}>
@@ -59,11 +67,21 @@ export function AssignmentDelivery(props: {
         title={t("allocation.assignment.sectionLots")}
         description={t("allocation.assignment.sectionLotsHint")}
       >
-        <LotPicker lots={lots ?? []} draft={draft} />
-        <ScanLotField scan={draft.scan} onAdd={(code) => void draft.addLot(code)} />
-        <DeliveredLines draft={draft} lots={lots ?? []} />
+        <LotAdder lots={lots} draft={draft} />
+        {draft.lines.length > 0 && (
+          <LineItemEditor
+            idPrefix="delivery-line"
+            items={draft.lines}
+            choices={choices}
+            showAvailable={false}
+            isLotFixed
+            onChange={(key, patch) => {
+              if (patch.quantity !== undefined) draft.setQuantity(key, patch.quantity);
+            }}
+            onRemove={draft.removeLine}
+          />
+        )}
       </FormSection>
-      {rows.length > 0 && <DeliveryTable rows={rows} lots={lots} />}
     </div>
   );
 }

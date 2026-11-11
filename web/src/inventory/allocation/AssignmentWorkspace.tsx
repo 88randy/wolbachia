@@ -6,6 +6,7 @@ import { EmptyState } from "../../ui/EmptyState";
 import { ErrorState } from "../../ui/ErrorState";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { AssignmentPanel } from "./AssignmentPanel";
+import { DateField } from "../../ui/DateField";
 import { CourierPicker } from "./CourierPicker";
 import { ASSIGNMENTS_ROUTE, courierDirectoryOptions } from "./allocation-query";
 import type { AllocationScope } from "./allocation-query";
@@ -13,6 +14,7 @@ import type { AllocationScope } from "./allocation-query";
 interface Props {
   scope: AllocationScope;
   date: string;
+  onDateChange: (date: string) => void;
   courierId: string;
   canAllocate: boolean;
 }
@@ -29,9 +31,23 @@ function Layout({ people, ...props }: Props & { people: Schemas["OperationalPers
   const selected = choices.find((person) => person.id === props.courierId);
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <CourierPicker couriers={choices} selected={selected?.id ?? ""} date={props.date} />
+      <div className="grid max-w-2xl min-w-0 grid-cols-1 items-start gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
+        <CourierPicker couriers={choices} selected={selected?.id ?? ""} date={props.date} />
+        <DateField
+          id="allocation-date"
+          label={t("allocation.filter.date")}
+          value={props.date}
+          onChange={props.onDateChange}
+        />
+      </div>
       {selected ? (
-        <AssignmentPanel key={`${selected.id}|${props.date}`} courier={selected} {...props} />
+        <AssignmentPanel
+          key={`${selected.id}|${props.date}`}
+          courier={selected}
+          scope={props.scope}
+          date={props.date}
+          canAllocate={props.canAllocate}
+        />
       ) : (
         <InlineNotice tone="info">{t("allocation.assignment.pickCourier")}</InlineNotice>
       )}

@@ -1,6 +1,6 @@
 import type { allocation as spanish } from "../es-MX/allocation.ts";
 export const allocation: Record<keyof typeof spanish, string> = {
-  "allocation.filter.date": "Date (YYYY-MM-DD)",
+  "allocation.filter.date": "Date",
   "allocation.page.denied":
     "Your scope does not include this inventory. Ask an administrator for access.",
   "allocation.field.reason": "Reason",
@@ -74,9 +74,9 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.lab.title": "Lab biological write-offs",
   "allocation.assignment.title": "Hand out to couriers",
   "allocation.assignment.description":
-    "Hand each courier the day's material (ovitraps, paddles, supplies). Pick a courier, review what is suggested and scan the lots you give them.",
+    "Choose the courier and the day, add the lots you hand out and save the delivery.",
   "allocation.assignment.hint":
-    "This is the material each courier carries. Which quadrants each one covers is decided in Scheduling, under «Quadrants by courier».",
+    "The lot that expires first goes first. After saving, the delivery is sent to the courier's phone to be signed.",
   "allocation.assignment.couriers": "Couriers",
   "allocation.assignment.deliveryCaption": "Suggested and delivered per supply",
   "allocation.assignment.suggested": "Suggested",
@@ -100,9 +100,9 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.assignment.panelTitle": "Delivery for {name}",
   "allocation.assignment.suggestionError": "The suggestion could not be loaded.",
   "allocation.assignment.noSchedule":
-    "There is no schedule for this date, so there is no suggestion. You can deliver at your discretion.",
+    "There is no suggestion because nothing is scheduled for that day.",
   "allocation.assignment.unconfigured":
-    "Material mappings are missing in the configuration; no suggestion is calculated.",
+    "There is no suggestion because it is not set how much material each task needs.",
   "allocation.assignment.noPermission": "You do not have permission to allocate material.",
   "allocation.assignment.saved": "Assignment saved (revision {revision}).",
   "allocation.assignment.create": "Save delivery",
@@ -116,7 +116,7 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.assignment.noCouriers": "There are no active couriers in your scope.",
   "allocation.assignment.pickCourier": "Choose a courier to see and prepare what is handed out.",
   "allocation.signature.title": "Courier signature",
-  "allocation.signature.unassigned": "Not assigned",
+  "allocation.signature.unassigned": "The courier signs when receiving the material",
   "allocation.signature.pending": "Waiting for signature on the phone",
   "allocation.signature.verified": "Received and signed",
   "allocation.signature.unknown": "Signature status unavailable",
@@ -147,4 +147,10 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.writeOff.reason.damaged": "Damaged",
   "allocation.writeOff.reason.lost": "Lost or stolen",
   "allocation.writeOff.reason.other": "Other",
+  "allocation.assignment.lotAdder": "Add a lot",
+  "allocation.assignment.lotAdderPlaceholder": "Pick a lot, or scan or type its code",
+  "allocation.assignment.summaryTitle": "What they carry today",
+  "allocation.assignment.summaryEmpty":
+    "When you add lots, you will see here how much is handed out.",
+  "allocation.assignment.configureLink": "Set it up in the supply catalog",
 };

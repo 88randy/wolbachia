@@ -1,6 +1,6 @@
 import type { AreaCatalog } from "../area.ts";
 export const allocation = {
-  "allocation.filter.date": "Fecha (AAAA-MM-DD)",
+  "allocation.filter.date": "Fecha",
   "allocation.page.denied":
     "Tu alcance no incluye este inventario. Pide acceso a un administrador.",
   "allocation.field.reason": "Motivo",
@@ -75,9 +75,9 @@ export const allocation = {
   "allocation.lab.title": "Bajas biológicas del laboratorio",
   "allocation.assignment.title": "Entregar a repartidores",
   "allocation.assignment.description":
-    "Entrega a cada repartidor el material del día (ovitrampas, papeletas, insumos). Elige un repartidor, revisa lo que se sugiere y escanea los lotes que le das.",
+    "Elige al repartidor y el día, agrega los lotes que le entregas y guarda la entrega.",
   "allocation.assignment.hint":
-    "Esto es el material que lleva cada repartidor. Qué cuadrantes atiende cada uno se decide en Programación, en «Cuadrantes por repartidor».",
+    "Primero va el lote que caduca antes. Después de guardar, la entrega se manda al teléfono del repartidor para que la firme.",
   "allocation.assignment.couriers": "Repartidores",
   "allocation.assignment.deliveryCaption": "Sugerido y entregado por insumo",
   "allocation.assignment.suggested": "Sugerido",
@@ -101,9 +101,9 @@ export const allocation = {
   "allocation.assignment.panelTitle": "Entrega para {name}",
   "allocation.assignment.suggestionError": "No se pudo cargar la sugerencia.",
   "allocation.assignment.noSchedule":
-    "No hay programación para esta fecha, así que no hay sugerencia. Puedes entregar con tu criterio.",
+    "No hay sugerencia porque todavía no hay programación para ese día.",
   "allocation.assignment.unconfigured":
-    "Faltan equivalencias de material en la configuración; no se calcula sugerencia.",
+    "No hay sugerencia porque falta configurar cuánto material lleva cada tarea.",
   "allocation.assignment.noPermission": "No tienes permiso para asignar material.",
   "allocation.assignment.saved": "Asignación guardada (revisión {revision}).",
   "allocation.assignment.create": "Guardar entrega",
@@ -118,7 +118,7 @@ export const allocation = {
   "allocation.assignment.pickCourier":
     "Elige a un repartidor para ver y preparar lo que se le entrega.",
   "allocation.signature.title": "Firma del repartidor",
-  "allocation.signature.unassigned": "Sin asignar",
+  "allocation.signature.unassigned": "El repartidor firma al recibir el material",
   "allocation.signature.pending": "Esperando firma en el teléfono",
   "allocation.signature.verified": "Recibido y firmado",
   "allocation.signature.unknown": "Estado de firma no disponible",
@@ -149,4 +149,9 @@ export const allocation = {
   "allocation.writeOff.reason.damaged": "Dañado",
   "allocation.writeOff.reason.lost": "Perdido o robado",
   "allocation.writeOff.reason.other": "Otro",
+  "allocation.assignment.lotAdder": "Agregar un lote",
+  "allocation.assignment.lotAdderPlaceholder": "Elige un lote, o escanea o escribe su código",
+  "allocation.assignment.summaryTitle": "Lo que lleva hoy",
+  "allocation.assignment.summaryEmpty": "Cuando agregues lotes, aquí verás cuánto se entrega.",
+  "allocation.assignment.configureLink": "Configurar en el catálogo de insumos",
 } as const satisfies AreaCatalog<"allocation">;

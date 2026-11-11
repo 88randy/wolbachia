@@ -7,7 +7,6 @@ import { ListPage } from "../../components/templates/ListPage";
 import { InfoHint } from "../../ui/InfoHint";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryContext } from "../use-inventory-context";
-import { AssignmentDateField } from "./AssignmentDateField";
 import { AssignmentWorkspace } from "./AssignmentWorkspace";
 import { useAssignmentRoute } from "./use-assignment-route";
 
@@ -29,12 +28,12 @@ export function W15Page() {
           <InfoHint text={t("allocation.assignment.hint")} />
         </>
       }
-      actions={<AssignmentDateField date={route.date} onChange={route.setDate} />}
     >
       <AssignmentWorkspace
         key={scope.context}
         scope={scope}
         date={route.date}
+        onDateChange={route.setDate}
         courierId={route.courierId}
         canAllocate={can(me, "inventory.allocate")}
       />

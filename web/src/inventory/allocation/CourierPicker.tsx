@@ -17,7 +17,7 @@ export function CourierPicker({
   const navigate = useNavigate();
   const options = couriers.map((person) => ({ value: person.id, label: person.display_name }));
   return (
-    <div className="flex max-w-md min-w-0 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor="allocation-courier" className="text-xs font-bold text-ink">
         {t("allocation.assignment.courier")}
       </label>

@@ -31,8 +31,11 @@ interface Props {
   /** Extra content under a row, e.g. the "photo of what is missing" field. */
   rowNote?: (item: LineItem) => ReactNode;
   emptyMessage?: ReactNode;
+  /** The lot of each row is already decided (added by name or scan): show it as text. */
+  isLotFixed?: boolean;
   onChange: (key: string, patch: Partial<LineItem>) => void;
-  onAdd: () => void;
+  /** Without it there is no "add" button (the lots are added somewhere else). */
+  onAdd?: () => void;
   onRemove: (key: string) => void;
 }
 
@@ -62,18 +65,24 @@ export function LineItemEditor(props: Props) {
           return (
             <li key={item.key} className="flex min-w-0 flex-col gap-2">
               <div className={`grid grid-cols-1 items-center gap-x-4 gap-y-2 ${columns}`}>
-                <Combobox
-                  id={`${id}-lot`}
-                  value={item.lotId}
-                  options={props.choices}
-                  ariaLabel={t("inventory.lineItems.lotOf", { number: index + 1 })}
-                  placeholder={t("inventory.option.choose")}
-                  disabled={props.isDisabled}
-                  emptyMessage={props.emptyMessage ?? t("inventory.lineItems.noLots")}
-                  onValueChange={(lotId) => {
-                    props.onChange(item.key, { lotId });
-                  }}
-                />
+                {props.isLotFixed ? (
+                  <span className="min-w-0 text-sm font-semibold text-ink [overflow-wrap:anywhere]">
+                    {choice?.label ?? "—"}
+                  </span>
+                ) : (
+                  <Combobox
+                    id={`${id}-lot`}
+                    value={item.lotId}
+                    options={props.choices}
+                    ariaLabel={t("inventory.lineItems.lotOf", { number: index + 1 })}
+                    placeholder={t("inventory.option.choose")}
+                    disabled={props.isDisabled}
+                    emptyMessage={props.emptyMessage ?? t("inventory.lineItems.noLots")}
+                    onValueChange={(lotId) => {
+                      props.onChange(item.key, { lotId });
+                    }}
+                  />
+                )}
                 {showAvailable && (
                   <span className="min-w-0 text-sm text-ink-2 tabular-nums">
                     {choice?.availableText ?? "—"}
@@ -111,16 +120,18 @@ export function LineItemEditor(props: Props) {
           );
         })}
       </ul>
-      <div>
-        <Button
-          variant="secondary"
-          leadingIcon={<Plus aria-hidden="true" />}
-          disabled={props.isDisabled}
-          onClick={props.onAdd}
-        >
-          {t("inventory.lineItems.add")}
-        </Button>
-      </div>
+      {props.onAdd && (
+        <div>
+          <Button
+            variant="secondary"
+            leadingIcon={<Plus aria-hidden="true" />}
+            disabled={props.isDisabled}
+            onClick={props.onAdd}
+          >
+            {t("inventory.lineItems.add")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
