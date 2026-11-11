@@ -160,6 +160,7 @@ export class OvitrapService {
     const pending = await this.#pendingTarget(current, shiftId);
     if (pending) {
       assertSameTarget(pending, mode, ovitrapId);
+      await this.#adoptCurrentAssignment(pending, current.draftVersion);
       return this.read();
     }
     const { store, uuid, now } = this.#deps;
@@ -179,6 +180,14 @@ export class OvitrapService {
     const saved = await this.read();
     if (saved.draft) assertSameTarget(saved.draft, mode, ovitrapId);
     return saved;
+  }
+  /** A new trap not yet placed keeps no stale copy: it takes the route's current points. */
+  async #adoptCurrentAssignment(draft: Draft, version: string | null): Promise<void> {
+    if (draft.mode !== "place" || draft.point !== null) return;
+    const { assignment } = await this.#deps.store.snapshots();
+    if (assignment === null || JSON.stringify(assignment) === JSON.stringify(draft.assignment))
+      return;
+    await this.#updateDraft({ ...draft, assignment }, version);
   }
   async #pendingTarget(current: StoredCapture, shiftId: string): Promise<Draft | null> {
     if (!current.draft || current.draft.shiftId !== shiftId || current.event) return null;

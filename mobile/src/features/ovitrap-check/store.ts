@@ -6,6 +6,7 @@ import {
   StaleAssignmentAuthorityError,
 } from "./snapshot-authority.ts";
 import type { AssignmentAuthority } from "./snapshot-authority.ts";
+import type { AssignmentNullReason } from "./assignment-diagnostics.ts";
 import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identity-state.ts";
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
@@ -67,6 +68,19 @@ export class OvitrapStore {
     const statement = assignmentPublication(snapshots, authority);
     const rows = await this.#db.query(statement.sql, statement.params);
     if (rows.length === 0) throw new StaleAssignmentAuthorityError();
+  }
+  /** Why a guarded publication wrote nothing; diagnostic only. */
+  async publishBlockReason(assignment: Assignment | null): Promise<AssignmentNullReason> {
+    const [cleanup] = await this.#db.query(
+      `SELECT 1 AS found WHERE NOT ${CAPTURE_SCOPE_AVAILABLE}`,
+    );
+    if (cleanup) return "cleanup_pending";
+    const [removed] = await this.#db.query(
+      `SELECT 1 AS found FROM json_each(?,'$.points') point
+        JOIN day_sampling_point current ON current.id=json_extract(point.value,'$.id') WHERE current.removed=1`,
+      [JSON.stringify(assignment ?? { points: [] })],
+    );
+    return removed ? "point_removed" : "publish_stale";
   }
   async begin(draft: Draft): Promise<void> {
     await this.#db.runAtomically([
