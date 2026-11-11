@@ -468,6 +468,18 @@ export const mobile = {
     "Solo se ofrece reutilización con elegibilidad descargada. Nunca una tercera reutilización.",
   "mobile.ovitrap.supplies": "Insumos usados (opcional)",
   "mobile.ovitrap.photo": "Agregar evidencia fotográfica",
+  "mobile.camera.takeTitle": "Toma la foto",
+  "mobile.camera.takeHint": "Apunta bien y toca el botón grande.",
+  "mobile.camera.reviewTitle": "¿Se ve bien la foto?",
+  "mobile.camera.reviewHint": "Si se ve bien, úsala. Si no, tómala otra vez.",
+  "mobile.camera.previewLabel": "Foto que acabas de tomar",
+  "mobile.camera.viewfinderLabel": "Vista de la cámara",
+  "mobile.camera.shoot": "Tomar foto",
+  "mobile.camera.waiting": "Esperando a que abra la cámara.",
+  "mobile.camera.use": "Usar esta foto",
+  "mobile.camera.retake": "Tomar otra vez",
+  "mobile.camera.cancel": "Cancelar",
+  "mobile.camera.failed": "No se pudo tomar la foto. Intenta otra vez.",
   "mobile.camera.undo": "Quitar esta foto del borrador",
   "mobile.ovitrap.concurrentEdit":
     "El borrador cambió mientras se guardaba. Tus cambios siguen pendientes; vuelve a intentar guardarlos.",
@@ -489,7 +501,7 @@ export const mobile = {
   "mobile.camera.fileFailed":
     "No se pudo guardar la foto en el teléfono. Revisa el espacio disponible e intenta tomarla de nuevo; tu borrador sigue en el teléfono.",
   "mobile.ovitrap.photoUnavailable":
-    "La cámara de evidencia no está disponible en esta versión. Conserva el borrador y pide ayuda si la lista requiere foto.",
+    "No se pudo abrir la cámara. Permite la cámara e inténtalo otra vez; tu borrador sigue en el teléfono.",
   "mobile.ovitrap.refresh": "Actualizar listas y reglas",
   "mobile.ovitrap.adopt": "Revisar y usar las versiones descargadas",
   "mobile.ovitrap.catalogChanged":
@@ -686,7 +698,7 @@ export const mobile = {
     "La foto del odómetro es opcional, salvo que la lista la requiera evidencia. Las fotos guardadas permanecen en este teléfono.",
   "mobile.shiftOpen.capturePhoto": "Tomar foto",
   "mobile.shiftOpen.photoUnavailable":
-    "La cámara no está disponible en esta versión. Conservamos tu captura; si se requiere foto, no podrás salir.",
+    "No se pudo abrir la cámara. Permite la cámara e inténtalo otra vez; tu captura sigue en el teléfono.",
   "mobile.shiftOpen.photoCount": "Fotos guardadas en este teléfono:",
   "mobile.shiftOpen.odometerKm": "Km que marca el odómetro (entero)",
   "mobile.shiftOpen.lastOdometer": "Último km conocido por este teléfono:",
