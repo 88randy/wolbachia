@@ -18,12 +18,12 @@ export function markerState(row: DayTask): MarkerState {
   return { tone: "info", icon: "clock", key: "mobile.day.pendingStatus" };
 }
 export const ACTION_KEYS: Readonly<Record<DayTask["task"]["action"], MessageKey>> = {
-  place: "mobile.day.place",
-  check: "mobile.day.check",
+  place: "field.day.actionPlace",
+  check: "field.day.actionCheck",
   replace: "mobile.day.replace",
   relocate: "mobile.day.relocate",
   remove: "mobile.day.remove",
-  release: "mobile.release.title",
+  release: "field.day.actionRelease",
 };
 /** [ASSUMPTION] Fixture summary codes until the history producer publishes its vocabulary. */
 export const HISTORY_KEYS: Readonly<Record<string, MessageKey>> = {

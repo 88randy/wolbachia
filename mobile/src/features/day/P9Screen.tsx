@@ -73,20 +73,22 @@ export function P9Screen() {
               }}
             />
           )}
-          {model.tasks.map((row) => (
-            <RouteCard
-              key={row.task.id}
-              row={row}
-              isActing={model.isActing}
-              navigationFailed={failedPoint === row.task.id}
-              onDirections={() => {
-                void model.navigate(row.task);
-              }}
-              onStart={() => {
-                start(row.task);
-              }}
-            />
-          ))}
+          {model.tasks
+            .filter((row) => row.task.id !== next?.task.id)
+            .map((row) => (
+              <RouteCard
+                key={row.task.id}
+                row={row}
+                isActing={model.isActing}
+                navigationFailed={failedPoint === row.task.id}
+                onDirections={() => {
+                  void model.navigate(row.task);
+                }}
+                onStart={() => {
+                  start(row.task);
+                }}
+              />
+            ))}
         </>
       )}
     </ScreenScaffold>

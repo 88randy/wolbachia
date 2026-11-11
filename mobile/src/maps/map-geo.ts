@@ -5,12 +5,6 @@ import type { LngLatPair, MapPoint, MapZone } from "./map-types.ts";
 /** West, south, east, north. */
 export type Bounds = readonly [number, number, number, number];
 
-const DASH_PATTERNS: readonly (readonly number[] | null)[] = [null, [4, 2], [1, 2], [6, 2, 1, 2]];
-
-export function dashFor(patternIndex: number): readonly number[] | null {
-  return DASH_PATTERNS[patternIndex % DASH_PATTERNS.length] ?? null;
-}
-
 /** Bounds covering every point and zone vertex, or null when there is nothing to show. */
 export function boundsOf(points: readonly MapPoint[], zones: readonly MapZone[]): Bounds | null {
   const coords: LngLatPair[] = [

@@ -17,6 +17,8 @@ interface Props {
   /** Highlighted point; the directions button targets it. */
   readonly selectedId?: string | null;
   readonly onSelectPoint?: (id: string) => void;
+  /** "Empezar" in the selected point's card. */
+  readonly onStart?: (id: string) => void;
   /** Shows the directions button under the map when a point is selected. Default true. */
   readonly showDirections?: boolean;
 }
@@ -34,6 +36,7 @@ export function MapView({
   zones = NO_ZONES,
   selectedId = null,
   onSelectPoint,
+  onStart,
   showDirections = true,
 }: Props) {
   const { theme } = useTheme();
@@ -63,6 +66,7 @@ export function MapView({
       <MapFooter
         point={points.find((point) => point.id === selectedId) ?? null}
         showDirections={showDirections}
+        onStart={onStart}
       />
     </View>
   );

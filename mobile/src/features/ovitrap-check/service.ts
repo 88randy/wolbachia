@@ -1,4 +1,3 @@
-import { lastAssignmentOutcome } from "./assignment-diagnostics.ts";
 import { assertCaptureIdentity, ConcurrentCaptureError } from "./capture-identity.ts";
 import { ImmutableCaptureError, OvitrapDraftBuffer } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
@@ -69,8 +68,6 @@ export interface Snapshot extends StoredCapture {
   readonly lifecycleTargetId: string | null;
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
-  /** Set only while the scope is blocked: last outcome plus phone counts (no personal data). */
-  readonly assignmentCode: string | null;
   readonly isShiftBlocked: boolean;
   readonly canStartCapture: boolean;
   readonly repeat: OutboxEvent | null;
@@ -137,9 +134,7 @@ export class OvitrapService {
     return !id || Boolean(draft && draft.shiftId !== id);
   }
   async #scope(draft: Draft | null) {
-    const flags = availability(draft, await this.#deps.store.snapshots());
-    const facts = flags.isScopeBlocked ? await this.#deps.store.assignmentFacts() : null;
-    return { ...flags, assignmentCode: facts && `${lastAssignmentOutcome()} ${facts}` };
+    return availability(draft, await this.#deps.store.snapshots());
   }
   /**
    * Every entry point (route, tile, scan) first makes the stored assignment current, and an unsent,

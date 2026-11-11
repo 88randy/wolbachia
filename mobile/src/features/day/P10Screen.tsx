@@ -6,16 +6,19 @@ import { MapView } from "../../maps/MapView.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
-import { toMapPoints } from "./map-points.ts";
+import { toMapPoints, zonesOfTasks } from "./map-points.ts";
 import { RouteProblems } from "./RouteProblems.tsx";
 import { useM06 } from "./use-m-06.ts";
+import { useStartTask } from "./use-start-task.ts";
 
 /** Day map: every point of the route with its state; tap one, then "Cómo llegar". No scrolling here. */
 export function P10Screen() {
   const model = useM06();
   const t = useT();
   const points = useMemo(() => toMapPoints(model.tasks, t), [model.tasks, t]);
-  const zones = useFieldZones();
+  const allZones = useFieldZones();
+  const zones = useMemo(() => zonesOfTasks(allZones, model.tasks), [allZones, model.tasks]);
+  const start = useStartTask();
   const hasMissingLocation = model.tasks.length > points.length;
   return (
     <ScreenScaffold
@@ -34,6 +37,10 @@ export function P10Screen() {
           points={points}
           zones={zones}
           selectedId={model.selected?.task.id ?? null}
+          onStart={(id) => {
+            const row = model.tasks.find((candidate) => candidate.task.id === id);
+            if (row !== undefined) start(row.task);
+          }}
           onSelectPoint={(id) => {
             const row = model.tasks.find((candidate) => candidate.task.id === id);
             if (row !== undefined) void model.select(row.task);

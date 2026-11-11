@@ -26,6 +26,7 @@ export function PreparePage({ model, draft }: CaptureProps) {
               key={key}
               label={t(`field.capture.prep.${key}`)}
               isSelected={isDone}
+              selectedLabel={t("courier.choice.done")}
               disabled={model.isBusy}
               onPress={() => {
                 model.edit(

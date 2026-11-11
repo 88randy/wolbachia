@@ -15,6 +15,7 @@ export const courier = {
   "courier.choice.yes": "Yes",
   "courier.choice.no": "No",
   "courier.choice.selected": "Selected",
+  "courier.choice.done": "Done",
   "courier.check.good": "Good",
   "courier.check.fault": "Fault",
   "courier.counter.increase": "Add one to {label}",

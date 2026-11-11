@@ -82,19 +82,6 @@ export class OvitrapStore {
     );
     return removed ? "point_removed" : "publish_stale";
   }
-  /** Counts only, never ids: what this phone holds when the capture has no point to offer. */
-  async assignmentFacts(): Promise<string> {
-    const [row] = await this.#db.query(
-      `SELECT (SELECT COUNT(*) FROM kv WHERE key='day_cleanup_pending' AND value='true') AS cleanup,
-        (SELECT COUNT(*) FROM day_bundle_meta) AS meta,
-        (SELECT COUNT(*) FROM day_assignment WHERE removed=0) AS tasks,
-        (SELECT COUNT(*) FROM day_sampling_point WHERE removed=0) AS points,
-        (SELECT json_array_length(value,'$.assignment.points') FROM kv WHERE key='ovitrap_snapshots') AS stored,
-        (SELECT json_array_length(value,'$.assignment.placePointIds') FROM kv WHERE key='ovitrap_snapshots') AS place`,
-    );
-    const field = (key: string) => (typeof row?.[key] === "number" ? String(row[key]) : "null");
-    return `cleanup=${field("cleanup")} meta=${field("meta")} tasks=${field("tasks")} points=${field("points")} stored=${field("stored")} place=${field("place")}`;
-  }
   async begin(draft: Draft): Promise<void> {
     await this.#db.runAtomically([
       {

@@ -163,6 +163,5 @@ void test("capture assignment: the route path with the real courier bundle lists
   assert.ok((started.draft?.assignment?.placePointIds ?? []).includes(ROUTE_POINT_ID));
   const chosen = await service.update({ point }, started.draft?.eventId ?? null);
   assert.equal(chosen.isScopeBlocked, false);
-  assert.equal(chosen.assignmentCode, null);
   assert.equal(chosen.draft?.point?.id, ROUTE_POINT_ID);
 });

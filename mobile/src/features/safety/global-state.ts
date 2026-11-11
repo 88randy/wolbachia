@@ -63,7 +63,7 @@ const RULES: readonly Rule[] = [
   [(i) => i.hasClockSkew, state("clockSkew", "warning", "keepWorkingReview")],
   [(i) => i.isShiftOpen && i.gps === "off", state("gpsOff", "warning", "enableLocation")],
   [(i) => i.isShiftOpen && i.gps === "denied", state("gpsDenied", "warning", "enableLocation")],
-  [(i) => i.isShiftOpen && i.gps === "unreliable", state("gpsUnreliable", "warning", "waitForFix")],
+  [(i) => i.isShiftOpen && i.gps === "unreliable", state("gpsUnreliable", "info", "waitForFix")],
   [(i) => i.isShiftOpen && i.gps === "searching", state("gpsSearching", "info", "waitForFix")],
   [(i) => i.storage === "low", state("storageLow", "warning", "freeSpace")],
   [(i) => i.isBatteryLow, state("batteryLow", "info", "chargeOrSaveBattery")],

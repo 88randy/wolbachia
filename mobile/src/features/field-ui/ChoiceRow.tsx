@@ -11,6 +11,8 @@ export interface ChoiceRowProps {
   readonly hint?: string;
   readonly icon?: LucideIcon;
   readonly isSelected: boolean;
+  /** Words beside the check when selected; "Elegido" by default, "Hecho" for a checklist. */
+  readonly selectedLabel?: string;
   readonly onPress: () => void;
   readonly disabled?: boolean;
 }
@@ -26,6 +28,7 @@ export function ChoiceRow({
   hint,
   icon: IconComponent,
   isSelected,
+  selectedLabel,
   onPress,
   disabled = false,
 }: ChoiceRowProps) {
@@ -49,13 +52,17 @@ export function ChoiceRow({
         <AppText variant="bodyStrong" style={{ color }}>
           {label}
         </AppText>
-        {hint ? <AppText variant="caption" style={{ color }}>{hint}</AppText> : null}
+        {hint ? (
+          <AppText variant="caption" style={{ color }}>
+            {hint}
+          </AppText>
+        ) : null}
       </View>
       {filled ? (
         <View className="flex-row items-center gap-1">
           <Check color={color} size={22} strokeWidth={3} />
           <AppText variant="captionStrong" style={{ color }}>
-            {t("courier.choice.selected")}
+            {selectedLabel ?? t("courier.choice.selected")}
           </AppText>
         </View>
       ) : null}
