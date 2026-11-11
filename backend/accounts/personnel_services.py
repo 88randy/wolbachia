@@ -2,9 +2,11 @@
 
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
+from datetime import timedelta
 from typing import Any, NoReturn
 from uuid import UUID, uuid4
 
+from django.conf import settings
 from django.db import DatabaseError, IntegrityError, transaction
 from django.views.decorators.debug import sensitive_variables
 from rest_framework.exceptions import NotFound
@@ -14,9 +16,11 @@ from accounts.personnel_scope import authorize_membership_scope
 from accounts.revocation import Revocation, revoke_active
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc, encrypt_rfc, rotate_rfc
 from core.exceptions import FieldValidationError
+from core.time import server_now
 from organizations.exceptions import AdministrationBusyError, StaleRevisionError
 from organizations.models import Center, Membership, Organization
 from organizations.services import deactivate_personnel_membership, effective_scope
+from platform_admin.models import PlatformAdmin
 from uploads.access import UploadActor, lock_actor
 
 
@@ -304,6 +308,47 @@ def update_personnel(actor: UploadActor, user_id: UUID, fields: Mapping[str, Any
             _reject_duplicate_rfc(actor, fields, user_id)
         raise
     return person
+
+
+@sensitive_variables("password")
+def issue_temporary_password(actor: UploadActor, user_id: UUID) -> str:
+    """Give an org-owned login a new one-time password and end its sessions.
+
+    The admin sees this password once; the user must replace it at the next sign in, so the
+    admin never knows the final one. A login is a shared identity, so the target must belong to
+    this organization only (never to another one or to the platform): otherwise one
+    organization's admin could take over an account that another organization trusts. Never the
+    caller's own account: that is what the password change is for.
+    """
+    from platform_admin.services import generate_temporary_password
+
+    if user_id == actor.user.pk:
+        raise FieldValidationError("user", "own_account")
+    password = generate_temporary_password()
+    with personnel_transaction(actor, user_id):
+        person = _locked_person(actor, user_id, "user.update")
+        user = User.objects.get(pk=user_id)
+        if not person.membership.is_active or not user.is_active:
+            raise FieldValidationError("user", "inactive")
+        shared = Membership.objects.filter(user_id=user_id).exclude(organization=actor.organization)
+        if shared.exists() or PlatformAdmin.objects.filter(user_id=user_id).exists():
+            raise FieldValidationError("user", "shared_account")
+        user.set_password(password)
+        user.must_change_password = True
+        user.temporary_password_expires_at = server_now() + timedelta(
+            hours=settings.PLATFORM_TEMPORARY_PASSWORD_HOURS
+        )
+        user.save(
+            update_fields=["password", "must_change_password", "temporary_password_expires_at"]
+        )
+        revoke_active(
+            DeviceSession.objects.filter(user_id=user_id),
+            Revocation(RevokeReason.PASSWORD_CHANGED, actor.user),
+        )
+        person.revision += 1
+        person.save(update_fields=["revision"])
+        _receipt(actor, person, AccessLog.Action.UPDATE)
+    return password
 
 
 def deactivate_personnel(actor: UploadActor, user_id: UUID, expected_revision: int) -> Personnel:

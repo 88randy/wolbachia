@@ -10,12 +10,12 @@ from rest_framework import serializers
 
 from accounts.models import User
 from core.void_reason import VOID_REASON_MAX_LENGTH, void_reason_min_length
+from organizations.centers import CENTER_CODE_PATTERN
 from organizations.models import Center, Organization
 from organizations.validators import validate_country_code, validate_timezone
 from platform_admin.models import PlatformAuditEntry
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
-CENTER_CODE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,49}$")
 MAX_CENTERS = 20
 LANGUAGES = ["es-MX", "en"]
 DELIVERIES = ["password", "invite"]

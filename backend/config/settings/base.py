@@ -107,6 +107,7 @@ THROTTLE_ANON_RATE = env("THROTTLE_ANON_RATE", default="60/min")
 THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
 THROTTLE_RFC_REVEAL_RATE = env("THROTTLE_RFC_REVEAL_RATE", default="30/hour")
 THROTTLE_RFC_WRITE_RATE = env("THROTTLE_RFC_WRITE_RATE", default="10/hour")
+THROTTLE_TEMPORARY_PASSWORD_RATE = env("THROTTLE_TEMPORARY_PASSWORD_RATE", default="20/hour")
 
 # Authentication (#4). Token lifetimes, grace windows and lockout thresholds are global (the
 # organization is unknown before login), env-configurable defaults [PENDING client].
@@ -224,6 +225,7 @@ REST_FRAMEWORK = {
         "user": THROTTLE_USER_RATE,
         "rfc_reveal": THROTTLE_RFC_REVEAL_RATE,
         "rfc_write": THROTTLE_RFC_WRITE_RATE,
+        "temporary_password": THROTTLE_TEMPORARY_PASSWORD_RATE,
         "login_user_ip": THROTTLE_LOGIN_USER_IP_RATE,
         "login_ip": THROTTLE_LOGIN_IP_RATE,
         "refresh": THROTTLE_REFRESH_RATE,

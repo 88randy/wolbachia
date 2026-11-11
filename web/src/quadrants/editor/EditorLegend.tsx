@@ -5,7 +5,7 @@ import { centerPatterns } from "./editor-model";
 
 interface Props {
   quadrants: readonly Schemas["Quadrant"][];
-  centers: readonly Schemas["Center"][];
+  centers: readonly Schemas["CenterAdmin"][];
 }
 
 function LineSwatch({ dashed, muted }: { dashed: boolean; muted?: boolean }) {

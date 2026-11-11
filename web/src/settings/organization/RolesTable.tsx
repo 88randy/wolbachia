@@ -1,10 +1,12 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
 import { ScopeDialog } from "./ScopeDialog";
+import { CopyProfileDialog } from "./CopyProfileDialog";
 import { useRolesTable } from "./use-roles-table";
 export function RolesTable() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const table = useRolesTable();
   return (
     <>
@@ -25,6 +27,14 @@ export function RolesTable() {
           returnFocusId={table.returnFocusId}
           onClose={table.close}
           onSaved={table.saved}
+        />
+      )}
+      {table.copying && (
+        <CopyProfileDialog
+          profile={table.copying}
+          name={i18n.language === "en" ? table.copying.label_en : table.copying.label_es}
+          onClose={table.closeCopy}
+          onCopied={table.copied}
         />
       )}
     </>

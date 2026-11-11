@@ -13,7 +13,7 @@ import type { OptionRequest } from "./inventory-options";
 import { useLocationNames } from "./use-location-names";
 import styles from "./inventory.module.css";
 type Row =
-  | Schemas["Center"]
+  | Schemas["CenterAdmin"]
   | Schemas["Supply"]
   | Schemas["OwnerOption"]
   | Schemas["PlacementOption"]

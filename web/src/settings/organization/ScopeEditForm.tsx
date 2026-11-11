@@ -4,6 +4,7 @@ import { Button } from "../../ui/Button";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "./use-online";
 import { ScopeFields } from "./ScopeFields";
+import { MembershipProfileFields } from "./MembershipProfileFields";
 import { PermissionFields } from "./PermissionFields";
 import { RevisionReview } from "./RevisionReview";
 import type { ScopeEditor, EditTarget } from "./use-scope-editor";
@@ -29,6 +30,7 @@ export function ScopeEditForm({ editor, target, codes, onClose }: Props) {
     >
       <fieldset disabled={editor.writer.isBusy} className={styles.fields}>
         {target.kind === "role" && <PermissionFields codes={codes} editor={editor} />}
+        {target.kind === "membership" && <MembershipProfileFields editor={editor} />}
         <ScopeFields editor={editor} />
       </fieldset>
       <RevisionReview editor={editor} />

@@ -49,6 +49,7 @@ export function rolesOptions({ client, identity }: AdminContext, state: TableSta
 }
 export function membersOptions({ client, identity }: AdminContext, state: TableState) {
   const active = state.filters["is_active"];
+  const profile = state.filters["profiles"];
   return adminScopedOptions(identity, {
     permission: ROLE_READ,
     key: ["administration", "memberships", state],
@@ -58,6 +59,7 @@ export function membersOptions({ client, identity }: AdminContext, state: TableS
           params: {
             query: {
               ...paging(state),
+              ...(profile ? { profiles: profile } : {}),
               ...(active === undefined ? {} : { is_active: active === "true" }),
             },
           },

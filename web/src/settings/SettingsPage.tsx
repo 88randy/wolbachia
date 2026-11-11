@@ -3,6 +3,7 @@ import {
   Building2,
   Contact,
   ListChecks,
+  MapPinned,
   ShieldAlert,
   SlidersHorizontal,
   Smartphone,
@@ -25,6 +26,14 @@ export function SettingsPage() {
       link: { to: "/settings/organization" },
       title: t("orgAdmin.organization.title"),
       description: t("refresh.settings.organization"),
+    },
+    {
+      id: "centers",
+      permission: "center.update",
+      icon: MapPinned,
+      link: { to: "/settings/organization/centers" },
+      title: t("centersAdmin.page.title"),
+      description: t("centersAdmin.page.hub"),
     },
     {
       id: "users",

@@ -8,6 +8,7 @@ import { HomeDashboard } from "../components/templates/HomeDashboard";
 import { HubGrid } from "../components/templates/HubGrid";
 import { homeSummaryOptions } from "../discovery/discovery-query";
 import { ownScreen } from "../discovery/record-links";
+import { can } from "../session/can";
 import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { displayNameOf } from "../shell/user-display";
@@ -24,10 +25,15 @@ import { useHomeShortcuts } from "./use-home-shortcuts";
  */
 export function HomePage() {
   const { t } = useTranslation();
-  const { user } = useMe();
+  const me = useMe();
+  const { user } = me;
   const shortcuts = useHomeShortcuts();
   const identity = useSessionIdentity();
-  const summary = useQuery(homeSummaryOptions(useApiClient(), identity));
+  // Without `home.read` (e.g. couriers) the summary is never requested: no 403 behind the page.
+  const summary = useQuery({
+    ...homeSummaryOptions(useApiClient(), identity),
+    enabled: can(me, "home.read"),
+  });
   const data = summary.data;
   const { pending, all } = useHomeCards(data);
   const isForbidden = summary.error instanceof ApiError && summary.error.status === 403;
@@ -38,7 +44,7 @@ export function HomePage() {
       title={t("hub.home.greeting", { name: displayNameOf(user) })}
       description={t("hub.home.subtitle")}
       pending={data ? pending : undefined}
-      isLoading={summary.isPending}
+      isLoading={summary.isLoading}
       alert={
         first && target ? (
           <Banner
