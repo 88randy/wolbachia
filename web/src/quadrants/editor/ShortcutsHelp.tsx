@@ -18,10 +18,11 @@ export function ShortcutsHelp({ isOpen, onOpenChange }: Props) {
         <button
           type="button"
           aria-keyshortcuts="?"
+          aria-label={t("mapEditor.action.help")}
           className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-3 text-[13px] font-semibold text-ink hover:bg-tint hover:text-action-strong"
         >
           <Keyboard aria-hidden="true" className="size-4" />
-          {t("mapEditor.action.help")}
+          <span className="sr-only xl:not-sr-only">{t("mapEditor.action.help")}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80">

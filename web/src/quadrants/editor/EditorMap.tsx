@@ -20,6 +20,7 @@ import { createEditorDraw } from "./terra-draw";
 const QUADRANT_FILL = "editor-quadrant-fill";
 const SAMPLING = "editor-sampling";
 const RELEASE = "editor-release";
+const BLOCK_HIT = "editor-blocks-hit";
 const FILL_OPACITY = 0.12;
 const HOVER_OPACITY = 0.24;
 const POINT_RADIUS = 6;
@@ -27,6 +28,7 @@ const HOVER_RADIUS = 10;
 const RELEASE_RADIUS = 7;
 const DASH = [3, 2];
 const POINT_KINDS: readonly ShapeKind[] = ["sampling", "release"];
+const BLOCK_HIT_WIDTH = 12;
 
 interface Props {
   data: EditorData;
@@ -41,9 +43,11 @@ interface Props {
 
 function pickRecord(event: MapLayerMouseEvent): { id: string; kind: ShapeKind } | null {
   const hits = event.features ?? [];
-  // A point wins over the quadrant it sits in.
+  // A point wins over a block edge, and a block edge over the quadrant it sits in.
   const hit =
-    hits.find((item) => POINT_KINDS.includes(item.properties["kind"] as ShapeKind)) ?? hits[0];
+    hits.find((item) => POINT_KINDS.includes(item.properties["kind"] as ShapeKind)) ??
+    hits.find((item) => item.properties["kind"] === "block") ??
+    hits[0];
   const id: unknown = hit?.properties["id"];
   const kind: unknown = hit?.properties["kind"];
   return typeof id === "string" && typeof kind === "string"
@@ -116,7 +120,7 @@ export default function EditorMap({
         workerUrl={workerUrl}
         attributionControl={false}
         doubleClickZoom={!isDrawing}
-        interactiveLayerIds={[QUADRANT_FILL, SAMPLING, RELEASE]}
+        interactiveLayerIds={[QUADRANT_FILL, BLOCK_HIT, SAMPLING, RELEASE]}
         cursor={isDrawing ? "crosshair" : hovered ? "pointer" : undefined}
         locale={{ "Map.Title": t("mapEditor.map.label") }}
         onError={onFailure}
@@ -177,12 +181,22 @@ export default function EditorMap({
             }}
           />
           <Layer
+            id={BLOCK_HIT}
+            type="line"
+            filter={["==", ["get", "kind"], "block"]}
+            paint={{
+              "line-color": colors.surface,
+              "line-opacity": 0,
+              "line-width": BLOCK_HIT_WIDTH,
+            }}
+          />
+          <Layer
             id="editor-blocks"
             type="line"
             filter={["==", ["get", "kind"], "block"]}
             paint={{
-              "line-color": colors.text.tertiary,
-              "line-width": 1,
+              "line-color": colors.text.secondary,
+              "line-width": ["case", ["==", ["get", "id"], hovered ?? ""], 3, 1.5],
               "line-dasharray": [2, 2],
             }}
           />

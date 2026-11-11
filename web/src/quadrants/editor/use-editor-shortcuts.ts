@@ -13,6 +13,7 @@ interface Options {
 const TOOL_BY_KEY: Readonly<Record<string, EditorTool>> = {
   v: "select",
   p: "quadrant",
+  b: "block",
   m: "sampling",
   r: "release",
 };
@@ -74,7 +75,7 @@ export function useEditorShortcuts(options: Options) {
       } else if (key === "escape") {
         if (editor.vertexCount > 0) editor.cancelDrawing();
         else if (editor.tool !== "select") editor.setTool("select");
-      } else if (key === "enter" && editor.tool === "quadrant") {
+      } else if (key === "enter" && (editor.tool === "quadrant" || editor.tool === "block")) {
         if (document.activeElement !== editor.mapRef.current?.getCanvas()) editor.finishDrawing();
       }
     };

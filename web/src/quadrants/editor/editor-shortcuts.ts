@@ -4,6 +4,7 @@ import type { EditorTool } from "./editor-model";
 export const TOOL_KEYS: Readonly<Record<EditorTool, string>> = {
   select: "V",
   quadrant: "P",
+  block: "B",
   sampling: "M",
   release: "R",
 };
@@ -18,6 +19,7 @@ export const KEY_FIT = "F";
 export const SHORTCUT_ROWS: readonly { keys: string; label: MessageKey }[] = [
   { keys: TOOL_KEYS.select, label: "mapEditor.keys.select" },
   { keys: TOOL_KEYS.quadrant, label: "mapEditor.keys.quadrant" },
+  { keys: TOOL_KEYS.block, label: "mapEditor.keys.block" },
   { keys: TOOL_KEYS.sampling, label: "mapEditor.keys.sampling" },
   { keys: TOOL_KEYS.release, label: "mapEditor.keys.release" },
   { keys: "Enter", label: "mapEditor.keys.finish" },

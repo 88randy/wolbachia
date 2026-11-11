@@ -1,6 +1,6 @@
 import type { Polygon } from "../geography/geometry";
 
-export type ShapeKind = "quadrant" | "sampling" | "release";
+export type ShapeKind = "quadrant" | "block" | "sampling" | "release";
 export interface PointGeometry {
   type: "Point";
   coordinates: number[];

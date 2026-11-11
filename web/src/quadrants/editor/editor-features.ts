@@ -39,7 +39,7 @@ export function editorFeatures(
     }),
     ...data.blocks.flatMap((item) => {
       const geometry = geometryOf(item);
-      if (!geometry) return [];
+      if (!geometry || hidden.recordIds.has(item.id)) return [];
       return [
         {
           type: "Feature" as const,

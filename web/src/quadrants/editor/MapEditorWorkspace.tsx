@@ -26,7 +26,10 @@ function allowedTools(scope: GeographyScope, isFocused: boolean): ReadonlySet<Ed
   const tools = new Set<EditorTool>(["select"]);
   if (scope.canCreateQuadrant && !isFocused) tools.add("quadrant");
   if (scope.canCreatePoint) tools.add("sampling");
-  if (scope.canPublish) tools.add("release");
+  if (scope.canPublish) {
+    tools.add("release");
+    tools.add("block");
+  }
   return tools;
 }
 

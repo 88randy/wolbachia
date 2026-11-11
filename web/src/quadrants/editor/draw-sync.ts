@@ -12,7 +12,8 @@ export function featureOf(shape: DraftShape): GeoJSONStoreFeatures {
     type: "Feature",
     geometry: shape.geometry,
     properties: {
-      mode: shape.kind === "quadrant" ? DRAW_MODES.polygon : DRAW_MODES.point,
+      mode:
+        shape.kind === "quadrant" || shape.kind === "block" ? DRAW_MODES.polygon : DRAW_MODES.point,
       kind: shape.kind,
       [DRAFT_FLAG]: true,
     },

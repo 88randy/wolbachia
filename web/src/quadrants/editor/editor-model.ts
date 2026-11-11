@@ -2,7 +2,7 @@ import type { Schemas } from "@wolbachia/api-client";
 import type { Polygon } from "../geography/geometry";
 import { containsLocation } from "../geography/geometry";
 
-export type EditorTool = "select" | "quadrant" | "sampling" | "release";
+export type EditorTool = "select" | "quadrant" | "block" | "sampling" | "release";
 export type PointKind = "sampling" | "release";
 
 export function geometryOf(item: { current_version: { geometry: Polygon } | null }) {

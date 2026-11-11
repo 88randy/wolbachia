@@ -1,5 +1,15 @@
 /* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
-import { Flag, MapPin, MousePointer2, PenLine, Redo2, Scan, Trash2, Undo2 } from "lucide-react";
+import {
+  Flag,
+  LayoutGrid,
+  MapPin,
+  MousePointer2,
+  PenLine,
+  Redo2,
+  Scan,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
@@ -23,6 +33,11 @@ const TOOLS: readonly {
     tool: "quadrant",
     icon: PenLine,
     label: "mapEditor.toolShort.quadrant",
+  },
+  {
+    tool: "block",
+    icon: LayoutGrid,
+    label: "mapEditor.toolShort.block",
   },
   {
     tool: "sampling",

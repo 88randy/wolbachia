@@ -174,4 +174,13 @@ export const mapEditor = {
   "mapEditor.keys.fit": "Ver todo el mapa",
   "mapEditor.keys.help": "Mostrar estos atajos",
   "mapEditor.fixed.label": "Cuadrante a corregir",
+  "mapEditor.toolShort.block": "Manzana",
+  "mapEditor.status.block":
+    "Haz clic dentro de un cuadrante para marcar las esquinas de la manzana. Doble clic o Enter para terminar.",
+  "mapEditor.keys.block": "Dibujar manzana",
+  "mapEditor.pending.newBlock": "Manzana nueva",
+  "mapEditor.pending.editedBlock": "Forma cambiada de la manzana: {code}",
+  "mapEditor.field.blockName": "Nombre de la manzana",
+  "mapEditor.issue.blockOutside":
+    "La manzana debe quedar dentro de un cuadrante. Muévela o dibújala otra vez; así no se puede guardar.",
 } as const satisfies AreaCatalog<"mapEditor">;

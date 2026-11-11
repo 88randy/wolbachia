@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function, complexity -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
-import { CircleAlert, Crosshair, Flag, MapPin, PenLine, Undo2, X } from "lucide-react";
+import { CircleAlert, Crosshair, Flag, LayoutGrid, MapPin, PenLine, Undo2, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
@@ -7,20 +7,29 @@ import { cn } from "@/lib/utils";
 import { TextField } from "../../forms/TextField";
 import { SelectMenu } from "../../ui/SelectMenu";
 import { Tooltip } from "../../ui/Tooltip";
+import type { Polygon } from "../geography/geometry";
 import type { EditorData } from "./use-editor-data";
 import type { MapEditor } from "./use-map-editor";
 import type { EditorSaves } from "./use-editor-saves";
 import type { DraftShape, ShapeKind } from "./editor-draft";
-import { blockAt, quadrantAt } from "./editor-model";
+import { holdingBlock, holdingQuadrant, vertices } from "./editor-places";
 import { polygonAreaKm2 } from "./geo-math";
 
 const ICONS: Record<ShapeKind, LucideIcon> = {
   quadrant: PenLine,
+  block: LayoutGrid,
   sampling: MapPin,
   release: Flag,
 };
+const EDITED_TITLES: Record<ShapeKind, MessageKey> = {
+  quadrant: "mapEditor.pending.editedQuadrant",
+  block: "mapEditor.pending.editedBlock",
+  sampling: "mapEditor.pending.movedPoint",
+  release: "mapEditor.pending.movedPoint",
+};
 const NEW_TITLES: Record<ShapeKind, MessageKey> = {
   quadrant: "mapEditor.pending.newQuadrant",
+  block: "mapEditor.pending.newBlock",
   sampling: "mapEditor.pending.newSampling",
   release: "mapEditor.pending.newRelease",
 };
@@ -63,16 +72,15 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
   const isNew = !shape.saved;
   const problem = saves.issues.get(shape.key) ?? saves.errors[shape.key];
   const place = shape.geometry.type === "Point" ? shape.geometry.coordinates : null;
-  const block = place ? blockAt(data.blocks, place) : undefined;
-  const quadrant = place ? quadrantAt(data.quadrants, place) : undefined;
+  const shapes = editor.shapes;
+  const block = place ? holdingBlock(data, shapes, place) : undefined;
+  const quadrant =
+    place || shape.kind === "block"
+      ? holdingQuadrant(data, shapes, place ? [place] : vertices(shape.geometry as Polygon))
+      : undefined;
   const title = isNew
     ? t(NEW_TITLES[shape.kind])
-    : t(
-        shape.kind === "quadrant"
-          ? "mapEditor.pending.editedQuadrant"
-          : "mapEditor.pending.movedPoint",
-        { code: shape.saved?.code ?? "" },
-      );
+    : t(EDITED_TITLES[shape.kind], { code: shape.saved?.code ?? "" });
   const area =
     shape.geometry.type === "Polygon"
       ? new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 3 }).format(
@@ -118,7 +126,11 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
         <TextField
           id={`map-editor-name-${shape.key}`}
           label={t(
-            shape.kind === "quadrant" ? "mapEditor.field.name" : "mapEditor.field.pointName",
+            shape.kind === "quadrant"
+              ? "mapEditor.field.name"
+              : shape.kind === "block"
+                ? "mapEditor.field.blockName"
+                : "mapEditor.field.pointName",
           )}
           value={shape.code}
           maxLength={50}
@@ -159,7 +171,7 @@ export function PendingRow({ shape, data, editor, saves, isSelected }: Props) {
             : t("mapEditor.pending.autoBlock")}
         </p>
       )}
-      {isNew && shape.kind === "release" && !problem && quadrant && (
+      {isNew && (shape.kind === "release" || shape.kind === "block") && !problem && quadrant && (
         <p className="m-0 text-xs text-ink-2">
           {t("mapEditor.point.inQuadrant", { quadrant: quadrant.code })}
         </p>

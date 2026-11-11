@@ -4,10 +4,19 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { containsLocation } from "../geography/geometry";
 import type { Polygon } from "../geography/geometry";
 import type { EditorData } from "./use-editor-data";
-import type { DraftShape, PointGeometry } from "./editor-draft";
+import type { DraftShape } from "./editor-draft";
 import { isChanged } from "./editor-draft";
-import { blockAt, quadrantAt } from "./editor-model";
+import {
+  blocksOf,
+  holdingBlock,
+  holdingQuadrant,
+  locationOf,
+  polygonOf,
+  vertices,
+} from "./editor-places";
+import type { Ref } from "./editor-places";
 
+export type { Ref } from "./editor-places";
 export type OutsideDecision = "" | "keep" | "remove";
 
 /** A sampling point that no longer fits inside a reshaped quadrant. */
@@ -18,14 +27,7 @@ export interface OutsidePoint {
   movedTo: number[] | null;
 }
 
-const polygonOf = (shape: DraftShape) => shape.geometry as Polygon;
-const locationOf = (shape: DraftShape) => (shape.geometry as PointGeometry).coordinates;
 const isNewQuadrant = (shape: DraftShape) => shape.kind === "quadrant" && !shape.saved;
-
-/** The new quadrant (still unsaved) that holds a location, if any. */
-function draftQuadrantAt(shapes: readonly DraftShape[], location: number[]) {
-  return shapes.find((item) => isNewQuadrant(item) && containsLocation(polygonOf(item), location));
-}
 
 /** Points of a reshaped quadrant whose saved place falls outside the new shape. */
 export function outsidePoints(data: EditorData, shapes: readonly DraftShape[]): OutsidePoint[] {
@@ -51,53 +53,81 @@ export function outsidePoints(data: EditorData, shapes: readonly DraftShape[]): 
   return result;
 }
 
+/**
+ * A point outside every block falls back to one automatic block, only inside a new quadrant
+ * that has no blocks of its own yet.
+ */
+export function autoBlockOwner(
+  data: EditorData,
+  shapes: readonly DraftShape[],
+  location: number[],
+) {
+  const owner = holdingQuadrant(data, shapes, [location]);
+  if (!owner || !("key" in owner.ref)) return undefined;
+  return blocksOf(data, shapes, owner).length === 0 ? owner : undefined;
+}
+
+const existingCodes = (kind: DraftShape["kind"], data: EditorData) =>
+  kind === "quadrant"
+    ? data.quadrants.map((item) => item.code)
+    : kind === "block"
+      ? data.blocks.map((item) => item.code)
+      : kind === "sampling"
+        ? data.points.map((item) => item.code)
+        : data.releasePoints.map((item) => item.code);
+
+function placeIssue(data: EditorData, shapes: readonly DraftShape[], shape: DraftShape) {
+  if (shape.kind === "block")
+    return holdingQuadrant(data, shapes, vertices(polygonOf(shape)))
+      ? undefined
+      : "mapEditor.issue.blockOutside";
+  if (shape.kind === "sampling") {
+    const place = locationOf(shape);
+    return holdingBlock(data, shapes, place) || autoBlockOwner(data, shapes, place)
+      ? undefined
+      : "mapEditor.point.needBlock";
+  }
+  if (shape.kind === "release")
+    return holdingQuadrant(data, shapes, [locationOf(shape)])
+      ? undefined
+      : "mapEditor.point.needQuadrant";
+  return undefined;
+}
+
 /** What stops a draft item from being saved, in plain words. One entry per shape key. */
 export function shapeIssues(data: EditorData, shapes: readonly DraftShape[]) {
   const issues = new Map<string, MessageKey>();
-  const taken = (kind: DraftShape["kind"], code: string, key: string) => {
-    const wanted = code.trim().toLowerCase();
-    const existing =
-      kind === "quadrant"
-        ? data.quadrants.map((item) => item.code)
-        : kind === "sampling"
-          ? data.points.map((item) => item.code)
-          : data.releasePoints.map((item) => item.code);
+  const taken = (shape: DraftShape) => {
+    const wanted = shape.code.trim().toLowerCase();
     return (
-      existing.some((item) => item.toLowerCase() === wanted) ||
+      existingCodes(shape.kind, data).some((item) => item.toLowerCase() === wanted) ||
       shapes.some(
         (item) =>
-          item.key !== key &&
-          item.kind === kind &&
+          item.key !== shape.key &&
+          item.kind === shape.kind &&
           !item.saved &&
           item.code.trim().toLowerCase() === wanted,
       )
     );
   };
   for (const shape of shapes) {
-    if (shape.saved) continue;
-    if (!shape.code.trim()) issues.set(shape.key, "mapEditor.issue.code");
-    else if (taken(shape.kind, shape.code, shape.key))
-      issues.set(shape.key, "mapEditor.error.duplicateCode");
-    else if (shape.kind === "quadrant" && !shape.centerId)
+    if (shape.saved && !(shape.kind === "block" && isChanged(shape))) continue;
+    if (!shape.saved && !shape.code.trim()) issues.set(shape.key, "mapEditor.issue.code");
+    else if (!shape.saved && taken(shape)) issues.set(shape.key, "mapEditor.error.duplicateCode");
+    else if (shape.kind === "quadrant" && !shape.saved && !shape.centerId)
       issues.set(shape.key, "mapEditor.issue.center");
-    else if (shape.kind === "sampling") {
-      const place = locationOf(shape);
-      if (!blockAt(data.blocks, place) && !draftQuadrantAt(shapes, place))
-        issues.set(shape.key, "mapEditor.point.needBlock");
-    } else if (shape.kind === "release") {
-      const place = locationOf(shape);
-      if (!quadrantAt(data.quadrants, place) && !draftQuadrantAt(shapes, place))
-        issues.set(shape.key, "mapEditor.point.needQuadrant");
+    else {
+      const issue = placeIssue(data, shapes, shape);
+      if (issue) issues.set(shape.key, issue);
     }
   }
   return issues;
 }
 
-export type Ref = { id: string } | { quadrantKey: string };
-
 export type PlanStep =
   | { type: "quadrant"; key: string; code: string; center: string; polygon: Polygon }
-  | { type: "block"; key: string; quadrantKey: string; code: string; polygon: Polygon }
+  | { type: "block"; key: string; code: string; polygon: Polygon; parent: Ref }
+  | { type: "blockVersion"; key: string; recordId: string; revision: number; polygon: Polygon }
   | {
       type: "version";
       key: string;
@@ -119,6 +149,12 @@ export type PlanStep =
       location: number[];
     };
 
+/** Draft shapes a step needs saved first. */
+export function dependsOn(step: PlanStep): string | null {
+  if (!("parent" in step)) return null;
+  return "key" in step.parent ? step.parent.key : null;
+}
+
 export interface PlanInput {
   data: EditorData;
   shapes: readonly DraftShape[];
@@ -126,20 +162,48 @@ export interface PlanInput {
   reason: string;
 }
 
-/** Writes in a safe order: new quadrants, their blocks, reshaped quadrants, new points, moves. */
-export function buildPlan({ data, shapes, decisions, reason }: PlanInput): PlanStep[] {
+function versionStep(shape: DraftShape, input: PlanInput, outside: OutsidePoint[]): PlanStep {
+  const saved = shape.saved as NonNullable<DraftShape["saved"]>;
+  const mine = outside.filter((item) => item.quadrantKey === shape.key);
+  const reshaped = new Set(mine.map((item) => item.point.id));
+  return {
+    type: "version",
+    key: shape.key,
+    recordId: saved.recordId,
+    revision: saved.revision,
+    polygon: polygonOf(shape),
+    resolutions: mine.map<Schemas["PointResolutionRequest"]>((item) =>
+      item.movedTo
+        ? { point: item.point.id, decision: "move", evidence: input.reason, location: item.movedTo }
+        : {
+            point: item.point.id,
+            decision: input.decisions[item.point.id] || "keep",
+            evidence: input.reason,
+          },
+    ),
+    covers: input.shapes
+      .filter((item) => item.kind === "sampling" && item.saved && reshaped.has(item.saved.recordId))
+      .map((item) => item.key),
+  };
+}
+
+/** Writes in a safe order: quadrants, then blocks, then points, then moves. */
+export function buildPlan(input: PlanInput): PlanStep[] {
+  const { data, shapes } = input;
   const changed = shapes.filter(isChanged);
   const outside = outsidePoints(data, shapes);
   const consumed = new Set(outside.filter((item) => item.movedTo).map((item) => item.point.id));
   const steps: PlanStep[] = [];
-  const blockFor = new Set<string>();
-  for (const shape of changed) {
-    if (shape.kind === "sampling" && !shape.saved && !blockAt(data.blocks, locationOf(shape))) {
-      const owner = draftQuadrantAt(shapes, locationOf(shape));
-      if (owner) blockFor.add(owner.key);
-    }
+  const newSampling = changed.filter((item) => item.kind === "sampling" && !item.saved);
+  const autoOwners = new Map<string, { code: string; polygon: Polygon }>();
+  for (const shape of newSampling) {
+    const place = locationOf(shape);
+    const owner = holdingBlock(data, shapes, place)
+      ? undefined
+      : autoBlockOwner(data, shapes, place);
+    if (owner && "key" in owner.ref) autoOwners.set(owner.ref.key, owner);
   }
-  for (const shape of changed.filter(isNewQuadrant)) {
+  for (const shape of changed.filter(isNewQuadrant))
     steps.push({
       type: "quadrant",
       key: shape.key,
@@ -147,50 +211,47 @@ export function buildPlan({ data, shapes, decisions, reason }: PlanInput): PlanS
       center: shape.centerId,
       polygon: polygonOf(shape),
     });
-    if (blockFor.has(shape.key))
+  for (const shape of changed.filter((item) => item.kind === "quadrant" && item.saved))
+    steps.push(versionStep(shape, input, outside));
+  for (const shape of changed.filter((item) => item.kind === "block")) {
+    const saved = shape.saved;
+    if (saved)
       steps.push({
-        type: "block",
-        key: `${shape.key}:block`,
-        quadrantKey: shape.key,
-        code: `${shape.code.trim()}-M1`,
+        type: "blockVersion",
+        key: shape.key,
+        recordId: saved.recordId,
+        revision: saved.revision,
         polygon: polygonOf(shape),
       });
+    else {
+      const parent = holdingQuadrant(data, shapes, vertices(polygonOf(shape)));
+      if (parent)
+        steps.push({
+          type: "block",
+          key: shape.key,
+          code: shape.code.trim(),
+          polygon: polygonOf(shape),
+          parent: parent.ref,
+        });
+    }
   }
-  for (const shape of changed.filter((item) => item.kind === "quadrant" && item.saved)) {
-    const saved = shape.saved;
-    if (!saved) continue;
-    const resolutions = outside
-      .filter((item) => item.quadrantKey === shape.key)
-      .map<Schemas["PointResolutionRequest"]>((item) =>
-        item.movedTo
-          ? { point: item.point.id, decision: "move", evidence: reason, location: item.movedTo }
-          : {
-              point: item.point.id,
-              decision: decisions[item.point.id] || "keep",
-              evidence: reason,
-            },
-      );
-    const reshaped = new Set(
-      outside.filter((item) => item.quadrantKey === shape.key).map((item) => item.point.id),
-    );
-    const covers = shapes
-      .filter((item) => item.kind === "sampling" && item.saved && reshaped.has(item.saved.recordId))
-      .map((item) => item.key);
+  for (const [quadrantKey, owner] of autoOwners)
     steps.push({
-      type: "version",
-      key: shape.key,
-      recordId: saved.recordId,
-      revision: saved.revision,
-      polygon: polygonOf(shape),
-      resolutions,
-      covers,
+      type: "block",
+      key: `${quadrantKey}:auto`,
+      code: `${owner.code.trim()}-M1`,
+      polygon: owner.polygon,
+      parent: { key: quadrantKey },
     });
-  }
-  for (const shape of changed.filter((item) => !item.saved && item.kind === "sampling")) {
+  for (const shape of newSampling) {
     const place = locationOf(shape);
-    const block = blockAt(data.blocks, place);
-    const owner = draftQuadrantAt(shapes, place);
-    const parent: Ref | null = block ? { id: block.id } : owner ? { quadrantKey: owner.key } : null;
+    const block = holdingBlock(data, shapes, place);
+    const owner = block ? undefined : autoBlockOwner(data, shapes, place);
+    const parent: Ref | null = block
+      ? block.ref
+      : owner && "key" in owner.ref
+        ? { key: `${owner.ref.key}:auto` }
+        : null;
     if (parent)
       steps.push({
         type: "sampling",
@@ -202,23 +263,19 @@ export function buildPlan({ data, shapes, decisions, reason }: PlanInput): PlanS
   }
   for (const shape of changed.filter((item) => !item.saved && item.kind === "release")) {
     const place = locationOf(shape);
-    const quadrant = quadrantAt(data.quadrants, place);
-    const owner = draftQuadrantAt(shapes, place);
-    const parent: Ref | null = quadrant
-      ? { id: quadrant.id }
-      : owner
-        ? { quadrantKey: owner.key }
-        : null;
-    if (parent)
+    const quadrant = holdingQuadrant(data, shapes, [place]);
+    if (quadrant)
       steps.push({
         type: "release",
         key: shape.key,
         code: shape.code.trim(),
         location: place,
-        parent,
+        parent: quadrant.ref,
       });
   }
-  for (const shape of changed.filter((item) => item.saved && item.kind !== "quadrant")) {
+  for (const shape of changed.filter(
+    (item) => item.saved && (item.kind === "sampling" || item.kind === "release"),
+  )) {
     const saved = shape.saved;
     if (!saved || consumed.has(saved.recordId)) continue;
     if (outside.some((item) => item.point.id === saved.recordId)) continue;

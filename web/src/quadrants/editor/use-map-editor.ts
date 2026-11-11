@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { containsLocation } from "../geography/geometry";
 import { useToast } from "../../ui/toast-context";
 import type { EditorData } from "./use-editor-data";
 import type { EditorTool, PointKind } from "./editor-model";
-import { blockAt, geometryOf, nextCode, quadrantAt } from "./editor-model";
+import { geometryOf, nextCode } from "./editor-model";
+import { holdingBlock, holdingQuadrant, vertices } from "./editor-places";
+import { autoBlockOwner } from "./editor-plan";
 import type { Draft, DraftShape, History, HistoryAction, ShapeKind } from "./editor-draft";
 import {
   changedShapes,
@@ -27,7 +28,7 @@ const MIN_CORNERS_OPEN_RING = 2;
 const FIT_PADDING = 56;
 
 function modeFor(tool: EditorTool): string {
-  if (tool === "quadrant") return DRAW_MODES.polygon;
+  if (tool === "quadrant" || tool === "block") return DRAW_MODES.polygon;
   if (tool === "sampling" || tool === "release") return DRAW_MODES.point;
   return DRAW_MODES.select;
 }
@@ -39,30 +40,34 @@ function suggestCode(
   data: EditorData,
   shapes: readonly DraftShape[],
 ): string {
-  const drafted = (of: ShapeKind) =>
-    shapes.filter((item) => item.kind === of && !item.saved).map((item) => item.code);
+  const drafted = (of: ShapeKind, prefix = "") =>
+    shapes
+      .filter((item) => item.kind === of && !item.saved && item.code.startsWith(prefix))
+      .map((item) => item.code);
   if (kind === "quadrant")
     return nextCode([...data.quadrants.map((item) => item.code), ...drafted("quadrant")], "C-");
-  const location = geometry.type === "Point" ? geometry.coordinates : [];
-  const quadrant = quadrantAt(data.quadrants, location);
-  const inDraft = shapes.find(
-    (item) =>
-      item.kind === "quadrant" &&
-      !item.saved &&
-      item.geometry.type === "Polygon" &&
-      containsLocation(item.geometry, location),
-  );
-  if (kind === "release") {
-    const prefix = `${quadrant?.code ?? inDraft?.code ?? "PL"}-REL-P`;
-    const codes = data.releasePoints
-      .filter((item) => item.quadrant === quadrant?.id)
-      .map((item) => item.code);
-    return nextCode([...codes, ...drafted("release").filter((c) => c.startsWith(prefix))], prefix);
+  if (geometry.type === "Polygon") {
+    const parent = holdingQuadrant(data, shapes, vertices(geometry));
+    const prefix = `${parent?.code ?? "M"}-M`;
+    const codes = data.blocks.map((item) => item.code).filter((code) => code.startsWith(prefix));
+    return nextCode([...codes, ...drafted("block", prefix)], prefix);
   }
-  const block = blockAt(data.blocks, location);
-  const prefix = `${block?.code ?? (inDraft ? `${inDraft.code}-M1` : "P")}-P`;
-  const codes = data.points.filter((item) => item.block === block?.id).map((item) => item.code);
-  return nextCode([...codes, ...drafted("sampling").filter((c) => c.startsWith(prefix))], prefix);
+  const location = geometry.coordinates;
+  if (kind === "release") {
+    const quadrant = holdingQuadrant(data, shapes, [location]);
+    const prefix = `${quadrant?.code ?? "PL"}-REL-P`;
+    const codes = data.releasePoints
+      .filter((item) => quadrant && "id" in quadrant.ref && item.quadrant === quadrant.ref.id)
+      .map((item) => item.code);
+    return nextCode([...codes, ...drafted("release", prefix)], prefix);
+  }
+  const block = holdingBlock(data, shapes, location);
+  const owner = block ? undefined : autoBlockOwner(data, shapes, location);
+  const prefix = `${block?.code ?? (owner ? `${owner.code}-M1` : "P")}-P`;
+  const codes = data.points
+    .filter((item) => block && "id" in block.ref && item.block === block.ref.id)
+    .map((item) => item.code);
+  return nextCode([...codes, ...drafted("sampling", prefix)], prefix);
 }
 
 /** Tool state, the single draft session with its undo history, and the Terra Draw events. */
@@ -152,6 +157,23 @@ export function useMapEditor(data: EditorData) {
                 original: roundPolygon(geometry),
               },
             };
+        } else if (kind === "block") {
+          const record = source.blocks.find((item) => item.id === recordId);
+          const geometry = record ? geometryOf(record) : null;
+          if (record && geometry)
+            shape = {
+              key: String(draw.getFeatureId()),
+              kind,
+              geometry: roundPolygon(geometry),
+              code: record.code,
+              centerId: "",
+              saved: {
+                recordId,
+                revision: record.current_version?.revision ?? 0,
+                code: record.code,
+                original: roundPolygon(geometry),
+              },
+            };
         } else {
           const record = (kind === "sampling" ? source.points : source.releasePoints).find(
             (item) => item.id === recordId,
@@ -197,15 +219,16 @@ export function useMapEditor(data: EditorData) {
         return;
       }
       if (context.mode === DRAW_MODES.polygon && geometry.type === "Polygon") {
+        const polygonKind: ShapeKind = toolRef.current === "block" ? "block" : "quadrant";
         const shape: DraftShape = {
           key,
-          kind: "quadrant",
+          kind: polygonKind,
           geometry,
-          code: suggestCode("quadrant", geometry, dataRef.current, shapes),
-          centerId: dataRef.current.centers[0]?.id ?? "",
+          code: suggestCode(polygonKind, geometry, dataRef.current, shapes),
+          centerId: polygonKind === "quadrant" ? (dataRef.current.centers[0]?.id ?? "") : "",
           saved: null,
         };
-        draw.updateFeatureProperties(id, { kind: "quadrant", [DRAFT_FLAG]: true });
+        draw.updateFeatureProperties(id, { kind: polygonKind, [DRAFT_FLAG]: true });
         record(upsertShape(presentNow(), shape), "commit");
         // The new quadrant stays selected so its corners can be adjusted right away.
         toolRef.current = "select";

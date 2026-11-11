@@ -169,4 +169,13 @@ export const mapEditor: Record<keyof typeof source, string> = {
   "mapEditor.keys.fit": "Fit the whole map",
   "mapEditor.keys.help": "Show these shortcuts",
   "mapEditor.fixed.label": "Quadrant to correct",
+  "mapEditor.toolShort.block": "Block",
+  "mapEditor.status.block":
+    "Click inside a quadrant to mark the block corners. Double-click or Enter to finish.",
+  "mapEditor.keys.block": "Draw block",
+  "mapEditor.pending.newBlock": "New block",
+  "mapEditor.pending.editedBlock": "Block shape changed: {code}",
+  "mapEditor.field.blockName": "Block name",
+  "mapEditor.issue.blockOutside":
+    "The block must be inside a quadrant. Move it or draw it again; it cannot be saved like this.",
 };

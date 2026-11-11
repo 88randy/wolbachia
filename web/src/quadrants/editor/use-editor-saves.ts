@@ -8,7 +8,7 @@ import { useGeographyWrite } from "../geography/use-geography-write";
 import type { WriteOutcome } from "../geography/write-result";
 import type { MapEditor } from "./use-map-editor";
 import type { EditorData } from "./use-editor-data";
-import { buildPlan, outsidePoints, shapeIssues } from "./editor-plan";
+import { buildPlan, dependsOn, outsidePoints, shapeIssues } from "./editor-plan";
 import type { OutsideDecision, PlanStep, Ref } from "./editor-plan";
 
 const FIELD_KEYS: Record<string, MessageKey> = {
@@ -66,9 +66,9 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
             ? "mapEditor.save.reason"
             : undefined;
 
-  const send = async (step: PlanStep, ids: Map<string, string>, blocks: Map<string, string>) => {
-    const parentOf = (ref: Ref, map: Map<string, string>) =>
-      "id" in ref ? ref.id : map.get(ref.quadrantKey);
+  /** `ids` holds the record id of every draft quadrant and block saved so far, by shape key. */
+  const send = async (step: PlanStep, ids: Map<string, string>) => {
+    const parentId = (ref: Ref) => ("id" in ref ? ref.id : ids.get(ref.key));
     switch (step.type) {
       case "quadrant":
         return write.execute((signal) =>
@@ -78,7 +78,7 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
           }),
         );
       case "block": {
-        const quadrant = ids.get(step.quadrantKey);
+        const quadrant = parentId(step.parent);
         if (!quadrant) return null;
         return write.execute((signal) =>
           scope.client.POST("/api/v1/blocks/", {
@@ -87,6 +87,14 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
           }),
         );
       }
+      case "blockVersion":
+        return write.execute((signal) =>
+          scope.client.POST("/api/v1/blocks/{id}/versions/", {
+            params: { path: { id: step.recordId } },
+            body: { expected_revision: step.revision, geometry: step.polygon },
+            signal,
+          }),
+        );
       case "version":
         return write.execute((signal) =>
           scope.client.POST("/api/v1/quadrants/{id}/versions/", {
@@ -100,7 +108,7 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
           }),
         );
       case "sampling": {
-        const block = "id" in step.parent ? step.parent.id : blocks.get(step.parent.quadrantKey);
+        const block = parentId(step.parent);
         if (!block) return null;
         return write.execute((signal) =>
           scope.client.POST("/api/v1/sampling-points/", {
@@ -110,7 +118,7 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
         );
       }
       case "release": {
-        const quadrant = parentOf(step.parent, ids);
+        const quadrant = parentId(step.parent);
         if (!quadrant) return null;
         return write.execute((signal) =>
           scope.client.POST("/api/v1/release-points/", {
@@ -146,37 +154,32 @@ export function useEditorSaves(scope: GeographyScope, data: EditorData, editor: 
     setErrors({});
     const plan = buildPlan({ data, shapes: editor.shapes, decisions, reason: reason.trim() });
     const ids = new Map<string, string>();
-    const blocks = new Map<string, string>();
     const done = new Set<string>();
     const failed: Record<string, MessageKey> = {};
-    /** Quadrants whose points cannot be saved, with the reason to show on each point. */
+    /** Draft items whose children cannot be saved, with the reason to show on each child. */
     const lost = new Map<string, MessageKey>();
+    const isAuto = (key: string) => key.endsWith(":auto");
     for (const step of plan) {
-      const parent = "parent" in step ? step.parent : undefined;
-      const quadrantKey =
-        step.type === "block"
-          ? step.quadrantKey
-          : parent && "quadrantKey" in parent
-            ? parent.quadrantKey
-            : null;
-      const blockedBy = quadrantKey ? lost.get(quadrantKey) : undefined;
+      const needs = dependsOn(step);
+      const blockedBy = needs ? lost.get(needs) : undefined;
       if (blockedBy) {
-        if (step.type !== "block") failed[step.key] = blockedBy;
+        if (!isAuto(step.key)) failed[step.key] = blockedBy;
+        lost.set(step.key, "mapEditor.save.skipped");
         continue;
       }
-      const outcome = await send(step, ids, blocks);
+      const outcome = await send(step, ids);
       if (outcome?.kind === "saved") {
-        if (step.type === "quadrant") ids.set(step.key, idOf(outcome.value) ?? "");
-        if (step.type === "block") blocks.set(step.quadrantKey, idOf(outcome.value) ?? "");
-        if (step.type !== "block") done.add(step.key);
+        if (step.type === "quadrant" || step.type === "block")
+          ids.set(step.key, idOf(outcome.value) ?? "");
+        if (!isAuto(step.key)) done.add(step.key);
         if (step.type === "version") step.covers.forEach((key) => done.add(key));
         continue;
       }
       const reasonKey = failureKey(outcome) ?? "mapEditor.save.retry";
-      if (step.type === "block") lost.set(step.quadrantKey, reasonKey);
+      if (isAuto(step.key)) lost.set(step.key, reasonKey);
       else {
         failed[step.key] = reasonKey;
-        if (step.type === "quadrant") lost.set(step.key, "mapEditor.save.skipped");
+        lost.set(step.key, "mapEditor.save.skipped");
       }
     }
     // The map reloads the saved records before the draft lets go of its copies: no flicker.
