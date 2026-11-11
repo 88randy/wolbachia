@@ -1,5 +1,6 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import type { Schemas } from "@wolbachia/api-client";
+import { todayIn } from "../../../format/time-zone";
 
 export interface DraftLine {
   /** Stable React key of the row. */
@@ -37,8 +38,8 @@ export function newLine(): DraftLine {
 }
 
 /** A readable, unique folio: T-YYMMDD-XXXX. The person never types it. */
-export function newFolio(now = new Date()): string {
-  const day = now.toISOString().slice(2, 10).replaceAll("-", "");
+export function newFolio(timeZone: string, now = new Date()): string {
+  const day = todayIn(timeZone, now).slice(2).replaceAll("-", "");
   return `T-${day}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
 }
 

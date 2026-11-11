@@ -74,7 +74,8 @@ export const inventory = {
   "inventory.state.noPermission": "You do not have permission for this action.",
   "inventory.state.deactivate":
     "Versions and existing lots are retained. The supply will no longer be available for new lots.",
-  "inventory.state.draft": "Incomplete data is saved as a draft and does not create stock.",
+  "inventory.state.draft":
+    "If data is missing it is saved as a draft and does not count in stock until completed.",
   "inventory.state.noBlockers": "No safety blockers are reported. This does not execute dispatch.",
   "inventory.status.draft": "Draft · not dispatchable",
   "inventory.status.blocked": "Blocked",
@@ -215,4 +216,9 @@ export const inventory = {
   "inventory.option.noCenters": "There are no centers available.",
   "inventory.option.noOwners": "No one can take charge of this place.",
   "inventory.option.noWarehouses": "There are no warehouses.",
+  "inventory.section.lotWhat": "What arrives",
+  "inventory.section.lotWhere": "Where it is kept and when it expires",
+  "inventory.section.lotBiological": "Biological material details",
+  "inventory.section.lotBiologicalHint":
+    "Fill them in only if the lot is eggs or mosquitoes. Otherwise leave them empty.",
 } satisfies Record<keyof typeof Spanish, string>;

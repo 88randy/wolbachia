@@ -76,7 +76,7 @@ export const inventory = {
   "inventory.state.deactivate":
     "Se conservarán las versiones y los lotes existentes. El insumo dejará de estar disponible para nuevos lotes.",
   "inventory.state.draft":
-    "Los datos incompletos se guardan como borrador; no generan existencias.",
+    "Si faltan datos, se guarda como borrador y no suma al inventario hasta completarlo.",
   "inventory.state.noBlockers":
     "No hay bloqueos de seguridad reportados. Esto no ejecuta un despacho.",
   "inventory.status.draft": "Borrador · no despachable",
@@ -217,4 +217,9 @@ export const inventory = {
   "inventory.option.noCenters": "No hay centros disponibles.",
   "inventory.option.noOwners": "No hay personas que puedan responsabilizarse de este lugar.",
   "inventory.option.noWarehouses": "No hay almacenes.",
+  "inventory.section.lotWhat": "Qué llega",
+  "inventory.section.lotWhere": "Dónde se guarda y cuándo caduca",
+  "inventory.section.lotBiological": "Datos del material biológico",
+  "inventory.section.lotBiologicalHint":
+    "Llénalos solo si el lote son huevos o mosquitos. Si no, déjalos vacíos.",
 } as const satisfies AreaCatalog<"inventory">;

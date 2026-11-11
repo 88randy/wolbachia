@@ -36,8 +36,9 @@
 }
 .fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 5)), 1fr));
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
 }
 .actions {
   display: flex;

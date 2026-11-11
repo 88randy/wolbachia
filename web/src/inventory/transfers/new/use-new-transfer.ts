@@ -6,6 +6,7 @@ import { invalidateOrgScoped } from "../../../session/org-scoped-query";
 import { reportSessionError } from "../../../session/session-events";
 import { inventoryFailure } from "../../inventory-failure";
 import type { InventoryFailure } from "../../inventory-failure";
+import { useOrganizationTimeZone } from "../../../format/use-time-zone";
 import { useInventoryContext } from "../../use-inventory-context";
 import { draftBlockers, newFolio, newLine, prepareBody } from "./transfer-draft";
 import type { DraftLine, TransferDraft } from "./transfer-draft";
@@ -16,7 +17,8 @@ export function useNewTransfer() {
   const scope = useInventoryContext();
   const navigate = useNavigate();
   const cache = useQueryClient();
-  const folio = useRef(newFolio());
+  const timeZone = useOrganizationTimeZone();
+  const folio = useRef(newFolio(timeZone));
   const [draft, setDraft] = useState<TransferDraft>({
     originId: "",
     destinationId: "",

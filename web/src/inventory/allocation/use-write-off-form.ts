@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { Me } from "../../session/me";
 import { useMe } from "../../session/use-me";
 import { can } from "../../session/can";
-import { organizationToday } from "./allocation-labels";
+import { todayIn } from "../../format/time-zone";
+import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { lotDirectoryOptions, originOptions } from "./allocation-query";
 import type { AllocationScope } from "./allocation-query";
 import { useAllocationCommand } from "./use-allocation-command";
@@ -23,14 +24,15 @@ function allowedKinds(me: Me): WriteOffKind[] {
 }
 
 /** Plain typed values of the form; the target derives from them and the resolved record. */
-function useInputs(me: Me, kinds: WriteOffKind[], defaultKind: WriteOffKind) {
+function useInputs(kinds: WriteOffKind[], defaultKind: WriteOffKind) {
   const [kind, setKind] = useState<WriteOffKind>(
     kinds.includes(defaultKind) ? defaultKind : (kinds[0] ?? defaultKind),
   );
   const [code, setCode] = useState("");
   const [quantity, setQuantity] = useState("");
   const [locationId, setLocationId] = useState("");
-  const [date, setDate] = useState(organizationToday(me.organization?.timezone ?? "UTC"));
+  const timeZone = useOrganizationTimeZone();
+  const [date, setDate] = useState(todayIn(timeZone));
   const [rpbiUploadId, setRpbiUploadId] = useState("");
   return {
     ...{ kind, code, quantity, locationId, date, rpbiUploadId },
@@ -50,7 +52,7 @@ function targetOf(found: Found | null, inputs: Inputs): WriteOffTarget | null {
 export function useWriteOffForm(scope: AllocationScope, route: string, defaultKind: WriteOffKind) {
   const me = useMe();
   const kinds = allowedKinds(me);
-  const inputs = useInputs(me, kinds, defaultKind);
+  const inputs = useInputs(kinds, defaultKind);
   const lookup = useWriteOffLookup(scope);
   const reason = useReasonFields();
   const command = useAllocationCommand(scope);
