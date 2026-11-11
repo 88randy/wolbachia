@@ -51,6 +51,7 @@ void test("Home severe review shows one receipt and one actionable blocker witho
     opening,
     catalog: null,
     map: null,
+    requiresOfflineMap: false,
     gate: "severe",
     canDepart: false,
     hasOdometerWarning: false,

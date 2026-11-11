@@ -1,4 +1,5 @@
 import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
+import { homeLock } from "./home-lock.ts";
 import { HomeNextCard } from "./HomeNextCard.tsx";
 import { HomeShiftDetails } from "./HomeShiftDetails.tsx";
 import { HomeTiles } from "./HomeTiles.tsx";
@@ -16,7 +17,11 @@ export function P3Screen() {
       <SaveFeedback model={model} />
       <HomeNextCard model={next} isBusy={model.isBusy || model.state === null} />
       {model.state?.opening ? <HomeShiftDetails state={model.state} /> : null}
-      <HomeTiles canCapture={Boolean(captureShiftId(model.state))} hasShift={hasShift} />
+      <HomeTiles
+        canCapture={Boolean(captureShiftId(model.state))}
+        hasShift={hasShift}
+        lock={homeLock(model.state)}
+      />
     </>
   );
 }

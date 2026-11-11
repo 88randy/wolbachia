@@ -121,6 +121,8 @@ export interface GateInput {
   readonly draft: OpenShiftDraft;
   readonly catalog: ChecklistCatalog | null;
   readonly map: MapPreparation | null;
+  /** Organization rule: when false the offline map is recommended, never a reason to block. */
+  readonly requiresOfflineMap: boolean;
 }
 function checklistGate({ draft, catalog }: GateInput): Gate | null {
   if (!catalog?.items.length) return "unconfigured";
@@ -138,21 +140,22 @@ function checklistGate({ draft, catalog }: GateInput): Gate | null {
     return "note";
   return null;
 }
+function needsPhoto(draft: OpenShiftDraft, catalog: ChecklistCatalog | null): boolean {
+  return (
+    Boolean(catalog?.items.some((item) => item.requires_photo)) ||
+    draft.checks.some((check) => check.result === "minor")
+  );
+}
 /** Severe evidence may be captured, but can never authorize departure. */
 export function departureGate(input: GateInput): Gate | null {
-  const { draft, catalog, map } = input;
+  const { draft, catalog, map, requiresOfflineMap } = input;
   if (isMotorcycleBlocked(draft, catalog)) return "motorcycle";
   const incomplete = checklistGate(input);
   if (incomplete !== null) return incomplete;
   if (!isOdometerValid(draft.odometer_km)) return "odometer";
   if (draft.checks.some((check) => check.result === "severe")) return "severe";
-  if (
-    (catalog?.items.some((item) => item.requires_photo) ||
-      draft.checks.some((check) => check.result === "minor")) &&
-    !draft.photoRefs.length
-  )
-    return "photo";
-  return isMapReady(map) ? null : "map";
+  if (needsPhoto(draft, catalog) && !draft.photoRefs.length) return "photo";
+  return !requiresOfflineMap || isMapReady(map) ? null : "map";
 }
 /** Receipt and review are different facts; pending, sending and local errors only prove phone storage. */
 export function deliveryKey(opening: OutboxEvent): MessageKey {

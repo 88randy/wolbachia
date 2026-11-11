@@ -146,13 +146,26 @@ void test("AC safety: missing/empty checklist, unanswered/Other and missing maps
   const state = await service.read();
   assert.ok(state.draft);
   const draft = state.draft;
-  assert.equal(departureGate({ draft, catalog: null, map: READY }), "unconfigured");
   assert.equal(
-    departureGate({ draft, catalog: { version: "catalog-v1", items: [] }, map: READY }),
+    departureGate({ draft, catalog: null, map: READY, requiresOfflineMap: true }),
     "unconfigured",
   );
   assert.equal(
-    departureGate({ draft: { ...draft, checks: [] }, catalog: state.catalog, map: READY }),
+    departureGate({
+      draft,
+      catalog: { version: "catalog-v1", items: [] },
+      map: READY,
+      requiresOfflineMap: true,
+    }),
+    "unconfigured",
+  );
+  assert.equal(
+    departureGate({
+      draft: { ...draft, checks: [] },
+      catalog: state.catalog,
+      map: READY,
+      requiresOfflineMap: true,
+    }),
     "checklist",
   );
   assert.equal(
@@ -160,10 +173,16 @@ void test("AC safety: missing/empty checklist, unanswered/Other and missing maps
       draft,
       catalog: { version: "catalog-v1", items: [{ ...ITEM, is_other: true }] },
       map: READY,
+      requiresOfflineMap: true,
     }),
     "note",
   );
   await store.saveMap({ ...READY, status: "unavailable" });
+  const requiresMap = {
+    version: "rules-map",
+    parameters: [{ key: "departure_requires_offline_map", value: 1 }],
+  };
+  await store.saveRules(requiresMap);
   await assert.rejects(service.open(), /map/);
   assert.equal((await service.read()).opening, null);
 });

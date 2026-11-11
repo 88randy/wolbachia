@@ -37,7 +37,9 @@ export function P5Screen({ model }: { readonly model: M04Model }) {
   const isIncomplete = INCOMPLETE.includes(gate ?? "");
   const pending = items.filter((item) => !draft.checks.some((check) => check.item === item.code));
   const change = (check: Check) => {
-    model.edit({ checks: [...draft.checks.filter((current) => current.item !== check.item), check] });
+    model.edit({
+      checks: [...draft.checks.filter((current) => current.item !== check.item), check],
+    });
   };
   return (
     <OpenFrame

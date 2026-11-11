@@ -20,17 +20,20 @@ function Row({ icon: IconComponent, text }: { readonly icon: LucideIcon; readonl
   );
 }
 
+function mapSummaryKey(state: ShiftSnapshot) {
+  if (isMapReady(state.map)) return "field.open.mapReady";
+  if (state.map?.status === "preparing") return "field.open.mapPreparing";
+  if (!state.requiresOfflineMap) return "field.open.mapOnline";
+  return state.map?.status === "failed" ? "field.open.mapFailed" : "field.open.mapPreparing";
+}
+
 /** What the courier is about to leave with: moto, kilometers, safety result and map. */
 export function DepartureSummary({ state }: { readonly state: ShiftSnapshot }) {
   const t = useT();
   const draft = state.draft;
   if (!draft) return null;
   const faults = draft.checks.filter((check) => check.result !== "ok").length;
-  const mapKey = isMapReady(state.map)
-    ? "field.open.mapReady"
-    : state.map?.status === "failed"
-      ? "field.open.mapFailed"
-      : "field.open.mapPreparing";
+  const mapKey = mapSummaryKey(state);
   return (
     <View className="gap-4 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
       <Row icon={Bike} text={t("field.open.summaryMotorcycle", { code: draft.motorcycle_code })} />
