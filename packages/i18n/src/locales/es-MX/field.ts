@@ -61,6 +61,7 @@ export const field = {
   "field.capture.newPaddle": "Papeleta nueva",
   "field.capture.nextOne": "Siguiente ovitrampa",
   "field.capture.notYours": "Este punto no está en tu trabajo de hoy.",
+  "field.capture.diagnosticCode": "Código: {code}",
   "field.capture.openShift": "Abrir jornada",
   "field.capture.optional": "Si no los tienes, sigue.",
   "field.capture.other": "Cuéntalo con tus palabras",

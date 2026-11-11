@@ -54,7 +54,7 @@ const PORTS = {
   },
 } as const;
 let sequence = 0;
-function serviceFor(
+export function serviceFor(
   deps: { store: OvitrapStore; engine: SyncEngine },
   overrides: Partial<ConstructorParameters<typeof OvitrapService>[0]>,
 ) {

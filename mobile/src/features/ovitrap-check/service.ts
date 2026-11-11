@@ -1,3 +1,4 @@
+import { lastAssignmentOutcome } from "./assignment-diagnostics.ts";
 import { assertCaptureIdentity, ConcurrentCaptureError } from "./capture-identity.ts";
 import { ImmutableCaptureError, OvitrapDraftBuffer } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
@@ -66,6 +67,8 @@ export interface Snapshot extends StoredCapture {
   readonly lifecycleTargetId: string | null;
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
+  /** Set only while the scope is blocked: last outcome plus phone counts (no personal data). */
+  readonly assignmentCode: string | null;
   readonly isShiftBlocked: boolean;
   readonly canStartCapture: boolean;
   readonly repeat: OutboxEvent | null;
@@ -109,6 +112,7 @@ export class OvitrapService {
   async read(): Promise<Snapshot> {
     const state = await this.#deps.store.read();
     const shiftId = await this.#deps.shiftId();
+    const scope = await this.#scope(state.draft);
     return {
       ...state,
       canStartCapture: Boolean(shiftId),
@@ -116,7 +120,7 @@ export class OvitrapService {
         ? await this.#deps.store.lifecycleTargetId(state.draft.ovitrapId)
         : null,
       isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
-      ...availability(state.draft, await this.#deps.store.snapshots()),
+      ...scope,
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
       isBagReserved: Boolean(
         state.draft?.bagCode &&
@@ -129,6 +133,11 @@ export class OvitrapService {
   async #isShiftBlocked(draft: Draft | null): Promise<boolean> {
     const id = await this.#deps.shiftId();
     return !id || Boolean(draft && draft.shiftId !== id);
+  }
+  async #scope(draft: Draft | null) {
+    const flags = availability(draft, await this.#deps.store.snapshots());
+    const facts = flags.isScopeBlocked ? await this.#deps.store.assignmentFacts() : null;
+    return { ...flags, assignmentCode: facts && `${lastAssignmentOutcome()} ${facts}` };
   }
   async refresh(eventId: string | null): Promise<void> {
     assertCaptureIdentity(await this.#deps.store.read(), eventId);

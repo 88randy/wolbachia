@@ -61,6 +61,7 @@ export const field = {
   "field.capture.newPaddle": "New paddle",
   "field.capture.nextOne": "Next ovitrap",
   "field.capture.notYours": "This point is not in your work today.",
+  "field.capture.diagnosticCode": "Code: {code}",
   "field.capture.openShift": "Open shift",
   "field.capture.optional": "If you do not have them, go on.",
   "field.capture.other": "Tell it in your own words",
