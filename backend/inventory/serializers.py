@@ -25,6 +25,7 @@ from inventory.models import (
 )
 from inventory.policy import BIOLOGICAL_FIELDS, LotSafety
 from inventory.selectors import lot_safety
+from organizations.scope import EffectiveScope
 from ovitraps.payloads import StrictPayloadSerializer
 from uploads.access import actor_from_request, current_scope
 
@@ -405,8 +406,7 @@ class LotSerializer(OrgScopedModelSerializer):
     def get_created_by(self, version: LotVersion) -> str | None:
         if "request" not in self.context:
             return None
-        actor = actor_from_request(self.context["request"])
-        original = current_scope(actor).allows(
+        original = self.reader_scope.allows(
             "lot.read",
             str(version.lot.center_id),
             str(version.lot.quadrant_id) if version.lot.quadrant_id else None,
@@ -416,6 +416,11 @@ class LotSerializer(OrgScopedModelSerializer):
     @cached_property
     def safety_cache(self) -> dict[UUID, LotSafety]:
         return {}
+
+    @cached_property
+    def reader_scope(self) -> EffectiveScope:
+        """Loaded once: a list reuses one child serializer for every row."""
+        return current_scope(actor_from_request(self.context["request"]))
 
     @extend_schema_field({"type": "string", "enum": ["draft", "available", "blocked"]})
     def get_status(self, version: LotVersion) -> str:

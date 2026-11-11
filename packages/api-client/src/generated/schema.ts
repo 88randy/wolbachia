@@ -7430,6 +7430,7 @@ export interface components {
             readonly origin: components["schemas"]["AccessLogOriginEnum"];
             readonly result: components["schemas"]["AccessLogResultEnum"];
             readonly revision: number;
+            readonly reason: string;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -13546,9 +13547,11 @@ export interface components {
             readonly revision: number;
             readonly is_active: boolean;
             readonly has_rfc: boolean;
+            readonly deactivation_reason: string | null;
         };
-        PersonnelRevisionRequest: {
+        PersonnelDeactivateRequest: {
             expected_revision: number;
+            reason: string;
         };
         PersonnelWriteRequest: {
             /** Format: uuid */
@@ -30201,7 +30204,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonnelRevisionRequest"];
+                "application/json": components["schemas"]["PersonnelDeactivateRequest"];
             };
         };
         responses: {

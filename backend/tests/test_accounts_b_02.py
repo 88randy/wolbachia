@@ -114,7 +114,7 @@ def test_deactivation_ends_scoped_sessions_and_pending_uploads_without_erasing_a
     client.force_authenticate(setup.actor.user)
     response = client.post(
         f"/api/v1/users/{member.user_id}/deactivate/",
-        {"expected_revision": person.revision},
+        {"expected_revision": person.revision, "reason": "Left the organization"},
         format="json",
     )
     assert response.status_code == 200

@@ -272,7 +272,10 @@ class Personnel(OrgScopedModel):
 
 
 class AccessLog(ImmutableMixin, OrgScopedModel):
-    """Durable, closed-vocabulary receipts: never RFC, contact data, URLs or request bodies."""
+    """Durable, closed-vocabulary receipts: never RFC, contact data, URLs or request bodies.
+
+    `reason` is the only free text: the required void-rule reason of a `user.deactivate`.
+    """
 
     class Action(models.TextChoices):
         CREATE = "user.create"
@@ -302,6 +305,8 @@ class AccessLog(ImmutableMixin, OrgScopedModel):
     origin = models.CharField(max_length=16, choices=Origin.choices)
     result = models.CharField(max_length=32, choices=Result.choices, default=Result.SUCCESS)
     revision = models.PositiveIntegerField()
+    # db_default keeps inserts from code that predates the column valid.
+    reason = models.TextField(blank=True, default="", db_default="")
 
     class Meta(ImmutableMixin.Meta):
         constraints = [

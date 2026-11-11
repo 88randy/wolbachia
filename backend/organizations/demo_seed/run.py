@@ -65,6 +65,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
         {"supervisor": members["demo-supervisor"], "coordinator": members["demo-coordinator"]},
     )
     operations.ensure_motorcycles(organization, centers, admin)
+    operations.ensure_public_portal(organization, admin)
     with custody_history.frozen_clock(custody_history.history_start()):
         retrying(lambda: operations.ensure_assignments(quadrants, members, admin))
     device = field.ensure_device(organization)

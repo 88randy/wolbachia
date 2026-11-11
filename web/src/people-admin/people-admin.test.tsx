@@ -51,6 +51,7 @@ const PERSON = {
   revision: 4,
   is_active: true,
   has_rfc: false,
+  deactivation_reason: null,
 };
 const MEMBERSHIP = {
   id: "membership-1",
@@ -207,17 +208,36 @@ describe("W49 person actions", () => {
     expect(within(dialog).queryByTestId("temporary-password")).toBeNull();
   });
 
-  test("deactivating confirms first and sends the person revision; an own-administration refusal is explained", async () => {
+  test("deactivating asks for the reason and sends it with the person revision; an own-administration refusal is explained", async () => {
     const { api, user } = await open("/settings/users/user-1", {
       "POST /api/v1/users/user-1/deactivate/": apiError(409, "own_administration"),
     });
     await user.click(await screen.findByRole("button", { name: "Dar de baja" }));
     const confirm = await screen.findByRole("dialog");
-    await user.click(within(confirm).getByRole("button", { name: "Dar de baja" }));
+    const submit = within(confirm).getByRole("button", { name: "Dar de baja" });
+    expect(submit.getAttribute("aria-disabled") ?? submit.getAttribute("disabled")).not.toBeNull();
+    await user.type(
+      within(confirm).getByLabelText(/Motivo de la baja/),
+      "  Dejó la organización  ",
+    );
+    await user.click(submit);
     await screen.findByText(/No puedes quitarte tus propios permisos de administración/);
     expect(bodyOf(api, "POST", "/api/v1/users/user-1/deactivate/")).toEqual({
       expected_revision: 4,
+      reason: "Dejó la organización",
     });
+  });
+
+  test("an inactive person shows the deactivation reason on the record", async () => {
+    await open("/settings/users/user-1", {
+      "GET /api/v1/users/user-1/": Response.json({
+        ...PERSON,
+        is_active: false,
+        deactivation_reason: "Dejó la organización",
+      }),
+    });
+    await screen.findByText("Dejó la organización");
+    expect(screen.getByText("Motivo de la baja")).toBeTruthy();
   });
 
   test("an inactive person shows Reactivate and blocks the other actions with the reason", async () => {

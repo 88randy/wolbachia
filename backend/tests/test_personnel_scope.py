@@ -106,7 +106,7 @@ def test_membership_scope_prevents_mutation_through_a_misleading_local_personnel
                 {"expected_revision": person.revision, "work_phone": "synthetic-attempted-edit"},
             )
         elif operation == "deactivate":
-            deactivate_personnel(actor, member.user_id, person.revision)
+            deactivate_personnel(actor, member.user_id, person.revision, "Left the organization")
         else:
             revoke_scoped_personnel_sessions(actor, member.user_id, False)
 

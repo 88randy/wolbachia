@@ -15,7 +15,7 @@ from shifts.models import Shift
 from shifts.permissions import SHIFT_READ, SHIFT_VALIDATE
 from shifts.selectors import list_shifts
 from shifts.serializers import ShiftDetailSerializer, ShiftFilterSerializer, ShiftSerializer
-from shifts.validation import ShiftDecisionRequest, decide_shift, require_shift_scope
+from shifts.validation import ShiftDecisionRequest, decide_shift, readable_shifts
 from uploads.access import actor_from_request
 
 
@@ -55,14 +55,12 @@ class ShiftViewSet(
             # Narrow by the requested filters first, so the per-row scope check below only
             # runs on the rows that could be returned (same rows, far fewer scope lookups).
             scoped = list_shifts(scoped, query.to_filters())
-        visible = []
-        for shift in scoped.select_related("motorcycle", "organization"):
+        elif self.action == "retrieve":
             try:
-                require_shift_scope(actor, shift, SHIFT_READ)
-            except Http404:
-                continue
-            visible.append(shift.pk)
-        scoped = scoped.filter(pk__in=visible)
+                scoped = scoped.filter(pk=UUID(str(self.kwargs.get("pk"))))
+            except ValueError:
+                raise Http404 from None
+        scoped = readable_shifts(actor, scoped, SHIFT_READ)
         if self.action != "list":
             return scoped.select_related("motorcycle").prefetch_related("checks__item")
         return scoped

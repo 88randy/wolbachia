@@ -94,6 +94,9 @@ export const users = {
   "users.deactivate.consequence":
     "Termina su membresía y cierra sus sesiones, incluida la del teléfono. No se borra nada: queda en el historial.",
   "users.deactivate.confirm": "Dar de baja",
+  "users.deactivate.reasonLabel": "Motivo de la baja",
+  "users.deactivate.reasonHint": "Obligatorio. Mínimo {count} caracteres.",
+  "users.record.deactivationReason": "Motivo de la baja",
   "users.deactivate.done": "{name} está de baja.",
   "users.reactivate.done": "{name} está activo de nuevo.",
 

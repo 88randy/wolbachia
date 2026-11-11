@@ -49,7 +49,7 @@ def test_hr_profile_cannot_edit_or_deactivate_an_admin(setup):  # noqa: F811
     with pytest.raises(NotFound):
         update_personnel(setup.actor, admin.user_id, {"display_name": "Taken over"})
     with pytest.raises(NotFound):
-        deactivate_personnel(setup.actor, admin.user_id, person.revision)
+        deactivate_personnel(setup.actor, admin.user_id, person.revision, "Left the organization")
 
     assert Membership.objects.get(pk=admin.pk).is_active
 

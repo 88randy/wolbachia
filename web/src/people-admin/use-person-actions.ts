@@ -18,6 +18,7 @@ export function usePersonActions(person: Schemas["Personnel"]) {
   const writer = useAdminWrite();
   const [membership, setMembership] = useState<Schemas["Membership"] | null>(null);
   const [isPasswordOpen, setPasswordOpen] = useState(false);
+  const [isDeactivateOpen, setDeactivateOpen] = useState(false);
 
   async function refresh() {
     await Promise.all([
@@ -25,9 +26,12 @@ export function usePersonActions(person: Schemas["Personnel"]) {
       invalidateOrgScoped(queryClient, "administration"),
     ]);
   }
-  async function deactivate() {
-    const done = await writer.run((guard) => requestDeactivate(client, person, guard.signal));
+  async function deactivate(reason: string) {
+    const done = await writer.run((guard) =>
+      requestDeactivate(client, { id: person.id, revision: person.revision, reason }, guard.signal),
+    );
     if (!done) return;
+    setDeactivateOpen(false);
     showToast({
       message: t("users.deactivate.done", { name: person.display_name }),
       tone: "success",
@@ -65,6 +69,8 @@ export function usePersonActions(person: Schemas["Personnel"]) {
     scopeSaved,
     isPasswordOpen,
     setPasswordOpen,
+    isDeactivateOpen,
+    setDeactivateOpen,
     deactivate,
     reactivate,
     openScope,
