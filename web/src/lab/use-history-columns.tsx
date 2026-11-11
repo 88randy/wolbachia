@@ -7,13 +7,14 @@ import { StatusPill } from "../ui/StatusPill";
 import type { DataTableColumn } from "../data-table/table-types";
 import type { Count, LabScope } from "./lab-query";
 import { LabName } from "./LabName";
+import { EmptyValue } from "../ui/EmptyValue";
 import { CorrectCountDialog } from "./CorrectCountDialog";
 function observationColumns(language: string): DataTableColumn<Count>[] {
   return [
     {
       id: "bag_id",
       headerKey: "lab.history.bag",
-      cell: (count) => <LabName kind="bag" id={count.bag_id} />,
+      cell: (count) => count.bag_code ?? <EmptyValue />,
     },
     {
       id: "value",

@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import timedelta
+from decimal import Decimal
 from io import BytesIO
 from typing import Any
 from uuid import UUID, uuid5
@@ -15,7 +16,14 @@ from core.time import local_day_start, localdate
 from geography.models import Block, PointVersion, Quadrant, SamplingPoint
 from organizations.demo_seed.field import NAMESPACE
 from organizations.models import Membership, Organization
-from people.models import ActionTrainingRequirementVersion, Certification, Training, TrainingVersion
+from people.models import (
+    ActionTrainingRequirementVersion,
+    Certification,
+    EvaluationRubric,
+    EvaluationRubricVersion,
+    Training,
+    TrainingVersion,
+)
 from people.permissions import PeopleContext
 from people.services import PeopleWrite, write_people
 from releases.models import Permit
@@ -32,6 +40,7 @@ from uploads.services import (
 )
 
 COURSE_CODE = "TR-MER-RELEASE"
+RUBRIC_CODE = "EV-MER-RELEASE"
 RELEASE_POINT = "Q-MER-01-REL-P1"
 RELEASE_BLOCK = "Q-MER-01-B2"
 ACTION = "release.record"
@@ -93,6 +102,31 @@ def _ensure_course(actor: UploadActor) -> TrainingVersion:
     return TrainingVersion.objects.get(pk=_write(actor, "training.version", values)["id"])
 
 
+def _ensure_rubric(actor: UploadActor) -> None:
+    """One evaluation rubric with a published version, so the evaluation form has a rubric to pick."""
+    rubric = EvaluationRubric.objects.filter(
+        organization=actor.organization, code=RUBRIC_CODE
+    ).first()
+    if rubric is None:
+        created = _write(
+            actor, "rubric.create", {"code": RUBRIC_CODE, "name": "Evaluación de liberación"}
+        )
+        rubric = EvaluationRubric.objects.get(pk=created["id"])
+    if EvaluationRubricVersion.objects.filter(rubric=rubric).exists():
+        return
+    _write(
+        actor,
+        "rubric.version",
+        {
+            "weights": {"presentation": 20, "execution": 50, "coverage": 30},
+            "pass_threshold": Decimal("80"),
+            "critical_checks": ["safe_handling", "correct_point"],
+            "effective_from": timezone.now() - timedelta(days=1),
+            "_target": rubric.pk,
+        },
+    )
+
+
 def _ensure_requirement(
     actor: UploadActor, context: PeopleContext, version: TrainingVersion
 ) -> None:
@@ -137,6 +171,7 @@ def ensure_certifications(
     """Course, requirement for the quadrant and one valid certification per courier."""
     context = PeopleContext(quadrant.center_id, quadrant.pk)
     version = _ensure_course(actor)
+    _ensure_rubric(actor)
     _ensure_requirement(actor, context, version)
     for courier in couriers:
         _ensure_certification(actor, Course(context, version), courier)

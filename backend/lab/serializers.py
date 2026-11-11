@@ -356,6 +356,7 @@ class LabCountSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
+    bag_code = serializers.CharField(required=False)
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
     ordinal = serializers.IntegerField(min_value=1)
     viable_eggs = serializers.IntegerField(allow_null=True)
@@ -463,6 +464,7 @@ class LabReceptionOutcomeSerializer(serializers.Serializer[Any]):
 class LabDiscrepancySerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
+    bag_code = serializers.CharField(required=False)
     source_event_id = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=["missing", "no_reading"])
     reason = serializers.CharField(allow_blank=True)

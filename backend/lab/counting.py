@@ -193,6 +193,7 @@ def count_projection(count: EggCountAttempt) -> dict[str, Any]:
     return {
         "id": str(count.pk),
         "bag_id": str(count.bag_id),
+        "bag_code": count.bag.code,
         "value": count.value,
         "ordinal": count.ordinal,
         "viable_eggs": count.viable_eggs,

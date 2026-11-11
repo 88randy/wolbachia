@@ -33,13 +33,15 @@ export function EvaluationFields({ draft, change, isSubmitted }: Props) {
           }}
         />
       ))}
-      <EvaluationObservedField
-        value={draft.observedAt}
-        hasError={isSubmitted && invalid.includes("observedAt")}
-        onChange={(value) => {
-          change("observedAt", value);
-        }}
-      />
+      <div className={styles.wide}>
+        <EvaluationObservedField
+          value={draft.observedAt}
+          hasError={isSubmitted && invalid.includes("observedAt")}
+          onChange={(value) => {
+            change("observedAt", value);
+          }}
+        />
+      </div>
     </div>
   );
 }
