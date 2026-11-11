@@ -40,6 +40,22 @@ def check_signature_channel(mode: str, has_signature: bool) -> None:
         raise InventoryConflictError("supply_signature_channel_not_allowed")
 
 
+def receipt_signature_problem(mode: str, has_signature: bool, warehouse_signed: bool) -> str | None:
+    """The code that refuses a courier receipt sent from the phone, or None when it is fine.
+
+    A receipt without its own signature is accepted only when the release already carries the
+    warehouse-screen signature, which is possible in `either` and `warehouse` mode. In `phone`
+    mode a signature is always needed; in `warehouse` mode a new one is not allowed.
+    """
+    if not has_signature:
+        if mode == "phone" or not warehouse_signed:
+            return "supply_signature_required"
+        return None
+    if mode == "warehouse":
+        return "supply_signature_channel_not_allowed"
+    return None
+
+
 def signature_proof(
     declared_evidence: list[dict[str, Any]], captured_by: str
 ) -> dict[str, Any] | None:

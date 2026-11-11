@@ -74,7 +74,8 @@ function reviseDraftOf(
       command_id: crypto.randomUUID(),
       expected_revision: saved.revision,
       lines: lines.map((line) => ({
-        id: line.key,
+        id: crypto.randomUUID(), // every revision writes new rows: a line id is never reused
+
         lot_id: line.lotId,
         piece_id: null,
         unit_version_id: line.supplyVersionId,

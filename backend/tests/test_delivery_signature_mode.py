@@ -65,3 +65,27 @@ def test_without_a_warehouse_signature_the_phone_receipt_completes_it():
         "channel": CHANNEL_PHONE,
         "captured_by": "Carlos",
     }
+
+
+@pytest.mark.parametrize(
+    ("mode", "has_signature", "warehouse_signed", "expected"),
+    [
+        # no signature of its own: only after a warehouse signature, in either/warehouse mode
+        ("either", False, True, None),
+        ("warehouse", False, True, None),
+        ("either", False, False, "supply_signature_required"),
+        ("warehouse", False, False, "supply_signature_required"),
+        ("phone", False, True, "supply_signature_required"),
+        ("phone", False, False, "supply_signature_required"),
+        # with its own signature
+        ("either", True, False, None),
+        ("either", True, True, None),
+        ("phone", True, False, None),
+        ("warehouse", True, False, "supply_signature_channel_not_allowed"),
+        ("warehouse", True, True, "supply_signature_channel_not_allowed"),
+    ],
+)
+def test_a_phone_receipt_signature_rules_per_mode(mode, has_signature, warehouse_signed, expected):
+    from inventory.allocations.signature_mode import receipt_signature_problem
+
+    assert receipt_signature_problem(mode, has_signature, warehouse_signed) == expected
