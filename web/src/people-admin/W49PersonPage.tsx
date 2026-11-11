@@ -51,7 +51,8 @@ export function W49PersonPage({ id }: { id: string }) {
           {t(person.is_active ? "users.status.active" : "users.status.inactive")}
         </StatusPill>
       }
-      description={[profiles, lookups.centerName(person.center_id)].filter(Boolean).join(" · ")}
+      subtitle={profiles}
+      centerId={person.center_id}
       actions={
         can("user.revoke_device_sessions") && person.is_active ? (
           <RevokeSessionsButton personId={person.id} name={person.display_name} />
@@ -74,7 +75,6 @@ export function W49PersonPage({ id }: { id: string }) {
             />
           </Fact>
           {lookups.hasProfiles && <Fact label={t("users.column.profiles")}>{profiles || "—"}</Fact>}
-          <Fact label={t("users.column.center")}>{lookups.centerName(person.center_id)}</Fact>
           <Fact label={t("users.record.email")}>{person.work_email || "—"}</Fact>
           <Fact label={t("users.record.phone")}>{person.work_phone || "—"}</Fact>
         </dl>
