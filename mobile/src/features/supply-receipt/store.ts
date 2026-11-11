@@ -1,5 +1,7 @@
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readText } from "../../db/sql.ts";
+import { signatureModeFromRules } from "./signature-need.ts";
+import type { SignatureMode } from "./signature-need.ts";
 import type { EvidenceFence } from "../../attachments/types.ts";
 import { CURRENT_FENCE, fenceParams } from "../../attachments/attachment-store.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
@@ -89,7 +91,7 @@ export class ReceiptStore {
     );
     return !rows.length;
   }
-  async versions(): Promise<{ catalog: string; rules: string }> {
+  async versions(): Promise<{ catalog: string; rules: string; signatureMode: SignatureMode }> {
     const rows = await this.db.query(
       "SELECT key,value FROM kv WHERE key IN ('shift_open_catalog','shift_open_rules')",
     );
@@ -97,6 +99,14 @@ export class ReceiptStore {
       const row = rows.find((entry) => entry.key === key);
       return row ? (JSON.parse(readText(row, "value")) as { version: string }).version : "";
     };
-    return { catalog: read("shift_open_catalog"), rules: read("shift_open_rules") };
+    const rules = rows.find((entry) => entry.key === "shift_open_rules");
+    const parameters = rules
+      ? (JSON.parse(readText(rules, "value")) as { parameters?: unknown }).parameters
+      : undefined;
+    return {
+      catalog: read("shift_open_catalog"),
+      rules: read("shift_open_rules"),
+      signatureMode: signatureModeFromRules(parameters),
+    };
   }
 }

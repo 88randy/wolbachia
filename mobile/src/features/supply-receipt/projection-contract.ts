@@ -74,6 +74,9 @@ function release(value: unknown): Schemas["SupplyReleaseBundle"] {
     id: readUuid(row.id),
     plan_revision: readPositiveInteger(row.plan_revision),
     manifest_hash: readNonempty(row.manifest_hash),
+    // Older bundles carry no signature fact: then the delivery is not warehouse-signed.
+    warehouse_signed:
+      row.warehouse_signed === undefined ? false : readBoolean(row.warehouse_signed),
     lines,
   };
 }
@@ -96,7 +99,7 @@ function receipt(value: unknown): Schemas["SupplyReceiptBundle"] {
     event_id: readUuid(row.event_id),
     source_event_id: readUuid(row.source_event_id),
     release_id: readUuid(row.release_id),
-    signature_upload_id: readUuid(row.signature_upload_id),
+    signature_upload_id: nullable(readUuid)(row.signature_upload_id),
     voided: readBoolean(row.voided),
     lines,
   };

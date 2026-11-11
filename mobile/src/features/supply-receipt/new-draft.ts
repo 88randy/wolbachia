@@ -1,6 +1,8 @@
 import type { Schemas } from "@wolbachia/api-client";
 import type { ReceiptDraft } from "./receipt-types.ts";
 import { ReceiptError } from "./domain.ts";
+import { needsPhoneSignature } from "./signature-need.ts";
+import type { SignatureMode } from "./signature-need.ts";
 import type { ReceiptLine } from "./receipt-types.ts";
 
 interface Input {
@@ -8,7 +10,11 @@ interface Input {
   readonly releaseId: string;
   readonly ownerKey: string;
   readonly shiftId: string;
-  readonly versions: { readonly rules: string; readonly catalog: string };
+  readonly versions: {
+    readonly rules: string;
+    readonly catalog: string;
+    readonly signatureMode?: SignatureMode;
+  };
   readonly now: Date;
   readonly uuid: () => string;
 }
@@ -36,6 +42,12 @@ export function newReceiptDraft(input: Input): ReceiptDraft {
     discrepancy: null,
     strokes: [],
     signature: null,
+    needsSignature: needsPhoneSignature(
+      input.versions.signatureMode ?? 0,
+      release.warehouse_signed
+        ? { state: "signed", channel: "warehouse_screen" }
+        : { state: "pending_phone", channel: null },
+    ),
     evidence: [],
   };
 }

@@ -35,6 +35,7 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
                     "id": str(proof.pk),
                     "plan_revision": release.revision,
                     "manifest_hash": proof.manifest_hash,
+                    "warehouse_signed": bool((proof.proof or {}).get("signature")),
                     "lines": [
                         {
                             "id": str(line.pk),

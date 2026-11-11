@@ -25,6 +25,18 @@ export function needsPhoneSignature(
   return signature?.state !== "signed";
 }
 
+/** The rule value from the downloaded rules snapshot `parameters`; absent or unknown means "either". */
+export function signatureModeFromRules(parameters: unknown): SignatureMode {
+  if (!Array.isArray(parameters)) return 0;
+  const row = (parameters as readonly unknown[]).find(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      (item as { key?: unknown }).key === "delivery_signature_mode",
+  ) as { value?: unknown } | undefined;
+  return readSignatureMode(typeof row?.value === "string" ? Number(row.value) : row?.value);
+}
+
 /** A delivery that waits for the courier signature on the phone: "Tienes material por recibir". */
 export function isPendingPhone(signature: DeliverySignature | null): boolean {
   return signature?.state === "pending_phone";

@@ -31,6 +31,8 @@ export interface ReceiptDraft {
   } | null;
   readonly strokes: readonly string[];
   readonly signature: Evidence | null;
+  /** False when the delivery is already warehouse-signed (or the rule says warehouse only). Absent = true. */
+  readonly needsSignature?: boolean;
   readonly evidence: readonly Evidence[];
 }
 export interface ReceiptState {

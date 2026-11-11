@@ -579,6 +579,7 @@ class SupplyReleaseBundleSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     plan_revision = serializers.IntegerField(min_value=1)
     manifest_hash = serializers.CharField()
+    warehouse_signed = serializers.BooleanField()
     lines = SupplyReleasedLineSerializer(many=True)
 
 
@@ -587,7 +588,7 @@ class SupplyReceiptBundleSerializer(serializers.Serializer[Any]):
     event_id = serializers.UUIDField()
     source_event_id = serializers.UUIDField()
     release_id = serializers.UUIDField()
-    signature_upload_id = serializers.UUIDField()
+    signature_upload_id = serializers.UUIDField(allow_null=True)
     voided = serializers.BooleanField()
     lines = ActualSupplyLineSerializer(many=True)
 

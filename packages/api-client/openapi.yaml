@@ -39826,6 +39826,7 @@ components:
         signature_upload_id:
           type: string
           format: uuid
+          nullable: true
         voided:
           type: boolean
         lines:
@@ -39907,6 +39908,8 @@ components:
           minimum: 1
         manifest_hash:
           type: string
+        warehouse_signed:
+          type: boolean
         lines:
           type: array
           items:
@@ -39916,6 +39919,7 @@ components:
       - lines
       - manifest_hash
       - plan_revision
+      - warehouse_signed
     SupplyReleasedLine:
       type: object
       properties:

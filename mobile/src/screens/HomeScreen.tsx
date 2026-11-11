@@ -1,3 +1,4 @@
+import { PendingDeliveriesNotice } from "../features/supply-receipt/PendingDeliveriesNotice.tsx";
 import { P3Screen } from "../features/shift-open/P3Screen.tsx";
 import { useServices } from "../app/services-context.ts";
 import { useT } from "../i18n/I18nProvider.tsx";
@@ -25,6 +26,7 @@ export function HomeScreen() {
       {server.baseUrl() === null ? (
         <InfoNotice tone="warning" message={t("mobile.home.serverMissing")} />
       ) : null}
+      <PendingDeliveriesNotice />
       <P3Screen />
     </ScreenScaffold>
   );

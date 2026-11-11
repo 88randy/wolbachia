@@ -68,6 +68,7 @@ function supplyFixture(
         id: SHIFT,
         plan_revision: 1,
         manifest_hash: "a".repeat(64),
+        warehouse_signed: false,
         lines: [{ id: SHIFT, assignment_line_id: SHIFT, quantity: "10", transit_policy_id: null }],
       },
     ],

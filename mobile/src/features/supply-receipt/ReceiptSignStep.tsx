@@ -18,6 +18,7 @@ interface Props {
 /** Step 3 of 3: sign with the finger and save the receipt on the phone. */
 export function ReceiptSignStep({ model, draft, onBack }: Props) {
   const t = useT();
+  const isSigned = draft.needsSignature === false;
   const hasSignature = draft.signature !== null;
   return (
     <ReceiptFrame
@@ -29,13 +30,23 @@ export function ReceiptSignStep({ model, draft, onBack }: Props) {
           icon={Save}
           label={t("field.receipt.save")}
           isLoading={model.isBusy}
-          disabled={!hasSignature || isReceiptReadOnly(model)}
+          disabled={(!hasSignature && !isSigned) || isReceiptReadOnly(model)}
           onPress={() => {
             void model.run(() => model.service.save(draft.eventId));
           }}
         />
       }
     >
+      {isSigned ? <SignedAtWarehouse /> : <SignPad {...{ model, draft }} />}
+    </ReceiptFrame>
+  );
+}
+
+function SignPad({ model, draft }: Pick<Props, "model" | "draft">) {
+  const t = useT();
+  const hasSignature = draft.signature !== null;
+  return (
+    <>
       <StepQuestion title={t("field.receipt.signQuestion")} />
       <SignaturePad
         key={draft.eventId}
@@ -53,6 +64,11 @@ export function ReceiptSignStep({ model, draft, onBack }: Props) {
         }}
       />
       {hasSignature ? <InfoNotice tone="success" message={t("field.receipt.signSaved")} /> : null}
-    </ReceiptFrame>
+    </>
   );
+}
+
+function SignedAtWarehouse() {
+  const t = useT();
+  return <InfoNotice tone="success" message={t("field.receipt.signedAtWarehouse")} />;
 }

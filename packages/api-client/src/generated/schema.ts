@@ -16376,7 +16376,7 @@ export interface components {
             /** Format: uuid */
             release_id: string;
             /** Format: uuid */
-            signature_upload_id: string;
+            signature_upload_id: string | null;
             voided: boolean;
             lines: components["schemas"]["ActualSupplyLine"][];
         };
@@ -16407,6 +16407,7 @@ export interface components {
             id: string;
             plan_revision: number;
             manifest_hash: string;
+            warehouse_signed: boolean;
             lines: components["schemas"]["SupplyReleasedLine"][];
         };
         SupplyReleasedLine: {

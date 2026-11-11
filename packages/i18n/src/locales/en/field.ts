@@ -307,6 +307,10 @@ export const field = {
   "field.receipt.kind.other": "Something else",
   "field.receipt.mismatchHint":
     "What you counted differs from what was expected. Tell us what happened.",
+  "field.receipt.signedAtWarehouse":
+    "You already signed at the warehouse. Just confirm the quantities.",
+  "field.receipt.pendingHome": "You have supplies to receive ({count})",
+  "field.receipt.pendingAction": "Receive",
   "field.receipt.none": "You have no deliveries to receive",
   "field.receipt.noneHint": "Open your shift and connect to the internet for a moment.",
   "field.receipt.notReady": "We cannot show your deliveries yet",
