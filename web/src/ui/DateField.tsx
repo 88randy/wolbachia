@@ -1,6 +1,7 @@
 import { CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { enUS, es } from "react-day-picker/locale";
+import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormatCalendarDate } from "../format/use-formatters";
@@ -31,6 +32,8 @@ export function DateField(props: {
   disabled?: boolean;
   /** Last day that can be picked (`YYYY-MM-DD`). */
   max?: string;
+  /** Already translated error text: red text below, `aria-invalid` on the button. */
+  error?: string | undefined;
 }) {
   const { language } = useLanguage();
   const format = useFormatCalendarDate();
@@ -50,7 +53,12 @@ export function DateField(props: {
             id={props.id}
             type="button"
             disabled={props.disabled}
-            className="inline-flex min-h-[var(--web-control-lg)] w-full min-w-0 items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:opacity-60"
+            aria-invalid={props.error === undefined ? undefined : true}
+            aria-describedby={props.error === undefined ? undefined : `${props.id}-error`}
+            className={cn(
+              "inline-flex min-h-[var(--web-control-lg)] w-full min-w-0 items-center gap-2 rounded-lg border bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:opacity-60",
+              props.error === undefined ? "border-line-strong" : "border-critical-fg",
+            )}
           >
             <CalendarDays aria-hidden="true" className="size-4 flex-none text-ink-2" />
             <span className="min-w-0 flex-1 truncate">{selected ? format(props.value) : "—"}</span>
@@ -71,6 +79,11 @@ export function DateField(props: {
           />
         </PopoverContent>
       </Popover>
+      {props.error !== undefined && (
+        <p id={`${props.id}-error`} className="m-0 text-xs text-critical-fg">
+          {props.error}
+        </p>
+      )}
     </div>
   );
 }

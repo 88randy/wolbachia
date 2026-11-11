@@ -54,7 +54,6 @@ export function FaultClearanceDialog(props: FleetOperationProps & { scope: Fleet
   const title = useId();
   const modal = useFleetDialog(draft.phase !== "idle", operations.close, {
     openerId: fleetClearFocusId(scope.focusOwner, draft.motorcycle, draft.fault?.id ?? ""),
-    fallbackId: `fleet-record-refresh-${draft.motorcycle}`,
     isCurrent: scope.isCurrent,
   });
   const verified =

@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Schemas } from "@wolbachia/api-client";
 import { createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
@@ -271,4 +271,32 @@ export async function otherReasonField(): Promise<HTMLTextAreaElement> {
   const dialog = within(await screen.findByRole("dialog"));
   await userEvent.selectOptions(await dialog.findByRole("combobox"), "other");
   return dialog.getByRole<HTMLTextAreaElement>("textbox");
+}
+
+/** Opens the "⋯" menu of the record header and returns the item with this name (or pattern). */
+export async function menuItem(name: string | RegExp) {
+  const open = screen.queryByRole("menuitem", { name });
+  if (open) return open;
+  await userEvent.click(await screen.findByRole("button", { name: /Más opciones|More options/ }));
+  return screen.findByRole("menuitem", { name });
+}
+/** Opens the "⋯" menu and activates an enabled item. */
+export async function chooseMenuAction(name: string | RegExp) {
+  await userEvent.click(await menuItem(name));
+}
+
+/** Chooses an option of a Combobox (the app dropdown) by its visible label. */
+export async function pickOption(dialog: ReturnType<typeof within>, name: string, label: string) {
+  await userEvent.click(dialog.getByRole("combobox", { name }));
+  await userEvent.click(await screen.findByRole("option", { name: label }));
+}
+/** Picks a day (`YYYY-MM-DD`) in a DateField calendar. */
+export async function pickDay(dialog: ReturnType<typeof within>, label: string, iso: string) {
+  await userEvent.click(dialog.getByRole("button", { name: new RegExp(label) }));
+  const cell = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(`[data-day="${iso}"] button`);
+    if (!found) throw new Error(`day ${iso} not shown`);
+    return found;
+  });
+  await userEvent.click(cell);
 }

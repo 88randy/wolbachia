@@ -15,7 +15,8 @@ export function useCreateMotorcycle(onCreated: () => void) {
   const form = useForm<MotorcycleValues>({
     resolver: zodResolver(motorcycleSchema),
     defaultValues: { code: "", plate: "" },
-    mode: "onBlur",
+    mode: "onSubmit",
+    reValidateMode: "onBlur",
   });
   const submit = form.handleSubmit(async (values) => {
     if (busy.current) return;
