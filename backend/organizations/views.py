@@ -201,7 +201,9 @@ class MembershipViewSet(
             return Membership.objects.none()
         queryset = super().get_queryset()
         if self.action == "list":
-            query = MembershipQuerySerializer(data=self.request.query_params)
+            # A plain dict: a QueryDict makes an omitted BooleanField read as False, which
+            # silently filtered the list to inactive memberships only.
+            query = MembershipQuerySerializer(data=self.request.query_params.dict())
             query.is_valid(raise_exception=True)
             queryset = queryset.filter(**query.validated_data)
         return queryset
