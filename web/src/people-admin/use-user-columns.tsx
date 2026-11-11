@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import type { DataTableColumn } from "../data-table/table-types";
+import { useShowCenter } from "../lookups/use-center-scope";
 import { StatusPill } from "../ui/StatusPill";
 import type { Person } from "./users-query";
 import type { PeopleLookups } from "./use-people-lookups";
@@ -11,6 +12,7 @@ import type { PeopleLookups } from "./use-people-lookups";
 /** W48 columns: name (opens W49), profiles, center, masked RFC and status. */
 export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn<Person>[] {
   const { t } = useTranslation();
+  const showCenter = useShowCenter();
   return useMemo(() => {
     const columns: DataTableColumn<Person>[] = [
       {
@@ -59,6 +61,9 @@ export function useUserColumns(lookups: PeopleLookups): readonly DataTableColumn
         ),
       },
     ];
-    return lookups.hasProfiles ? columns : columns.filter((column) => column.id !== "profiles");
-  }, [t, lookups]);
+    return columns.filter(
+      (column) =>
+        (lookups.hasProfiles || column.id !== "profiles") && (showCenter || column.id !== "center"),
+    );
+  }, [t, lookups, showCenter]);
 }

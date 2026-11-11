@@ -19,6 +19,7 @@ export function IncidentRecordContent({ code, incident, record }: ContentProps) 
   return (
     <DetailPage
       code={code}
+      centerId={incident.center}
       title={incident.type_snapshot?.label ?? t("incidents.workspace.unavailable")}
       actions={
         <Link

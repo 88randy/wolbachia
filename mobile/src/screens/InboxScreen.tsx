@@ -3,6 +3,7 @@ import { useLocale, useT } from "../i18n/I18nProvider.tsx";
 import { useOutboxAction } from "../outbox/use-outbox-action.ts";
 import { formatInboxTime } from "../sync/format-time.ts";
 import { useInbox } from "../sync/use-inbox.ts";
+import { useOrganizationTimeZone } from "../sync/use-organization-time-zone.ts";
 import { useSyncEngine, useSyncSnapshot } from "../sync/use-sync.ts";
 import { AppHeader } from "../ui/AppHeader.tsx";
 import { InfoNotice } from "../ui/InfoNotice.tsx";
@@ -21,6 +22,7 @@ function useInboxRetry() {
 export function InboxScreen() {
   const t = useT();
   const locale = useLocale();
+  const timeZone = useOrganizationTimeZone();
   const snapshot = useSyncSnapshot();
   const { run, errorKey } = useInboxRetry();
   const model = useInbox();
@@ -28,7 +30,7 @@ export function InboxScreen() {
     snapshot.lastSyncAt === null
       ? t("mobile.inbox.neverConnected")
       : t("mobile.inbox.lastConnection", {
-          time: formatInboxTime(snapshot.lastSyncAt, { locale }),
+          time: formatInboxTime(snapshot.lastSyncAt, { locale, timeZone }),
         });
   return (
     <ScreenScaffold

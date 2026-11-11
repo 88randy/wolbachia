@@ -54,7 +54,7 @@ export const orgAdmin = {
   "orgAdmin.center.hint": "Shows the information of one work center of your organization",
   "orgAdmin.center.empty": "No centers are available in your scope.",
   "orgAdmin.center.filter": "Center",
-  "orgAdmin.center.all": "All my centers",
+  "orgAdmin.center.all": "All centers",
   "orgAdmin.center.choose": "Choose a center",
   "orgAdmin.organization.title": "Organization",
   "orgAdmin.organization.name": "Name",

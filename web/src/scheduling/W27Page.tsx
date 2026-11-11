@@ -20,6 +20,7 @@ import { RISK_PAGE_SIZE, RISK_TABLE, RISK_TABLE_SCOPE } from "./risk-table";
 import { useRiskColumns } from "./use-risk-columns";
 import { WeekSwitcher } from "./WeekSwitcher";
 import { todayIn, weekNumberOf, weekStartOf } from "./week-dates";
+import { DEFAULT_TIME_ZONE } from "../format/time-zone";
 
 /** W27: the risk category of every block for a week and where it comes from. */
 export function W27Page() {
@@ -31,7 +32,7 @@ export function W27Page() {
   const formatDay = useFormatCalendarDate();
   const search: Record<string, string | undefined> = useSearch({ strict: false });
   const week = weekStartOf(
-    search["week"] ?? todayIn(me.organization?.timezone ?? "UTC"),
+    search["week"] ?? todayIn(me.organization?.timezone ?? DEFAULT_TIME_ZONE),
     me.organization?.epi_week ?? "iso",
   );
   const controller = useTableUrlState(RISK_TABLE, RISK_TABLE_SCOPE);

@@ -4,6 +4,7 @@ import { unwrap } from "@wolbachia/api-client";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
 import { Combobox } from "../Combobox";
@@ -37,6 +38,7 @@ export function TransferCreateDialog() {
   const { t } = useTranslation();
   const scope = useRegScope();
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const timeZone = useOrganizationTimeZone();
   const centers = useQuery(centersOptions(scope));
   const quadrants = useQuery({
     ...quadrantsOfCenterOptions(scope, draft.center),
@@ -45,8 +47,8 @@ export function TransferCreateDialog() {
   const patch = (next: Partial<Draft>) => {
     setDraft((current) => ({ ...current, ...next }));
   };
-  const validFrom = draft.from === undefined ? undefined : startOfDayInstant(draft.from);
-  const validUntil = endOfDayInstant(draft.to ?? draft.from ?? "");
+  const validFrom = draft.from === undefined ? undefined : startOfDayInstant(draft.from, timeZone);
+  const validUntil = endOfDayInstant(draft.to ?? draft.from ?? "", timeZone);
   const canSubmit =
     draft.institution.trim() !== "" &&
     draft.center !== "" &&

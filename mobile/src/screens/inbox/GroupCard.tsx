@@ -1,6 +1,7 @@
 import { useLocale, useT } from "../../i18n/I18nProvider.tsx";
 import type { TypeGroup } from "../../outbox/outbox-event.ts";
 import { formatInboxTime } from "../../sync/format-time.ts";
+import { useOrganizationTimeZone } from "../../sync/use-organization-time-zone.ts";
 import { eventTypeKey, STATUS_BADGE_KEY } from "../../sync/inbox-model.ts";
 import { AppText } from "../../ui/AppText.tsx";
 import { StatusCard } from "../../ui/StatusCard.tsx";
@@ -10,8 +11,9 @@ import { statusTone } from "./status-tone.ts";
 export function GroupCard({ group }: { readonly group: TypeGroup }) {
   const t = useT();
   const locale = useLocale();
-  const first = formatInboxTime(group.firstDeviceTime, { locale });
-  const last = formatInboxTime(group.lastDeviceTime, { locale });
+  const timeZone = useOrganizationTimeZone();
+  const first = formatInboxTime(group.firstDeviceTime, { locale, timeZone });
+  const last = formatInboxTime(group.lastDeviceTime, { locale, timeZone });
   return (
     <StatusCard
       title={t("mobile.inbox.groupTitle", {

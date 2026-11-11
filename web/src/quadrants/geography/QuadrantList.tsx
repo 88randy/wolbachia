@@ -6,6 +6,7 @@ import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
 import { PageFrame } from "../../components/templates/PageFrame";
 import { PageHeader } from "../../components/templates/PageHeader";
+import { buttonVariants } from "../../ui/button-variants";
 import { useDocumentTitle } from "../../shell/use-document-title";
 import type { GeographyScope } from "./use-w-15";
 import { LazyGeographyMap } from "./LazyGeographyMap";
@@ -25,17 +26,14 @@ export function QuadrantList({ scope }: { scope: GeographyScope }) {
               <Link
                 to="/quadrants/editor"
                 search={{ tool: "quadrant" }}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line-strong bg-surface px-4 text-sm font-semibold text-ink hover:bg-tint"
+                className={buttonVariants({ variant: "secondary" })}
               >
                 <Plus aria-hidden="true" className="size-4" />
                 {t("geography.page.create")}
               </Link>
             )}
             {canEdit && (
-              <Link
-                to="/quadrants/editor"
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-action px-4 text-sm font-semibold text-on-action hover:bg-action-strong"
-              >
+              <Link to="/quadrants/editor" className={buttonVariants({ variant: "primary" })}>
                 <MapIcon aria-hidden="true" className="size-4" />
                 {t("mapEditor.action.open")}
               </Link>

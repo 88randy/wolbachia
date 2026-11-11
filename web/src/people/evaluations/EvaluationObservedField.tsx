@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { TextField } from "../../forms/TextField";
 import { fromLocalInput, toLocalInput } from "../trainings/TrainingInstantField";
 
@@ -11,15 +12,16 @@ interface Props {
 /** When the work was observed, chosen with the browser calendar and clock. */
 export function EvaluationObservedField({ value, onChange, hasError }: Props) {
   const { t } = useTranslation();
+  const timeZone = useOrganizationTimeZone();
   return (
     <TextField
       id="evaluation-observedAt"
       label={t("evaluations.field.observed")}
       type="datetime-local"
-      value={toLocalInput(value)}
+      value={toLocalInput(value, timeZone)}
       error={hasError ? t("evaluations.form.invalid") : undefined}
       onChange={(event) => {
-        onChange(fromLocalInput(event.currentTarget.value));
+        onChange(fromLocalInput(event.currentTarget.value, timeZone));
       }}
     />
   );

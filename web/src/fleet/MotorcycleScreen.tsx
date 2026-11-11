@@ -49,6 +49,7 @@ export function MotorcycleScreen(props: Props) {
   return (
     <DetailPage
       code={motorcycle.plate || undefined}
+      centerId={motorcycle.center}
       title={motorcycle.code}
       status={
         error === null && !isRefreshing ? (

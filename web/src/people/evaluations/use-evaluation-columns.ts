@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useFormatDateTime } from "../../format/use-format-date-time";
+import { useCenterColumns } from "../../data-table/center-column";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { OUTCOME_KEYS } from "./evaluation-labels";
 import { useTrainingLabels } from "../trainings/use-training-labels";
@@ -32,7 +33,7 @@ export function useEvaluationColumns(): DataTableColumn<Evaluation>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const labels = useTrainingLabels();
-  return [
+  const columns: DataTableColumn<Evaluation>[] = [
     identityColumn(t),
     {
       id: "subject",
@@ -52,4 +53,5 @@ export function useEvaluationColumns(): DataTableColumn<Evaluation>[] {
       cell: (row) => format(row.created_at),
     },
   ];
+  return useCenterColumns(columns, (row) => row.center_id, { after: "subject" });
 }

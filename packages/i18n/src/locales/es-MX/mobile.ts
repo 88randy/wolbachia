@@ -1257,7 +1257,7 @@ export const mobile = {
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
   "mobile.global.causeGpsSearching": "Buscando tu ubicación…",
   "mobile.global.causeGpsUnreliable":
-    "Aún no hay una ubicación confiable; la velocidad no se puede confirmar.",
+    "Buscando tu ubicación…",
   "mobile.global.causeBatteryLow": "Batería baja.",
   "mobile.global.causeNoSignal": "Sin señal: nada se pierde, todo se sube cuando haya red.",
   "mobile.global.nextStopMoving":
@@ -1274,7 +1274,7 @@ export const mobile = {
   "mobile.global.fixOpenSettings": "Ajustes",
   "mobile.global.fixFreeSpace": "Liberar",
   "mobile.global.fixNetwork": "Ajustes",
-  "mobile.global.nextWaitForFix": "Espera unos segundos, a cielo abierto si puedes.",
+  "mobile.global.nextWaitForFix": "Si tarda, sal a un lugar abierto.",
   "mobile.global.nextChargeOrSaveBattery": "Carga el teléfono o baja el brillo.",
   "mobile.global.nextKeepWorkingSaved":
     "Sigue trabajando; lo guardado en el teléfono no se pierde.",

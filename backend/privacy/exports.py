@@ -10,7 +10,7 @@ import io
 import zipfile
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 from xml.sax.saxutils import escape
@@ -18,7 +18,7 @@ from xml.sax.saxutils import escape
 from accounts.models import Personnel
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc
 from core.exceptions import FieldValidationError
-from core.time import server_now
+from core.time import local_day_start, server_now
 from lab.models import EggCountAttempt
 from organizations.selectors import filter_by_effective_scope
 from ovitraps.models import Bag, OvitrapReading
@@ -44,13 +44,19 @@ class Dataset:
     rows: Callable[[UploadActor, date, date], list[dict[str, Any]]]
 
 
-def _span(date_from: date, date_to: date, field: str) -> dict[str, Any]:
-    return {f"{field}__date__gte": date_from, f"{field}__date__lte": date_to}
+def _bounds(actor: UploadActor, date_from: date, date_to: date) -> tuple[datetime, datetime]:
+    """Whole local days of the organization: the server zone is UTC, so `__date` would cut wrong."""
+    zone = actor.organization.timezone
+    return local_day_start(zone, date_from), local_day_start(zone, date_to + timedelta(days=1))
+
+
+def _span(bounds: tuple[datetime, datetime], field: str) -> dict[str, Any]:
+    return {f"{field}__gte": bounds[0], f"{field}__lt": bounds[1]}
 
 
 def _releases(actor: UploadActor, date_from: date, date_to: date) -> list[dict[str, Any]]:
     rows = Release.objects.filter(
-        organization=actor.organization, **_span(date_from, date_to, "device_time")
+        organization=actor.organization, **_span(_bounds(actor, date_from, date_to), "device_time")
     )
     rows = filter_by_effective_scope(rows, _membership(actor), EXPORT_RUN)
     return [
@@ -77,7 +83,7 @@ def _releases(actor: UploadActor, date_from: date, date_to: date) -> list[dict[s
 
 def _readings(actor: UploadActor, date_from: date, date_to: date) -> list[dict[str, Any]]:
     rows = OvitrapReading.objects.filter(
-        organization=actor.organization, **_span(date_from, date_to, "created_at")
+        organization=actor.organization, **_span(_bounds(actor, date_from, date_to), "created_at")
     )
     rows = filter_by_effective_scope(rows, _membership(actor), EXPORT_RUN)
     return [
@@ -111,7 +117,9 @@ def _lab_results(actor: UploadActor, date_from: date, date_to: date) -> list[dic
         Bag.objects.filter(organization=actor.organization), _membership(actor), EXPORT_RUN
     )
     rows = EggCountAttempt.objects.filter(
-        organization=actor.organization, bag__in=bags, **_span(date_from, date_to, "created_at")
+        organization=actor.organization,
+        bag__in=bags,
+        **_span(_bounds(actor, date_from, date_to), "created_at"),
     )
     center = f"bag__{Bag.scope_center_lookup}"
     quadrant = f"bag__{Bag.scope_quadrant_lookup}"

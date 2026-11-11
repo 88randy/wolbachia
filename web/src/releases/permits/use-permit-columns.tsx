@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useCenterColumns } from "../../data-table/center-column";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { PermitBlockers } from "./PermitBlockers";
@@ -47,8 +48,7 @@ function stateColumns(t: TFunction, format: (iso: string) => string): Columns {
     {
       id: "zone",
       headerKey: "permits.column.zone",
-      cell: (row) =>
-        t("permits.column.zoneCell", { center: row.center_code, quadrant: row.quadrant_code }),
+      cell: (row) => row.quadrant_code,
     },
     {
       id: "validity",
@@ -72,5 +72,6 @@ function stateColumns(t: TFunction, format: (iso: string) => string): Columns {
 export function usePermitColumns(): readonly DataTableColumn<Permit>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
-  return useMemo(() => [...identityColumns(), ...stateColumns(t, format)], [t, format]);
+  const columns = useMemo(() => [...identityColumns(), ...stateColumns(t, format)], [t, format]);
+  return useCenterColumns(columns, (row) => row.center, { after: "authority" });
 }

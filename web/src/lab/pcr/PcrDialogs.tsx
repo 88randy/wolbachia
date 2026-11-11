@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { todayIn, zonedLocalToIso } from "../../format/time-zone";
+import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
@@ -11,17 +13,11 @@ import { usePcrCommand, usePcrUpload } from "./use-pcr-command";
 const EVIDENCE_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_BYTES = 10 * 1024 * 1024;
 
-function today() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
-
-/** A picked date at local noon (never the future): what the lab staff wrote down. */
-function dateToInstant(value: string): string | null {
-  if (!value) return null;
-  const picked = new Date(`${value}T12:00:00`);
-  return (picked.getTime() > Date.now() ? new Date() : picked).toISOString();
+/** A picked date at noon in the organization's zone (never the future): what the staff wrote. */
+function dateToInstant(value: string, timeZone: string): string | null {
+  const picked = value ? zonedLocalToIso(`${value}T12:00`, timeZone) : null;
+  if (picked === null) return null;
+  return Date.parse(picked) > Date.now() ? new Date().toISOString() : picked;
 }
 
 interface ControlledProps {
@@ -33,11 +29,12 @@ interface ControlledProps {
 /** "Registrar envío": date, carrier, tracking number and an optional receipt (photo or PDF). */
 export function ShipDialog({ batch, open, onOpenChange }: ControlledProps) {
   const { t } = useTranslation();
+  const timeZone = useOrganizationTimeZone();
   const command = usePcrCommand(batch, () => {
     onOpenChange(false);
   });
   const files = usePcrUpload();
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(() => todayIn(timeZone));
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [file, setFile] = useState<File>();
@@ -55,7 +52,7 @@ export function ShipDialog({ batch, open, onOpenChange }: ControlledProps) {
     }
     command.run({
       kind: "ship",
-      occurred_at: dateToInstant(date),
+      occurred_at: dateToInstant(date, timeZone),
       tracking_number: tracking.trim(),
       carrier: carrier.trim(),
       evidence_id: evidence,
@@ -82,7 +79,7 @@ export function ShipDialog({ batch, open, onOpenChange }: ControlledProps) {
             type="date"
             label={t("pcr.ship.date")}
             value={date}
-            max={today()}
+            max={todayIn(timeZone)}
             onChange={(event) => {
               setDate(event.currentTarget.value);
             }}
@@ -142,10 +139,11 @@ export function ShipDialog({ batch, open, onOpenChange }: ControlledProps) {
 /** "Marcar recibida": the date the external laboratory got the samples. */
 export function ReceiveDialog({ batch, open, onOpenChange }: ControlledProps) {
   const { t } = useTranslation();
+  const timeZone = useOrganizationTimeZone();
   const command = usePcrCommand(batch, () => {
     onOpenChange(false);
   });
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(() => todayIn(timeZone));
   return (
     <Dialog
       trigger={<span hidden />}
@@ -158,7 +156,7 @@ export function ReceiveDialog({ batch, open, onOpenChange }: ControlledProps) {
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          command.run({ kind: "receive", occurred_at: dateToInstant(date) });
+          command.run({ kind: "receive", occurred_at: dateToInstant(date, timeZone) });
         }}
       >
         <div className="max-w-60">
@@ -167,7 +165,7 @@ export function ReceiveDialog({ batch, open, onOpenChange }: ControlledProps) {
             type="date"
             label={t("pcr.receive.date")}
             value={date}
-            max={today()}
+            max={todayIn(timeZone)}
             onChange={(event) => {
               setDate(event.currentTarget.value);
             }}
@@ -208,7 +206,11 @@ export function ReasonDialog({ batch, open, onOpenChange, mode }: ReasonDialogPr
   const copy = {
     undo: ["pcr.reason.undoTitle", "pcr.reason.undoDescription", "pcr.action.undo"],
     void: ["pcr.reason.voidTitle", "pcr.reason.voidDescription", "pcr.action.void"],
-    voidResult: ["pcr.reason.voidResultTitle", "pcr.reason.voidResultDescription", "pcr.detail.voidResult"],
+    voidResult: [
+      "pcr.reason.voidResultTitle",
+      "pcr.reason.voidResultDescription",
+      "pcr.detail.voidResult",
+    ],
   } as const;
   const [title, description, action] = copy[kind];
   const isShort = reason.trim().length < 10;
@@ -255,7 +257,12 @@ export function ReasonDialog({ batch, open, onOpenChange, mode }: ReasonDialogPr
           >
             {t("common.actions.cancel")}
           </Button>
-          <Button type="submit" variant="destructive" aria-disabled={isShort || undefined} loading={command.isPending}>
+          <Button
+            type="submit"
+            variant="destructive"
+            aria-disabled={isShort || undefined}
+            loading={command.isPending}
+          >
             {t(action)}
           </Button>
         </DialogFooter>
@@ -274,7 +281,15 @@ interface FilePickerProps {
   onChange: (file: File | undefined, problem: string | undefined) => void;
 }
 
-export function FilePicker({ id, label, accept, typeError, file, error, onChange }: FilePickerProps) {
+export function FilePicker({
+  id,
+  label,
+  accept,
+  typeError,
+  file,
+  error,
+  onChange,
+}: FilePickerProps) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1.5">

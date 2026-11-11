@@ -1,3 +1,4 @@
+import { useShowCenter } from "../lookups/use-center-scope";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
@@ -123,12 +124,17 @@ function useSampleTailColumns(): DataTableColumn<SampleRow>[] {
 }
 
 function useSampleWhereColumns(): DataTableColumn<SampleRow>[] {
+  const showCenter = useShowCenter();
   return [
-    {
-      id: "center",
-      headerKey: "lab.col.center",
-      cell: (row) => <LabName kind="center" id={row.center_id} />,
-    },
+    ...(showCenter
+      ? [
+          {
+            id: "center",
+            headerKey: "lab.col.center" as const,
+            cell: (row: SampleRow) => <LabName kind="center" id={row.center_id} />,
+          },
+        ]
+      : []),
     {
       id: "quadrant",
       headerKey: "lab.col.quadrant",

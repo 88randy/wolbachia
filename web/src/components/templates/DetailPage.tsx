@@ -3,6 +3,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { useDocumentTitle } from "../../shell/use-document-title";
+import { DetailCenter } from "./DetailCenter";
 import { OverflowMenu } from "./OverflowMenu";
 import type { OverflowAction } from "./OverflowMenu";
 import { PageFrame } from "./PageFrame";
@@ -16,6 +17,8 @@ export interface DetailPageProps {
   status?: ReactNode;
   /** One short line under the title (e.g. "Base Centro-Oriente · alta 10 nov 2026"). */
   subtitle?: ReactNode;
+  /** Center of the record: a small center line next to the subtitle, only when the user sees several centers. */
+  centerId?: string | null;
   /** @deprecated use `subtitle`. */
   description?: ReactNode;
   /** Back link above the header (the list this record belongs to). */
@@ -34,7 +37,16 @@ export interface DetailPageProps {
 /** Template 2 of 4, Detail: header (title, status, subtitle, actions, ⋯), then card sections. */
 export function DetailPage(props: DetailPageProps) {
   const { title, code, status, subtitle, description, back, actions, moreActions } = props;
-  const { notices, children, aside } = props;
+  const { notices, children, aside, centerId } = props;
+  const lead = subtitle ?? description;
+  const headerLine = centerId ? (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+      {lead}
+      <DetailCenter centerId={centerId} />
+    </span>
+  ) : (
+    lead
+  );
   useDocumentTitle(title);
   const headerActions =
     actions || moreActions?.length ? (
@@ -58,7 +70,7 @@ export function DetailPage(props: DetailPageProps) {
         eyebrow={code}
         title={title}
         status={status}
-        description={subtitle ?? description}
+        description={headerLine}
         actions={headerActions}
       />
       {notices}

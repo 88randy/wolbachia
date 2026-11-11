@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from django.db.models import Count, Max, Sum
 from django.db.models.functions import TruncWeek
@@ -42,7 +43,7 @@ def _cutoff(organization: Organization) -> str | None:
 def releases_by_week(organization: Organization) -> dict[str, Any]:
     rows = (
         Release.objects.filter(organization=organization)
-        .annotate(week=TruncWeek("device_time"))
+        .annotate(week=TruncWeek("device_time", tzinfo=ZoneInfo(organization.timezone)))
         .values("week", "permit_version__permit__quadrant__code")
         .annotate(releases=Count("id"), quantity=Sum("quantity"))
         .order_by("week", "permit_version__permit__quadrant__code")

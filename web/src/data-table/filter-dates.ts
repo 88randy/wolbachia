@@ -1,3 +1,4 @@
+import { zonedDayStart } from "../format/time-zone";
 import type { TextFilter } from "./table-types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -10,22 +11,21 @@ function isoDay(date: Date): string {
   return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-/** `+HH:MM` offset of the browser for that day. [ASSUMPTION] browser zone = organization zone. */
-function offsetOf(date: Date): string {
-  const minutes = -date.getTimezoneOffset();
-  const sign = minutes >= 0 ? "+" : "-";
-  const absolute = Math.abs(minutes);
-  return `${sign}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`;
-}
-
 /**
- * URL value of a picked day. `date` filters send the day; `datetime` filters send local midnight
- * with its offset. The `end` of a `datetime` range is exclusive (`*_before`): the next midnight.
+ * URL value of a picked day. `date` filters send the day; `datetime` filters send midnight in the
+ * organization's zone with its offset. The `end` of a `datetime` range is exclusive
+ * (`*_before`): the next midnight. The picker's `Date` only carries the calendar day.
  */
-export function filterValueOfDate(day: Date, filter: TextFilter, edge: "start" | "end"): string {
+export function filterValueOfDate(
+  day: Date,
+  filter: TextFilter,
+  edge: "start" | "end",
+  timeZone: string,
+): string {
   if (filter.dateFormat !== "datetime") return isoDay(day);
-  const moment = edge === "end" ? new Date(day.getTime() + DAY_MS) : day;
-  return `${isoDay(moment)}T00:00:00${offsetOf(moment)}`;
+  const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  const calendarDay = isoDay(edge === "end" ? next : day);
+  return zonedDayStart(calendarDay, timeZone) ?? calendarDay;
 }
 
 /** The day a URL value points to; for an exclusive end, the day before it. */
