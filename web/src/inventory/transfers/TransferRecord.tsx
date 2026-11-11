@@ -65,15 +65,11 @@ function TransferItems({ transfer }: { transfer: Transfer }) {
 export function TransferRecord(props: TransferRecordProps) {
   const can = useCan();
   const nameOf = useLocationNames();
-  const { transfer, memory } = props;
+  const { transfer } = props;
   const { t } = useTranslation();
-  const action =
-    memory.command?.action ??
-    (transfer.state === "prepared"
-      ? "dispatch"
-      : transfer.state === "dispatched"
-        ? "receive"
-        : null);
+  // The step to show follows the shipment's state; a stale command never keeps an old step open.
+  const action: "dispatch" | "receive" | null =
+    transfer.state === "prepared" ? "dispatch" : transfer.state === "dispatched" ? "receive" : null;
   const unknown = t("inventory.state.unconfigured");
   return (
     <DetailPage

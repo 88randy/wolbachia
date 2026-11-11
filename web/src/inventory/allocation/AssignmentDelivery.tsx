@@ -53,15 +53,24 @@ export function AssignmentDelivery(props: {
   draft: AssignmentDraft;
   lots: readonly Schemas["Lot"][] | undefined;
   origins: readonly Schemas["Location"][];
+  /** A saved delivery keeps its warehouse; to change it, void it and create another. */
+  isOriginFixed?: boolean;
 }) {
   const { t } = useTranslation();
   const { draft, origins } = props;
+  const originName = origins.find((origin) => origin.id === draft.originId)?.name ?? "—";
   const lots = props.lots ?? [];
   const choices = useChoices(lots);
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <FormSection title={t("allocation.assignment.sectionOrigin")}>
-        <OriginPicker draft={draft} origins={origins} />
+        {props.isOriginFixed ? (
+          <p className="m-0 text-sm text-ink-2">
+            {t("allocation.delivery.originFixed", { name: originName })}
+          </p>
+        ) : (
+          <OriginPicker draft={draft} origins={origins} />
+        )}
       </FormSection>
       <FormSection
         title={t("allocation.assignment.sectionLots")}

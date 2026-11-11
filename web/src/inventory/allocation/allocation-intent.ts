@@ -6,7 +6,8 @@ export type PrepareBody = Schemas["PrepareInventoryIntentRequest"];
 export type IntentTarget =
   | { kind: "justify"; reconciliationId: string }
   | { kind: "write_off" }
-  | { kind: "release"; assignmentId: string };
+  | { kind: "release"; assignmentId: string }
+  | { kind: "cancel"; assignmentId: string };
 export interface PreparedDraft {
   body: PrepareBody;
   target: IntentTarget;
@@ -18,10 +19,17 @@ export interface AssignDraft {
   body: Schemas["CreateAssignmentRequest"];
   target: { kind: "assign" };
 }
+/** Correct the lines of a plan that is not released yet (a new revision; nothing is overwritten). */
+export interface ReviseDraft {
+  body: Schemas["PatchedReviseAssignmentRequest"];
+  target: { kind: "revise"; assignmentId: string };
+}
 /** The frozen command: only an explicit retry resends it, with the same command and intent ids. */
-export type IntentDraft = PreparedDraft | AssignDraft;
+export type IntentDraft = PreparedDraft | AssignDraft | ReviseDraft;
 export type IntentResult =
   | { kind: "assign"; assignment: Schemas["SupplyAssignmentRead"] }
+  | { kind: "revise"; assignment: Schemas["SupplyAssignmentRead"] }
+  | { kind: "cancel" }
   | { kind: "justify"; justification: Schemas["SupplyJustification"] }
   | { kind: "write_off"; writeOff: Schemas["WriteOffRead"] }
   | { kind: "release"; release: Schemas["ReleaseOutcome"] };
@@ -37,6 +45,20 @@ interface Execution {
 
 function isAssign(draft: IntentDraft): draft is AssignDraft {
   return draft.target.kind === "assign";
+}
+function isRevise(draft: IntentDraft): draft is ReviseDraft {
+  return draft.target.kind === "revise";
+}
+
+async function executeCancel(run: Execution, assignmentId: string): Promise<IntentResult> {
+  unwrap(
+    await run.call.client.POST("/api/v1/courier-assignments/{id}/release-cancellations/", {
+      params: { path: { id: assignmentId } },
+      body: { intent_id: run.intentId },
+      signal: run.call.signal,
+    }),
+  );
+  return { kind: "cancel" };
 }
 
 async function executeJustify(run: Execution, reconciliationId: string): Promise<IntentResult> {
@@ -65,6 +87,7 @@ async function execute(run: Execution): Promise<IntentResult> {
   const target = run.target;
   if (target.kind === "justify") return executeJustify(run, target.reconciliationId);
   if (target.kind === "release") return executeRelease(run, target.assignmentId);
+  if (target.kind === "cancel") return executeCancel(run, target.assignmentId);
   const answer = unwrap(
     await run.call.client.POST("/api/v1/write-offs/", {
       body: { intent_id: run.intentId },
@@ -93,6 +116,16 @@ export async function runIntent(
       await call.client.POST("/api/v1/courier-assignments/", { body, signal: call.signal }),
     );
     return { kind: "assign", assignment: answer.assignment };
+  }
+  if (isRevise(draft)) {
+    const answer = unwrap(
+      await call.client.PATCH("/api/v1/courier-assignments/{id}/", {
+        params: { path: { id: draft.target.assignmentId } },
+        body: draft.body,
+        signal: call.signal,
+      }),
+    );
+    return { kind: "revise", assignment: answer.assignment };
   }
   const intentId = draft.intentId ?? (await prepare(call, draft));
   remember(draft, intentId);

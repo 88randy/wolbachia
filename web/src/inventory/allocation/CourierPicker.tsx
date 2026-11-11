@@ -28,7 +28,7 @@ export function CourierPicker({
         placeholder={t("allocation.assignment.courierPlaceholder")}
         emptyMessage={t("allocation.assignment.noCouriers")}
         onValueChange={(courier) => {
-          void navigate({ to: "/inventory/assignments", search: { date, courier } });
+          void navigate({ to: "/inventory/assignments/new", search: { date, courier } });
         }}
       />
     </div>

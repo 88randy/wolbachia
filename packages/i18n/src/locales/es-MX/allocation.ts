@@ -156,4 +156,50 @@ export const allocation = {
   "allocation.assignment.configureLink": "Configurar en el catálogo de insumos",
   "allocation.assignment.needsSignature":
     "El repartidor firma en el recuadro para registrar la entrega.",
+  "allocation.delivery.status.planned": "Por entregar",
+  "allocation.delivery.status.released": "Entregada",
+  "allocation.delivery.status.received": "Recibida",
+  "allocation.delivery.status.cancelled": "Anulada",
+  "allocation.delivery.timeline.planned": "Entrega preparada",
+  "allocation.delivery.timeline.revision": "Versión {number}",
+  "allocation.delivery.timeline.released": "Entregada con firma",
+  "allocation.delivery.timeline.by": "{name} · {when}",
+  "allocation.delivery.timeline.received": "El repartidor recibió el material",
+  "allocation.delivery.timeline.cancelled": "Entrega anulada",
+  "allocation.delivery.timeline.cancelDetail": "{name} · {when}. Motivo: {reason}",
+  "allocation.delivery.cancel": "Anular entrega",
+  "allocation.delivery.cancelHint":
+    "Libera el material reservado. No se borra nada: queda el motivo, quién y cuándo.",
+  "allocation.delivery.cancelRedo": "Anular y volver a entregar",
+  "allocation.delivery.cancelledNote":
+    "Esta entrega se anuló. Puedes corregirla y volver a entregarla.",
+  "allocation.delivery.releasedNote":
+    "El material ya está con el repartidor. Si algo está mal, anula la entrega con un motivo.",
+  "allocation.delivery.receivedNote":
+    "El repartidor ya recibió el material. Lo que sobre se cuadra al final del día.",
+  "allocation.delivery.cancelBlocked":
+    "No se puede anular: el repartidor ya recibió el material en su teléfono.",
+  "allocation.delivery.saveChanges": "Guardar cambios",
+  "allocation.delivery.revised": "Cambios guardados.",
+  "allocation.delivery.originFixed":
+    "Sale de {name}. Para cambiar el almacén, anula esta entrega y crea otra.",
+  "allocation.delivery.goReconcile": "Cuadrar entregas del día",
+  "allocation.delivery.historyTitle": "Historial",
+  "allocation.delivery.col.courier": "Repartidor",
+  "allocation.delivery.col.date": "Día",
+  "allocation.delivery.col.origin": "Sale de",
+  "allocation.delivery.col.lines": "Lotes",
+  "allocation.delivery.col.status": "Estado",
+  "allocation.delivery.col.next": "Qué sigue",
+  "allocation.delivery.next.planned": "Falta entregar con firma",
+  "allocation.delivery.next.released": "Esperando que el repartidor lo reciba",
+  "allocation.delivery.next.received": "Cuadrar al final del día",
+  "allocation.delivery.next.cancelled": "Se puede corregir y entregar otra vez",
+  "allocation.delivery.menu.open": "Abrir",
+  "allocation.delivery.menu.edit": "Editar",
+  "allocation.delivery.menu.cancelNotYet": "Anular entrega (aún no se entrega)",
+  "allocation.delivery.listDescription":
+    "Todas las entregas de material a repartidores. Abre una para editarla, firmarla o anularla.",
+  "allocation.delivery.new": "Nueva entrega",
+  "allocation.delivery.cancelOf": "entrega del {date}",
 } as const satisfies AreaCatalog<"allocation">;

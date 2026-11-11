@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import {
@@ -16,6 +16,7 @@ import { useAllocationCommand } from "./use-allocation-command";
 import { useAssignmentDraft } from "./use-assignment-draft";
 
 type Assignment = Schemas["SupplyAssignmentRead"];
+export type DeliveryStatus = "planned" | "released" | "cancelled" | "received";
 
 /** Only real state: unassigned, sent in this session, or the signed-receipt credit of the frame. */
 function signatureOf(
@@ -28,18 +29,52 @@ function signatureOf(
   return result?.kind === "release" ? ("sent" as const) : ("unknown" as const);
 }
 
+/** The state of a saved delivery as the server reports it; an older server means "planned". */
+export function statusOf(saved: Assignment | null): DeliveryStatus | null {
+  if (saved === null) return null;
+  return saved.lifecycle?.status ?? "planned";
+}
+
+/** Saved lines become the draft once, when the lots (their names) are known. */
+function useHydration(
+  saved: Assignment | null,
+  lots: readonly Schemas["Lot"][] | undefined,
+  draft: ReturnType<typeof useAssignmentDraft>,
+) {
+  const done = useRef("");
+  useEffect(() => {
+    if (!saved || !lots) return;
+    const key = `${saved.id}:${String(saved.revision)}`;
+    if (done.current === key) return;
+    done.current = key;
+    draft.hydrate(
+      saved,
+      saved.lines.map((line) => ({
+        key: line.id,
+        lotId: line.lot_id,
+        lotCode: lots.find((lot) => lot.id === line.lot_id)?.code ?? "",
+        supplyVersionId: line.unit_version_id,
+        quantity: line.quantity.replace(/\.?0+$/, ""),
+      })),
+    );
+  }, [saved, lots, draft]);
+}
+
 export function useAssignmentPanel(scope: AllocationScope, courierId: string, date: string) {
   const suggestion = useQuery(suggestionOptions(scope, date, courierId));
   const assignment = useQuery(assignmentOptions(scope, date, courierId));
   const lots = useQuery(lotDirectoryOptions(scope, ASSIGNMENTS_ROUTE));
   const origins = useQuery(originOptions(scope, ASSIGNMENTS_ROUTE));
   const saved = assignment.data ?? null;
+  const status = statusOf(saved);
   const frame = useQuery(assignmentFrameOptions(scope, saved?.id ?? ""));
   const draft = useAssignmentDraft(scope, { courierId, date });
   const command = useAllocationCommand(scope);
   const [signature, setSignature] = useState<Blob | null>(null);
-  const create = () => {
-    const next = draft.draft();
+  useHydration(saved, lots.data, draft);
+  const isEditable = status === null || status === "planned" || status === "cancelled";
+  const save = () => {
+    const next = saved ? draft.revision(saved) : draft.draft();
     if (next) void command.send(next);
   };
   const release = () => {
@@ -64,13 +99,12 @@ export function useAssignmentPanel(scope: AllocationScope, courierId: string, da
         : {}),
     });
   };
-  const signatureState = signatureOf(saved, command.result, frame.data);
   return {
-    ...{ suggestion, lots, origins, saved, frame, draft, command },
+    ...{ suggestion, lots, origins, saved, frame, draft, command, status, isEditable },
     ...{
-      create,
+      create: save,
       release,
-      signature: signatureState,
+      signature: signatureOf(saved, command.result, frame.data),
       signatureBlob: signature,
       setSignatureBlob: setSignature,
     },

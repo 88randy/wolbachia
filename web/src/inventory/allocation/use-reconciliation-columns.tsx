@@ -54,7 +54,7 @@ function numberColumns(quantity: Quantity): Column[] {
     {
       ...assigned,
       link: (row) => ({
-        to: "/inventory/assignments",
+        to: "/inventory/assignments/new",
         search: { date: assignment(row).date, courier: assignment(row).courier_id },
       }),
     },
