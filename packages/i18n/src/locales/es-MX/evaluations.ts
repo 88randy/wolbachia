@@ -50,7 +50,8 @@ export const evaluations = {
   "evaluations.field.subject": "Persona",
   "evaluations.field.center": "Centro",
   "evaluations.field.quadrant": "Cuadrante (opcional)",
-  "evaluations.field.observed": "Fecha de observación con zona horaria",
+  "evaluations.field.observed": "Fecha de observación",
+  "evaluations.field.observedTime": "Hora",
   "evaluations.field.instantHint":
     "Usa una fecha ISO 8601 con Z o desfase explícito, por ejemplo 2026-11-09T12:00:00-06:00.",
   "evaluations.field.presentation": "Presentación",

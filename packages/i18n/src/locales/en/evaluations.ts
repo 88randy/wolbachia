@@ -50,7 +50,8 @@ export const evaluations: Record<keyof typeof source, string> = {
   "evaluations.field.subject": "Person",
   "evaluations.field.center": "Center",
   "evaluations.field.quadrant": "Quadrant (optional)",
-  "evaluations.field.observed": "Observation date with time zone",
+  "evaluations.field.observed": "Observation date",
+  "evaluations.field.observedTime": "Time",
   "evaluations.field.instantHint":
     "Use an ISO 8601 date with Z or an explicit offset, for example 2026-11-09T12:00:00-06:00.",
   "evaluations.field.presentation": "Presentation",

@@ -1,6 +1,9 @@
 import type { trainings as Spanish } from "../es-MX/trainings";
 export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.workspace.title": "Trainings",
+  "trainings.tab.courses": "Courses",
+  "trainings.tab.requirements": "Requirements",
+  "trainings.tab.people": "People",
   "trainings.workspace.evaluations": "Evaluation sheets",
   "trainings.workspace.denied":
     "You do not have training access in this scope. Ask Administration for the permission and scope.",

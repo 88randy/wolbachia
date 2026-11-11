@@ -20,7 +20,7 @@
 }
 .stack > button,
 .stack > a {
-  justify-self: start;
+  justify-self: end;
 }
 .facts {
   display: grid;
