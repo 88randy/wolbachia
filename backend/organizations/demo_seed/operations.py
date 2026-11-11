@@ -147,3 +147,25 @@ def _backdate_revisit_rule(organization: Organization, admin: User) -> None:
         effective_date=local_today(organization.timezone, start),
         reason="Demo seed: rule in force since the first demo week",
     )
+
+
+def ensure_public_portal(organization: Organization, admin: Membership) -> None:
+    """Turn the read-only public portal on with every indicator, so `/portal/<slug>` works.
+
+    A row an admin already configured (enabled, or with chosen indicators) is left as it is.
+    """
+    from privacy.models import PortalSettings
+    from privacy.portal import PORTAL_INDICATORS
+
+    row, created = PortalSettings.objects.get_or_create(
+        organization=organization,
+        defaults={
+            "enabled": True,
+            "indicators": sorted(PORTAL_INDICATORS),
+            "created_by": admin.user,
+        },
+    )
+    if not created and not row.enabled and not row.indicators:
+        row.enabled = True
+        row.indicators = sorted(PORTAL_INDICATORS)
+        row.save(update_fields=["enabled", "indicators", "updated_at"])

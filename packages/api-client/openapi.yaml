@@ -18365,7 +18365,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PersonnelRevisionRequest'
+              $ref: '#/components/schemas/PersonnelDeactivateRequest'
         required: true
       security:
       - cookieAuth: []
@@ -19347,6 +19347,9 @@ components:
         revision:
           type: integer
           readOnly: true
+        reason:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -19360,6 +19363,7 @@ components:
       - id
       - origin
       - quadrant_id
+      - reason
       - result
       - revision
       - target_id
@@ -33058,8 +33062,13 @@ components:
         has_rfc:
           type: boolean
           readOnly: true
+        deactivation_reason:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - center_id
+      - deactivation_reason
       - display_name
       - has_rfc
       - id
@@ -33070,14 +33079,17 @@ components:
       - revision
       - work_email
       - work_phone
-    PersonnelRevisionRequest:
+    PersonnelDeactivateRequest:
       type: object
       properties:
         expected_revision:
           type: integer
           minimum: 1
+        reason:
+          type: string
       required:
       - expected_revision
+      - reason
     PersonnelWriteRequest:
       type: object
       properties:

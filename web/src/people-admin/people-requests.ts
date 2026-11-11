@@ -67,13 +67,13 @@ export function requestTemporaryPassword(client: ApiClient, id: string, signal: 
 
 export function requestDeactivate(
   client: ApiClient,
-  target: { id: string; revision: number },
+  target: { id: string; revision: number; reason: string },
   signal: Signal,
 ) {
   return client
     .POST("/api/v1/users/{id}/deactivate/", {
       params: { path: { id: target.id } },
-      body: { expected_revision: target.revision },
+      body: { expected_revision: target.revision, reason: target.reason },
       signal,
     })
     .then(unwrap);
