@@ -27,7 +27,6 @@ export function ReconciliationTable({
       rowActions={(row) => (
         <ReconciliationActions row={row} canJustify={canJustify} onJustify={onJustify} />
       )}
-      embedded
     />
   );
 }

@@ -4,7 +4,7 @@ import type { Me } from "../../session/me";
 import { useMe } from "../../session/use-me";
 import { can } from "../../session/can";
 import { organizationToday } from "./allocation-labels";
-import { originOptions } from "./allocation-query";
+import { lotDirectoryOptions, originOptions } from "./allocation-query";
 import type { AllocationScope } from "./allocation-query";
 import { useAllocationCommand } from "./use-allocation-command";
 import { useReasonFields } from "./use-reason-fields";
@@ -55,6 +55,7 @@ export function useWriteOffForm(scope: AllocationScope, route: string, defaultKi
   const reason = useReasonFields();
   const command = useAllocationCommand(scope);
   const locations = useQuery(originOptions(scope, route)).data ?? [];
+  const lots = useQuery(lotDirectoryOptions(scope, route)).data ?? [];
   const target = targetOf(lookup.found, inputs);
   const { reasonCode, reason: note } = reason;
   const fields = { target, ...inputs, reasonCode, reason: note, ownerId: me.user.id };
@@ -72,7 +73,7 @@ export function useWriteOffForm(scope: AllocationScope, route: string, defaultKi
   const locationId = target?.kind === "lot" ? target.locationId : "";
   const isBio = isBiological(target);
   return {
-    ...{ kinds, lookup, reason, command, blockers, target, changeKind, submit, locations },
+    ...{ kinds, lookup, reason, command, blockers, target, changeKind, submit, locations, lots },
     ...{ ...inputs, locationId, isBiological: isBio },
   };
 }

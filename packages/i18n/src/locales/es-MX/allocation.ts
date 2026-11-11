@@ -43,9 +43,9 @@ export const allocation = {
   "allocation.writeOff.kindBag": "Bolsa",
   "allocation.writeOff.fieldKind": "Tipo",
   "allocation.writeOff.fieldCode": "Código del lote o la bolsa",
-  "allocation.writeOff.fieldQuantity": "Cantidad",
-  "allocation.writeOff.fieldLocation": "Ubicación",
-  "allocation.writeOff.fieldDate": "Fecha",
+  "allocation.writeOff.fieldQuantity": "Cuánto se da de baja",
+  "allocation.writeOff.fieldLocation": "Almacén del que sale",
+  "allocation.writeOff.fieldDate": "Fecha de la baja",
   "allocation.writeOff.fieldTarget": "Lote o bolsa",
   "allocation.writeOff.fieldOwner": "Responsable",
   "allocation.writeOff.rpbi":
@@ -56,10 +56,10 @@ export const allocation = {
   "allocation.writeOff.find": "Buscar",
   "allocation.writeOff.notFound": "No se encontró ese código en tu alcance.",
   "allocation.writeOff.lookupFailed": "No se pudo buscar el código. Inténtalo de nuevo.",
-  "allocation.writeOff.formTitle": "Baja de material",
+  "allocation.writeOff.formTitle": "Dar de baja material",
   "allocation.writeOff.formDescription":
-    "El material biológico exige un comprobante RPBI verificado y un motivo.",
-  "allocation.writeOff.open": "Registrar merma o baja",
+    "Elige el lote, cuánto sale y por qué. Una baja no se borra: si te equivocas, se anula con un motivo.",
+  "allocation.writeOff.open": "Registrar una baja",
   "allocation.writeOff.submit": "Dar de baja",
   "allocation.writeOff.recorded": "Baja registrada.",
   "allocation.writeOff.blockerTarget": "Busca y elige un lote o una bolsa.",
@@ -137,4 +137,11 @@ export const allocation = {
   "allocation.assignment.firstOut": "Sale primero",
   "allocation.assignment.noLots": "No hay lotes disponibles para entregar.",
   "allocation.assignment.lineQuantityShort": "Cantidad",
+  "allocation.writeOff.fieldLot": "Lote",
+  "allocation.writeOff.noLots": "No hay lotes registrados.",
+  "allocation.filter.from": "Desde",
+  "allocation.filter.before": "Hasta",
+  "allocation.writeOff.description":
+    "Material caducado, dañado o perdido que sale del inventario. Cada baja queda con su motivo y quién la hizo.",
+  "allocation.reconciliation.day": "Día a revisar",
 } as const satisfies AreaCatalog<"allocation">;

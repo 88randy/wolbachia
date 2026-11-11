@@ -6,7 +6,6 @@ import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryContext } from "../use-inventory-context";
 import { LAB_WRITE_OFFS_ROUTE } from "./allocation-query";
 import { WriteOffWorkspace } from "./WriteOffWorkspace";
-import { PageFrame } from "../../components/templates/PageFrame";
 
 /** W39 lab biological write-offs: the same shared form and server behavior as W17. */
 export function W39Page() {
@@ -17,14 +16,12 @@ export function W39Page() {
   if (!hasCenterScope(me.scope))
     return <InlineNotice tone="warning">{t("allocation.page.denied")}</InlineNotice>;
   return (
-    <PageFrame>
-      <WriteOffWorkspace
-        key={scope.context}
-        scope={scope}
-        route={LAB_WRITE_OFFS_ROUTE}
-        kind="bag"
-        titleKey="allocation.lab.title"
-      />
-    </PageFrame>
+    <WriteOffWorkspace
+      key={scope.context}
+      scope={scope}
+      route={LAB_WRITE_OFFS_ROUTE}
+      kind="bag"
+      titleKey="allocation.lab.title"
+    />
   );
 }

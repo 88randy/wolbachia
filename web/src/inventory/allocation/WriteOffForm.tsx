@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { FormActions } from "../../components/templates/FormGrid";
 import { TextField } from "../../forms/TextField";
 import { Button } from "../../ui/Button";
 import { CommandFeedback } from "./CommandFeedback";
@@ -15,44 +16,42 @@ function SubmitRow({ form, onClose }: { form: Form; onClose: () => void }) {
   const id = useId();
   const isBlocked = form.blockers.length > 0;
   return (
-    <>
+    <FormActions>
       {isBlocked && (
-        <ul id={id}>
-          {form.blockers.map((key) => (
-            <li key={key}>{t(key)}</li>
-          ))}
-        </ul>
+        <p id={id} className="m-0 mr-auto text-[13px] text-ink-2">
+          {t(form.blockers[0] ?? "allocation.writeOff.fieldCode")}
+        </p>
       )}
-      <div className={styles.actions}>
-        <Button
-          type="submit"
-          loading={form.command.isBusy}
-          aria-disabled={isBlocked || undefined}
-          aria-describedby={isBlocked ? id : undefined}
-        >
-          {t("allocation.writeOff.submit")}
-        </Button>
-        <Button variant="tertiary" onClick={onClose}>
-          {t("allocation.command.close")}
-        </Button>
-      </div>
-    </>
+      <Button variant="tertiary" onClick={onClose}>
+        {t("allocation.command.close")}
+      </Button>
+      <Button
+        type="submit"
+        loading={form.command.isBusy}
+        aria-disabled={isBlocked || undefined}
+        aria-describedby={isBlocked ? id : undefined}
+      >
+        {t("allocation.writeOff.submit")}
+      </Button>
+    </FormActions>
   );
 }
 
 function DateField({ form }: { form: Form }) {
   const { t } = useTranslation();
   return (
-    <TextField
-      id="write-off-date"
-      label={t("allocation.writeOff.fieldDate")}
-      type="date"
-      required
-      value={form.date}
-      onChange={(event) => {
-        form.setDate(event.target.value);
-      }}
-    />
+    <div className="max-w-60">
+      <TextField
+        id="write-off-date"
+        label={t("allocation.writeOff.fieldDate")}
+        type="date"
+        required
+        value={form.date}
+        onChange={(event) => {
+          form.setDate(event.target.value);
+        }}
+      />
+    </div>
   );
 }
 
