@@ -1,3 +1,4 @@
+import { lastAssignmentOutcome } from "./assignment-diagnostics.ts";
 import { assertCaptureIdentity, ConcurrentCaptureError } from "./capture-identity.ts";
 import { ImmutableCaptureError, OvitrapDraftBuffer } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
@@ -37,6 +38,8 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly evidenceShift: () => Promise<CaptureShiftAuthorization>;
   readonly refresh?: () => Promise<void>;
+  /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
+  readonly publishAssignment?: () => Promise<void>;
 }
 interface StartInput {
   readonly mode: Draft["mode"];
@@ -66,6 +69,8 @@ export interface Snapshot extends StoredCapture {
   readonly lifecycleTargetId: string | null;
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
+  /** Set only while the scope is blocked: last outcome plus phone counts (no personal data). */
+  readonly assignmentCode: string | null;
   readonly isShiftBlocked: boolean;
   readonly canStartCapture: boolean;
   readonly repeat: OutboxEvent | null;
@@ -109,6 +114,7 @@ export class OvitrapService {
   async read(): Promise<Snapshot> {
     const state = await this.#deps.store.read();
     const shiftId = await this.#deps.shiftId();
+    const scope = await this.#scope(state.draft);
     return {
       ...state,
       canStartCapture: Boolean(shiftId),
@@ -116,7 +122,7 @@ export class OvitrapService {
         ? await this.#deps.store.lifecycleTargetId(state.draft.ovitrapId)
         : null,
       isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
-      ...availability(state.draft, await this.#deps.store.snapshots()),
+      ...scope,
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
       isBagReserved: Boolean(
         state.draft?.bagCode &&
@@ -129,6 +135,25 @@ export class OvitrapService {
   async #isShiftBlocked(draft: Draft | null): Promise<boolean> {
     const id = await this.#deps.shiftId();
     return !id || Boolean(draft && draft.shiftId !== id);
+  }
+  async #scope(draft: Draft | null) {
+    const flags = availability(draft, await this.#deps.store.snapshots());
+    const facts = flags.isScopeBlocked ? await this.#deps.store.assignmentFacts() : null;
+    return { ...flags, assignmentCode: facts && `${lastAssignmentOutcome()} ${facts}` };
+  }
+  /**
+   * Every entry point (route, tile, scan) first makes the stored assignment current, and an unsent,
+   * unplaced draft takes it. It acts on the stored draft, so it needs no displayed identity.
+   */
+  async syncAssignment(): Promise<void> {
+    try {
+      await this.#deps.publishAssignment?.();
+    } catch {
+      return; // The reason is recorded for the on-screen code; the phone copy stays as it was.
+    }
+    const stored = await this.#deps.store.read();
+    if (stored.draft && !stored.event)
+      await this.#adoptCurrentAssignment(stored.draft, stored.draftVersion);
   }
   async refresh(eventId: string | null): Promise<void> {
     assertCaptureIdentity(await this.#deps.store.read(), eventId);
@@ -151,10 +176,15 @@ export class OvitrapService {
       true,
     );
   }
-  async #start(input: StartInput): Promise<Snapshot> {
-    const { mode, ovitrapId, isManual = false, eventId } = input;
+  async #syncedCapture(eventId: string | null): Promise<StoredCapture> {
+    await this.syncAssignment();
     const current = await this.#deps.store.read();
     assertCaptureIdentity(current, eventId);
+    return current;
+  }
+  async #start(input: StartInput): Promise<Snapshot> {
+    const { mode, ovitrapId, isManual = false, eventId } = input;
+    const current = await this.#syncedCapture(eventId);
     const shiftId = await this.#deps.shiftId();
     if (!shiftId) throw new ShiftBlockedError();
     const pending = await this.#pendingTarget(current, shiftId);

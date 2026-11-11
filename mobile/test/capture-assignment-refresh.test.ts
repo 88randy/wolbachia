@@ -8,8 +8,11 @@ import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { revokeCaptureScope } from "../src/features/ovitrap-lifecycle/current-scope.ts";
 import { setStatement } from "../src/db/kv-store.ts";
 import { createStores, FIXED_NOW } from "./support/factories.ts";
+import { readFileSync } from "node:fs";
+import { engineFor, serviceFor } from "./support/m-08-harness.ts";
 import type { Assignment } from "../src/features/ovitrap-check/types.ts";
 
+const ROUTE_POINT_ID = "b37cedd8-d071-4b95-b1e9-962e0b9404fd";
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
 const POINT_ID = "22222222-2222-4222-8222-222222222222";
 const QUADRANT_ID = "33333333-3333-4333-8333-333333333333";
@@ -132,4 +135,34 @@ void test("capture assignment: a stuck cleanup flag is reported with a reason co
   }
   assert.ok(warnings.some((line) => line.includes("reason=no_bundle_meta")));
   assert.ok(warnings.some((line) => line.includes("reason=cleanup_pending")));
+});
+
+void test("capture assignment: the route path with the real courier bundle lists the point and is not blocked", async () => {
+  const body: unknown = JSON.parse(
+    readFileSync(new URL("./support/real-courier-bundle.json", import.meta.url), "utf8"),
+  );
+  const stores = await createStores();
+  const day = new DayStore(stores.db);
+  const bundles = new DayBundleService({
+    store: day,
+    now: () => FIXED_NOW,
+    transport: () => Promise.reject(new Error("offline")),
+  });
+  await day.replace(body, FIXED_NOW);
+  const auth = {
+    getSnapshot: () => ({
+      profile: { organization: { id: "org", timezone: "America/Merida", epi_week: "iso" } },
+    }),
+  };
+  const store = new OvitrapStore(stores.db);
+  await publishAssignment(createDayAssignments({ bundle: bundles, auth } as never), store);
+  const service = serviceFor({ store, engine: engineFor(stores) }, {});
+  const started = await service.startPlace(null);
+  const point = started.draft?.assignment?.points.find((item) => item.id === ROUTE_POINT_ID);
+  assert.ok(point, "the point of the route is in the list");
+  assert.ok((started.draft?.assignment?.placePointIds ?? []).includes(ROUTE_POINT_ID));
+  const chosen = await service.update({ point }, started.draft?.eventId ?? null);
+  assert.equal(chosen.isScopeBlocked, false);
+  assert.equal(chosen.assignmentCode, null);
+  assert.equal(chosen.draft?.point?.id, ROUTE_POINT_ID);
 });

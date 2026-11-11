@@ -2,7 +2,16 @@
 export type AssignmentNullReason =
   "no_bundle_meta" | "no_org" | "cleanup_pending" | "publish_stale" | "point_removed";
 
+let lastOutcome = "none";
+
+/** Last outcome of building or publishing the assignment, for the on-screen diagnostic code. */
+export function lastAssignmentOutcome(): string {
+  return lastOutcome;
+}
+export function recordAssignmentOutcome(outcome: string): void {
+  lastOutcome = outcome;
+}
 export function warnAssignmentNull(reason: AssignmentNullReason): void {
-  // eslint-disable-next-line no-console
+  recordAssignmentOutcome(reason);
   console.warn(`[capture-assignment] null reason=${reason}`);
 }

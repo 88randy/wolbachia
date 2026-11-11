@@ -2,7 +2,7 @@ import type { AuthController } from "../../auth/auth-controller.ts";
 import type { CachedTask, DayCache } from "../day/types.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
 import { hasCoordinates } from "../day/assignment-parser.ts";
-import { warnAssignmentNull } from "./assignment-diagnostics.ts";
+import { recordAssignmentOutcome, warnAssignmentNull } from "./assignment-diagnostics.ts";
 import type { Assignment, Point } from "./types.ts";
 
 interface Dependencies {
@@ -54,7 +54,10 @@ export function createDayAssignments({ bundle, auth }: Dependencies) {
       const organization = auth.getSnapshot().profile?.organization;
       if (cache.meta === null) warnAssignmentNull("no_bundle_meta");
       else if (!organization) warnAssignmentNull("no_org");
-      else return assignmentOf(cache, cache.meta.bundle_version, organization);
+      else {
+        recordAssignmentOutcome("built");
+        return assignmentOf(cache, cache.meta.bundle_version, organization);
+      }
       return null;
     },
   };
