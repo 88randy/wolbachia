@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { HowToButton } from "../../tutorials/HowToButton";
 
 export interface PageHeaderProps {
   title: ReactNode;
@@ -27,7 +28,10 @@ export function PageHeader({ title, description, status, actions, eyebrow }: Pag
           <p className="m-0 max-w-[75ch] text-sm leading-5 text-ink-2">{description}</p>
         )}
       </div>
-      {actions && <div className="flex flex-none flex-wrap items-center gap-2">{actions}</div>}
+      <div className="flex flex-none flex-wrap items-center gap-2 empty:hidden">
+        {actions}
+        <HowToButton />
+      </div>
     </header>
   );
 }

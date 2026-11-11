@@ -26,6 +26,7 @@ import { relocations } from "./relocations.ts";
 import { closure } from "./closure.ts";
 import { inventory } from "./inventory.ts";
 import { ui } from "./ui.ts";
+import { tutorials } from "./tutorials.ts";
 import { analytics } from "./analytics.ts";
 import { discovery } from "./discovery.ts";
 import { refresh } from "./refresh.ts";
@@ -87,6 +88,7 @@ export const en: Record<MessageKey, string> = {
   ...incidents,
   ...inventory,
   ...ui,
+  ...tutorials,
   ...analytics,
   ...discovery,
   ...refresh,
