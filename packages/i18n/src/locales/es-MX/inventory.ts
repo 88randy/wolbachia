@@ -235,4 +235,6 @@ export const inventory = {
   "inventory.section.locationRecord": "Datos y ubicación",
   "inventory.section.stockAndMovements": "Existencias y movimientos",
   "inventory.option.quadrantSet": "Cuadrante asignado",
+  "inventory.unit.days": "{count} días",
+  "inventory.field.shelfLifeSeconds": "Vida útil",
 } as const satisfies AreaCatalog<"inventory">;

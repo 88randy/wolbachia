@@ -234,4 +234,6 @@ export const inventory = {
   "inventory.section.locationRecord": "Details and location",
   "inventory.section.stockAndMovements": "Stock and movements",
   "inventory.option.quadrantSet": "Quadrant assigned",
+  "inventory.unit.days": "{count} days",
+  "inventory.field.shelfLifeSeconds": "Shelf life",
 } satisfies Record<keyof typeof Spanish, string>;

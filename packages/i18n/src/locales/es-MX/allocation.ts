@@ -15,7 +15,7 @@ export const allocation = {
   "allocation.command.offline": "Sin conexión. Nada se envía hasta recuperarla.",
   "allocation.reconciliation.title": "Cuadrar entregas",
   "allocation.reconciliation.equation":
-    "Diferencia = asignado − usado − devuelto − merma. Se muestra con signo, ícono y texto; nunca solo con color.",
+    "Para cada repartidor: lo que se le entregó, menos lo que usó, lo que devolvió y lo que se dio de baja. Si el resultado no es cero, hay una diferencia por justificar.",
   "allocation.reconciliation.shiftIndependent":
     "Una diferencia distinta de cero no impide cerrar la jornada: esa decisión es independiente.",
   "allocation.reconciliation.tableCaption":
@@ -32,7 +32,7 @@ export const allocation = {
   "allocation.reconciliation.shrinkage": "Merma",
   "allocation.reconciliation.difference": "Diferencia",
   "allocation.reconciliation.justify": "Justificar",
-  "allocation.reconciliation.openDiscrepancy": "Abrir discrepancia",
+  "allocation.reconciliation.openDiscrepancy": "Abrir diferencia",
   "allocation.reconciliation.justifyTitle": "Justificar diferencia",
   "allocation.reconciliation.justifySubmit": "Registrar justificación",
   "allocation.reconciliation.justified": "Justificación registrada.",

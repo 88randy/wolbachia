@@ -110,12 +110,15 @@
 }
 .summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
   margin: 0;
 }
 .summary dt {
   color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .summary dd {
   margin: 0;

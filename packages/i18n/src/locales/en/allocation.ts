@@ -15,7 +15,7 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.command.offline": "You are offline. Nothing is sent until the connection returns.",
   "allocation.reconciliation.title": "Match deliveries",
   "allocation.reconciliation.equation":
-    "Difference = assigned − used − returned − shrinkage. Shown with a sign, an icon and text; never by color alone.",
+    "For each courier: what was handed out, minus what was used, returned and written off. If the result is not zero, there is a difference to explain.",
   "allocation.reconciliation.shiftIndependent":
     "A nonzero difference does not prevent closing the shift: that decision is independent.",
   "allocation.reconciliation.tableCaption":
@@ -32,7 +32,7 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.reconciliation.shrinkage": "Shrinkage",
   "allocation.reconciliation.difference": "Difference",
   "allocation.reconciliation.justify": "Justify",
-  "allocation.reconciliation.openDiscrepancy": "Open discrepancy",
+  "allocation.reconciliation.openDiscrepancy": "Open difference",
   "allocation.reconciliation.justifyTitle": "Justify difference",
   "allocation.reconciliation.justifySubmit": "Record justification",
   "allocation.reconciliation.justified": "Justification recorded.",

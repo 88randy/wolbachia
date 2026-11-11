@@ -1,5 +1,7 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../i18n/use-language";
+import { formatInventoryQuantity } from "./format-inventory-quantity";
 import { protocolValuesOf } from "./inventory-protocol";
 import { fieldKeys } from "./inventory-fields";
 import { minuteText } from "./inventory-form-values";
@@ -67,10 +69,16 @@ function ScalarProtocolFact({
   protocol: Protocol;
 }) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
+  const raw = String(protocol[field] ?? "");
   const value =
     field === "expiry_basis" && protocol.expiry_basis === "laid_on"
       ? t("inventory.field.laidOn")
-      : String(protocol[field] ?? "") || t("inventory.state.unconfigured");
+      : field === "shelf_life_seconds" && raw
+        ? t("inventory.unit.days", { count: Math.round(Number(raw) / 86400) })
+        : field !== "name" && field !== "expiry_basis" && raw
+          ? formatInventoryQuantity(raw, language)
+          : raw || t("inventory.state.unconfigured");
   return (
     <div>
       <dt>{t(fieldKeys[field === "name" ? "protocol_name" : field] ?? "inventory.field.name")}</dt>
