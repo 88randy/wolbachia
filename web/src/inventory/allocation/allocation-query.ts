@@ -60,6 +60,31 @@ export function suggestionOptions(scope: AllocationScope, date: string, courier:
   });
 }
 
+type DeliveryQuery = NonNullable<operations["courier_assignments_list"]["parameters"]["query"]>;
+
+export function deliveryListOptions(scope: AllocationScope, state: TableState) {
+  const query = listParams(state) as DeliveryQuery;
+  return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
+    key: ["allocation", "deliveries", query],
+    queryFn: async ({ signal }) =>
+      unwrap(await scope.client.GET("/api/v1/courier-assignments/", { params: { query }, signal })),
+  });
+}
+
+/** One-row read of how many deliveries are in a status ("" is all), for the tab counts. */
+export function deliveryCountOptions(scope: AllocationScope, status: string) {
+  const query = {
+    page_size: 1,
+    ...(status ? { status: status as NonNullable<DeliveryQuery["status"]> } : {}),
+  };
+  return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
+    key: ["allocation", "deliveries", "count", status],
+    queryFn: async ({ signal }) =>
+      unwrap(await scope.client.GET("/api/v1/courier-assignments/", { params: { query }, signal }))
+        .count,
+  });
+}
+
 export function assignmentOptions(scope: AllocationScope, date: string, courier: string) {
   return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
     key: ["allocation", "assignment", date, courier],

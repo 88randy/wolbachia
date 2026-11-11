@@ -109,6 +109,10 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed(
         "revisit_interval_days", ValueType.INTEGER, Unit.DAYS, 7, Decimal(1), Decimal(28)
     ),
+    # Where the courier signs a delivery: 0 = either (default), 1 = warehouse screen, 2 = phone.
+    ParameterSeed(
+        "delivery_signature_mode", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(2)
+    ),
     # Boolean stored as 0/1. The offline map pack is recommended, not required, until the tile
     # source is chosen (client decision delegated); 1 restores the blocking departure gate.
     ParameterSeed(

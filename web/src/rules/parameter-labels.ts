@@ -25,6 +25,7 @@ const NAME_KEYS: Readonly<Record<string, MessageKey>> = {
   max_paddle_reuses: "rules.param.maxPaddleReuses",
   revisit_interval_days: "rules.param.revisitInterval",
   departure_requires_offline_map: "rules.param.departureRequiresOfflineMap",
+  delivery_signature_mode: "rules.param.deliverySignatureMode",
 };
 
 /** Typed on the API's unit enum: a new unit in the schema fails the build until it is named here. */
