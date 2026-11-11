@@ -74,6 +74,8 @@ export const reviews = {
   "reviews.event.incidentReport": "Incident report",
   "reviews.event.recordVoid": "Record voided",
   "reviews.event.other": "Phone record",
+  "reviews.reason.reviewRevisionConflict":
+    "Someone else changed this review; refresh before deciding",
   "reviews.reason.unknown": "Needs review",
   "reviews.reason.lateWorkAfterQuadrantClose": "Work after the quadrant closed",
   "reviews.reason.capturedAfterQuadrantClose": "Captured after the quadrant closed",

@@ -8,6 +8,7 @@ import { useFormatDateTime } from "../format/use-format-date-time";
 import { blockerKeys } from "./inventory-fields";
 import { inventoryRecordLink } from "./inventory-links";
 import { formatInventoryQuantity } from "./format-inventory-quantity";
+import { formatCalendarDate } from "../format/format-date";
 import { useLanguage } from "../i18n/use-language";
 import { useCan } from "../session/use-can";
 import { useSearch } from "@tanstack/react-router";
@@ -25,7 +26,7 @@ function identityColumns(kind: InventoryKind, search: Record<string, string>): C
     {
       id: "code",
       headerKey: "inventory.field.code",
-      cell: (row) => row.code,
+      cell: (row) => <span className="whitespace-nowrap">{row.code}</span>,
       link: (row) => ({ ...inventoryRecordLink(kind, row.code), search }),
     },
     {
@@ -77,12 +78,16 @@ function lotQuantity({ language, t, canReadLocation, custody }: Context): Column
   };
 }
 function lotColumns(context: Context): Column[] {
-  const { t, format } = context;
+  const { t, format, language } = context;
   return [
     {
       id: "expiry",
       headerKey: "inventory.field.expiry",
-      cell: (row) => ("expiry" in row && row.expiry ? format(row.expiry) : <EmptyValue />),
+      cell: (row) => {
+        if ("expiry_date" in row && row.expiry_date)
+          return formatCalendarDate(row.expiry_date, language);
+        return "expiry" in row && row.expiry ? format(row.expiry) : <EmptyValue />;
+      },
     },
     lotQuantity(context),
     statusColumn(t),

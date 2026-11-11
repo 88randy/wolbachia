@@ -75,6 +75,8 @@ export const reviews = {
   "reviews.event.incidentReport": "Reporte de incidente",
   "reviews.event.recordVoid": "Anulación de un registro",
   "reviews.event.other": "Registro del teléfono",
+  "reviews.reason.reviewRevisionConflict":
+    "Alguien más cambió esta revisión; actualiza antes de decidir",
   "reviews.reason.unknown": "Requiere revisión",
   "reviews.reason.lateWorkAfterQuadrantClose": "Trabajo después del cierre del cuadrante",
   "reviews.reason.capturedAfterQuadrantClose": "Capturado después del cierre del cuadrante",
