@@ -144,4 +144,9 @@ export const allocation = {
   "allocation.writeOff.description":
     "Material caducado, dañado o perdido que sale del inventario. Cada baja queda con su motivo y quién la hizo.",
   "allocation.reconciliation.day": "Día a revisar",
+  "allocation.writeOff.filterReason": "Motivo",
+  "allocation.writeOff.reason.expired": "Caducado",
+  "allocation.writeOff.reason.damaged": "Dañado",
+  "allocation.writeOff.reason.lost": "Perdido o robado",
+  "allocation.writeOff.reason.other": "Otro",
 } as const satisfies AreaCatalog<"allocation">;

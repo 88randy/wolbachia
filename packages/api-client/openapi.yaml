@@ -18797,6 +18797,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: reason_code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
       tags:
       - write-offs
       security:

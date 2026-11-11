@@ -314,6 +314,7 @@ class SupplySuggestionQuerySerializer(serializers.Serializer[Any]):
 
 class WriteOffQuerySerializer(SupplyDateRangeQuerySerializer):
     kind = serializers.ChoiceField(choices=["lot", "bag"], required=False)
+    reason_code = serializers.CharField(max_length=64, required=False)
 
 
 class TransitPolicySerializer(StrictPayloadSerializer):

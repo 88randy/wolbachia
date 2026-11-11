@@ -37,6 +37,17 @@ export const RECONCILIATION_TABLE: TableQueryConfig = { ...base, filters: [date]
 export const WRITE_OFF_TABLE: TableQueryConfig = {
   ...base,
   filters: [
+    {
+      key: "reason_code",
+      labelKey: "allocation.writeOff.filterReason",
+      kind: "select",
+      options: [
+        { value: "expired", labelKey: "allocation.writeOff.reason.expired" },
+        { value: "damaged", labelKey: "allocation.writeOff.reason.damaged" },
+        { value: "lost", labelKey: "allocation.writeOff.reason.lost" },
+        { value: "other", labelKey: "allocation.writeOff.reason.other" },
+      ],
+    },
     createdFrom,
     createdBefore,
     {

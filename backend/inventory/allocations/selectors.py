@@ -185,6 +185,8 @@ def write_off_rows(
         )
     if values.get("date") is not None:
         rows = rows.filter(intent__canonical_input__date=values["date"].isoformat())
+    if values.get("reason_code") is not None:
+        rows = rows.filter(intent__canonical_input__reason_code=values["reason_code"])
     for key, lookup in (
         ("created_at_from", "created_at__gte"),
         ("created_at_before", "created_at__lt"),

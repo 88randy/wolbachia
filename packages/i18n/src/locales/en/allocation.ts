@@ -142,4 +142,9 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.writeOff.description":
     "Expired, damaged or lost material that leaves the inventory. Each write-off keeps its reason and who made it.",
   "allocation.reconciliation.day": "Day to review",
+  "allocation.writeOff.filterReason": "Reason",
+  "allocation.writeOff.reason.expired": "Expired",
+  "allocation.writeOff.reason.damaged": "Damaged",
+  "allocation.writeOff.reason.lost": "Lost or stolen",
+  "allocation.writeOff.reason.other": "Other",
 };
