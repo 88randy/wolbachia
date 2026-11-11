@@ -37,7 +37,11 @@ export function WriteOffLotFields({ form }: { form: WriteOffForm }) {
           inputMode="decimal"
           required
           value={form.quantity}
-          hint={unit === "piece" ? t("transfers.new.unit.piece") : unit}
+          trailing={
+            <span className="pr-3 text-[13px] text-ink-2">
+              {unit === "piece" ? t("transfers.new.unit.piece") : unit}
+            </span>
+          }
           onChange={(event) => {
             form.setQuantity(event.target.value);
           }}

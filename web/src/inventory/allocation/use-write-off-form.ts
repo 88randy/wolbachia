@@ -51,7 +51,7 @@ function targetOf(found: Found | null, inputs: Inputs): WriteOffTarget | null {
 /** Warehouse (W17) and lab (W39) share this one form; only the default target kind differs. */
 export function useWriteOffForm(scope: AllocationScope, route: string, defaultKind: WriteOffKind) {
   const me = useMe();
-  const kinds = allowedKinds(me);
+  const kinds = allowedKinds(me).filter((kind) => kind === defaultKind);
   const inputs = useInputs(kinds, defaultKind);
   const lookup = useWriteOffLookup(scope);
   const reason = useReasonFields("writeOff");
