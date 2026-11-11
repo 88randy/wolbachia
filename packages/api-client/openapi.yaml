@@ -25500,6 +25500,8 @@ components:
         bag_id:
           type: string
           format: uuid
+        bag_code:
+          type: string
         value:
           type: integer
           maximum: 9007199254740991
@@ -25599,6 +25601,8 @@ components:
         bag_id:
           type: string
           format: uuid
+        bag_code:
+          type: string
         source_event_id:
           type: string
           format: uuid

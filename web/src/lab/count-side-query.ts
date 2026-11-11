@@ -26,16 +26,6 @@ export function recentCountsOptions(scope: LabScope) {
   });
 }
 
-/** Counts carry only the bag id; the code comes from the bag record. */
-export function bagCodeOptions(scope: LabScope, id: string) {
-  return orgScopedQueryOptions(scope.identity, {
-    key: ["lab", "bag-code", id],
-    queryFn: async ({ signal }) =>
-      unwrap(await scope.client.GET("/api/v1/bags/{id}/", { params: { path: { id } }, signal }))
-        .code,
-  });
-}
-
 /** Whether an instant falls on today's date in the organization's zone. */
 export function isToday(iso: string, timeZone: string, now: Date = new Date()): boolean {
   return calendarDayOf(iso, timeZone) === todayIn(timeZone, now);

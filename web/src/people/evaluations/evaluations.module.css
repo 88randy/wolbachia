@@ -62,3 +62,6 @@
 .stack > button {
   justify-self: end;
 }
+.wide {
+  grid-column: 1 / -1;
+}

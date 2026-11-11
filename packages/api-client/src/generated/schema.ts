@@ -10014,6 +10014,7 @@ export interface components {
             id: string;
             /** Format: uuid */
             bag_id: string;
+            bag_code?: string;
             /** Format: int64 */
             value: number;
             ordinal: number;
@@ -10049,6 +10050,7 @@ export interface components {
             id: string;
             /** Format: uuid */
             bag_id: string;
+            bag_code?: string;
             /** Format: uuid */
             source_event_id: string;
             kind: components["schemas"]["LabDiscrepancyKindEnum"];

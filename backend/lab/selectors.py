@@ -57,7 +57,7 @@ def filter_bags(rows: QuerySet[Bag], values: dict[str, Any]) -> QuerySet[Bag]:
 def result_rows(
     actor: UploadActor, model: type[EggCountAttempt] | type[LabRejection], values: dict[str, Any]
 ) -> QuerySet[Any]:
-    rows: QuerySet[Any] = model.objects.filter(
+    rows: QuerySet[Any] = model.objects.select_related("bag").filter(
         organization=actor.organization, bag__in=filter_bags(scoped_bags(actor, COUNT_READ), values)
     )
     if model is EggCountAttempt:
@@ -132,6 +132,7 @@ def discrepancy_projection(actor: UploadActor, discrepancy: ReceptionDiscrepancy
     return {
         "id": str(discrepancy.pk),
         "bag_id": str(discrepancy.bag_id),
+        "bag_code": discrepancy.bag.code,
         "source_event_id": str(discrepancy.source_id),
         "kind": discrepancy.kind,
         "reason": discrepancy.reason,
