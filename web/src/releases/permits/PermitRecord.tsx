@@ -17,6 +17,7 @@ export function PermitRecord({ permit }: { permit: Permit }) {
   return (
     <DetailPage
       title={permit.code}
+      centerId={permit.center}
       status={<PermitStatusBadge status={permitStatus(permit.blocked_by)} />}
       actions={<PermitActions permit={permit} />}
       notices={<PermitBlockedBanner blockers={permit.blocked_by} />}

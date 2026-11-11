@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
+import { useCenterColumns } from "../../data-table/center-column";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { StatusPill } from "../../ui/StatusPill";
@@ -14,7 +15,7 @@ export function AccessTab() {
   const { t } = useTranslation();
   const formatDateTime = useFormatDateTime();
   const { controller, data } = useRegList(ACCESS_TABLE, accessOptions);
-  const columns: DataTableColumn<AccessRow>[] = [
+  const baseColumns: DataTableColumn<AccessRow>[] = [
     {
       id: "when",
       headerKey: "regulatory.access.col.when",
@@ -50,6 +51,7 @@ export function AccessTab() {
       ),
     },
   ];
+  const columns = useCenterColumns(baseColumns, (row) => row.center_id, { after: "who" });
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <FilterBar controller={controller} />

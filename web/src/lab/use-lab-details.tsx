@@ -1,6 +1,7 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { useShowCenter } from "../lookups/use-center-scope";
 import { EmptyValue } from "../ui/EmptyValue";
 import { LabFacts } from "./LabFacts";
 import type { LabFact } from "./LabFacts";
@@ -88,9 +89,12 @@ function AttemptList({ sample }: { sample: SampleRow }) {
 type Translate = (key: MessageKey) => string;
 type Format = (iso: string) => string;
 
-function sampleFacts(t: Translate, format: Format, row: SampleRow): LabFact[] {
+// eslint-disable-next-line max-params -- fast mode (demo 2026-11-20)
+function sampleFacts(t: Translate, format: Format, row: SampleRow, showCenter: boolean): LabFact[] {
   return [
-    { label: t("lab.col.center"), value: <LabName kind="center" id={row.center_id} /> },
+    ...(showCenter
+      ? [{ label: t("lab.col.center"), value: <LabName kind="center" id={row.center_id} /> }]
+      : []),
     { label: t("lab.col.quadrant"), value: <LabName kind="quadrant" id={row.quadrant_id} /> },
     { label: t("lab.detail.collector"), value: <LabName kind="user" id={row.collector_id} /> },
     { label: t("lab.detail.collectedAt"), value: format(row.device_time) },
@@ -105,12 +109,13 @@ function sampleFacts(t: Translate, format: Format, row: SampleRow): LabFact[] {
 export function useSampleDetail(): (row: SampleRow) => LabDetail {
   const { t } = useTranslation();
   const format = useFormatDateTime();
+  const showCenter = useShowCenter();
   return (row) => ({
     title: t("lab.detail.sample", { code: row.code }),
     status: <ResultState status={row.result_status} />,
     content: (
       <>
-        <LabFacts items={sampleFacts(t, format, row)} />
+        <LabFacts items={sampleFacts(t, format, row, showCenter)} />
         <AttemptList sample={row} />
       </>
     ),

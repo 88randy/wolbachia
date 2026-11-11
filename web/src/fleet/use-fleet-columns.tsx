@@ -1,4 +1,5 @@
 import { useCenterName } from "../lookups/use-reference-names";
+import { useShowCenter } from "../lookups/use-center-scope";
 import styles from "./fleet.module.css";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useSearch } from "@tanstack/react-router";
@@ -38,7 +39,8 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
   const format = useFormatDateTime();
   const identity = useIdentityColumns();
   const centerName = useCenterName();
-  return [
+  const showCenter = useShowCenter();
+  const columns = [
     ...identity,
     {
       id: "status",
@@ -59,4 +61,5 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
     },
     createdAtColumn(format),
   ];
+  return showCenter ? columns : columns.filter((column) => column.id !== "center");
 }

@@ -1,5 +1,7 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative column list. */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useCenterColumns } from "../data-table/center-column";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useLanguage } from "../i18n/use-language";
 import { ActivityStatusPill } from "./ActivityStatusPill";
@@ -10,7 +12,7 @@ import type { CommunityActivity } from "./community-query";
 export function useActivityColumns(): readonly DataTableColumn<CommunityActivity>[] {
   const { i18n } = useTranslation();
   const { language } = useLanguage();
-  return useMemo(
+  const columns = useMemo(
     () => [
       { id: "activity_date", headerKey: "community.column.date", cell: (r) => r.activity_date },
       { id: "code", headerKey: "community.column.code", cell: (r) => r.code },
@@ -44,4 +46,5 @@ export function useActivityColumns(): readonly DataTableColumn<CommunityActivity
     ],
     [i18n.language, language],
   );
+  return useCenterColumns(columns, (r) => r.center_id, { after: "code" });
 }
