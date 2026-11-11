@@ -54,7 +54,7 @@ export function useWriteOffForm(scope: AllocationScope, route: string, defaultKi
   const kinds = allowedKinds(me);
   const inputs = useInputs(kinds, defaultKind);
   const lookup = useWriteOffLookup(scope);
-  const reason = useReasonFields();
+  const reason = useReasonFields("writeOff");
   const command = useAllocationCommand(scope);
   const locations = useQuery(originOptions(scope, route)).data ?? [];
   const lots = useQuery(lotDirectoryOptions(scope, route)).data ?? [];

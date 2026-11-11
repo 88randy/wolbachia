@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useVoidLimits } from "../../void";
 import { useVoidReasons } from "../../void/use-void-reasons";
+import type { ReasonKind } from "../../void/use-void-reasons";
 
 /** Reason code from the organization's reason catalog; free text is required only for "Other". */
-export function useReasonFields() {
-  const catalog = useVoidReasons();
+export function useReasonFields(kind: ReasonKind = "void") {
+  const catalog = useVoidReasons(kind);
   const limits = useVoidLimits();
   const [reasonCode, setReasonCode] = useState("");
   const [reason, setReason] = useState("");

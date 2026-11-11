@@ -298,3 +298,31 @@ def ensure_demo_transfer(actor: UploadActor, stock: DemoStock, destination: Loca
         ],
     }
     prepare_transfer(PrepareTransferCommand(actor, values))
+
+
+def apply_inventory_additions(
+    organization: Organization, members: dict[str, Membership], quadrants: dict[str, Quadrant]
+) -> None:
+    """Only the inventory demo additions, on an existing demo database (writes, idempotent).
+
+    Names the storage points, adds the second warehouse and the prepared shipment. Nothing is
+    created twice: each step finds its rows by code.
+    """
+    actor = UploadActor(members["demo-admin"].user, organization)
+    owner = members["demo-warehouse"]
+    home = Location.objects.get(organization=organization, code=LOCATION_CODE)
+    lots = {
+        spec.code: Lot.objects.get(
+            organization=organization, code=f"L-{spec.code.removeprefix('S-')}"
+        )
+        for spec in SUPPLIES
+    }
+    for number in range(2, 7):
+        location = Location.objects.filter(
+            organization=organization, code=f"LOC-MER-{number:02d}"
+        ).first()
+        if location is not None:
+            quadrant = quadrants[f"Q-MER-{number:02d}"]
+            _rename_location(actor, location, f"Punto de resguardo {quadrant.code}")
+    second = ensure_second_warehouse(actor, quadrants, owner)
+    ensure_demo_transfer(actor, DemoStock(home, lots), second)
