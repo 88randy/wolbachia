@@ -46,7 +46,7 @@ export function CenterFormFields({ form, isEdit }: FieldProps) {
           }}
         />
       </FormField>
-      <FormField width="short">
+      <FormField width="medium">
         <CodeField form={form} isEdit={isEdit} />
       </FormField>
     </FormGrid>

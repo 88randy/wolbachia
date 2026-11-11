@@ -15,6 +15,8 @@ export function CenterClosePage({ code }: { code: string }) {
   const query = useQuery(centerDetailOptions(useCentersScope(), code));
   const center = query.data;
   useBreadcrumbLabel(`${CENTERS_PATH}/${code}`, center?.name);
+  // The router knows the crumb of the route pattern only; name the concrete close segment too.
+  useBreadcrumbLabel(`${CENTERS_PATH}/${code}/close`, t("centersAdmin.close.crumb"));
   if (query.isPending) return <PendingState />;
   if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />;
   if (!center) return <EmptyState kind="noData" message={t("centersAdmin.detail.notFound")} />;

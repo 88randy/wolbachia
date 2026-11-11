@@ -34,7 +34,7 @@ export const CENTERS_TABLE: TableQueryConfig = {
       kind: "select",
       key: "include_inactive",
       labelKey: "centersAdmin.filter.includeInactive",
-      options: [{ value: "true", labelKey: "centersAdmin.filter.includeInactive" }],
+      options: [{ value: "true", labelKey: "centersAdmin.filter.yes" }],
     },
   ],
 };
