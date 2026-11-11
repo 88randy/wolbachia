@@ -36,6 +36,15 @@ class LastAdministratorError(DomainError):
     ]
 
 
+class OwnAdministrationError(DomainError):
+    code = "own_administration"
+    status_code = HTTPStatus.CONFLICT
+    default_detail = "You cannot remove your own administration rights."
+    blocked_by = [
+        {"reason": "own_administration", "unblocked_by_role": "admin", "link": "/memberships/"}
+    ]
+
+
 class StaleRevisionError(DomainError):
     code = "stale_revision"
     status_code = HTTPStatus.CONFLICT

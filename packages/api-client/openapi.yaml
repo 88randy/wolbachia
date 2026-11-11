@@ -15092,6 +15092,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: roles_create
+      description: A custom profile always starts as a copy of an existing one.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCopyRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/roles/{id}/:
     get:
       operationId: roles_retrieve
@@ -18109,6 +18143,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RevokedSessions'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/{id}/temporary-password/:
+    post:
+      operationId: users_temporary_password_create
+      description: Shown once; the user must replace it at the next sign in.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this personnel.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporaryPassword'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -32951,6 +33021,24 @@ components:
       - revision
       - scope
       - slug
+    ProfileCopyRequest:
+      type: object
+      properties:
+        copy_from:
+          type: string
+          format: uuid
+        label_es:
+          type: string
+          minLength: 1
+          maxLength: 100
+        label_en:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - copy_from
+      - label_en
+      - label_es
     ProfilePermissionRequest:
       type: object
       properties:
@@ -39550,6 +39638,17 @@ components:
         * `place` - place
         * `check` - check
         * `release` - release
+    TemporaryPassword:
+      type: object
+      properties:
+        temporary_password:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - temporary_password
     TimelineAuthor:
       type: object
       properties:

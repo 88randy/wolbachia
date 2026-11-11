@@ -1,17 +1,25 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): declarative screen pieces. */
 import { useTranslation } from "react-i18next";
 import { EntityName } from "../../lookups/EntityName";
 import type { DataTableColumn } from "../../data-table/table-types";
 import type { Membership } from "./use-w-03";
 import { MembershipScopeCell } from "./MembershipScopeCell";
+import { useProfileLabels } from "./use-profile-labels";
 export function useMemberColumns(
   edit: (member: Membership) => void,
 ): DataTableColumn<Membership>[] {
   const { t } = useTranslation();
+  const labelOf = useProfileLabels();
   return [
     {
       id: "user",
-      headerKey: "orgAdmin.members.user",
+      headerKey: "users.members.user",
       cell: (member) => member.user_display_name ?? <EntityName kind="user" id={member.user} />,
+    },
+    {
+      id: "profiles",
+      headerKey: "users.members.profiles",
+      cell: (member) => member.profiles.map(labelOf).join(" · ") || "—",
     },
     {
       id: "is_active",

@@ -126,6 +126,12 @@ class ProfileSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+class ProfileCopySerializer(serializers.Serializer[Any]):
+    copy_from = serializers.UUIDField()
+    label_es = serializers.CharField(max_length=100, trim_whitespace=True)
+    label_en = serializers.CharField(max_length=100, trim_whitespace=True)
+
+
 class ProfilePermissionSerializer(serializers.Serializer[Any]):
     permissions = serializers.ListField(
         child=serializers.CharField(max_length=100, validators=[validate_permission_code])

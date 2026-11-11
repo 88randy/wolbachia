@@ -68,6 +68,11 @@ class PersonnelRevisionSerializer(serializers.Serializer[Any]):
     expected_revision = serializers.IntegerField(min_value=1)
 
 
+class TemporaryPasswordSerializer(serializers.Serializer[Any]):
+    temporary_password = serializers.CharField()
+    expires_at = serializers.DateTimeField()
+
+
 class RfcRevealSerializer(serializers.Serializer[Any]):
     rfc = serializers.CharField()
 

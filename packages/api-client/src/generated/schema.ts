@@ -5930,7 +5930,8 @@ export interface paths {
          */
         get: operations["roles_list"];
         put?: never;
-        post?: never;
+        /** @description A custom profile always starts as a copy of an existing one. */
+        post: operations["roles_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6966,6 +6967,23 @@ export interface paths {
          *     `allow_final_upload: true` leaves each phone one last upload (default: none).
          */
         post: operations["users_revoke_device_sessions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/temporary-password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Shown once; the user must replace it at the next sign in. */
+        post: operations["users_temporary_password_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13542,6 +13560,12 @@ export interface components {
             readonly is_active: boolean;
             readonly revision: number;
         };
+        ProfileCopyRequest: {
+            /** Format: uuid */
+            copy_from: string;
+            label_es: string;
+            label_en: string;
+        };
         ProfilePermissionRequest: {
             permissions: string[];
             scope: components["schemas"]["MeScopeRequest"];
@@ -16292,6 +16316,11 @@ export interface components {
          * @enum {string}
          */
         TaskActionEnum: "place" | "check" | "release";
+        TemporaryPassword: {
+            temporary_password: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
         TimelineAuthor: {
             username: string;
         };
@@ -27606,6 +27635,41 @@ export interface operations {
             };
         };
     };
+    roles_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileCopyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     roles_retrieve: {
         parameters: {
             query?: never;
@@ -29761,6 +29825,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokedSessions"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_temporary_password_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this personnel. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryPassword"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

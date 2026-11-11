@@ -9,7 +9,7 @@ import pytest
 from django.db import connection
 
 from organizations import services
-from organizations.models import default_scope
+from organizations.models import all_scope, default_scope
 
 
 def dimension(mode, *ids):
@@ -129,6 +129,19 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
     organization = create_organization(OrganizationSpec("Race", "race-99", "MX", "UTC"))
     admin = Profile.objects.get(organization=organization, slug="admin")
     members = [create_membership(UserFactory(), organization, [admin]) for _ in range(2)]
+    # Administrators never remove their own rights, so a role manager (not an administrator
+    # itself) removes both concurrently.
+    manager_profile = Profile.objects.create(
+        organization=organization,
+        slug="role-manager",
+        label_es="Gestor",
+        label_en="Manager",
+        permission_codes=["role.update"],
+        scope=all_scope(),
+    )
+    manager = create_membership(UserFactory(), organization, [manager_profile])
+    manager.scope = all_scope()
+    manager.save(update_fields=["scope"])
     barrier = threading.Barrier(2, timeout=10)
     committed = threading.Event()
 
@@ -137,7 +150,7 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
             member = Membership.objects.get(pk=member_id)
             barrier.wait()
             change = MembershipChange(
-                actor=member.user,
+                actor=manager.user,
                 expected_revision=member.revision,
                 profiles=[],
                 scope=default_scope(),

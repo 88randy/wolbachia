@@ -301,6 +301,7 @@ test("membership scope resolves unknown and foreign center codes identically and
     )?.body,
   ).toEqual({
     expected_revision: 6,
+    profiles: [ROLE.id],
     scope: {
       ...SCOPE,
       centers: { mode: "selected", ids: ["00000000-0000-4000-8000-000000000011"] },
