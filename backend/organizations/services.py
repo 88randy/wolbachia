@@ -248,6 +248,16 @@ def lock_organization_configuration(organization_id: UUID) -> Iterator[Organizat
         raise
 
 
+def _lock_user(user_id: object) -> None:
+    """Serialize with account-wide changes (temporary password); contention is a 429."""
+    try:
+        User.objects.select_for_update(nowait=True, no_key=True).get(pk=user_id)
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in {"55P03", "40P01"}:
+            raise AdministrationBusyError from error
+        raise
+
+
 def _check_revision(current: int, expected: int) -> None:
     if current != expected:
         raise StaleRevisionError
@@ -291,6 +301,26 @@ def _covers_scope(available: WorkScope, requested: WorkScope) -> bool:
         if proposed["mode"] == "all" or not set(proposed["ids"]) <= set(grant["ids"]):
             return False
     return True
+
+
+def require_account_authority(
+    actor_effective: EffectiveScope, target: Membership, permission: str
+) -> None:
+    """Acting on another user's account never reaches beyond the actor's own authority.
+
+    The target's effective permissions must be a subset of the actor's, and every target grant
+    must lie inside an actor grant that carries `permission`. Otherwise the target is opaque
+    (404). Callers run it under their lock, against the target's current configuration.
+    """
+    target_effective = effective_scope(target)
+    if not target_effective.permissions <= actor_effective.permissions:
+        raise NotFound
+    grants = [scope for codes, scope in actor_effective.grants if permission in codes]
+    if not grants:
+        raise NotFound
+    for codes, scope in target_effective.grants:
+        if codes and not any(_covers_scope(grant, scope) for grant in grants):
+            raise NotFound
 
 
 def _validate_delegation(effective: EffectiveScope, scope: WorkScope, codes: Iterable[str]) -> None:
@@ -537,6 +567,9 @@ def update_membership(membership: Membership, change: MembershipChange) -> Membe
             Membership.objects.select_for_update().get(pk=membership.pk, organization=organization),
         )
         _check_revision(locked.revision, change.expected_revision)
+        if locked.user_id != change.actor.pk:
+            actor_effective = _actor_scope(change.actor, organization, "role.update")
+            require_account_authority(actor_effective, locked, "role.update")
         had_admin = _has_administrator(organization)
         was_admin = _is_administrator(change.actor, organization)
         _ensure_original_revision(locked, "membership", _membership_snapshot(locked))
@@ -586,6 +619,7 @@ def create_managed_membership(
     """Assign an existing shared identity; never creates users or another organization."""
     with lock_organization_configuration(organization.pk) as locked:
         _validate_membership_change(locked, change)
+        _lock_user(user.pk)
         if Membership.objects.filter(user=user, organization=locked).exists():
             raise FieldValidationError("user", "duplicate_membership")
         member = Membership.objects.create(

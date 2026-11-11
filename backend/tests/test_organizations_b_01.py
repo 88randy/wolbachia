@@ -115,6 +115,8 @@ def test_effective_scope_clamps_corrupt_government_permissions_and_mixed_assignm
 
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_last_admin_removals_retain_one_administrator():
+    from rest_framework.exceptions import NotFound, PermissionDenied
+
     from organizations.exceptions import AdministrationBusyError, LastAdministratorError
     from organizations.models import Membership, Profile
     from organizations.services import (
@@ -129,19 +131,12 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
     organization = create_organization(OrganizationSpec("Race", "race-99", "MX", "UTC"))
     admin = Profile.objects.get(organization=organization, slug="admin")
     members = [create_membership(UserFactory(), organization, [admin]) for _ in range(2)]
-    # Administrators never remove their own rights, so a role manager (not an administrator
-    # itself) removes both concurrently.
-    manager_profile = Profile.objects.create(
-        organization=organization,
-        slug="role-manager",
-        label_es="Gestor",
-        label_en="Manager",
-        permission_codes=["role.update"],
-        scope=all_scope(),
-    )
-    manager = create_membership(UserFactory(), organization, [manager_profile])
-    manager.scope = all_scope()
-    manager.save(update_fields=["scope"])
+    for member in members:
+        member.scope = all_scope()
+        member.save(update_fields=["scope"])
+    # Administrators never remove themselves and only an equal can act on an administrator, so
+    # the two administrators remove each other concurrently: exactly one must remain.
+    other = {members[0].pk: members[1].user, members[1].pk: members[0].user}
     barrier = threading.Barrier(2, timeout=10)
     committed = threading.Event()
 
@@ -150,7 +145,7 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
             member = Membership.objects.get(pk=member_id)
             barrier.wait()
             change = MembershipChange(
-                actor=manager.user,
+                actor=other[member_id],
                 expected_revision=member.revision,
                 profiles=[],
                 scope=default_scope(),
@@ -164,8 +159,9 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
                 assert committed.wait(10)
                 update_membership(member, change)
             committed.set()
-        except LastAdministratorError as error:
-            return error.code
+        except (LastAdministratorError, PermissionDenied, NotFound):
+            # Either the guard refused, or the winner already removed this actor's authority.
+            return "refused"
         else:
             return "removed"
         finally:
@@ -173,7 +169,7 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         outcomes = list(executor.map(remove, [member.pk for member in members]))
-    assert sorted(outcomes) == ["last_administrator", "removed"]
+    assert sorted(outcomes) == ["refused", "removed"]
     assert (
         Membership.objects.filter(organization=organization, is_active=True, profiles=admin).count()
         == 1

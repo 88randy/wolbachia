@@ -7439,9 +7439,10 @@ export interface components {
          *     * `user.deactivate` - Deactivate
          *     * `user.reveal_rfc` - Reveal Rfc
          *     * `user.rotate_rfc` - Rotate Rfc
+         *     * `user.temporary_password` - Temporary Password
          * @enum {string}
          */
-        AccessLogActionEnum: "user.create" | "user.update" | "user.deactivate" | "user.reveal_rfc" | "user.rotate_rfc";
+        AccessLogActionEnum: "user.create" | "user.update" | "user.deactivate" | "user.reveal_rfc" | "user.rotate_rfc" | "user.temporary_password";
         /**
          * @description * `web` - Web
          *     * `device` - Device
@@ -17043,8 +17044,9 @@ export interface operations {
                  *     * `user.deactivate` - Deactivate
                  *     * `user.reveal_rfc` - Reveal Rfc
                  *     * `user.rotate_rfc` - Rotate Rfc
+                 *     * `user.temporary_password` - Temporary Password
                  */
-                action?: "user.create" | "user.update" | "user.deactivate" | "user.reveal_rfc" | "user.rotate_rfc";
+                action?: "user.create" | "user.update" | "user.deactivate" | "user.reveal_rfc" | "user.rotate_rfc" | "user.temporary_password";
                 actor_id?: string;
                 created_after?: string;
                 created_before?: string;
