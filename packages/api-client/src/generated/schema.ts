@@ -7597,6 +7597,27 @@ export interface components {
             target: number;
             blockers: components["schemas"]["Blocker"][];
         };
+        AssignmentLifecycle: {
+            status: components["schemas"]["AssignmentLifecycleStatusEnum"];
+            /** Format: uuid */
+            release_id: string | null;
+            /** Format: date-time */
+            released_at: string | null;
+            released_by_name?: string | null;
+            /** Format: date-time */
+            cancelled_at: string | null;
+            cancelled_by_name?: string | null;
+            cancel_reason_code: string | null;
+            cancel_reason: string | null;
+        };
+        /**
+         * @description * `planned` - planned
+         *     * `released` - released
+         *     * `cancelled` - cancelled
+         *     * `received` - received
+         * @enum {string}
+         */
+        AssignmentLifecycleStatusEnum: "planned" | "released" | "cancelled" | "received";
         AssignmentLine: {
             /** Format: uuid */
             id: string;
@@ -16173,6 +16194,7 @@ export interface components {
                 [key: string]: unknown;
             };
             lines: components["schemas"]["AssignmentLine"][];
+            lifecycle?: components["schemas"]["AssignmentLifecycle"];
         };
         SupplyBundle: {
             /** Format: uuid */
@@ -16192,6 +16214,7 @@ export interface components {
                 [key: string]: unknown;
             };
             lines: components["schemas"]["AssignmentLine"][];
+            lifecycle?: components["schemas"]["AssignmentLifecycle"];
             /** Format: uuid */
             organization_id: string;
             /** Format: uuid */
@@ -19031,6 +19054,13 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /**
+                 * @description * `planned` - planned
+                 *     * `released` - released
+                 *     * `cancelled` - cancelled
+                 *     * `received` - received
+                 */
+                status?: "planned" | "released" | "cancelled" | "received";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */

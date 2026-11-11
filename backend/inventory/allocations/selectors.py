@@ -5,7 +5,17 @@ from dataclasses import dataclass
 from typing import Any, cast
 from uuid import UUID
 
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import (
+    Case,
+    CharField,
+    Exists,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Value,
+    When,
+)
 from django.http import Http404
 
 from inventory.allocations.models import (
@@ -15,6 +25,7 @@ from inventory.allocations.models import (
     OriginReleaseProof,
     Reconciliation,
     ReconciliationVersion,
+    ReleaseCancellation,
     SupplyAssignment,
     SupplyAssignmentLine,
     SupplyAssignmentVersion,
@@ -44,6 +55,8 @@ def assignment_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[Supp
     for permission in (ALLOCATE, RECONCILE, RECEIVE_OWN, RECONCILE_OWN):
         allowed |= Q(pk__in=scoped_assignments(actor, permission, scope).values("pk"))
     rows = SupplyAssignment.objects.filter(organization=actor.organization).filter(allowed)
+    if values.get("status") is not None:
+        rows = _with_status(rows).filter(_status=values["status"])
     facets = {
         "date": "date",
         "courier": "courier_id",
@@ -56,6 +69,24 @@ def assignment_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[Supp
         rows.filter(
             **{lookup: values[key] for key, lookup in facets.items() if key in values}
         ).order_by(values.get("ordering", "-created_at"), "id")
+    )
+
+
+def _with_status(rows: QuerySet[SupplyAssignment]) -> QuerySet[SupplyAssignment]:
+    """planned / released / cancelled / received, the same rule as `assignment_lifecycle`."""
+    releases = OriginReleaseProof.objects.filter(version__assignment_id=OuterRef("pk"))
+    return rows.annotate(
+        _has_release=Exists(releases),
+        _active=Exists(releases.filter(cancellations__isnull=True)),
+        _received=Exists(SupplyEvent.objects.filter(assignment_id=OuterRef("pk"), kind="receive")),
+    ).annotate(
+        _status=Case(
+            When(_has_release=False, then=Value("planned")),
+            When(_active=False, then=Value("cancelled")),
+            When(_received=True, then=Value("received")),
+            default=Value("released"),
+            output_field=CharField(),
+        )
     )
 
 
@@ -90,8 +121,16 @@ def reconciliation_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[
 
 def projection_assignments(rows: QuerySet[SupplyAssignment]) -> QuerySet[SupplyAssignment]:
     """One bounded set of immutable rows per page/bundle, independent of assignment count."""
-    release_rows = OriginReleaseProof.objects.order_by("pk").prefetch_related(
-        Prefetch("lines", queryset=OriginReleaseLine.objects.order_by("pk"))
+    release_rows = (
+        OriginReleaseProof.objects.select_related("created_by")
+        .order_by("pk")
+        .prefetch_related(
+            Prefetch("lines", queryset=OriginReleaseLine.objects.order_by("pk")),
+            Prefetch(
+                "cancellations",
+                queryset=ReleaseCancellation.objects.select_related("created_by").order_by("pk"),
+            ),
+        )
     )
     versions = SupplyAssignmentVersion.objects.order_by("-revision").prefetch_related(
         Prefetch(
@@ -136,7 +175,53 @@ def assignment_projection(assignment: SupplyAssignment) -> dict[str, Any]:
         raise Http404
     version = versions[0]
     lines = cast(list[SupplyAssignmentLine], version._supply_lines)  # type: ignore[attr-defined]
-    return assignment_data(assignment, version, lines)
+    data = assignment_data(assignment, version, lines)
+    data["lifecycle"] = assignment_lifecycle(assignment, version)
+    return data
+
+
+def _person(user: Any) -> str:  # noqa: ANN401 -- the immutable record's author
+    name = f"{user.first_name} {user.last_name}".strip()
+    return name or str(user.username)
+
+
+def assignment_lifecycle(
+    assignment: SupplyAssignment, version: SupplyAssignmentVersion
+) -> dict[str, Any]:
+    """Where this plan stands: planned, released (reserved for the courier), cancelled or received.
+
+    Read-only facts of rows the projection already loads; a cancelled release means the same plan
+    can be corrected and released again.
+    """
+    del version
+    versions = cast(list[SupplyAssignmentVersion], assignment._supply_plan_versions)  # type: ignore[attr-defined]
+    proofs = sorted(
+        (
+            proof
+            for each in versions
+            for proof in cast(list[OriginReleaseProof], getattr(each, "_supply_release_proofs", []))
+        ),
+        key=lambda proof: proof.created_at,
+    )
+    release = proofs[-1] if proofs else None
+    cancellation = None
+    if release is not None:
+        cancelled = list(release.cancellations.all())
+        cancellation = cancelled[-1] if cancelled else None
+    received = bool(getattr(assignment, "_supply_receipt_events", []))
+    status = "planned"
+    if release is not None:
+        status = "cancelled" if cancellation is not None else "received" if received else "released"
+    return {
+        "status": status,
+        "release_id": None if release is None else str(release.pk),
+        "released_at": None if release is None else release.created_at.isoformat(),
+        "released_by_name": None if release is None else _person(release.created_by),
+        "cancelled_at": None if cancellation is None else cancellation.created_at.isoformat(),
+        "cancelled_by_name": None if cancellation is None else _person(cancellation.created_by),
+        "cancel_reason_code": None if cancellation is None else cancellation.reason_code,
+        "cancel_reason": None if cancellation is None else cancellation.reason,
+    }
 
 
 def reconciliation_projection(reconciliation: Reconciliation) -> dict[str, Any]:
