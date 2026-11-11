@@ -11,12 +11,16 @@ const ERROR_KEYS: Readonly<Record<ScannerError, MessageKey>> = {
   retired: "field.scan.retired",
   duplicate: "field.scan.duplicate",
   storage: "field.scan.storage",
+  labelUsed: "field.scan.labelUsed",
 };
 
 /** A code that does not work, in plain words. It never reveals what the code belongs to. */
 export function InvalidCode({ reason }: { readonly reason: ScannerError }) {
   const t = useT();
   return (
-    <InfoNotice tone={reason === "storage" ? "danger" : "warning"} message={t(ERROR_KEYS[reason])} />
+    <InfoNotice
+      tone={reason === "storage" ? "danger" : "warning"}
+      message={t(ERROR_KEYS[reason])}
+    />
   );
 }

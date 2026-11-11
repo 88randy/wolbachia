@@ -75,6 +75,13 @@ export interface Snapshot extends StoredCapture {
   readonly isBagReserved: boolean;
 }
 /** Every command carries the displayed UUID; validate it inside the writer and on its loaded draft. */
+function labelId(value: string, isManual: boolean): string | null {
+  const code = value.trim();
+  if (isManual && UUID_PATTERN.test(code)) return code.toLowerCase();
+  return parseQr(code, "ovitrap")?.id ?? null;
+}
+/** Outcome of scanning the label of a trap being placed. */
+export type LabelResult = "read" | "invalid" | "used" | "cancelled";
 export class OvitrapService {
   readonly draftBuffer = new OvitrapDraftBuffer();
   readonly #deps: Dependencies;
@@ -285,6 +292,33 @@ export class OvitrapService {
       eventId,
       target === "ovitrap",
     );
+  }
+  /** Placing: the scanned label UUID becomes the new ovitrap identity (the backend creates it from `ovitrap_id`). */
+  bindLabel(value: string, isManual: boolean, eventId: string | null): Promise<LabelResult> {
+    return this.#write(async () => {
+      const { draft, event, draftVersion } = await this.#readExpected(eventId);
+      if (!draft || event || draft.mode !== "place") return "cancelled";
+      const id = labelId(value, isManual);
+      if (!id) return "invalid";
+      if (await this.#isIdentityTaken(id, draft)) return "used";
+      await this.#updateDraft(
+        {
+          ...draft,
+          ovitrapId: id,
+          labelScanned: true,
+          manualCapture: draft.manualCapture || isManual,
+        },
+        draftVersion,
+      );
+      return "read";
+    }, eventId);
+  }
+  async #isIdentityTaken(id: string, draft: Draft): Promise<boolean> {
+    if (id === draft.ovitrapId && draft.labelScanned) return false;
+    const { store } = this.#deps;
+    if (draft.assignment?.ovitraps.some((item) => item.id === id)) return true;
+    if ((await store.projection(id)) !== null) return true;
+    return (await store.lifecycleSource(id)).physical !== null;
   }
   enterBag(value: string, eventId: string | null, isManual = true): Promise<Snapshot> {
     return this.#write(async () => {

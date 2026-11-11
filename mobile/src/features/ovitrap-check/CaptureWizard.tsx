@@ -15,6 +15,7 @@ import { useCaptureFlow } from "./use-capture-flow.ts";
 
 const HINTS: Readonly<Record<string, MessageKey>> = {
   point: "field.hint.pickPoint",
+  label: "field.hint.scanLabel",
   prepare: "field.hint.checkSteps",
 };
 function isSaveBlocked(props: CaptureProps): boolean {
@@ -63,7 +64,7 @@ export function CaptureWizard(props: CaptureProps) {
             icon={ArrowRight}
             label={t("field.action.next")}
             disabled={model.isBusy || !flow.isDone}
-            disabledReason={t(HINTS[draft.step] ?? "field.hint.answerStep")}
+            disabledReason={t(HINTS[flow.page] ?? "field.hint.answerStep")}
             onPress={flow.next}
           />
         )

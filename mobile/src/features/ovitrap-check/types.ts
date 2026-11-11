@@ -59,6 +59,8 @@ export interface Draft {
   readonly assignment: Assignment | null;
   readonly gps: FieldEventEnvelope["gps"];
   readonly manualCapture: boolean;
+  /** Placing: the physical label was scanned, so its UUID is the identity of this ovitrap. */
+  readonly labelScanned?: boolean;
   readonly step: Step;
   readonly finding: string;
   readonly paddlePresent: boolean | null;

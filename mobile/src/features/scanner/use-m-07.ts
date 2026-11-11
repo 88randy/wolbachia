@@ -60,10 +60,11 @@ function useScanOrigin(eventId: string | null | undefined) {
   };
 }
 function useScanCommand(
-  expected: QrKind | undefined,
+  options: { readonly expected?: QrKind; readonly bindsLabel: boolean },
   lifecycle: ReturnType<typeof useScannerLifecycle>,
   eventId: string | null | undefined,
 ) {
+  const { expected, bindsLabel } = options;
   const { scanner } = useServices();
   const origin = useScanOrigin(eventId);
   const push = useScannerNavigation();
@@ -78,7 +79,7 @@ function useScanCommand(
     eventId: origin.eventId,
   };
   const read = (value: string, isManual = false) =>
-    performScan({ ...shared, input: { value, isManual, expected } });
+    performScan({ ...shared, input: { value, isManual, expected, bindsLabel } });
   return {
     read,
     error: error ?? origin.error,
@@ -96,10 +97,10 @@ function useScannerNavigation() {
   };
 }
 /** Manual input and origin capture survive camera failures and scanner retries. */
-export function useM07(expected?: QrKind, eventId?: string | null) {
+export function useM07(expected?: QrKind, eventId?: string | null, bindsLabel = false) {
   const lifecycle = useScannerLifecycle();
   const camera = useCameraStart(lifecycle);
-  const command = useScanCommand(expected, lifecycle, eventId);
+  const command = useScanCommand({ expected, bindsLabel }, lifecycle, eventId);
   const [code, setCode] = useState("");
   const [isTorchOn, setTorch] = useState(false);
   const retry = () => {

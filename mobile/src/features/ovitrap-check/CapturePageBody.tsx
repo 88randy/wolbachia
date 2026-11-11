@@ -3,6 +3,7 @@ import { BagPage } from "./BagPage.tsx";
 import { ConditionsPage } from "./ConditionsPage.tsx";
 import { ConfirmPage } from "./ConfirmPage.tsx";
 import { FindingPage } from "./FindingPage.tsx";
+import { LabelPage } from "./LabelPage.tsx";
 import { PhotoPage } from "./PhotoPage.tsx";
 import { PointPage } from "./PointPage.tsx";
 import { PreparePage } from "./PreparePage.tsx";
@@ -16,6 +17,7 @@ export function CapturePageBody({ page, ...props }: CaptureProps & { readonly pa
   const { draft, model } = props;
   const t = useT();
   if (page === "point") return <PointPage {...props} />;
+  if (page === "label") return <LabelPage {...props} />;
   if (page === "finding") return <FindingPage {...props} />;
   if (page === "paddle")
     return (

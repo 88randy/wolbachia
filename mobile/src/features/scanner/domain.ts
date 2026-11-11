@@ -5,7 +5,14 @@ import type { ScannerResource } from "./resource-source.ts";
 const HUMAN_CODE_MAX_LENGTH = 50;
 
 export type ScannerError =
-  "invalid" | "version" | "kind" | "unavailable" | "retired" | "duplicate" | "storage";
+  | "invalid"
+  | "version"
+  | "kind"
+  | "unavailable"
+  | "retired"
+  | "duplicate"
+  | "storage"
+  | "labelUsed";
 export type ScannerResult =
   | { readonly resource: ScannerResource; readonly manualCapture: boolean }
   | { readonly error: ScannerError };
@@ -13,6 +20,8 @@ export interface ScannerInput {
   readonly value: string;
   readonly isManual: boolean;
   readonly expected?: QrKind;
+  /** Placing a new trap: the label becomes the identity of the draft instead of opening a capture. */
+  readonly bindsLabel?: boolean;
 }
 
 /** A QR identity is never authority. Only an unambiguous current local projection may route. */

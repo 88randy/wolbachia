@@ -4,8 +4,9 @@ export function ScannerScreen({
   target,
   eventId,
 }: {
-  readonly target: "ovitrap" | "bag";
+  readonly target: "ovitrap" | "bag" | "label";
   readonly eventId: string | null;
 }) {
+  if (target === "label") return <P11Screen expected="ovitrap" eventId={eventId} bindsLabel />;
   return <P11Screen expected={target} eventId={eventId} />;
 }

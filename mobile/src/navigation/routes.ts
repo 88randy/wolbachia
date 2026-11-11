@@ -35,7 +35,7 @@ type CoreRoute =
   | { readonly name: "ovitrapCapture"; readonly pointId?: string }
   | {
       readonly name: "ovitrapScanner";
-      readonly target: "ovitrap" | "bag";
+      readonly target: "ovitrap" | "bag" | "label";
       readonly eventId: string | null;
     }
   | { readonly name: "closeShift" }

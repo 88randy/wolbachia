@@ -17,7 +17,10 @@ interface Dependencies {
   ) => Promise<ScannerDestination | null>;
   readonly read: () => LifecycleSourceReader;
   readonly resources: (turn: LifecycleSourceTurn) => Promise<readonly ScannerResource[]>;
-  readonly ovitrap: Pick<OvitrapService, "startCheck" | "enterBag" | "draftBuffer" | "update">;
+  readonly ovitrap: Pick<
+    OvitrapService,
+    "startCheck" | "enterBag" | "bindLabel" | "draftBuffer" | "update"
+  >;
 }
 interface OpenInput {
   readonly input: ScannerInput;
@@ -46,7 +49,13 @@ export class ScannerService {
       throw error;
     }
   }
-  async open({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
+  open(request: OpenInput): Promise<ScannerDestination> {
+    const { input, eventId, isCurrent } = request;
+    return input.bindsLabel
+      ? this.#bindLabel(input, eventId, isCurrent)
+      : this.#openResource(request);
+  }
+  async #openResource({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
     const coded = codeScannerRoute(input);
     if (coded) return coded;
     const sample = await this.#deps.sample?.(input, isCurrent);
@@ -64,6 +73,18 @@ export class ScannerService {
     return isCurrent() && stillMatches(current, resource)
       ? { route: { name: "ovitrapCapture" } }
       : { error: "unavailable" };
+  }
+  /** A new trap is not downloaded yet, so its label is not looked up: it only has to be a free ovitrap label. */
+  async #bindLabel(
+    input: ScannerInput,
+    eventId: string | null,
+    isCurrent: () => boolean,
+  ): Promise<ScannerDestination> {
+    await this.#deps.ovitrap.draftBuffer.persist(this.#deps.ovitrap, eventId);
+    const result = await this.#deps.ovitrap.bindLabel(input.value, input.isManual, eventId);
+    if (!isCurrent()) return { error: "unavailable" };
+    if (result === "read") return { route: { name: "ovitrapCapture" } };
+    return { error: result === "used" ? "labelUsed" : "invalid" };
   }
   async #startCapture(
     resource: ScannerResource,

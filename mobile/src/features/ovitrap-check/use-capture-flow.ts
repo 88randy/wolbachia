@@ -4,6 +4,8 @@ import { nextCheckStep, NO_PADDLE_FINDINGS } from "./domain.ts";
 import type { CaptureProps } from "./model.ts";
 import type { Step } from "./types.ts";
 
+const PLACE_NEXT: Partial<Record<Step, Step>> = { point: "details", details: "prepare" };
+
 /**
  * Walks the pages of a capture. The big choices (finding, paddle, eggs) move on by themselves; the
  * "details" step is split in small pages with a local position, and every move is saved first.
@@ -21,7 +23,7 @@ export function useCaptureFlow({ model, draft }: CaptureProps) {
       setDetailIndex(detailIndex + 1);
       return;
     }
-    if (draft.mode === "place") saveStep(draft.step === "point" ? "prepare" : "confirm");
+    if (draft.mode === "place") saveStep(PLACE_NEXT[draft.step] ?? "confirm");
     else saveStep(nextCheckStep(draft));
     setDetailIndex(0);
   };
@@ -32,7 +34,7 @@ export function useCaptureFlow({ model, draft }: CaptureProps) {
     }
     const steps: Record<string, Step> =
       draft.mode === "place"
-        ? { prepare: "point", confirm: "prepare" }
+        ? { details: "point", prepare: "details", confirm: "prepare" }
         : {
             paddle: "finding",
             eggs: "paddle",
