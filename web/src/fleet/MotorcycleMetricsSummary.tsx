@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import type { MotorcycleDetail } from "./fleet-query";
 import { useFormatCalendarDate, useFormatNumber } from "../format/use-formatters";
 import { FleetSourceLink } from "./FleetSourceLink";
-import { FleetProvenance } from "./FleetProvenance";
 import { FleetFactList } from "./FleetFactList";
 type MetricsProps = { motorcycle: MotorcycleDetail };
 function EfficiencyFact({ motorcycle }: MetricsProps) {
@@ -12,7 +11,7 @@ function EfficiencyFact({ motorcycle }: MetricsProps) {
     return <>{t("fleet.gap.insufficient")}</>;
   return (
     <FleetSourceLink code={motorcycle.code} target={{ tab: "fuel" }}>
-      {t("fleet.efficiency.value", { value: metrics.latest_efficiency })}
+      {t("fleet.efficiency.value", { value: Number(metrics.latest_efficiency).toFixed(1) })}
     </FleetSourceLink>
   );
 }
@@ -52,7 +51,6 @@ function MetricNumbers({ motorcycle }: MetricsProps) {
   );
 }
 export function MotorcycleMetricsSummary(props: MetricsProps) {
-  const { t } = useTranslation();
   return (
     <>
       <MetricNumbers {...props} />
@@ -62,8 +60,6 @@ export function MotorcycleMetricsSummary(props: MetricsProps) {
           ["fleet.summary.efficiency", <EfficiencyFact key="efficiency" {...props} />],
         ]}
       />
-      <p>{t("fleet.efficiency.detail")}</p>
-      <FleetProvenance value={props.motorcycle.metrics.due_metric_provenance} />
     </>
   );
 }

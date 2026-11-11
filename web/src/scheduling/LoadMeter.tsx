@@ -41,7 +41,10 @@ export function LoadMeter({
         )}
       />
       <p className="m-0 text-[13px] leading-5 font-semibold text-ink tabular-nums">
-        {t("scheduling.assign.loadPeak", { load: formatNumber(peak), target: formatNumber(target) })}
+        {t("scheduling.assign.loadPeak", {
+          load: formatNumber(peak),
+          target: formatNumber(target),
+        })}
       </p>
       <p
         className={cn(

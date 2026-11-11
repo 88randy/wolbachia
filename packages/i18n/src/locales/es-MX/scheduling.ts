@@ -136,6 +136,7 @@ export const scheduling = {
   "scheduling.risk.hint":
     "El riesgo es la urgencia de visitar una manzana. Alto se visita primero. Viene de una lista oficial o de una regla de la empresa.",
   "scheduling.risk.caption": "Riesgo de cada manzana",
+  "scheduling.risk.blockSearch": "Código de la manzana",
   "scheduling.risk.block": "Manzana",
   "scheduling.risk.category": "Riesgo",
   "scheduling.risk.origin": "De dónde viene",

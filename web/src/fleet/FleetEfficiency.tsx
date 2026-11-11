@@ -19,7 +19,7 @@ export function FleetEfficiency({ load, code }: { load: Load; code: string }) {
   return (
     <>
       <FleetSourceLink code={code} target={{ tab: "fuel", id: load.id }}>
-        {t("fleet.efficiency.value", { value: load.efficiency_km_l })}
+        {t("fleet.efficiency.value", { value: Number(load.efficiency_km_l).toFixed(1) })}
       </FleetSourceLink>
       <StatusPill tone={load.efficiency_status === "review" ? "warning" : "neutral"}>
         {t(load.efficiency_status === "review" ? "fleet.efficiency.review" : "fleet.efficiency.ok")}

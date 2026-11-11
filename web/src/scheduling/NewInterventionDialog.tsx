@@ -6,7 +6,11 @@ import { Dialog } from "../ui/Dialog";
 import { InterventionForm } from "./InterventionForm";
 
 /** The "Registrar intervención" button and the form it opens. */
-export function NewInterventionDialog({ variant = "primary" }: { variant?: "primary" | "secondary" }) {
+export function NewInterventionDialog({
+  variant = "primary",
+}: {
+  variant?: "primary" | "secondary";
+}) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   return (

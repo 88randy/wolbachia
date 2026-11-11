@@ -136,6 +136,7 @@ export const scheduling: Record<keyof typeof source, string> = {
   "scheduling.risk.hint":
     "Risk is how urgent it is to visit a block. High is visited first. It comes from an official list or a company rule.",
   "scheduling.risk.caption": "Risk of each block",
+  "scheduling.risk.blockSearch": "Block code",
   "scheduling.risk.block": "Block",
   "scheduling.risk.category": "Risk",
   "scheduling.risk.origin": "Where it comes from",

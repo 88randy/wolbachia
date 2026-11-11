@@ -3,13 +3,13 @@ import { ApiError, unwrap } from "@wolbachia/api-client";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
-import { FormField, FormGrid } from "../components/templates/FormGrid";
+import { FormActions, FormField, FormGrid } from "../components/templates/FormGrid";
+import { DateField } from "../ui/DateField";
 import { FormSection } from "../components/templates/FormSection";
 import { TextField } from "../forms/TextField";
 import { invalidateOrgScoped } from "../session/org-scoped-query";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { Button } from "../ui/Button";
-import { DialogFooter } from "../ui/DialogFooter";
 import { InlineNotice } from "../ui/InlineNotice";
 import { SelectMenu } from "../ui/SelectMenu";
 import { useToast } from "../ui/toast-context";
@@ -139,28 +139,24 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
             />
           </FormField>
           <FormField width="short">
-            <TextField
+            <DateField
               id="intervention-from"
-              type="date"
               label={t("scheduling.intervention.from")}
               value={from}
-              error={missing(from)}
-              onChange={(event) => {
-                setFrom(event.target.value);
-              }}
+              onChange={setFrom}
             />
+            {missing(from) && <p className="m-0 mt-1 text-xs text-critical-fg">{required}</p>}
           </FormField>
           <FormField width="short">
-            <TextField
+            <DateField
               id="intervention-to"
-              type="date"
               label={t("scheduling.intervention.to")}
               value={to}
-              error={missing(to) ?? rangeError}
-              onChange={(event) => {
-                setTo(event.target.value);
-              }}
+              onChange={setTo}
             />
+            {(missing(to) ?? rangeError) && (
+              <p className="m-0 mt-1 text-xs text-critical-fg">{missing(to) ?? rangeError}</p>
+            )}
           </FormField>
         </FormGrid>
       </FormSection>
@@ -184,14 +180,14 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
           </p>
         </InlineNotice>
       )}
-      <DialogFooter>
+      <FormActions>
         <Button variant="tertiary" onClick={onDone}>
           {t("common.actions.cancel")}
         </Button>
         <Button type="submit" loading={create.isPending}>
           {t("common.actions.save")}
         </Button>
-      </DialogFooter>
+      </FormActions>
     </form>
   );
 }

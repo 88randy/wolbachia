@@ -125,9 +125,9 @@ export const fleet = {
   "fleet.summary.metrics": "Kilometraje y servicio",
   "fleet.summary.openService": "Ver servicio",
   "fleet.summary.createdAt": "Fecha de alta",
-  "fleet.summary.createdBy": "Referencia de quien registró",
+  "fleet.summary.createdBy": "Registrada por",
   "fleet.summary.voidedAt": "Fecha de anulación",
-  "fleet.summary.voidedBy": "Referencia de quien anuló",
+  "fleet.summary.voidedBy": "Anulada por",
   "fleet.summary.historyGap": "Este estado no confirma una salida autorizada ni una asignación.",
   "fleet.unblock.title": "Desbloquear {record}",
   "fleet.unblock.hint":
@@ -157,4 +157,10 @@ export const fleet = {
   "fleet.fuel.receiptAttached": "Comprobante adjunto",
   "fleet.clear.evidenceItem": "Evidencia {number}",
   "fleet.clear.reviewedBy": "Revisó",
+  "fleet.row.open": "Ver ficha",
+  "fleet.summary.identity": "Datos de la moto",
+  "fleet.menu.needsRefresh": "actualiza la ficha primero",
+  "fleet.menu.voided": "la moto está anulada",
+  "fleet.menu.notBlocked": "la moto no está bloqueada",
+  "fleet.menu.reason": "{action} ({reason})",
 } as const satisfies AreaCatalog<"fleet">;

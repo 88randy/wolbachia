@@ -57,9 +57,12 @@ export function useGenerateWeek() {
     onSuccess: async (result) => {
       await refresh();
       showToast({
-        message: t(result.created > 0 ? "scheduling.generate.done" : "scheduling.generate.nothing", {
-          count: result.created,
-        }),
+        message: t(
+          result.created > 0 ? "scheduling.generate.done" : "scheduling.generate.nothing",
+          {
+            count: result.created,
+          },
+        ),
         tone: "success",
       });
     },
