@@ -176,6 +176,7 @@ export const regulatory = {
   "regulatory.access.action.user.create": "Alta de persona",
   "regulatory.access.action.user.update": "Cambio de datos",
   "regulatory.access.action.user.deactivate": "Baja de persona",
+  "regulatory.access.action.user.temporary_password": "Contraseña temporal generada",
   "regulatory.access.action.user.reveal_rfc": "Consulta de RFC",
   "regulatory.access.action.user.rotate_rfc": "Cambio de RFC",
   "regulatory.access.origin.web": "Web",

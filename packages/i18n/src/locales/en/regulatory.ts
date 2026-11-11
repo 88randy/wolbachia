@@ -172,6 +172,7 @@ export const regulatory: Record<keyof typeof esRegulatory, string> = {
   "regulatory.access.action.user.create": "Person created",
   "regulatory.access.action.user.update": "Data changed",
   "regulatory.access.action.user.deactivate": "Person deactivated",
+  "regulatory.access.action.user.temporary_password": "Temporary password issued",
   "regulatory.access.action.user.reveal_rfc": "RFC viewed",
   "regulatory.access.action.user.rotate_rfc": "RFC changed",
   "regulatory.access.origin.web": "Web",
