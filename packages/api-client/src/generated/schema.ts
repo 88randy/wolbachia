@@ -8099,10 +8099,11 @@ export interface components {
          * @description * `moved` - moved
          *     * `prepared` - prepared
          *     * `already_prepared` - already_prepared
+         *     * `skipped` - skipped
          *     * `failed` - failed
          * @enum {string}
          */
-        CenterMoveResultStatusEnum: "moved" | "prepared" | "already_prepared" | "failed";
+        CenterMoveResultStatusEnum: "moved" | "prepared" | "already_prepared" | "skipped" | "failed";
         CenterMoveStockRequest: {
             /** Format: uuid */
             destination_location: string;
@@ -13607,12 +13608,13 @@ export interface components {
          *     * `center.update` - Center Update
          *     * `center.deactivate` - Center Deactivate
          *     * `center.reactivate` - Center Reactivate
+         *     * `motorcycle.center_move` - Motorcycle Center Move
          *     * `admin.create` - Admin Create
          *     * `platform_admin.grant` - Platform Admin Grant
          *     * `platform_admin.revoke` - Platform Admin Revoke
          * @enum {string}
          */
-        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "center.update" | "center.deactivate" | "center.reactivate" | "admin.create" | "platform_admin.grant" | "platform_admin.revoke";
+        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "center.update" | "center.deactivate" | "center.reactivate" | "motorcycle.center_move" | "admin.create" | "platform_admin.grant" | "platform_admin.revoke";
         PlatformOrganization: {
             readonly slug: string;
             readonly name: string;

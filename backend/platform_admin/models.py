@@ -53,6 +53,7 @@ class PlatformAuditEntry(ImmutableMixin, models.Model):
         CENTER_UPDATE = "center.update"
         CENTER_DEACTIVATE = "center.deactivate"
         CENTER_REACTIVATE = "center.reactivate"
+        MOTORCYCLE_CENTER_MOVE = "motorcycle.center_move"
         ADMIN_CREATE = "admin.create"
         PLATFORM_ADMIN_GRANT = "platform_admin.grant"
         PLATFORM_ADMIN_REVOKE = "platform_admin.revoke"

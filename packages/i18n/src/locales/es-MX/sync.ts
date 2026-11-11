@@ -42,6 +42,8 @@ export const sync = {
     "Tu sesión ya había terminado cuando se envió este registro, así que un supervisor lo revisará. Inicia sesión de nuevo si necesitas seguir trabajando.",
   "sync.result.shiftAlreadyOpen":
     "Ya tienes una jornada abierta, así que no se inició otra. Continúa con la jornada abierta o ciérrala primero.",
+  "sync.result.centerInactive":
+    "El centro de esta moto ya está cerrado, así que no se inició la jornada. Avisa a tu supervisor.",
   "sync.result.motorcycleInUse":
     "Esta moto ya está en una jornada abierta. Elige otra o avisa a tu supervisor.",
   "sync.result.capturedAfterShiftClose":

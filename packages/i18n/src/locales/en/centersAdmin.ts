@@ -40,6 +40,7 @@ export const centersAdmin: Record<keyof typeof source, string> = {
   "centersAdmin.error.centerScopeLimited":
     "Only someone with access to every center can create centers.",
   "centersAdmin.error.centerStateConflict": "The center changed state. Reload the page.",
+  "centersAdmin.error.busy": "Someone is using the center right now. Try again in a few seconds.",
   "centersAdmin.error.generic": "We could not save. Try again.",
   "centersAdmin.detail.notFound": "We could not find this center, or you have no access to it.",
   "centersAdmin.detail.back": "Centers",
@@ -96,6 +97,7 @@ export const centersAdmin: Record<keyof typeof source, string> = {
   "centersAdmin.result.moved": "Moved",
   "centersAdmin.result.prepared": "Transfer prepared",
   "centersAdmin.result.alreadyPrepared": "Already prepared",
+  "centersAdmin.result.skipped": "Skipped",
   "centersAdmin.result.failed": "Failed",
   "centersAdmin.close.retry": "Retry",
   "centersAdmin.close.final": "Deactivate the center",
@@ -114,5 +116,8 @@ export const centersAdmin: Record<keyof typeof source, string> = {
   "centersAdmin.reason.permissionDenied": "You do not have permission.",
   "centersAdmin.reason.transferCommandConflict": "Someone else already prepared this transfer.",
   "centersAdmin.reason.transferStorageUnavailable": "The destination warehouse is not available.",
+  "centersAdmin.reason.centerChanged": "It was already in another center.",
+  "centersAdmin.reason.voided": "The motorcycle was voided.",
+  "centersAdmin.reason.busy": "It is in use right now. Retry.",
   "centersAdmin.reason.other": "Failed. Try again.",
 };

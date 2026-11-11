@@ -235,7 +235,9 @@ class CenterViewSet(
         payload = CenterMoveStockSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         destination = get_object_or_404(
-            Location.objects.filter(organization_id=center.organization_id).exclude(center=center),
+            Location.objects.filter(
+                organization_id=center.organization_id, center__is_active=True
+            ).exclude(center=center),
             pk=payload.validated_data["destination_location"],
         )
         results = move_stock(center, destination, actor_from_request(request))

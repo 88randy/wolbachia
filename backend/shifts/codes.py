@@ -15,6 +15,7 @@ MOTORCYCLE_BLOCKED = "motorcycle_blocked"
 ODOMETER_OUT_OF_RANGE = "odometer_out_of_range"
 SHIFT_NOT_OPEN = "shift_not_open"
 MOTORCYCLE_IN_USE = "motorcycle_in_use"
+CENTER_INACTIVE = "center_inactive"
 SHIFT_EVENT_NOT_VOIDABLE = "shift_event_not_voidable"
 
 # `in_review`
@@ -27,6 +28,7 @@ OPEN_CODES = (
     MOTORCYCLE_UNKNOWN,
     MOTORCYCLE_BLOCKED,
     MOTORCYCLE_IN_USE,
+    CENTER_INACTIVE,
     ODOMETER_OUT_OF_RANGE,
     ODOMETER_DECREASED,
     SEVERE_CHECK,
