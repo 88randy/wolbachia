@@ -34,6 +34,7 @@ export function SupplyIdentityFields(props: InventoryFieldsProps) {
       />
       <InventorySelectField {...field("is_biological")} required options={YES_NO} />
       <SupplyFlags {...props} />
+      <InventoryTextField {...field("gtin")} maxLength={14} />
       <InventoryTextField {...field("specification")} />
     </div>
   );

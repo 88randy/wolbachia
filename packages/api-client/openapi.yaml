@@ -17301,7 +17301,7 @@ paths:
       - name: search
         required: false
         in: query
-        description: 'Case-insensitive search across: supply_type__code, label.'
+        description: 'Case-insensitive search across: supply_type__code, label, gtin.'
         schema:
           type: string
       tags:
@@ -32925,6 +32925,9 @@ components:
         specification:
           type: string
           maxLength: 4000
+        gtin:
+          type: string
+          maxLength: 14
         protocol:
           $ref: '#/components/schemas/ProtocolWriteRequest'
     PatchedTypeConfigurationRequest:
@@ -40535,6 +40538,9 @@ components:
         specification:
           type: string
           readOnly: true
+        gtin:
+          type: string
+          readOnly: true
         is_active:
           type: boolean
           readOnly: true
@@ -40561,6 +40567,7 @@ components:
       - created_at
       - created_by
       - expiry_required
+      - gtin
       - id
       - identity_kind
       - is_active
@@ -41225,6 +41232,9 @@ components:
         specification:
           type: string
           maxLength: 4000
+        gtin:
+          type: string
+          maxLength: 14
         protocol:
           $ref: '#/components/schemas/ProtocolWriteRequest'
       required:

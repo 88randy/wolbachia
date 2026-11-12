@@ -54,7 +54,15 @@ export const allocation = {
   "allocation.writeOff.rpbiVerified": "Verificado",
   "allocation.writeOff.rpbiNotRequired": "No requerido",
   "allocation.writeOff.find": "Buscar",
-  "allocation.writeOff.notFound": "No se encontró ese código en tu alcance.",
+  "allocation.writeOff.notFound": "No encontramos ese código. Revisa la etiqueta.",
+  "allocation.writeOff.anotherCode": "Escribir otro código",
+  "allocation.writeOff.scanHint":
+    "Escanea la etiqueta con el lector o la cámara, o escribe el código. El formulario se llena solo.",
+  "allocation.writeOff.summary.supply": "Insumo",
+  "allocation.writeOff.summary.center": "Centro",
+  "allocation.writeOff.summary.location": "Ubicación",
+  "allocation.writeOff.summary.lotQuantity": "Cantidad",
+  "allocation.writeOff.summary.wholeBag": "La bolsa completa",
   "allocation.writeOff.lookupFailed": "No se pudo buscar el código. Inténtalo de nuevo.",
   "allocation.writeOff.formTitle": "Dar de baja material",
   "allocation.writeOff.formDescription":

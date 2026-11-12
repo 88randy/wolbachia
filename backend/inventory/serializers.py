@@ -96,7 +96,17 @@ class SupplyWriteSerializer(StrictPayloadSerializer):
     requires_insecticide_free = serializers.BooleanField(allow_null=True, required=False)
     expiry_required = serializers.BooleanField(allow_null=True, required=False)
     specification = serializers.CharField(max_length=4000, allow_blank=True, required=False)
+    gtin = serializers.CharField(max_length=14, allow_blank=True, required=False)
     protocol = ProtocolWriteSerializer(required=False)
+
+    def validate_gtin(self, value: str) -> str:
+        """Store one canonical GTIN-14: digits only (8, 12, 13 or 14 long), left-padded with zeros."""
+        text = value.strip()
+        if text == "":
+            return ""
+        if not text.isascii() or not text.isdigit() or len(text) not in (8, 12, 13, 14):
+            raise serializers.ValidationError("A GTIN has 8, 12, 13 or 14 digits.", code="invalid")
+        return text.zfill(14)
 
 
 @extend_schema_field(
@@ -277,6 +287,7 @@ class SupplySerializer(OrgScopedModelSerializer):
             "requires_insecticide_free",
             "expiry_required",
             "specification",
+            "gtin",
             "is_active",
             "protocol",
             "created_by",

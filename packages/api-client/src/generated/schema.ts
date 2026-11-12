@@ -13541,6 +13541,7 @@ export interface components {
             requires_insecticide_free?: boolean | null;
             expiry_required?: boolean | null;
             specification?: string;
+            gtin?: string;
             protocol?: components["schemas"]["ProtocolWriteRequest"];
         };
         PatchedTypeConfigurationRequest: {
@@ -16657,6 +16658,7 @@ export interface components {
             readonly requires_insecticide_free: boolean | null;
             readonly expiry_required: boolean | null;
             readonly specification: string;
+            readonly gtin: string;
             readonly is_active: boolean;
             readonly protocol: components["schemas"]["Protocol"] | null;
             /** Format: uuid */
@@ -16938,6 +16940,7 @@ export interface components {
             requires_insecticide_free?: boolean | null;
             expiry_required?: boolean | null;
             specification?: string;
+            gtin?: string;
             protocol?: components["schemas"]["ProtocolWriteRequest"];
         };
         Support: {
@@ -29972,7 +29975,7 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
-                /** @description Case-insensitive search across: supply_type__code, label. */
+                /** @description Case-insensitive search across: supply_type__code, label, gtin. */
                 search?: string;
             };
             header?: {

@@ -100,6 +100,7 @@ export const inventory = {
   "inventory.field.expiryRequired": "Expiry required",
   "inventory.field.requiresInsecticideFree": "Insecticide-free storage required",
   "inventory.field.specification": "Specification",
+  "inventory.field.gtin": "Barcode (GTIN)",
   "inventory.field.name": "Name",
   "inventory.field.kind": "Location type",
   "inventory.field.center": "Center",

@@ -16,6 +16,7 @@ import { transferEvidence } from "./transferEvidence.ts";
 import { trainings } from "./trainings.ts";
 import { evaluations } from "./evaluations.ts";
 import { labReception } from "./labReception.ts";
+import { scan } from "./scan.ts";
 import { lab } from "./lab.ts";
 import { conditions } from "./conditions.ts";
 import { incidentTypes } from "./incidentTypes.ts";
@@ -92,6 +93,7 @@ export const esMX = {
   ...relocations,
   ...closure,
   ...labReception,
+  ...scan,
   ...incidents,
   ...inventory,
   ...ui,

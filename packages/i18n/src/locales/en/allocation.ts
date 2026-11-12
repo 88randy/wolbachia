@@ -53,7 +53,15 @@ export const allocation: Record<keyof typeof spanish, string> = {
   "allocation.writeOff.rpbiVerified": "Verified",
   "allocation.writeOff.rpbiNotRequired": "Not required",
   "allocation.writeOff.find": "Find",
-  "allocation.writeOff.notFound": "That code was not found in your scope.",
+  "allocation.writeOff.notFound": "We could not find that code. Check the label.",
+  "allocation.writeOff.anotherCode": "Type another code",
+  "allocation.writeOff.scanHint":
+    "Scan the label with the reader or the camera, or type the code. The form fills itself.",
+  "allocation.writeOff.summary.supply": "Supply",
+  "allocation.writeOff.summary.center": "Center",
+  "allocation.writeOff.summary.location": "Location",
+  "allocation.writeOff.summary.lotQuantity": "Quantity",
+  "allocation.writeOff.summary.wholeBag": "The whole bag",
   "allocation.writeOff.lookupFailed": "The code could not be looked up. Try again.",
   "allocation.writeOff.formTitle": "Write off material",
   "allocation.writeOff.formDescription":

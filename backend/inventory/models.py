@@ -33,6 +33,8 @@ class SupplyTypeVersion(InventoryRecord):
     requires_insecticide_free = models.BooleanField(null=True)
     expiry_required = models.BooleanField(null=True)
     specification = models.TextField(blank=True, default="")
+    # Canonical GTIN-14 printed by the supplier, or empty; a scanned GS1 code picks this supply.
+    gtin = models.CharField(max_length=14, blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     class Meta(InventoryRecord.Meta):

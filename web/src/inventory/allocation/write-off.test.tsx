@@ -63,7 +63,7 @@ function writeRoutes(extra: Record<string, Response> = {}) {
 }
 
 async function chooseReason(user: ReturnType<typeof userEvent.setup>) {
-  await user.selectOptions(await screen.findByRole("combobox", { name: "Motivo" }), "duplicate");
+  await user.selectOptions(await screen.findByRole("combobox", { name: "Motivo" }), "Caducado");
 }
 
 test("W39 bag disposal is blocked without a verified RPBI and sends it once verified", async () => {
@@ -126,7 +126,9 @@ test("the warehouse entry applies the same rule to a biological lot and not to a
       await screen.findByRole("textbox", { name: "Código del lote o la bolsa" }),
       "LOT-01{Enter}",
     );
-    await user.type(await screen.findByRole("textbox", { name: "Cantidad" }), "3");
+    const quantity = await screen.findByRole("textbox", { name: /Cuánto se da de baja/ });
+    await user.clear(quantity);
+    await user.type(quantity, "3");
     await chooseReason(user);
     await user.click(screen.getByRole("button", { name: "Dar de baja" }));
   }
@@ -149,11 +151,11 @@ test("an unknown and a foreign code are indistinguishable", async () => {
   await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
   const code = await screen.findByRole("textbox", { name: "Código del lote o la bolsa" });
   await user.type(code, "NOPE{Enter}");
-  const first = await screen.findByText("No se encontró ese código en tu alcance.");
+  const first = await screen.findByText("No encontramos ese código. Revisa la etiqueta.");
   expect(first).toBeDefined();
   await user.clear(code);
   await user.type(code, "FOREIGN-1{Enter}");
-  expect(await screen.findByText("No se encontró ese código en tu alcance.")).toBeDefined();
+  expect(await screen.findByText("No encontramos ese código. Revisa la etiqueta.")).toBeDefined();
 });
 
 test.each(["es-MX", "en"] as const)(
@@ -175,3 +177,49 @@ test.each(["es-MX", "en"] as const)(
     expect(await axe(document.body)).toHaveNoViolations();
   },
 );
+
+test("scanning a lot code fills the whole form: only the reason is left to pick", async () => {
+  const user = userEvent.setup();
+  const { api } = await openInventory({
+    path: "/inventory/write-offs",
+    me: allocationMe(["inventory.write_off"]),
+    routes: {
+      ...writeRoutes(),
+      "GET /api/v1/lots/": () => Response.json(inventoryPage([plainLot()])),
+    },
+  });
+  document.cookie = "csrftoken=test-csrf; path=/";
+  await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
+  await user.type(
+    await screen.findByRole("textbox", { name: "Código del lote o la bolsa" }),
+    "LOT-01{Enter}",
+  );
+  const quantity = await screen.findByRole("textbox", { name: /Cuánto se da de baja/ });
+  expect((quantity as HTMLInputElement).value).toBe("2");
+  const summary = screen.getByText("Insumo").closest("dl");
+  expect(summary?.textContent).toContain("Synthetic supply");
+  expect(summary?.textContent).toContain("LOT-01");
+  await chooseReason(user);
+  await user.click(screen.getByRole("button", { name: "Dar de baja" }));
+  await waitFor(() => {
+    expect(api.requests.some((request) => request.path.includes("/inventory-intents/"))).toBe(true);
+  });
+  const prepare = api.requests.find((request) => request.path.includes("/inventory-intents/"));
+  expect(prepare?.body).toMatchObject({ kind: "lot_write_off", quantity: "2" });
+});
+
+test("a code that matches nothing says so and Type another code clears it", async () => {
+  const user = userEvent.setup();
+  await openInventory({
+    path: "/inventory/write-offs",
+    me: allocationMe(["inventory.write_off"]),
+    routes: { ...writeRoutes(), "GET /api/v1/lots/": Response.json(inventoryPage([])) },
+  });
+  await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
+  const code = await screen.findByRole("textbox", { name: "Código del lote o la bolsa" });
+  await user.type(code, "NOPE{Enter}");
+  await screen.findByText("No encontramos ese código. Revisa la etiqueta.");
+  await user.click(screen.getByRole("button", { name: "Escribir otro código" }));
+  expect((code as HTMLInputElement).value).toBe("");
+  expect(screen.queryByText("No encontramos ese código. Revisa la etiqueta.")).toBeNull();
+});
