@@ -1,53 +1,57 @@
-import { Printer } from "lucide-react";
+import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../../components/templates/ListPage";
+import {
+  LABEL_KINDS,
+  LABEL_KIND_SPECS,
+  isLabelKind,
+  labelsSearchSchema,
+} from "../../labels/label-kinds";
+import { toLabelRecord } from "../../labels/label-records";
+import { PrintLabelsButton } from "../../labels/PrintLabelsButton";
+import { useLabelText } from "../../labels/use-label-text";
 import { useCan } from "../../session/use-can";
-import { Button } from "../../ui/Button";
-import { LABEL_KINDS, LABEL_KIND_SPECS } from "./label-kinds";
 import { LabelControls } from "./LabelControls";
 import { LabelPicker } from "./LabelPicker";
-import { LabelSheet } from "./LabelSheet";
-import { useLabelSheet } from "./use-label-sheet";
+import { useLabelPicker } from "./use-label-picker";
+import type { LabelPickerStart } from "./use-label-picker";
 
-function PrintButton({ disabled }: { disabled: boolean }) {
+/** W19: the one place to print QR labels. Pick a kind, tick records, print with format and copies. */
+function LabelTool({
+  start,
+  kinds,
+}: {
+  start: LabelPickerStart;
+  kinds: LabelPickerStart["kind"][];
+}) {
   const { t } = useTranslation();
-  return (
-    <Button
-      leadingIcon={<Printer aria-hidden="true" />}
-      disabled={disabled}
-      title={disabled ? t("inventory.labels.printDisabled") : undefined}
-      onClick={() => {
-        window.print();
-      }}
-    >
-      {t("inventory.labels.print")}
-    </Button>
-  );
-}
-
-/** W19: pick records of one type and print their QR labels on a real-size sheet. */
-export function W19Page() {
-  const { t } = useTranslation();
-  const can = useCan();
-  const kinds = LABEL_KINDS.filter((kind) => can(LABEL_KIND_SPECS[kind].permission));
-  const model = useLabelSheet(kinds[0] ?? "lots");
+  const text = useLabelText();
+  const model = useLabelPicker(start);
   return (
     <ListPage
       title={t("inventory.labels.title")}
       description={t("inventory.labels.description")}
-      actions={<PrintButton disabled={model.selected.length === 0} />}
+      actions={
+        <PrintLabelsButton
+          variant="primary"
+          records={model.selected.map((source) => toLabelRecord(source, text))}
+        />
+      }
     >
-      <LabelControls
-        kinds={kinds}
-        kind={model.kind}
-        onKind={model.chooseKind}
-        size={model.size}
-        onSize={model.setSize}
-      />
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <LabelPicker model={model} />
-        <LabelSheet kind={model.kind} size={model.size} items={model.selected} />
-      </div>
+      <LabelControls kinds={kinds} kind={model.kind} onKind={model.chooseKind} />
+      <LabelPicker model={model} />
     </ListPage>
   );
+}
+
+/** Reads the kind the user may print and the optional deep link (`?kind=lot&code=L-0001`). */
+export function W19Page() {
+  const can = useCan();
+  const search = labelsSearchSchema.parse(useSearch({ strict: false }));
+  const kinds = LABEL_KINDS.filter((kind) => can(LABEL_KIND_SPECS[kind].permission));
+  const asked = isLabelKind(search.kind) && kinds.includes(search.kind) ? search.kind : undefined;
+  const first = kinds[0];
+  if (first === undefined) return null;
+  const start = asked === undefined ? { kind: first } : { kind: asked, code: search.code };
+  return <LabelTool start={start} kinds={kinds} />;
 }

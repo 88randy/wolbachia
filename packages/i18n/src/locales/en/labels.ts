@@ -30,4 +30,5 @@ export const labels: Record<keyof typeof source, string> = {
   "labels.line.expires": "Expires {date}",
   "labels.line.createdOn": "Registered {date}",
   "labels.line.plate": "Plate {plate}",
+  "labels.line.point": "Point {code}",
 };

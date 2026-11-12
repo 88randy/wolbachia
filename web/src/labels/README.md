@@ -1,22 +1,40 @@
 # labels: print QR labels for the internal system
 
-Shared label printing. Any list or record screen opens it with `PrintLabelsButton` (or
-`PrintLabelsDialog` when it owns the open state) and a list of `LabelRecord`s.
+ALL labels are printed from one screen: W19 "Etiquetas QR" (`/inventory/labels`, code in
+`web/src/inventory/labels`). The user picks the kind, searches and ticks records (server-side
+search and paging), and `PrintLabelsButton` opens `PrintLabelsDialog` with the format, copies,
+preview and Print. There is one rendering pipeline (this folder). No other list or record screen
+prints labels; a record page only links to W19.
 
-## QR convention (fixed, shared with the web camera scanner)
+## Record pages: "Imprimir etiqueta"
 
-A label's QR encodes `wbf:1:<kind>:<human code>` (kind = lot, bag, location, motorcycle), with the code exactly as the screens show it (lot code,
-bag code, location code, motorcycle code). No URLs, no ids, no personal data. `qrContent()` is
-the one place that decides this.
+`PrintLabelLink` goes to `/inventory/labels?kind=<kind>&code=<human code>` and W19 ticks that
+record. The URL carries the human code only, never an id. The link is hidden when the user cannot
+read that kind (permissions in `label-kinds.ts`). Today: lots, locations, motorcycles.
 
-The older W19 screen (`web/src/inventory/labels`) prints `wbf:1:<kind>:<uuid>` payloads for the
-mobile scanner. It is unchanged. The mobile scanner does not read bare codes for lots and bags yet.
+## QR convention (fixed, the phone depends on it)
+
+A QR encodes `wbf:1:<kind>:<value>`. `qrContent()` is the one place that decides it, from
+`qrBy` in `LABEL_KIND_SPECS`:
+
+| kind       | value        | why                                                                        |
+| ---------- | ------------ | -------------------------------------------------------------------------- |
+| lot        | record id    | `backend/ovitraps/qr.py` (`parse_qr`) accepts only a uuid for lot and bag  |
+| bag        | record id    | same                                                                       |
+| ovitrap    | record id    | the phone matches ovitrap labels by id, offline                            |
+| paddle     | human code   | `parse_code_qr` accepts a code                                             |
+| motorcycle | human code   | `parse_code_qr` accepts a code                                             |
+| location   | human code   | no scanner reads locations yet; the code is what the screens show          |
+
+The human code is always printed large on the label; the id never appears as text. Same design
+for every kind: QR, big code, up to two context lines (`label-records.ts`).
 
 ## Pieces
 
+- `label-kinds.ts`: the six kinds, their read permission and what the QR carries; the W19
+  query-string schema.
 - `label-formats.ts`: the three formats and limits (copies 1-50, 300 labels per job).
-- `label-records.ts`: pure mappers from API rows to `LabelRecord` (code + up to 2 context lines).
-- `use-row-labels.tsx`: what a list needs: "print this page" button and row selection.
+- `label-records.ts`: pure mappers from API rows to `LabelRecord` (id, code, up to 2 lines).
 - `PrintLabelsDialog.tsx`: format, copies, preview and Print. Remembers the last choice in
   `localStorage` (`label-preferences.ts`, failures are ignored).
 - `LabelPrintPortal.tsx` + `labels.module.css`: the print layout. A copy of the sheet goes under
@@ -28,9 +46,8 @@ mobile scanner. It is unchanged. The mobile scanner does not read bare codes for
 The client's printers are unknown. 50 x 25 mm and 62 x 29 mm are common thermal rolls; the letter
 sheet is an Avery 5160-like layout (66.7 x 25.4 mm). Confirm with the real printer and stock.
 
-## Adding a screen
+## Adding a kind
 
-1. Write a mapper in `label-records.ts` (or reuse one) with the human code and context lines.
-2. In the list: `useRowLabels({ toRecord, rowLabel })`, pass `selection` to the `DataTable` and
-   `pageAction(rows)` to the toolbar. In the record page: a `PrintLabelsButton` in the header.
-3. Skip entities without a human code.
+1. Add it to `LABEL_KINDS` / `LABEL_KIND_SPECS` (permission, `qrBy`) and to `LabelSource`.
+2. Write its mapper in `label-records.ts` and its reader in `inventory/labels/label-query.ts`.
+3. Add the `inventory.labels.kind.<kind>` message (es-MX and en).

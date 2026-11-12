@@ -5,7 +5,7 @@ import { qrContent } from "./label-record";
 import type { LabelRecord } from "./label-record";
 import { paginate, parseCopies, planLabels } from "./plan-labels";
 
-const record = (code: string): LabelRecord => ({ kind: "lot", code, lines: [] });
+const record = (code: string): LabelRecord => ({ kind: "lot", id: code, code, lines: [] });
 
 describe("parseCopies", () => {
   it("keeps whole numbers inside the allowed range", () => {
@@ -42,9 +42,24 @@ describe("planLabels and paginate", () => {
 });
 
 describe("qrContent", () => {
-  it("is wbf:1:<kind>:<human code> for each kind", () => {
-    for (const kind of ["lot", "bag", "location", "motorcycle"] as const)
-      expect(qrContent({ kind, code: "X-42", lines: ["Insumo"] })).toBe(`wbf:1:${kind}:X-42`);
+  const id = "0A1B2C3D-0000-4000-8000-0123456789AB";
+  it("carries the lowercase id for the kinds the phone matches by id (lot, bag, ovitrap)", () => {
+    for (const kind of ["lot", "bag", "ovitrap"] as const)
+      expect(qrContent({ kind, id, code: "X-42", lines: [] })).toBe(
+        `wbf:1:${kind}:0a1b2c3d-0000-4000-8000-0123456789ab`,
+      );
+  });
+  it("carries the human code for paddles, motorcycles and locations", () => {
+    for (const kind of ["paddle", "motorcycle", "location"] as const)
+      expect(qrContent({ kind, id, code: "X-42", lines: ["Insumo"] })).toBe(`wbf:1:${kind}:X-42`);
+  });
+  it("every kind the phone parser reads has a payload its patterns accept", () => {
+    const byId =
+      /^wbf:1:(lot|ovitrap|bag):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    const byCode = /^wbf:1:(paddle|motorcycle):[A-Za-z0-9][A-Za-z0-9._-]{0,49}$/;
+    expect(qrContent({ kind: "lot", id, code: "L-1", lines: [] })).toMatch(byId);
+    expect(qrContent({ kind: "paddle", id, code: "P-7", lines: [] })).toMatch(byCode);
+    expect(qrContent({ kind: "motorcycle", id, code: "M-03", lines: [] })).toMatch(byCode);
   });
 });
 

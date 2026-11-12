@@ -15,7 +15,7 @@ import { W39Page } from "./allocation/W39Page";
 import { W18Page } from "./conditions/W18Page";
 import { InventoryHome } from "./InventoryHome";
 import { InventoryScreen } from "./InventoryScreen";
-import { LABEL_PERMISSIONS } from "./labels/label-kinds";
+import { LABEL_PERMISSIONS, labelsSearchSchema } from "../labels/label-kinds";
 import { W19Page } from "./labels/W19Page";
 import { W11Page } from "./locations/W11Page";
 import { W10Page } from "./lots/W10Page";
@@ -128,6 +128,7 @@ const labelsRoute = createRoute({
   getParentRoute: () => inventoryLayout,
   path: "/inventory/labels",
   staticData: { crumb: "inventory.labels.title" },
+  validateSearch: labelsSearchSchema,
   beforeLoad: ({ context }) => {
     if (!canAny(context.me, LABEL_PERMISSIONS)) throw new ForbiddenError("inventory");
   },

@@ -29,8 +29,7 @@ import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
 import { InventoryContextNotice } from "./InventoryContextNotice";
-import { PrintLabelsButton } from "../labels/PrintLabelsButton";
-import { useInventoryLabels } from "./use-inventory-labels";
+import { PrintLabelLink } from "../labels/PrintLabelLink";
 const updatePermission = {
   supplies: "supply_type.update",
   lots: "lot.update",
@@ -222,7 +221,7 @@ function RecordContent(props: ContentProps) {
       actions={
         <>
           <RecordBack kind={props.kind} />
-          <PrintAction record={props.record} />
+          <PrintAction kind={props.kind} code={props.record.code} />
           <RefreshAction refresh={refresh} />
         </>
       }
@@ -234,10 +233,11 @@ function RecordContent(props: ContentProps) {
     </DetailPage>
   );
 }
-function PrintAction({ record }: { record: RecordValue }) {
-  const records = useInventoryLabels().toRecords([record]);
-  if (records.length === 0) return null;
-  return <PrintLabelsButton records={records} labelKey="labels.action.printOne" />;
+const PRINTABLE = { lots: "lot", locations: "location" } as const;
+/** Deep link to the label tool (W19) with this record ticked; supplies have no label. */
+function PrintAction({ kind, code }: { kind: InventoryKind; code: string }) {
+  if (kind === "supplies") return null;
+  return <PrintLabelLink kind={PRINTABLE[kind]} code={code} />;
 }
 function RefreshAction({ refresh }: { refresh: () => void }) {
   const { t } = useTranslation();

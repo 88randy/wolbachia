@@ -36,7 +36,6 @@ describe("W20 fleet list", () => {
     expect(screen.getByText("Revisión con falla grave")).toBeDefined();
     expect(screen.getByText(/Wrong registration/)).toBeDefined();
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "",
       "Código",
       "Placa",
       "Estado",

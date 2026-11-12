@@ -77,6 +77,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["labels.line.createdOn", ["date"]],
   ["labels.line.expires", ["date"]],
   ["labels.line.plate", ["plate"]],
+  ["labels.line.point", ["code"]],
   ["labels.qr.alt", ["code"]],
   ["mobile.chip.noSignal", ["count"]],
   ["mobile.chip.toUpload", ["count"]],

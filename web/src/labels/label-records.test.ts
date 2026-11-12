@@ -1,6 +1,14 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { describe, expect, it } from "vitest";
-import { bagLabel, locationLabel, lotLabel, motorcycleLabel } from "./label-records";
+import {
+  bagLabel,
+  locationLabel,
+  lotLabel,
+  motorcycleLabel,
+  ovitrapLabel,
+  paddleLabel,
+  toLabelRecord,
+} from "./label-records";
 import type { LabelText } from "./label-records";
 
 const text: LabelText = {
@@ -23,7 +31,7 @@ describe("label content", () => {
     expect(record.kind).toBe("lot");
     expect(record.lines[0]).toBe("Huevos de mosquito");
     expect(record.lines[1]).toContain("cal(2026-12-01)");
-    expect(JSON.stringify(record)).not.toContain(UUID);
+    expect(JSON.stringify(record.lines)).not.toContain(UUID);
   });
 
   it("lot without expiry has only the item name", () => {
@@ -46,14 +54,33 @@ describe("label content", () => {
     const record = locationLabel(location, text);
     expect(record.lines[0]).toBe("Almacén central");
     expect(record.lines[1]).toContain("Q-7");
-    expect(JSON.stringify(record)).not.toContain(UUID);
+    expect(JSON.stringify(record.lines)).not.toContain(UUID);
   });
 
   it("bag: its registration date; motorcycle: its plate", () => {
     expect(
-      bagLabel({ code: "B-4471", createdAt: "2026-11-10T12:00:00Z" }, text).lines[0],
+      bagLabel({ id: UUID, code: "B-4471", created_at: "2026-11-10T12:00:00Z" }, text).lines[0],
     ).toContain("date(2026-11-10T12:00:00Z)");
-    expect(motorcycleLabel({ code: "M-03", plate: "ABC-123" }, text).lines[0]).toContain("ABC-123");
-    expect(motorcycleLabel({ code: "M-03", plate: "" }, text).lines).toEqual([]);
+    expect(motorcycleLabel({ id: UUID, code: "M-03", plate: "ABC-123" }, text).lines[0]).toContain(
+      "ABC-123",
+    );
+    expect(motorcycleLabel({ id: UUID, code: "M-03", plate: "" }, text).lines).toEqual([]);
+  });
+
+  it("ovitrap: its sampling point; paddle: no extra lines", () => {
+    expect(ovitrapLabel({ id: UUID, code: "OV-010", point_code: "P-7" }, text).lines[0]).toContain(
+      "P-7",
+    );
+    expect(paddleLabel({ id: UUID, code: "PA-1" })).toEqual({
+      kind: "paddle",
+      id: UUID,
+      code: "PA-1",
+      lines: [],
+    });
+  });
+
+  it("toLabelRecord dispatches on the kind of the source row", () => {
+    const row = { id: UUID, code: "M-03", plate: "" } as unknown as Schemas["Motorcycle"];
+    expect(toLabelRecord({ kind: "motorcycle", row }, text).kind).toBe("motorcycle");
   });
 });

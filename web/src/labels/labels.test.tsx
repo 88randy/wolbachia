@@ -9,8 +9,18 @@ import { PrintLabelsDialog } from "./PrintLabelsDialog";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 const RECORDS: LabelRecord[] = [
-  { kind: "lot", code: "L-0001", lines: ["Mosquitos Wolbachia", "Caduca 10 nov 2026"] },
-  { kind: "lot", code: "L-0002", lines: ["Mosquitos Wolbachia"] },
+  {
+    kind: "lot",
+    id: "0a1b2c3d-0000-4000-8000-0123456789ab",
+    code: "L-0001",
+    lines: ["Mosquitos Wolbachia", "Caduca 10 nov 2026"],
+  },
+  {
+    kind: "lot",
+    id: "0a1b2c3d-0000-4000-8000-0123456789ac",
+    code: "L-0002",
+    lines: ["Mosquitos Wolbachia"],
+  },
 ];
 
 function preview(container: HTMLElement) {
