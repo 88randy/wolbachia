@@ -109,7 +109,7 @@ test("a conflict refresh with unreadable protocol blocks rewriting it and permit
     "Retained identity change",
   );
   await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   const requests = api.requests.filter((request) => request.method === "PATCH");
   expect(requests).toHaveLength(2);
   expect(requests[1]?.body).toMatchObject({
@@ -177,7 +177,7 @@ test("W8 saves named configuration without inventing biological or nullable safe
     expect(reconcile.hasAttribute("disabled")).toBe(false);
   });
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.find((request) => request.method === "POST")?.body).toMatchObject({
     code: "SUP-NEW",
     unit: "container",

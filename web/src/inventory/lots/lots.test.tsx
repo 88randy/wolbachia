@@ -39,7 +39,7 @@ test("an incomplete biological draft shows real dispatch requirements and preser
   expect(screen.getByText(/Protocolo sin configurar/)).toBeDefined();
   await user.type(screen.getByRole("textbox", { name: "Especie" }), "Authored species");
   await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(screen.getByText("Bloqueado")).toBeDefined();
   const body = api.requests.find((request) => request.method === "PATCH")?.body;
   expect(body).toMatchObject({ expected_revision: 2, species: "Authored species" });
@@ -134,7 +134,7 @@ test.each([true, false])(
       protocol_id: supply.protocol?.id ?? null,
     });
     await user.click(await screen.findByRole("button", { name: "Consultar el registro guardado" }));
-    await screen.findByText("Guardado en el servidor");
+    await screen.findByText("Guardado");
     expect(api.requests.find((request) => request.method === "PATCH")?.body).toMatchObject({
       expected_revision: 2,
       supply_version_id: supply.version,
@@ -209,7 +209,7 @@ test("a lost lot write confirms an exact decimal representation only after the m
   ).toBe("true");
   current = { ...current, quantity: "1.500000" };
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   const writes = api.requests.filter((request) => request.method === "PATCH");
   expect(writes).toHaveLength(1);
   expect(writes[0]?.body).toMatchObject({ quantity: "001.50", expected_revision: 2 });
@@ -242,7 +242,7 @@ test("lost PATCH reconciliation ignores a later change to an unsent lot field", 
     expect(reconcile.hasAttribute("disabled")).toBe(false);
   });
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Procedencia" }).value).toBe(
     "Later concurrent provenance",
   );

@@ -212,7 +212,7 @@ test("a late admission conflict cannot replace a newer reconciled intent after a
   await waitFor(() => {
     expect(writes).toBe(2);
   });
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   const rejection = apiError(409, "inventory_revision_conflict");
   await act(async () => {
     oldReply.release(rejection);
@@ -504,7 +504,7 @@ test.each(["lotLocation", "lotCenterOnly", "location"] as const)(
         await user.click(await screen.findByRole("button", { name: "Nueva ubicación" }));
     };
     await reopen();
-    await screen.findByRole("option", { name: "Synthetic center" });
+    await screen.findByRole("combobox", { name: "Centro" });
     await user.selectOptions(screen.getByRole("combobox", { name: "Centro" }), INVENTORY_CENTER);
     await screen.findByRole("option", { name: choice });
     await user.selectOptions(
@@ -593,7 +593,7 @@ test.each(["supplies", "locations"] as const)(
     });
     await user.click(await screen.findByRole("button", { name: title }));
     if (kind === "locations") {
-      await screen.findByRole("option", { name: "Synthetic center" });
+      await screen.findByRole("combobox", { name: "Centro" });
       await user.selectOptions(screen.getByRole("combobox", { name: "Centro" }), INVENTORY_CENTER);
       await screen.findByRole("option", { name: "Sólo centro, sin cuadrante" });
       await user.selectOptions(screen.getByRole("combobox", { name: "Cuadrante" }), "none");

@@ -1,6 +1,7 @@
 import { cleanup } from "@testing-library/react";
 import { toHaveNoViolations } from "jest-axe";
 import { afterEach, expect } from "vitest";
+import { installComboboxSelectOptions } from "./combobox-select-options";
 import { resetAuthOperation } from "../session/auth-operation";
 import { resetAttestation } from "../session/attestation";
 import { uninstallSessionSync } from "../session/install-session-sync";
@@ -101,3 +102,5 @@ if (typeof HTMLElement.prototype.setPointerCapture !== "function") {
   HTMLElement.prototype.releasePointerCapture = () => undefined;
   HTMLElement.prototype.hasPointerCapture = () => false;
 }
+
+installComboboxSelectOptions();

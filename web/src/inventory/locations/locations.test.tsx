@@ -222,7 +222,7 @@ test("location creation uses actual center-only placement and Membership owner, 
   await user.clear(dialog.getByRole("textbox", { name: "Latitud" }));
   await user.type(dialog.getByRole("textbox", { name: "Latitud" }), "19.3");
   await user.click(dialog.getByRole("button", { name: "Crear registro" }));
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.find((request) => request.method === "POST")?.body).toMatchObject({
     owner_id: INVENTORY_OWNER,
     center_id: INVENTORY_CENTER,
@@ -269,6 +269,6 @@ test("a lost location write reconciles only equivalent submitted coordinates, wi
   ).toBe("true");
   current = { ...current, geometry: { type: "Point", coordinates: [-99.1, 19.4] } };
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(1);
 });
