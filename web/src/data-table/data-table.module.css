@@ -272,6 +272,11 @@
   background: var(--color-surface);
   z-index: 1;
 }
+/* The code of a row (PCR-2026-0006) is read as one word: it never wraps; the table scrolls instead. */
+.cell:first-child .link,
+.cell:first-child a {
+  white-space: nowrap;
+}
 .head:first-child {
   background: var(--color-surface-muted);
   z-index: 3;

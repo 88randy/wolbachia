@@ -27,8 +27,8 @@ export const buttonVariants = cva(
       },
       size: {
         sm: "min-h-[var(--web-control-sm)] px-3",
-        md: "min-h-[var(--web-control-md)]",
-        lg: "min-h-[var(--web-control-lg)]",
+        md: "min-h-[var(--web-control-lg)]",
+        lg: "min-h-[var(--web-control-xl)] px-5",
         xl: "min-h-[var(--web-control-xl)] px-5 text-sm",
       },
     },

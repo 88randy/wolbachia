@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormatCalendarDate } from "../../format/use-formatters";
 import { useLanguage } from "../../i18n/use-language";
+import { CONTROL_TRIGGER, FIELD_LABEL_CLASS, FIELD_STACK_CLASS } from "../../ui/control-classes";
 import { fromIsoDay, toIsoDay } from "./date-range";
 
 export interface DateRangeFieldProps {
@@ -29,17 +30,13 @@ export function DateRangeField({ label, from, to, onChange }: DateRangeFieldProp
       ? t("regulatory.common.pickDates")
       : `${format(from)} – ${format(to ?? from)}`;
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold text-ink-2">
+    <div className={FIELD_STACK_CLASS}>
+      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
         {label}
       </label>
       <Popover>
         <PopoverTrigger asChild>
-          <button
-            id={id}
-            type="button"
-            className="inline-flex min-h-[var(--web-control-lg)] w-full items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-[13px] text-ink hover:border-ink-3"
-          >
+          <button id={id} type="button" className={CONTROL_TRIGGER}>
             <CalendarDays aria-hidden="true" className="size-4 flex-none text-ink-2" />
             <span className="min-w-0 flex-1 truncate">{summary}</span>
           </button>

@@ -10,6 +10,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CONTROL_TRIGGER, FIELD_LABEL_CLASS, FIELD_STACK_CLASS } from "../ui/control-classes";
 
 export interface PickerOption {
   value: string;
@@ -43,8 +44,8 @@ export function OptionPicker(props: OptionPickerProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-[13px] font-semibold text-ink">
+    <div className={FIELD_STACK_CLASS}>
+      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
         {label}
       </label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -59,7 +60,8 @@ export function OptionPicker(props: OptionPickerProps) {
             aria-describedby={error === undefined ? undefined : `${id}-error`}
             disabled={disabled}
             className={cn(
-              "flex min-h-[var(--web-control-lg)] w-full items-center justify-between gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-[13px] shadow-xs hover:border-ink-3 disabled:opacity-60",
+              CONTROL_TRIGGER,
+              "justify-between",
               invalid && "border-critical-fg bg-critical-bg",
               selected === undefined ? "text-ink-3" : "text-ink",
             )}

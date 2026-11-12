@@ -9,7 +9,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--web-control-md);
+  min-height: var(--web-control-lg);
   padding: var(--space-0-5) var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -70,10 +70,10 @@
   min-height: var(--web-control-sm);
 }
 .md {
-  min-height: var(--web-control-md);
+  min-height: var(--web-control-lg);
 }
 .lg {
-  min-height: var(--web-control-lg);
+  min-height: var(--web-control-xl);
 }
 .xl {
   min-height: var(--web-control-xl);

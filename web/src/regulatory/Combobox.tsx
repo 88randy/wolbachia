@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CONTROL_TRIGGER, FIELD_LABEL_CLASS, FIELD_STACK_CLASS } from "../ui/control-classes";
 
 export interface ComboboxOption {
   value: string;
@@ -40,8 +41,8 @@ export function Combobox(props: ComboboxProps) {
     setIsOpen(false);
   };
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold text-ink-2">
+    <div className={FIELD_STACK_CLASS}>
+      <label htmlFor={id} className={FIELD_LABEL_CLASS}>
         {props.label}
       </label>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -53,7 +54,7 @@ export function Combobox(props: ComboboxProps) {
             aria-expanded={isOpen}
             aria-controls={`${id}-list`}
             disabled={props.disabled}
-            className="inline-flex min-h-[var(--web-control-lg)] w-full items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-[13px] text-ink hover:border-ink-3 disabled:opacity-60"
+            className={CONTROL_TRIGGER}
           >
             <span className={cn("min-w-0 flex-1 truncate", current === undefined && "text-ink-3")}>
               {current?.label ?? props.placeholder}

@@ -38,7 +38,7 @@ export function QuickFilter({ filter, value, onChange, counts, className }: Quic
             type="button"
             aria-pressed={isOn}
             className={cn(
-              "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium whitespace-nowrap text-ink-2 transition-colors hover:text-ink",
+              "inline-flex h-[calc(var(--web-control-lg)-6px)] items-center gap-1.5 rounded-md px-3 text-[13px] font-medium whitespace-nowrap text-ink-2 transition-colors hover:text-ink",
               isOn && "bg-surface font-semibold text-ink shadow-xs",
             )}
             onClick={() => {

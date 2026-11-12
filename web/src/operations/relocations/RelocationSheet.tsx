@@ -9,27 +9,49 @@ export function RelocationSheet({ scope }: { scope: RelocationScope }) {
   const { t } = useTranslation();
   const sheet = useRelocationSheet();
   return (
-    <SideSheet
-      title={t("relocations.workspace.decision")}
-      description={t("relocations.workspace.samePoint")}
-      open={!!sheet.code}
-      onOpenChange={sheet.onOpenChange}
-      trigger={
-        <Button variant="secondary" aria-disabled={!sheet.code}>
-          {t("relocations.workspace.openSelected")}
-        </Button>
-      }
+    <div className="flex flex-wrap items-center gap-3">
+      <SideSheet
+        title={t("relocations.workspace.decision")}
+        description={t("relocations.workspace.samePoint")}
+        open={!!sheet.code}
+        onOpenChange={sheet.onOpenChange}
+        trigger={<ReviewTrigger isBlocked={!sheet.code} />}
+      >
+        {sheet.code && (
+          <RelocationDecision
+            key={`${scope.context}:${sheet.code}`}
+            scope={scope}
+            code={sheet.code}
+            reason={sheet.reason}
+            onReasonChange={sheet.onReasonChange}
+          />
+        )}
+      </SideSheet>
+      {!sheet.code && <PickFirstHint />}
+    </div>
+  );
+}
+
+function ReviewTrigger({ isBlocked }: { isBlocked: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      variant="secondary"
+      aria-disabled={isBlocked}
+      aria-describedby={isBlocked ? "relocation-pick-first" : undefined}
     >
-      {sheet.code && (
-        <RelocationDecision
-          key={`${scope.context}:${sheet.code}`}
-          scope={scope}
-          code={sheet.code}
-          reason={sheet.reason}
-          onReasonChange={sheet.onReasonChange}
-        />
-      )}
-    </SideSheet>
+      {t("relocations.workspace.openSelected")}
+    </Button>
+  );
+}
+
+/** Why the review button is blocked: nothing is selected yet. */
+function PickFirstHint() {
+  const { t } = useTranslation();
+  return (
+    <p id="relocation-pick-first" className="m-0 text-[13px] text-ink-2">
+      {t("relocations.workspace.pickFirst")}
+    </p>
   );
 }
 

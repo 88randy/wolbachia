@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { Select } from "../../forms/Select";
 import type { ResolutionDraft } from "./geometry";
 interface Props {
   value: ResolutionDraft;
@@ -9,21 +10,25 @@ interface Props {
 export function ResolutionDecision({ value, onChange, canCreatePoint }: Props) {
   const { t } = useTranslation();
   const id = useId();
+  const options = [
+    { value: "", label: t("geography.editor.emptyDecision") },
+    { value: "keep", label: t("geography.editor.keep") },
+    ...(canCreatePoint
+      ? [
+          { value: "move", label: t("geography.editor.move") },
+          { value: "remove", label: t("geography.editor.remove") },
+        ]
+      : []),
+  ];
   return (
-    <>
-      <label htmlFor={id}>{t("geography.field.decision")}</label>
-      <select
-        id={id}
-        value={value.decision}
-        onChange={(event) => {
-          onChange({ ...value, decision: event.target.value as ResolutionDraft["decision"] });
-        }}
-      >
-        <option value="">{t("geography.editor.emptyDecision")}</option>
-        <option value="keep">{t("geography.editor.keep")}</option>
-        {canCreatePoint && <option value="move">{t("geography.editor.move")}</option>}
-        {canCreatePoint && <option value="remove">{t("geography.editor.remove")}</option>}
-      </select>
-    </>
+    <Select
+      id={id}
+      label={t("geography.field.decision")}
+      value={value.decision}
+      options={options}
+      onChange={(event) => {
+        onChange({ ...value, decision: event.target.value as ResolutionDraft["decision"] });
+      }}
+    />
   );
 }
