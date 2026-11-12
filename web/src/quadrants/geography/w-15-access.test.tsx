@@ -44,7 +44,7 @@ describe("geography permission and scope isolation", () => {
       await screen.findByRole("heading", { name: "No encontramos esta p\u00e1gina" });
       expect(screen.queryByRole("heading", { name: "C-07" })).toBeNull();
       expect(
-        screen.queryByRole("textbox", { name: "Pol\u00edgono (longitud, latitud)" }),
+        screen.queryByRole("textbox", { name: "Forma en el mapa" }),
       ).toBeNull();
     },
   );

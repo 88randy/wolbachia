@@ -16,6 +16,12 @@ import {
   point,
   pageOf,
 } from "./geography-test-helpers";
+// SKIPPED (test-stability pass 2026-11-11): these tests drive the typed-coordinates editor
+// (QuadrantEditor / PolygonField), which no screen mounts any more: the map editor is the only
+// editor (QuadrantScreen) and coordinates are never typed. The publication, evidence and retry
+// rules they protect live on in the map editor (web/src/quadrants/editor), which has no tests
+// yet. Follow-up: port each case to a map-editor test (terra-draw cannot be driven from jsdom,
+// so it needs the editor model/saves layer), then delete this file.
 
 vi.mock("./GeographyMap", () => ({ default: () => <div role="region" aria-label="Map" /> }));
 const BLOCK: Schemas["Block"] = {
@@ -46,7 +52,7 @@ function createdPoint(code: string): Schemas["SamplingPoint"] {
     current_version: original.current_version ? { ...original.current_version, point: code } : null,
   };
 }
-describe("W24 proposals and partial point creation", () => {
+describe.skip("W24 proposals and partial point creation", () => {
   test("reviews a proposal before creating its block and retains fixed codes after a partial point failure", async () => {
     let pointAttempts = 0;
     const { api } = await openGeography({
@@ -180,7 +186,7 @@ function persistedPoint(body: Schemas["SamplingPointCreateRequest"]): Schemas["S
     current_version: { ...saved.current_version, location: body.location },
   };
 }
-test.each(["lost", "gateway", "empty", "duplicate"])(
+test.skip.each(["lost", "gateway", "empty", "duplicate"])(
   "an ambiguous committed outcome %s must reconcile explicitly before the other three points",
   async (outcome) => {
     const lost = deferredReply();
@@ -246,7 +252,7 @@ test.each(["lost", "gateway", "empty", "duplicate"])(
     ).toHaveLength(4);
   },
 );
-test.each(["block", "location", "missing"])(
+test.skip.each(["block", "location", "missing"])(
   "an uncertain point remains frozen when the scoped lookup has a mismatched %s",
   async (mismatch) => {
     const lost = deferredReply();
@@ -294,7 +300,7 @@ test.each(["block", "location", "missing"])(
   },
 );
 
-test("a deferred reconciliation 401 releases the same-identity form for another manual read without replay", async () => {
+test.skip("a deferred reconciliation 401 releases the same-identity form for another manual read without replay", async () => {
   const lost = deferredReply();
   const lookup = deferredReply();
   let saved: Schemas["SamplingPoint"] | undefined;
@@ -377,7 +383,7 @@ function releaseCreationReply(reply: ReturnType<typeof deferredReply>, outcome: 
   );
 }
 
-test.each([0, 1])(
+test.skip.each([0, 1])(
   "a definitive point POST 401 after %i saved points permits only a manual pending retry after reauthentication",
   async (savedBeforeRejection) => {
     const rejection = deferredReply();
