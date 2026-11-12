@@ -1,6 +1,7 @@
 """Read-only projections preserve event, capture, rule and catalog provenance."""
 
 from typing import Any, cast
+from uuid import UUID
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -350,3 +351,16 @@ class BagQuerySerializer(RecordQuerySerializer):
 
 class IdentityQuerySerializer(RecordQuerySerializer):
     code = serializers.UUIDField(required=False)  # type: ignore[assignment]
+
+
+class OvitrapQuerySerializer(IdentityQuerySerializer):
+    """`code` is the short code (`OVT-0001`) or, as before, the identity UUID."""
+
+    code = serializers.CharField(max_length=50, required=False)  # type: ignore[assignment]
+
+    def validate_code(self, value: str) -> str | UUID:
+        value = value.strip()
+        try:
+            return UUID(value)
+        except ValueError:
+            return value

@@ -29,6 +29,9 @@ class Ovitrap(OvitrapRecord):
     latest_void: dict[str, Any] | None
 
     client_uuid = models.UUIDField(editable=False)
+    # Short human code (OVT-0001) printed large on the label; typed by hand when the QR fails.
+    # Taken from the pre-registered label of `client_uuid` or allocated at placement.
+    code = models.CharField(max_length=50, editable=False)
     sampling_point = models.ForeignKey(
         "geography.SamplingPoint", on_delete=models.PROTECT, related_name="ovitraps"
     )
@@ -46,11 +49,28 @@ class Ovitrap(OvitrapRecord):
             models.UniqueConstraint(
                 fields=["organization", "client_uuid"], name="ovitrap_org_client_uuid"
             ),
+            models.UniqueConstraint(fields=["organization", "code"], name="ovitraps_ovitrap_code"),
         ]
 
-    @property
-    def code(self) -> str:
-        return str(self.client_uuid)
+
+class OvitrapLabel(ImmutableMixin, OrgScopedModel):
+    """A printed ovitrap sticker registered before the trap exists (QR `wbf:1:ovitrap:<uuid>`).
+
+    Registering it up front gives the label its short code, so a courier can resolve the code
+    offline from the downloaded pool of unplaced labels. Placing the trap later reuses both
+    `client_uuid` and `code`. A label is unplaced while no `Ovitrap` carries its `client_uuid`.
+    """
+
+    client_uuid = models.UUIDField(editable=False)
+    code = models.CharField(max_length=50, editable=False)
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "client_uuid"], name="ovitraps_label_client_uuid"
+            ),
+            models.UniqueConstraint(fields=["organization", "code"], name="ovitraps_label_code"),
+        ]
 
 
 class PlacementAttempt(OvitrapRecord):

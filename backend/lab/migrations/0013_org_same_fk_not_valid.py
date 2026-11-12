@@ -184,7 +184,7 @@ class Migration(migrations.Migration):
         ("inventory", "0014_supply_gtin"),
         ("lab", "0012_org_id_unique_targets"),
         ("organizations", "0009_org_id_unique_targets"),
-        ("ovitraps", "0006_org_id_unique_targets"),
+        ("ovitraps", "0007_org_id_unique_targets"),
         ("people", "0002_people_guards"),
         ("privacy", "0003_api_keys"),
         ("releases", "0007_readable_codes"),

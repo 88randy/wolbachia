@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { UnfinishedNotice } from "../ovitrap-check/UnfinishedNotice.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
 
 interface Props {
@@ -21,6 +22,7 @@ export function CloseFrame({ step, onBack, hasError, footer, children }: Props) 
       footer={footer}
     >
       {hasError ? <InfoNotice tone="danger" message={t("field.close.problem")} /> : null}
+      <UnfinishedNotice />
       {children}
     </ScreenScaffold>
   );

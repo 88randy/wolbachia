@@ -97,6 +97,19 @@ export class OvitrapStore {
       },
     ]);
   }
+  /** Drops the unsent local draft and the photos reserved for it that no event owns yet. */
+  async discardDraft(eventId: string): Promise<void> {
+    await this.#db.runAtomically([
+      {
+        sql: "DELETE FROM attachment_file WHERE draft_id=? AND NOT EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=attachment_file.id)",
+        params: [eventId],
+      },
+      {
+        sql: "DELETE FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft, '$.eventId')=?",
+        params: [eventId],
+      },
+    ]);
+  }
   async update(draft: Draft, expectedVersion: string | null): Promise<boolean> {
     const rows = await this.#db.query(
       "UPDATE ovitrap_draft SET draft = ? WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.eventId') = ? AND draft=? RETURNING slot",

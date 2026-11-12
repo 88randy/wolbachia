@@ -541,6 +541,12 @@ export const mobile = {
     "No conocemos el punto de esta ovitrampa en el teléfono. La oficina revisará ubicación y alcance; no confirmamos cumplimiento.",
   "mobile.ovitrap.acknowledge": "Entiendo que la captura requiere revisión de la oficina",
   "mobile.ovitrap.retryGps": "Intentar GPS de nuevo",
+  "mobile.ovitrap.blockedReview": "Marca que la oficina lo va a revisar para poder guardar.",
+  "mobile.ovitrap.blockedPhoto": "Falta una foto para poder guardar.",
+  "mobile.ovitrap.blockedPrepare": "Falta marcar la preparación de la ovitrampa.",
+  "mobile.ovitrap.blockedOutdated":
+    "Los datos de este punto son de otro día. Vuelve a la ruta y entra de nuevo al punto.",
+  "mobile.ovitrap.blockedStep": "Falta completar un paso antes de guardar.",
   "mobile.ovitrap.shiftBlocked":
     "La jornada no permite capturar ni guardar. Revisa la apertura con tu supervisor; el borrador se conserva.",
   "mobile.ovitrap.staleWeekContext":

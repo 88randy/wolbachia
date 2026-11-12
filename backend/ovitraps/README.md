@@ -287,3 +287,17 @@ under its original authority. Legitimate numeric/derived Lab state delivery reco
 the actual actor/count exposure even if the actor has no current recount grant;
 granting it later cannot certify blindness. All result/cause/history/void-context
 surfaces use this same policy. No field capture quantity or new FieldEvent is added.
+
+## Short code and label pool
+
+`Ovitrap.code` is a short human code (`OVT-0001`), unique per organization, allocated with the
+shared `CodeCounter` (FOR UPDATE NOWAIT, a busy counter answers 429 like the other codes) and
+backfilled for existing rows. The QR payload stays `wbf:1:ovitrap:<uuid>`.
+
+Identity is minted at placement from the label UUID, so a code can only be printed ahead if the
+label is registered ahead: `POST /ovitrap-labels/ {count}` (W19, `ovitrap.read`) creates
+`OvitrapLabel` rows (uuid + code, insert-only). Placing a trap whose UUID has a label reuses its
+code; an unregistered QR gets a fresh code at placement. A label is unplaced while no `Ovitrap`
+carries its UUID. `GET /field/ovitrap-labels/` (`field.bootstrap`) returns the unplaced pool
+(oldest first, at most 5000) that the phone stores, so a typed code resolves offline.
+`GET /ovitraps/?code=` accepts the short code or the identity UUID.

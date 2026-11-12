@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
         ("field_sync", "0007_org_id_unique_targets"),
         ("geography", "0006_org_id_unique_targets"),
         ("organizations", "0009_org_id_unique_targets"),
-        ("ovitraps", "0005_relocationdecision_published_point_version_and_more"),
+        ("ovitraps", "0006_ovitrap_short_code"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

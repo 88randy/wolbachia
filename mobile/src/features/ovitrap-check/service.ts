@@ -4,12 +4,22 @@ import { ShiftBlockedError } from "./shift-authorization.ts";
 import type { CaptureShiftAuthorization } from "./shift-authorization.ts";
 import { availability } from "./availability.ts";
 import { correctionDraft } from "./correction.ts";
-import { assertSameTarget, normalizeGps, bagIdentity, CatalogChangedError } from "./ports.ts";
+import { staleDraft } from "./stale-draft.ts";
+import type { StaleDraft } from "./stale-draft.ts";
+import {
+  assertSameTarget,
+  normalizeGps,
+  bagIdentity,
+  CaptureBlockedError,
+  CatalogChangedError,
+} from "./ports.ts";
 import { eventInsertStatement } from "../../outbox/outbox-repository.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { normalizePaddle, parseQr, UUID_PATTERN } from "./domain.ts";
 import { captureEvent, voidEvent } from "./events.ts";
 import { newDraft } from "./new-draft.ts";
+import { findPoolLabel, normalizeLabelCode } from "./label-pool.ts";
+import type { PoolLabel } from "./label-pool.ts";
 import type { OvitrapStore, StoredCapture } from "./store.ts";
 import type {
   Draft,
@@ -37,6 +47,8 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly evidenceShift: () => Promise<CaptureShiftAuthorization>;
   readonly refresh?: () => Promise<void>;
+  /** The downloaded pool of unplaced labels; lets a typed `OVT-0001` resolve without a network. */
+  readonly labelPool?: () => Promise<readonly PoolLabel[]>;
   /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
   readonly publishAssignment?: () => Promise<void>;
 }
@@ -73,6 +85,8 @@ export interface Snapshot extends StoredCapture {
   readonly repeat: OutboxEvent | null;
   readonly reuse: readonly Reuse[];
   readonly isBagReserved: boolean;
+  /** An unfinished draft from another day or a closed shift: the courier must choose first. */
+  readonly staleDraft: StaleDraft | null;
 }
 /** Every command carries the displayed UUID; validate it inside the writer and on its loaded draft. */
 function labelId(value: string, isManual: boolean): string | null {
@@ -81,7 +95,7 @@ function labelId(value: string, isManual: boolean): string | null {
   return parseQr(code, "ovitrap")?.id ?? null;
 }
 /** Outcome of scanning the label of a trap being placed. */
-export type LabelResult = "read" | "invalid" | "used" | "cancelled";
+export type LabelResult = "read" | "invalid" | "used" | "unknown" | "cancelled";
 export class OvitrapService {
   readonly draftBuffer = new OvitrapDraftBuffer();
   readonly #deps: Dependencies;
@@ -89,11 +103,17 @@ export class OvitrapService {
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
-  #write<T>(action: () => Promise<T>, eventId: string | null, startsCapture = false): Promise<T> {
+  #write<T>(
+    action: () => Promise<T>,
+    eventId: string | null,
+    startsCapture = false,
+    isStaleChoice = false,
+  ): Promise<T> {
     const next = this.#tail.then(async () => {
       const state = await this.#deps.store.read();
       assertCaptureIdentity(state, eventId);
-      if (await this.#isShiftBlocked(startsCapture ? null : state.draft))
+      // Choosing what to do with an old draft is allowed whatever the shift is.
+      if (!isStaleChoice && (await this.#isShiftBlocked(startsCapture ? null : state.draft)))
         throw new ShiftBlockedError();
       return action();
     });
@@ -125,7 +145,8 @@ export class OvitrapService {
       lifecycleTargetId: state.draft
         ? await this.#deps.store.lifecycleTargetId(state.draft.ovitrapId)
         : null,
-      isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
+      isShiftBlocked: this.#blocksShift(state.draft, shiftId),
+      staleDraft: await this.#staleDraft(state, shiftId),
       ...scope,
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
       isBagReserved: Boolean(
@@ -136,9 +157,69 @@ export class OvitrapService {
       repeat: state.draft && !state.event ? await this.#deps.store.repeat(state.draft) : null,
     };
   }
+  /** A draft the courier chose to finish late keeps its own (closed) shift. */
+  #blocksShift(draft: Draft | null, shiftId: string | null): boolean {
+    if (draft?.isLate === true) return false;
+    return !shiftId || Boolean(draft && draft.shiftId !== shiftId);
+  }
   async #isShiftBlocked(draft: Draft | null): Promise<boolean> {
-    const id = await this.#deps.shiftId();
-    return !id || Boolean(draft && draft.shiftId !== id);
+    return this.#blocksShift(draft, await this.#deps.shiftId());
+  }
+  async #staleDraft(state: StoredCapture, shiftId: string | null): Promise<StaleDraft | null> {
+    const { draft } = state;
+    return staleDraft({
+      draft,
+      isEvent: state.event !== null,
+      shiftId,
+      now: this.#deps.now(),
+      snapshots: await this.#deps.store.snapshots(),
+      isLabelTaken:
+        draft?.mode === "place" && draft.labelScanned === true
+          ? await this.#isIdentityTaken(draft.ovitrapId, { ...draft, labelScanned: false })
+          : false,
+    });
+  }
+  /** "Yes, I did it that day": finish the old draft, saved with its original time and context. */
+  continueStale(eventId: string | null): Promise<Snapshot> {
+    return this.#write(
+      async () => {
+        const { draft, event, draftVersion } = await this.#readExpected(eventId);
+        if (!draft || event) return this.read();
+        const stale = await this.#staleDraft(
+          { draft, event, draftVersion } as StoredCapture,
+          await this.#deps.shiftId(),
+        );
+        if (stale?.invalidReason) throw new CaptureBlockedError("scope");
+        const snapshots = await this.#deps.store.snapshots();
+        await this.#updateDraft(
+          { ...draft, ...snapshots, isLate: true, reviewAcknowledged: false },
+          draftVersion,
+        );
+        return this.read();
+      },
+      eventId,
+      false,
+      true,
+    );
+  }
+  /** "No, start again": the unsent local draft and its unsent photos are dropped. */
+  discardStale(eventId: string | null): Promise<Snapshot> {
+    return this.#write(
+      async () => {
+        const { draft, event } = await this.#readExpected(eventId);
+        if (draft && !event) await this.#deps.store.discardDraft(draft.eventId);
+        this.draftBuffer.rebind(null);
+        return this.read();
+      },
+      eventId,
+      false,
+      true,
+    );
+  }
+  /** How many captures are started and not finished (the one local draft). */
+  async unfinishedCount(): Promise<number> {
+    const { draft, event } = await this.#deps.store.read();
+    return draft && !event ? 1 : 0;
   }
   async #scope(draft: Draft | null) {
     return availability(draft, await this.#deps.store.snapshots());
@@ -154,8 +235,9 @@ export class OvitrapService {
       return; // The reason is recorded for the on-screen code; the phone copy stays as it was.
     }
     const stored = await this.#deps.store.read();
-    if (stored.draft && !stored.event)
+    if (stored.draft && !stored.event) {
       await this.#adoptCurrentAssignment(stored.draft, stored.draftVersion);
+    }
   }
   async refresh(eventId: string | null): Promise<void> {
     assertCaptureIdentity(await this.#deps.store.read(), eventId);
@@ -298,8 +380,9 @@ export class OvitrapService {
     return this.#write(async () => {
       const { draft, event, draftVersion } = await this.#readExpected(eventId);
       if (!draft || event || draft.mode !== "place") return "cancelled";
-      const id = labelId(value, isManual);
-      if (!id) return "invalid";
+      const identity = await this.#labelIdentity(value, isManual);
+      if ("failure" in identity) return identity.failure;
+      const { id } = identity;
       if (await this.#isIdentityTaken(id, draft)) return "used";
       await this.#updateDraft(
         {
@@ -321,12 +404,25 @@ export class OvitrapService {
   ): Promise<string | null> {
     try {
       const { draft } = await this.#readExpected(eventId);
-      const id = labelId(value, isManual);
+      const identity = await this.#labelIdentity(value, isManual);
+      const id = "id" in identity ? identity.id : null;
       if (!draft || !id) return null;
       return draft.assignment?.ovitraps.find((item) => item.id === id)?.point.code ?? null;
     } catch {
       return null;
     }
+  }
+  /** A typed short code resolves through the downloaded pool, then takes the same path as a scan. */
+  async #labelIdentity(
+    value: string,
+    isManual: boolean,
+  ): Promise<{ readonly id: string } | { readonly failure: "invalid" | "unknown" }> {
+    if (isManual && normalizeLabelCode(value) !== null) {
+      const label = findPoolLabel((await this.#deps.labelPool?.()) ?? [], value);
+      return label ? { id: label.id } : { failure: "unknown" };
+    }
+    const id = labelId(value, isManual);
+    return id ? { id } : { failure: "invalid" };
   }
   async #isIdentityTaken(id: string, draft: Draft): Promise<boolean> {
     if (id === draft.ovitrapId && draft.labelScanned) return false;
@@ -483,8 +579,8 @@ export class OvitrapService {
         : draft;
       const gate = saveGate(validationDraft, this.#deps.now());
       if (gate || (state.repeat && draft.replacesEventId !== state.repeat.envelope.id))
-        throw new Error(`Capture blocked: ${gate ?? "repeat"}`);
-      if (state.isScopeBlocked) throw new Error("Current assignment no longer grants this point.");
+        throw new CaptureBlockedError(gate ?? "repeat");
+      if (state.isScopeBlocked) throw new CaptureBlockedError("scope");
       if (state.isBagReserved) throw new Error("Bag code is reserved.");
       await this.#commit(draft, state.draftVersion);
       return this.read();

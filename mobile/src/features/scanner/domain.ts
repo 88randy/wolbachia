@@ -12,7 +12,8 @@ export type ScannerError =
   | "retired"
   | "duplicate"
   | "storage"
-  | "labelUsed";
+  | "labelUsed"
+  | "labelUnknown";
 export type ScannerResult =
   | { readonly resource: ScannerResource; readonly manualCapture: boolean }
   | { readonly error: ScannerError };

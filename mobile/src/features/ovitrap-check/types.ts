@@ -61,6 +61,8 @@ export interface Draft {
   readonly manualCapture: boolean;
   /** Placing: the physical label was scanned, so its UUID is the identity of this ovitrap. */
   readonly labelScanned?: boolean;
+  /** The courier chose to finish this old draft: it keeps its original time and shift. */
+  readonly isLate?: boolean;
   readonly step: Step;
   readonly finding: string;
   readonly paddlePresent: boolean | null;

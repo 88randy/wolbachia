@@ -181,6 +181,12 @@ export const inventory = {
   "inventory.map.fallback": "Mapa no disponible. La lista y las coordenadas siguen disponibles.",
   "inventory.map.attribution": "Colaboradores de OpenStreetMap",
   "inventory.map.coordinates": "Coordenadas",
+  "inventory.map.pin": "{kind}: {name}, código {code}. Abrir detalles.",
+  "inventory.map.clusterPin": "{count} ubicaciones en este punto. Ver la lista.",
+  "inventory.map.clusterTitle": "{count} ubicaciones en este punto",
+  "inventory.map.popupLabel": "Detalles de la ubicación",
+  "inventory.map.openRecord": "Ver la ubicación",
+  "inventory.map.close": "Cerrar detalles",
   "inventory.labels.title": "Etiquetas QR",
   "inventory.labels.description":
     "Elige el tipo, marca los registros, escoge el tamaño de la etiqueta y manda a imprimir.",

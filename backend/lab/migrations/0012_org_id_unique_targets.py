@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
         ("field_sync", "0007_org_id_unique_targets"),
         ("lab", "0011_pcr_insert_only_guards"),
         ("organizations", "0009_org_id_unique_targets"),
-        ("ovitraps", "0006_org_id_unique_targets"),
+        ("ovitraps", "0007_org_id_unique_targets"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

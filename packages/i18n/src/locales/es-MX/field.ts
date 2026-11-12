@@ -11,7 +11,7 @@ export const field = {
   "field.capture.backToRoute": "Ver mi ruta",
   "field.capture.labelQuestion": "Escanea la etiqueta de la ovitrampa",
   "field.capture.labelHint":
-    "Es el QR pegado en la ovitrampa nueva. Así queda ligada a este punto.",
+    "Es el QR pegado en la ovitrampa nueva. Si no se puede escanear, escribe el número que dice OVT.",
   "field.capture.labelScan": "Escanear etiqueta",
   "field.capture.labelAgain": "Escanear otra etiqueta",
   "field.capture.labelReady": "Etiqueta lista.",
@@ -25,6 +25,8 @@ export const field = {
   "field.scan.labelPlacedAt":
     "Esta ovitrampa ya está colocada en el punto {point}. Escanea una etiqueta nueva.",
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",
+  "field.scan.labelUnknown":
+    "No encontramos esa etiqueta. Revisa el número que está escrito en grande o usa una etiqueta nueva.",
   "field.gps.searching": "Buscando tu ubicación…",
   "field.gps.searchingAccuracy": "Buscando tu ubicación… ± {meters} m",
   "field.gps.ready": "Ubicación lista.",
@@ -109,6 +111,8 @@ export const field = {
   "field.capture.reusePaddle": "Papeleta usada ({count} veces)",
   "field.capture.reusePaddleOne": "Papeleta usada (1 vez)",
   "field.capture.review.distance": "Estás lejos del punto.",
+  "field.capture.review.gpsApprox":
+    "Tu ubicación es aproximada (± {meters} m). La oficina lo revisará.",
   "field.capture.review.gps": "No pudimos confirmar tu ubicación.",
   "field.capture.review.location": "Falta el punto de esta ovitrampa.",
   "field.capture.review.stale": "Las reglas del teléfono son viejas.",
@@ -344,6 +348,20 @@ export const field = {
   "field.receipt.title": "Recibir insumos",
   "field.receipt.whatHappened": "Cuéntalo con tus palabras",
   "field.receipt.whatKind": "¿Qué pasó?",
+  "field.stale.title": "Tienes una captura sin terminar, del {date} a las {time}.",
+  "field.stale.continue": "Sí la hice ese día, terminarla",
+  "field.stale.continueHint":
+    "Se guarda con la hora en que la hiciste. La oficina la va a revisar.",
+  "field.stale.restart": "No la hice, empezar de nuevo",
+  "field.stale.restartHint": "Se borran las fotos de esa captura que no se han enviado.",
+  "field.stale.invalid":
+    "Esta captura del {date} ya no se puede guardar porque {reason}. Empieza una nueva.",
+  "field.stale.reason.assignment": "tu ruta cambió",
+  "field.stale.reason.point": "el punto ya no está en tu ruta",
+  "field.stale.reason.placed": "esa ovitrampa ya está colocada",
+  "field.stale.pending": "Tienes {count} capturas sin terminar.",
+  "field.stale.pendingOne": "Tienes 1 captura sin terminar.",
+  "field.stale.pendingAction": "Terminar o descartar",
   "field.scan.again": "Escanear de nuevo",
   "field.scan.cameraDenied": "Sin permiso de cámara no se puede escanear. Actívalo en Ajustes.",
   "field.scan.cameraFailed": "No se pudo abrir la cámara.",
