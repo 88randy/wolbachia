@@ -23,7 +23,7 @@ credentials file (never committed):
 
 ```
 TUTORIALS_CREDENTIALS_FILE=<path to demo-credentials.local.md> \
-  npm run tutorials:record -- inventory            # one module
+  npm run tutorials:record -- inventory            # one module (inventory | modules)
   npm run tutorials:record -- -g "moveTransfer"    # one tutorial
 ```
 

@@ -51,6 +51,7 @@ export function ClipPlayer({ video, poster, isPlaying, label, onEnded }: ClipPla
         muted
         playsInline
         preload="metadata"
+        src={video}
         poster={poster}
         aria-label={label}
         className="size-full object-contain"
@@ -58,9 +59,7 @@ export function ClipPlayer({ video, poster, isPlaying, label, onEnded }: ClipPla
         onError={() => {
           setFailed(video);
         }}
-      >
-        <source src={video} type="video/webm" />
-      </video>
+      ></video>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import type { StepScript } from "./support/record-step";
  * fills it, and stops before the final button, so the shared demo data is not touched.
  */
 const USER = "demo-warehouse";
+/** Sees the QA differences (the warehouse user no longer has any in scope). */
+const SUPERVISOR = "demo-supervisor";
 
 /** Opens a combobox by its label and picks its first option. */
 async function pickFirst(actor: Actor, label: RegExp | string): Promise<void> {
@@ -104,14 +106,14 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
   },
 
   "resolveDiscrepancy/open": {
-    user: USER,
+    user: SUPERVISOR,
     start: "/inventory/discrepancies",
     run: async (a) => {
       await a.click(a.page.locator("tbody a").first());
     },
   },
   "resolveDiscrepancy/review": {
-    user: USER,
+    user: SUPERVISOR,
     start: "/inventory/discrepancies",
     run: async (a) => {
       await a.click(a.page.locator("tbody a").first());
@@ -139,7 +141,8 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
     user: USER,
     start: "/inventory/reconciliations",
     run: async (a) => {
-      await a.point(a.page.getByRole("button", { name: "Justificar" }).first());
+      await a.point(a.page.getByRole("heading", { name: "Cuadrar entregas" }));
+      await a.point(a.page.getByRole("button", { name: "Más opciones" }).first());
     },
   },
   "courierDelivery/void": {
@@ -154,8 +157,8 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
     user: USER,
     start: "/inventory/reconciliations",
     run: async (a) => {
-      await a.click(a.page.getByRole("button", { name: "Justificar" }).first());
-      await a.click(a.page.getByRole("combobox", { name: /Motivo/ }));
+      await a.click(a.page.getByRole("button", { name: "Más opciones" }).first());
+      await a.clickIfThere(a.page.getByRole("menuitem", { name: /Justificar/ }));
     },
   },
 
