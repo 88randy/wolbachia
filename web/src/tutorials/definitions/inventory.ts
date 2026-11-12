@@ -91,4 +91,15 @@ export const INVENTORY_TUTORIALS = {
       { id: "save", next: [] },
     ],
   },
+  printLabels: {
+    id: "printLabels",
+    module: "inventory",
+    steps: [
+      { id: "pick", hasClip: false, next: ["action"] },
+      { id: "action", hasClip: false, next: ["size"] },
+      { id: "size", hasClip: false, next: ["print"] },
+      { id: "print", hasClip: false, next: ["stick"] },
+      { id: "stick", hasClip: false, next: [] },
+    ],
+  },
 } as const satisfies Record<string, Tutorial>;

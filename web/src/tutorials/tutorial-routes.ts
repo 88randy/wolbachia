@@ -14,6 +14,7 @@ export const TUTORIAL_IDS = [
   "writeOffs",
   "createLocation",
   "suppliesCatalog",
+  "printLabels",
   "inventoryHub",
   // Other modules
   "fleetMotos",
@@ -55,6 +56,7 @@ export const TUTORIAL_ROUTES: Readonly<Record<string, TutorialId>> = {
   "/inventory/write-offs": "writeOffs",
   "/inventory/locations": "createLocation",
   "/inventory/supplies": "suppliesCatalog",
+  "/inventory/labels": "printLabels",
   "/fleet/motorcycles": "fleetMotos",
   "/fleet/motorcycles/$code": "fleetMotos",
   "/scheduling": "scheduleWeek",

@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   sidebarWidth: "wolbachia.sidebarWidth",
   /** Slug of the organization chosen by a multi-organization user; cleared on sign-out. */
   organization: "wolbachia.organization",
+  /** Last label format and copies chosen in the print labels dialog. */
+  labelPrint: "wolbachia.labelPrint",
 } as const;
 
 /** Returns the stored value, or null when absent or when storage is unavailable. */

@@ -54,6 +54,7 @@ import { phones } from "./phones.ts";
 import { platform } from "./platform.ts";
 import { mapEditor } from "./mapEditor.ts";
 import { mapPicker } from "./mapPicker.ts";
+import { labels } from "./labels.ts";
 import { users } from "./users.ts";
 import { rules } from "./rules.ts";
 import { states } from "./states.ts";
@@ -119,6 +120,7 @@ export const esMX = {
   ...platform,
   ...mapEditor,
   ...mapPicker,
+  ...labels,
   ...users,
   ...rules,
   ...voiding,
