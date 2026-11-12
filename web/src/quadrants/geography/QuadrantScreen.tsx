@@ -12,7 +12,6 @@ import type { GeographyScope } from "./use-w-15";
 import { ReadOnlyQuadrantMap } from "./ReadOnlyQuadrantMap";
 import { W24Page } from "./W24Page";
 import { MeasureFacts } from "./MeasureFacts";
-import styles from "./geography.module.css";
 interface Props {
   scope: GeographyScope;
   quadrant: Schemas["Quadrant"];
@@ -40,7 +39,7 @@ export function QuadrantScreen({ scope, quadrant }: Props) {
       ) : (
         <ReadOnlyQuadrantMap scope={scope} quadrant={quadrant} />
       )}
-      <section className={styles.page}>
+      <section className="flex min-w-0 flex-col gap-4">
         <RecordLabels>
           <W24Page scope={scope} quadrant={quadrant} />
         </RecordLabels>

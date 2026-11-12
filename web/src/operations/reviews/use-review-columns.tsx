@@ -13,7 +13,12 @@ export function useReviewColumns(): DataTableColumn<ReviewRow>[] {
   const courierName = useCouriers([]).nameOf;
   const reason = useReviewReason();
   return [
-    { id: "code", headerKey: "reviews.workspace.causeColumn", cell: (row) => reason(row.code) },
+    {
+      id: "code",
+      headerKey: "reviews.workspace.causeColumn",
+      cell: (row) => <span className="inline-block min-w-44">{reason(row.code)}</span>,
+      link: (row) => ({ to: "/operations/reviews", search: { item: row.id } }),
+    },
     {
       id: "event_type",
       headerKey: "reviews.workspace.event",

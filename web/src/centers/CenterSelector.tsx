@@ -34,10 +34,10 @@ export function CenterSelector() {
         <SelectTrigger
           id="active-center"
           aria-label={t("orgAdmin.center.filter")}
-          className="h-9 max-w-64 min-w-0 gap-2 rounded-full border-line bg-surface px-3 text-[13px] font-medium text-ink shadow-xs data-[size=default]:h-9"
+          className="h-9 max-w-64 min-w-0 shrink-0 gap-2 rounded-full border-line bg-surface px-3 text-[13px] font-medium text-ink shadow-xs data-[size=default]:h-9"
         >
           <MapPin aria-hidden="true" strokeWidth={1.75} className="size-4 text-action" />
-          <span className="text-ink-2">{t("orgAdmin.center.filter")}:</span>
+          <span className="text-ink-2 max-[1180px]:hidden">{t("orgAdmin.center.filter")}:</span>
           <SelectValue placeholder={t("orgAdmin.center.choose")} />
         </SelectTrigger>
       </Tooltip>

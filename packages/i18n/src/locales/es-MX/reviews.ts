@@ -15,6 +15,7 @@ export const reviews = {
   "reviews.workspace.event": "Tipo de evento",
   "reviews.workspace.courier": "Referencia del repartidor",
   "reviews.workspace.received": "Recibido el",
+  "reviews.workspace.openShort": "Revisar",
   "reviews.workspace.open": "Revisar evento {id}",
   "reviews.workspace.listHint":
     "Se muestran todos los motivos originales de revisión. Las decisiones no cambian el resultado original de recepción.",

@@ -53,7 +53,7 @@ function stateColumns(t: TFunction, formats: Formats): Columns {
     {
       id: "zone",
       headerKey: "permits.column.zone",
-      cell: (row) => row.quadrant_code,
+      cell: (row) => <span className="whitespace-nowrap">{row.quadrant_code}</span>,
     },
     {
       id: "validity",

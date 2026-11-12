@@ -15,6 +15,7 @@ export const reviews = {
   "reviews.workspace.event": "Event type",
   "reviews.workspace.courier": "Courier reference",
   "reviews.workspace.received": "Received at",
+  "reviews.workspace.openShort": "Review",
   "reviews.workspace.open": "Review event {id}",
   "reviews.workspace.listHint":
     "All original review causes are visible by default. Decisions do not change the original ingest outcome. Filters and paging are applied by the server.",
