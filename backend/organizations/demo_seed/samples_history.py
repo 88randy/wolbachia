@@ -30,7 +30,7 @@ from lab.samples.models import (
     WolbachiaSample,
 )
 from organizations.demo_seed.field import NAMESPACE, catalog_for
-from organizations.demo_seed.history import RULES_VERSION, SEED, _sha
+from organizations.demo_seed.history import RULES_VERSION, SEED, _sha, event_sha
 from organizations.models import Membership, Organization
 from ovitraps.models import OvitrapReading
 from uploads.access import UploadActor
@@ -158,6 +158,7 @@ def ensure_samples(
             payload = {
                 "sample_id": str(uuid5(NAMESPACE, f"sample:{code}")),
                 "code": code,
+                "origin_code": origin["code"],
                 "method_version": str(method.pk),
                 "source_ref": {"kind": "reading", "id": str(reading.pk)},
             }
@@ -168,7 +169,7 @@ def ensure_samples(
                 type="sample.collect",
                 schema_version=1,
                 payload=payload,
-                payload_sha256=_sha(payload),
+                payload_sha256=event_sha(payload),
                 device=device,
                 shift_id=source.shift_id,
                 device_time=when,

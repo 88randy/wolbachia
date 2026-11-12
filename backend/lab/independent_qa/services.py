@@ -69,17 +69,19 @@ def numeric_read_transaction(actor: UploadActor) -> Iterator[None]:
 
     Existing command/sync callers already own this actor before Organization;
     reacquiring it is reentrant and never discovers another historical User.
+
+    A read never answers 429 because another read holds the same rows: it takes the locks in the
+    same global order as the writers but waits (bounded by `SYNC_LOCK_TIMEOUT_MS`) instead of
+    failing NOWAIT. Write locks stay NOWAIT.
     """
     from lab.transactions import lock_users, mapped_transaction
     from organizations.models import Organization
     from uploads.access import lock_actor
 
     with mapped_transaction():
-        lock_users({actor.user.pk})
-        lock_actor(actor)
-        Organization.objects.select_for_update(nowait=True, no_key=True).get(
-            pk=actor.organization.pk
-        )
+        lock_users({actor.user.pk}, nowait=False)
+        lock_actor(actor, nowait=False)
+        Organization.objects.select_for_update(no_key=True).get(pk=actor.organization.pk)
         yield
 
 

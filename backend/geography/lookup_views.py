@@ -17,7 +17,7 @@ from core.pagination import StandardPagination
 from core.permissions import HasAnyPermissionCode
 from core.serializers import OrgScopedModelSerializer
 from core.views import OrgScopedViewSetMixin
-from geography.models import Quadrant, QuadrantVersion
+from geography.models import Block, Quadrant, QuadrantVersion
 from geography.permissions import QUADRANT_LOOKUP, QUADRANT_READ
 from geography.serializers import PolygonField
 from organizations.models import Membership
@@ -87,4 +87,47 @@ class QuadrantLookupViewSet(
             query.is_valid(raise_exception=True)
             if "center" in query.validated_data:
                 rows = rows.filter(center_id=query.validated_data["center"])
+        return rows
+
+
+class BlockLookupSerializer(OrgScopedModelSerializer):
+    class Meta:
+        model = Block
+        fields = ["id", "code", "quadrant"]
+        read_only_fields = fields
+
+
+class BlockLookupQuerySerializer(serializers.Serializer[Any]):
+    quadrant = serializers.UUIDField(required=False)
+
+
+@extend_schema_view(list=extend_schema(parameters=[BlockLookupQuerySerializer]))
+class BlockLookupViewSet(
+    OrgScopedViewSetMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    """`GET /lookups/blocks/`: block codes for pickers; no outlines, points, authors or history."""
+
+    queryset = Block.objects.all()
+    serializer_class = BlockLookupSerializer
+    permission_classes = [IsAuthenticated, HasAnyPermissionCode]
+    required_any_permissions = {"list": LOOKUP_CODES, "retrieve": LOOKUP_CODES}
+    pagination_class = StandardPagination
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ["code"]
+    ordering_fields = ["code"]
+    ordering = ["code", "id"]
+
+    def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return Block.objects.none()
+        rows = union_scoped(
+            super().get_queryset(),
+            self.request.membership,  # type: ignore[attr-defined]
+            LOOKUP_CODES,
+        )
+        if self.action == "list":
+            query = BlockLookupQuerySerializer(data=self.request.query_params)
+            query.is_valid(raise_exception=True)
+            if "quadrant" in query.validated_data:
+                rows = rows.filter(quadrant_id=query.validated_data["quadrant"])
         return rows

@@ -98,6 +98,9 @@ READ_ONLY_CODES = (
 )
 ADMIN_CODES = (
     HOME_READ,
+    # An admin delegates every profile: the narrow lookups must be held to be handed out.
+    USER_LOOKUP,
+    QUADRANT_LOOKUP,
     *PRIVACY_ADMIN_CODES,
     *analytics_permissions.ADMIN_CODES,
     *ADMIN_PERSONNEL_PERMISSION_CODES,

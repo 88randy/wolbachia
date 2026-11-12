@@ -18,7 +18,7 @@ export const RPBI_ID = "10700000-0000-4000-8000-000000000006";
 export const INTENT_ID = "10700000-0000-4000-8000-000000000007";
 
 export function allocationMe(permissions: string[]) {
-  return inventoryMe({ permissions: [...permissions, "field.upload"] });
+  return inventoryMe({ permissions: [...permissions, "field.upload", "user.lookup"] });
 }
 
 function frameLine(overrides: Partial<Schemas["SupplyFrameLine"]>): Schemas["SupplyFrameLine"] {
@@ -74,7 +74,7 @@ export function reconciliation(
 export function reasonRoutes(): FakeApiRoutes {
   return {
     "GET /api/v1/catalogs/void-reason/items/": Response.json(inventoryPage(makeVoidReasonItems())),
-    "GET /api/v1/users/operational/": Response.json(inventoryPage([])),
+    "GET /api/v1/lookups/users/": Response.json(inventoryPage([])),
   };
 }
 

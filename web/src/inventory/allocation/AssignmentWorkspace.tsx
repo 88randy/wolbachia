@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
-import type { Schemas } from "@wolbachia/api-client";
 import { EmptyState } from "../../ui/EmptyState";
 import { ErrorState } from "../../ui/ErrorState";
 import { InlineNotice } from "../../ui/InlineNotice";
@@ -9,7 +8,7 @@ import { AssignmentPanel } from "./AssignmentPanel";
 import { DateField } from "../../ui/DateField";
 import { CourierPicker } from "./CourierPicker";
 import { ASSIGNMENTS_ROUTE, courierDirectoryOptions } from "./allocation-query";
-import type { AllocationScope } from "./allocation-query";
+import type { AllocationScope, CourierEntry } from "./allocation-query";
 
 interface Props {
   scope: AllocationScope;
@@ -20,12 +19,12 @@ interface Props {
 }
 
 /** Only couriers can receive material; if the list has none, everyone listed is offered. */
-function courierChoices(people: Schemas["OperationalPersonnel"][]) {
+function courierChoices(people: CourierEntry[]) {
   const couriers = people.filter((person) => person.profiles.includes("courier"));
   return couriers.length > 0 ? couriers : people;
 }
 
-function Layout({ people, ...props }: Props & { people: Schemas["OperationalPersonnel"][] }) {
+function Layout({ people, ...props }: Props & { people: CourierEntry[] }) {
   const { t } = useTranslation();
   const choices = courierChoices(people);
   const selected = choices.find((person) => person.id === props.courierId);

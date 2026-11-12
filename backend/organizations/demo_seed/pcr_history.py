@@ -21,7 +21,7 @@ from lab.pcr.models import ExternalLab, PcrBatch
 from lab.pcr.selectors import eligible_samples
 from lab.samples.models import SampleReceipt, WolbachiaSample
 from organizations.demo_seed.field import NAMESPACE, catalog_for
-from organizations.demo_seed.history import RULES_VERSION, _sha
+from organizations.demo_seed.history import RULES_VERSION, event_sha
 from organizations.demo_seed.samples_history import METHOD_CODE, _command, _origin
 from organizations.models import Membership, Organization
 from ovitraps.models import OvitrapReading
@@ -72,6 +72,7 @@ def _pending_samples(
         payload = {
             "sample_id": str(uuid5(NAMESPACE, f"sample:{code}")),
             "code": code,
+            "origin_code": origin["code"],
             "method_version": str(method.pk),
             "source_ref": {"kind": "reading", "id": str(reading.pk)},
         }
@@ -82,7 +83,7 @@ def _pending_samples(
             type="sample.collect",
             schema_version=1,
             payload=payload,
-            payload_sha256=_sha(payload),
+            payload_sha256=event_sha(payload),
             device=device,
             shift_id=source.shift_id,
             device_time=when,

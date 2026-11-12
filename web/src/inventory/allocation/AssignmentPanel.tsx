@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
-import type { Schemas } from "@wolbachia/api-client";
 import { SignaturePad } from "../../ui/SignaturePad";
 import { Card } from "../../ui/Card";
 import { InlineNotice } from "../../ui/InlineNotice";
@@ -16,6 +15,7 @@ import { compareDelivery } from "./delivery-compare";
 import { useAssignmentPanel } from "./use-assignment-panel";
 import type { AssignmentPanelState } from "./use-assignment-panel";
 import type { AllocationScope } from "./allocation-query";
+import type { CourierEntry } from "./allocation-query";
 
 const NOTES: Partial<Record<NonNullable<AssignmentPanelState["status"]>, MessageKey>> = {
   cancelled: "allocation.delivery.cancelledNote",
@@ -104,7 +104,7 @@ function Summary({ panel }: { panel: AssignmentPanelState }) {
 /** W15 work area of one courier and day: the delivery on the left, its summary and history right. */
 export function AssignmentPanel(props: {
   scope: AllocationScope;
-  courier: Schemas["OperationalPersonnel"];
+  courier: CourierEntry;
   date: string;
   canAllocate: boolean;
 }) {

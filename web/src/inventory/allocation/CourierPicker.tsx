@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import type { Schemas } from "@wolbachia/api-client";
 import { Combobox } from "../../ui/Combobox";
 import { courierState } from "./use-assignment-route";
+import type { CourierEntry } from "./allocation-query";
 
 /** The courier is chosen by name; the selection rides in the history state, never as an id in the URL. */
 export function CourierPicker({
@@ -10,7 +10,7 @@ export function CourierPicker({
   selected,
   date,
 }: {
-  couriers: readonly Schemas["OperationalPersonnel"][];
+  couriers: readonly CourierEntry[];
   selected: string;
   date: string;
 }) {

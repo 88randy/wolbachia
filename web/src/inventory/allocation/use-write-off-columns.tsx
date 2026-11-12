@@ -8,11 +8,11 @@ import { StatusPill } from "../../ui/StatusPill";
 import { formatInventoryQuantity } from "../format-inventory-quantity";
 import { LabName } from "../../lab/LabName";
 import { courierLabel, lotLabel } from "./allocation-labels";
-import type { WriteOff } from "./allocation-query";
+import type { CourierEntry, WriteOff } from "./allocation-query";
 
 interface Directories {
   lots: readonly Schemas["Lot"][] | undefined;
-  people: readonly Schemas["OperationalPersonnel"][] | undefined;
+  people: readonly CourierEntry[] | undefined;
 }
 type Column = DataTableColumn<WriteOff>;
 

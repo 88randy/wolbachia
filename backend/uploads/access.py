@@ -2,7 +2,6 @@
 
 import hmac
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import cast
 from uuid import UUID
 
@@ -72,13 +71,17 @@ def require_upload_permission(actor: UploadActor) -> EffectiveScope:
     return scope
 
 
-def lock_actor(actor: UploadActor) -> None:
-    """User -> Device -> Session -> Pair, all NOWAIT, before the Upload arbiter."""
-    user = User.objects.select_for_update(nowait=True, no_key=True).get(pk=actor.user.pk)
+def lock_actor(actor: UploadActor, *, nowait: bool = True) -> None:
+    """User -> Device -> Session -> Pair, NOWAIT for writes, before the Upload arbiter.
+
+    A read that must pin the actor passes `nowait=False`: it waits (bounded by the transaction's
+    `lock_timeout`) instead of answering 429 to a harmless concurrent read.
+    """
+    user = User.objects.select_for_update(nowait=nowait, no_key=True).get(pk=actor.user.pk)
     if not user.is_active or not hmac.compare_digest(user.password, actor.user.password):
         raise SessionRevokedError
     if actor.session_id is not None:
-        _lock_bearer(actor, user, server_now())
+        _lock_bearer(actor, user, nowait=nowait)
     elif actor.web_session_key:
         _check_web_session(actor, user)
 
@@ -96,15 +99,16 @@ def _check_web_session(actor: UploadActor, user: User) -> None:
         raise SessionRevokedError
 
 
-def _lock_bearer(actor: UploadActor, user: User, now: datetime) -> None:
+def _lock_bearer(actor: UploadActor, user: User, *, nowait: bool = True) -> None:
+    now = server_now()
     if actor.device_id is None or actor.session_id is None or actor.pair_id is None:
         raise InvalidTokenError
-    device = Device.objects.select_for_update(nowait=True, no_key=True).get(pk=actor.device_id)
-    session = DeviceSession.objects.select_for_update(nowait=True, no_key=True).get(
+    device = Device.objects.select_for_update(nowait=nowait, no_key=True).get(pk=actor.device_id)
+    session = DeviceSession.objects.select_for_update(nowait=nowait, no_key=True).get(
         pk=actor.session_id
     )
     pair = (
-        TokenPair.objects.select_for_update(nowait=True, no_key=True)
+        TokenPair.objects.select_for_update(nowait=nowait, no_key=True)
         .filter(pk=actor.pair_id)
         .first()
     )
