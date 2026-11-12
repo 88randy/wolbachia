@@ -6,6 +6,8 @@ export const common = {
   "common.actions.save": "Guardar",
   "common.actions.cancel": "Cancelar",
   "common.actions.retry": "Reintentar",
+  "common.file.choose": "Elegir archivo",
+  "common.file.none": "Ningún archivo seleccionado",
   "common.actions.close": "Cerrar",
   "common.actions.goHome": "Ir al inicio",
   "common.actions.void": "Anular",

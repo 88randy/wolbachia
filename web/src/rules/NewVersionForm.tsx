@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { SubmitButton } from "../forms/SubmitButton";
 import formStyles from "../forms/form.module.css";
 import { Card } from "../ui/Card";
-import { useParameterLabels } from "./parameter-labels";
+import { optionKindOf, useParameterLabels } from "./parameter-labels";
 import type { RuleParameter } from "./rules-query";
 import styles from "./rules.module.css";
 import { useIssueText } from "./use-issue-text";
@@ -10,6 +10,7 @@ import { useNewVersionForm } from "./use-new-version-form";
 import { VersionComparison } from "./VersionComparison";
 import { VersionDateField } from "./VersionDateField";
 import { VersionReasonField } from "./VersionReasonField";
+import { VersionOptionField } from "./VersionOptionField";
 import { VersionValueField } from "./VersionValueField";
 import { NewVersionIntro } from "./NewVersionIntro";
 import { NewVersionFeedback } from "./NewVersionFeedback";
@@ -25,7 +26,11 @@ export function NewVersionForm({ parameter }: { parameter: RuleParameter }) {
       <NewVersionIntro parameter={parameter} />
       <form className={formStyles.form} onSubmit={state.submit} noValidate>
         <div className={styles.formGrid}>
-          <VersionValueField {...fields} unit={labels.unit(parameter.unit)} />
+          {optionKindOf(parameter.key) === undefined ? (
+            <VersionValueField {...fields} unit={labels.unit(parameter.unit)} />
+          ) : (
+            <VersionOptionField {...fields} parameterKey={parameter.key} />
+          )}
           <VersionDateField {...fields} />
         </div>
         <VersionReasonField {...fields} />

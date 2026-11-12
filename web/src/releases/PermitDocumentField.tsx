@@ -1,23 +1,24 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { TextField } from "../forms/TextField";
+import { FileField } from "../forms/FileField";
 import { PERMIT_DOCUMENT_ACCEPT } from "./permit-document";
 import type { usePermitDocumentView } from "./use-permit-document-view";
 
 interface Props {
   view: ReturnType<typeof usePermitDocumentView>;
   isBusy: boolean;
+  file?: File | undefined;
   onSelect: (file: File | undefined) => void;
 }
 
 /** File input restricted to PDF, JPEG and PNG, with the size limit as hint. */
-export function PermitDocumentField({ view, isBusy, onSelect }: Props) {
+export function PermitDocumentField({ view, isBusy, file, onSelect }: Props) {
   const { t } = useTranslation();
   const id = useId();
   return (
-    <TextField
+    <FileField
       id={id}
-      type="file"
+      file={file}
       label={t("permitDocument.file.label")}
       hint={t("permitDocument.file.hint", { max: view.max })}
       accept={PERMIT_DOCUMENT_ACCEPT}

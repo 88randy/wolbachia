@@ -7,7 +7,7 @@ import { PhonesPage } from "../devices/PhonesPage";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
-import { RULE_PARAMETER_READ } from "../rules/permissions";
+import { RULE_VERSION_READ } from "../rules/permissions";
 import { RuleParameterPage } from "../rules/RuleParameterPage";
 import { RuleParametersPage } from "../rules/RuleParametersPage";
 import { AreaErrorState } from "../states/AreaErrorState";
@@ -106,8 +106,8 @@ export const settingsRoutes = [
   areaHomeRoute("settings", SettingsPage),
   settingsListRoute("/settings/phones", PHONES_PERMISSION, PhonesPage),
   settingsListRoute("/settings/incident-types", "incident.manage_type", W64Page),
-  settingsListRoute("/settings/rule-parameters", RULE_PARAMETER_READ, RuleParametersPage),
-  settingsListRoute("/settings/rule-parameters/$key", RULE_PARAMETER_READ, RuleParameterPage),
+  settingsListRoute("/settings/rule-parameters", RULE_VERSION_READ, RuleParametersPage),
+  settingsListRoute("/settings/rule-parameters/$key", RULE_VERSION_READ, RuleParameterPage),
   organizationRoute,
   centersRoute,
   centerRoute,

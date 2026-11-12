@@ -228,6 +228,9 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         READING_READ,
         SCHEDULE_READ,
         RISK_IMPORT_APPLY,
+        # Quadrant codes and courier names in lab results, the plan and dashboard filters.
+        QUADRANT_READ,
+        USER_OPERATIONAL_READ,
     ),
     "community_promoter": (
         *READ_ONLY_CODES,
@@ -269,6 +272,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *READ_ONLY_CODES,
         PERMIT_MANAGE,
         PERMIT_SUSPEND,
+        QUADRANT_READ,  # the permit dialog picks the quadrants it covers
         RELEASE_READ,
         *PRIVACY_REGULATORY_CODES,
     ),

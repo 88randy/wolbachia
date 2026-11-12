@@ -7,6 +7,7 @@ export const portal = {
   "portal.nav.home": "Inicio",
   "portal.nav.trends": "Tendencias",
   "portal.nav.map": "Mapa",
+  "portal.nav.summary": "Resumen",
   "portal.footer.privacy":
     "Este portal solo muestra totales. Nunca muestra datos de personas ni ubicaciones exactas.",
   "portal.footer.source": "Datos de {organization}.",

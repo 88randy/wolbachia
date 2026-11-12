@@ -15,7 +15,7 @@ describe("visibleNavGroups", () => {
             "incident.read",
             "notification.read",
             "review_item.read",
-            "rule_parameter.read",
+            "rule_parameter_version.read",
             "motorcycle.read",
             "quadrant.read",
             "location.read",
@@ -40,9 +40,13 @@ describe("visibleNavGroups", () => {
   });
 
   test("any one of the Settings codes opens Settings", () => {
-    for (const code of ["catalog.read", "rule_parameter.read", "device.read"]) {
+    for (const code of ["catalog.read", "rule_parameter_version.read", "device.read"]) {
       expect(idsOf(makeMe({ permissions: [code] }))).toContain("settings");
     }
+  });
+
+  test("rule_parameter.read (held by every profile) does not open Settings", () => {
+    expect(idsOf(makeMe({ permissions: ["rule_parameter.read"] }))).not.toContain("settings");
   });
 
   test("profile names grant nothing: an admin profile without permission codes has no Settings", () => {

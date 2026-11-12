@@ -103,13 +103,14 @@ describe("rule parameter page: permissions of its parts", () => {
     expect(screen.getByRole("heading", { name: "Historial de versiones" })).toBeDefined();
   });
 
-  test("without rule_parameter_version.read there is no history and it is not requested", async () => {
+  test("rule_parameter.read alone (every profile holds it) does not open the screen", async () => {
     const { api } = await openParameterPage({
       me: makeMe({ permissions: ["rule_parameter.read", "rule_parameter_version.create"] }),
     });
-    await screen.findByRole("heading", { name: "Nueva versión" });
 
-    expect(screen.queryByRole("heading", { name: "Historial de versiones" })).toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "No tienes acceso a esta sección" }),
+    ).toBeDefined();
     expect(requestsTo(api, "GET", VERSIONS_PATH_API)).toHaveLength(0);
   });
 });

@@ -291,6 +291,10 @@ class LocationSerializer(OrgScopedModelSerializer):
     version = serializers.UUIDField(source="pk", read_only=True)
     center = serializers.UUIDField(source="location.center_id", read_only=True)
     quadrant = serializers.UUIDField(source="location.quadrant_id", read_only=True, allow_null=True)
+    # Display only: readers without quadrant.read (warehouse) still see which quadrant it is.
+    quadrant_code = serializers.CharField(
+        source="location.quadrant.code", read_only=True, allow_null=True, default=None
+    )
     geometry = PointField(read_only=True)
     owner_label = serializers.SerializerMethodField()
 
@@ -306,6 +310,7 @@ class LocationSerializer(OrgScopedModelSerializer):
             "revision",
             "center",
             "quadrant",
+            "quadrant_code",
             "name",
             "kind",
             "geometry",

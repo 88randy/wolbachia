@@ -32,7 +32,7 @@ export const rules = {
   "rules.param.reminderBeforeEnd": "Aviso antes del fin de la jornada",
   "rules.param.maxPaddleReuses": "Reutilizaciones máximas de la papeleta",
   "rules.param.revisitInterval": "Intervalo entre revisitas",
-  "rules.param.departureRequiresOfflineMap": "La salida exige mapa guardado (1 = sí, 0 = no)",
+  "rules.param.departureRequiresOfflineMap": "La salida exige mapa guardado",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "metros",
@@ -117,7 +117,13 @@ export const rules = {
   "rules.status.inForce": "Vigente",
   "rules.status.superseded": "Anterior",
   "rules.status.voided": "Anulada",
-  "rules.param.maxGpsAccuracyM": "Precisión GPS máxima (m)",
-  "rules.param.deliverySignatureMode":
-    "Dónde firma el repartidor la entrega (0 = donde pueda, 1 = en el almacén, 2 = en su teléfono)",
+  "rules.param.maxGpsAccuracyM": "Precisión GPS máxima",
+  "rules.param.deliverySignatureMode": "Dónde firma el repartidor la entrega",
+  "rules.param.dailyTaskTarget": "Meta diaria de tareas",
+  "rules.param.pinMaxAttempts": "Intentos máximos de PIN",
+  "rules.option.no": "No",
+  "rules.option.yes": "Sí",
+  "rules.option.signatureEither": "Almacén o teléfono",
+  "rules.option.signatureWarehouse": "Pantalla de almacén",
+  "rules.option.signaturePhone": "Teléfono del repartidor",
 } as const satisfies AreaCatalog<"rules">;

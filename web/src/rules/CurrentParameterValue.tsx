@@ -9,7 +9,7 @@ export function CurrentParameterValue({ parameter }: { parameter: RuleParameter 
   if (parameter.value === null) return <NotConfiguredBadge />;
   return (
     <span className={styles.bigValue}>
-      {formatNumber(parameter.value)} {labels.unit(parameter.unit)}
+      {labels.valueText(parameter, parameter.value, formatNumber)}
     </span>
   );
 }

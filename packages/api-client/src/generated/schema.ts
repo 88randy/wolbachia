@@ -10587,6 +10587,7 @@ export interface components {
             readonly center: string;
             /** Format: uuid */
             readonly quadrant: string | null;
+            readonly quadrant_code: string | null;
             readonly name: string;
             readonly kind: components["schemas"]["InventoryLocationKindEnum"];
             readonly geometry: {

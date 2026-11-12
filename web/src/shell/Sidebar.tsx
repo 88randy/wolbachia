@@ -6,6 +6,7 @@ import { visibleNavGroups } from "./nav-items";
 import styles from "./Sidebar.module.css";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarGroup } from "./SidebarGroup";
+import { SidebarPortalItem } from "./SidebarPortalItem";
 import { SidebarToggle } from "./SidebarToggle";
 interface SidebarProps {
   collapsed: boolean;
@@ -22,6 +23,7 @@ export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
         {visibleNavGroups(me).map((group) => (
           <SidebarGroup key={group.id} group={group} collapsed={collapsed} />
         ))}
+        <SidebarPortalItem collapsed={collapsed} />
       </nav>
       <footer className={styles.footer}>
         {canToggle && <SidebarToggle collapsed={collapsed} onToggle={onToggle} />}

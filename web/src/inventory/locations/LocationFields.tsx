@@ -32,7 +32,9 @@ function LocationQuadrant(props: InventoryFieldsProps) {
   const { t } = useTranslation();
   const center = props.values["center_id"] ?? "";
   const quadrantName = useQuadrantName();
-  const known = quadrantName(props.values["quadrant_id"]);
+  const saved =
+    props.previous && "quadrant_code" in props.previous ? props.previous.quadrant_code : null;
+  const known = saved ?? quadrantName(props.values["quadrant_id"]);
   return (
     <InventoryOptionSelect
       key={center}

@@ -26,7 +26,42 @@ const NAME_KEYS: Readonly<Record<string, MessageKey>> = {
   revisit_interval_days: "rules.param.revisitInterval",
   departure_requires_offline_map: "rules.param.departureRequiresOfflineMap",
   delivery_signature_mode: "rules.param.deliverySignatureMode",
+  daily_task_target: "rules.param.dailyTaskTarget",
+  max_gps_accuracy_m: "rules.param.maxGpsAccuracyM",
+  pin_max_attempts: "rules.param.pinMaxAttempts",
 };
+
+/**
+ * The API has no boolean or enum type: these parameters are integers (unit `count`) whose numbers
+ * stand for options. The web knows them: it shows the option, never the number or the unit, and
+ * the form sends the number back.
+ */
+interface OptionParameter {
+  kind: "boolean" | "enum";
+  options: readonly { value: number; labelKey: MessageKey }[];
+}
+
+const OPTION_PARAMETERS: Readonly<Record<string, OptionParameter>> = {
+  departure_requires_offline_map: {
+    kind: "boolean",
+    options: [
+      { value: 0, labelKey: "rules.option.no" },
+      { value: 1, labelKey: "rules.option.yes" },
+    ],
+  },
+  delivery_signature_mode: {
+    kind: "enum",
+    options: [
+      { value: 0, labelKey: "rules.option.signatureEither" },
+      { value: 1, labelKey: "rules.option.signatureWarehouse" },
+      { value: 2, labelKey: "rules.option.signaturePhone" },
+    ],
+  },
+};
+
+export function optionKindOf(key: string): OptionParameter["kind"] | undefined {
+  return OPTION_PARAMETERS[key]?.kind;
+}
 
 /** Typed on the API's unit enum: a new unit in the schema fails the build until it is named here. */
 const UNIT_KEYS = {
@@ -44,19 +79,53 @@ function isKnownUnit(unit: string): unit is keyof typeof UNIT_KEYS {
   return unit in UNIT_KEYS;
 }
 
-/** `name(key)` and `unit(unit)` in the interface language; unknown values show as they came. */
-export function useParameterLabels(): {
+type Translate = (key: MessageKey) => string;
+
+function nameOf(t: Translate, key: string): string {
+  const messageKey = NAME_KEYS[key];
+  return messageKey === undefined ? key : t(messageKey);
+}
+
+function unitOf(t: Translate, unit: string): string {
+  return isKnownUnit(unit) ? t(UNIT_KEYS[unit]) : unit;
+}
+
+function optionsOf(t: Translate, key: string) {
+  return OPTION_PARAMETERS[key]?.options.map((option) => ({
+    value: String(option.value),
+    label: t(option.labelKey),
+  }));
+}
+
+function optionLabelOf(t: Translate, key: string, value: number): string | undefined {
+  const option = OPTION_PARAMETERS[key]?.options.find((o) => o.value === value);
+  return option === undefined ? undefined : t(option.labelKey);
+}
+
+export interface ParameterLabels {
   name: (key: string) => string;
-  unit: (unit: string) => string;
-} {
+  /** The unit of a parameter; empty for an option parameter (`key` given), which has none. */
+  unit: (unit: string, key?: string) => string;
+  /** The options of an option parameter (`value` is what the API takes), else `undefined`. */
+  options: (key: string) => readonly { value: string; label: string }[] | undefined;
+  /** A value as text: the option's label, or the number with its unit. */
+  valueText: (
+    parameter: { key: string; unit: string },
+    value: number,
+    format: (n: number) => string,
+  ) => string;
+}
+
+/** Names, units and option labels in the interface language; unknown values show as they came. */
+export function useParameterLabels(): ParameterLabels {
   const { t } = useTranslation();
   return useMemo(
     () => ({
-      name: (key) => {
-        const messageKey = NAME_KEYS[key];
-        return messageKey === undefined ? key : t(messageKey);
-      },
-      unit: (unit) => (isKnownUnit(unit) ? t(UNIT_KEYS[unit]) : unit),
+      name: (key) => nameOf(t, key),
+      unit: (unit, key) => (key !== undefined && key in OPTION_PARAMETERS ? "" : unitOf(t, unit)),
+      options: (key) => optionsOf(t, key),
+      valueText: (parameter, value, format) =>
+        optionLabelOf(t, parameter.key, value) ?? `${format(value)} ${unitOf(t, parameter.unit)}`,
     }),
     [t],
   );
