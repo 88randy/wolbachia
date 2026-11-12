@@ -1,5 +1,6 @@
 """Default-deny, paired-scope API; writes delegate to regulatory services."""
 
+from functools import cached_property
 from typing import Any
 
 from django.db.models import QuerySet
@@ -11,13 +12,25 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.author_names import (
+    _CACHE_KEY as AUTHOR_NAMES_CACHE_KEY,  # noqa: PLC2701 -- one shared cache
+)
+from core.author_names import resolve_author_names
 from core.filters import CodeLookupFilter
 from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
 from releases.documents import permit_document_response
 from releases.models import Permit, PermitType, Release, ReleaseDevice
 from releases.permissions import PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ
-from releases.selectors import filter_context, scoped_devices, scoped_permits, scoped_releases
+from releases.selectors import (
+    CURRENT_VERSIONS_ATTR,
+    filter_context,
+    scoped_devices,
+    scoped_permits,
+    scoped_releases,
+    with_current_device_status,
+    with_current_permit_version,
+)
 from releases.serializers import (
     PermitSerializer,
     PermitSuspensionSerializer,
@@ -92,6 +105,31 @@ class PermitTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.G
 
 
 class PermitViewSet(ReleaseReadViewSet):
+    @cached_property
+    def author_cache(self) -> dict[str, str]:
+        return {}
+
+    def get_serializer_context(self) -> dict[str, Any]:
+        return {**super().get_serializer_context(), AUTHOR_NAMES_CACHE_KEY: self.author_cache}
+
+    def paginate_queryset(self, queryset: Any) -> list[Any] | None:  # noqa: ANN401 -- DRF hook
+        """Resolve the authors of the permits, their suspensions and their current versions in one
+        go, so the nested serializers read names from the shared cache instead of querying."""
+        page = super().paginate_queryset(queryset)
+        if page and self.action == "list":
+            authors: set[object] = set()
+            for permit in page:
+                authors.add(permit.created_by_id)
+                suspension = getattr(permit, "suspension", None)
+                authors.add(None if suspension is None else suspension.created_by_id)
+                for version in getattr(permit, CURRENT_VERSIONS_ATTR, ()):
+                    authors.add(version.created_by_id)
+            known = resolve_author_names(page[0].organization_id, authors)
+            for author in authors:
+                if author:
+                    self.author_cache[str(author)] = known.get(str(author), "")
+        return page
+
     queryset = Permit.objects.none()
     serializer_class = PermitSerializer
     required_permissions = {
@@ -110,9 +148,12 @@ class PermitViewSet(ReleaseReadViewSet):
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return Permit.objects.none()
-        return scoped_permits(
+        rows = scoped_permits(
             actor_from_request(self.request), self.required_permissions[self.action]
         )
+        if self.action in {"list", "retrieve"}:
+            rows = with_current_permit_version(rows)
+        return rows
 
     @extend_schema(request=PermitWriteSerializer, responses={201: PermitSerializer})
     def create(self, request: Request) -> Response:
@@ -189,9 +230,12 @@ class ReleaseDeviceViewSet(ReleaseReadViewSet):
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return ReleaseDevice.objects.none()
-        return scoped_devices(
+        rows = scoped_devices(
             actor_from_request(self.request), self.required_permissions[self.action]
         )
+        if self.action in {"list", "retrieve"}:
+            rows = with_current_device_status(rows)
+        return rows
 
     @extend_schema(request=ReleaseDeviceWriteSerializer, responses={201: ReleaseDeviceSerializer})
     def create(self, request: Request) -> Response:

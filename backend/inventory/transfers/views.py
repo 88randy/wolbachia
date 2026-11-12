@@ -19,7 +19,12 @@ from inventory.transfers.commands import (
     ResolutionCommand,
 )
 from inventory.transfers.models import Discrepancy, Transfer
-from inventory.transfers.selectors import TransferTableFilter, discrepancy_rows, transfer_rows
+from inventory.transfers.selectors import (
+    TransferTableFilter,
+    discrepancy_rows,
+    transfer_rows,
+    with_transfer_projection,
+)
 from inventory.transfers.serializers import (
     CloseDiscrepancySerializer,
     DiscrepancySerializer,
@@ -76,9 +81,10 @@ class TransferViewSet(
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return self.queryset.none()
-        return transfer_rows(
+        rows = transfer_rows(
             actor_from_request(self.request), self.required_permissions[self.action]
         )
+        return with_transfer_projection(rows) if self.action in {"list", "retrieve"} else rows
 
     @extend_schema(
         request=PrepareTransferSerializer,
@@ -166,9 +172,12 @@ class DiscrepancyViewSet(
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return self.queryset.none()
-        return discrepancy_rows(
+        rows = discrepancy_rows(
             actor_from_request(self.request), self.required_permissions[self.action]
         )
+        if self.action in {"list", "retrieve"}:
+            rows = with_transfer_projection(rows, "transfer__")
+        return rows
 
     @extend_schema(
         request=CloseDiscrepancySerializer,

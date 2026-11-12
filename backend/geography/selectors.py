@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
-from django.db.models import OuterRef, QuerySet, Subquery
+from django.db.models import OuterRef, Prefetch, QuerySet, Subquery
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 
@@ -15,6 +15,7 @@ from geography.geometry import available_block_geometries, suggest_points
 from geography.models import (
     Block,
     BlockVersion,
+    ExcludedPointResolution,
     PointVersion,
     Quadrant,
     QuadrantVersion,
@@ -22,6 +23,29 @@ from geography.models import (
 )
 from organizations.models import Membership
 from organizations.selectors import filter_by_effective_scope
+
+CURRENT_VERSIONS_ATTR = "current_versions"
+
+
+def with_current_version(
+    queryset: QuerySet[Any], ordered_versions: QuerySet[Any], parent_field: str
+) -> QuerySet[Any]:
+    """Attach each row's current version (the first of `ordered_versions` per parent, the one the
+    per-row `*_version_at` / `-revision` lookups pick) with one extra query for the whole page, as
+    a one-item list in `current_versions`."""
+    model = ordered_versions.model
+    latest = ordered_versions.filter(**{parent_field: OuterRef(parent_field)}).values("pk")
+    chosen = model._default_manager.filter(pk=Subquery(latest[:1])).select_related("created_by")
+    if model is QuadrantVersion:
+        chosen = chosen.prefetch_related(
+            Prefetch(
+                "point_resolutions",
+                queryset=ExcludedPointResolution._default_manager.select_related("created_by"),
+            )
+        )
+    return queryset.prefetch_related(
+        Prefetch("versions", queryset=chosen, to_attr=CURRENT_VERSIONS_ATTR)
+    )
 
 
 def visible_quadrants(membership: Membership, permission: str) -> QuerySet[Quadrant]:

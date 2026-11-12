@@ -1,9 +1,10 @@
 """Personnel projections contain only work facts and explicitly authorized training summaries."""
 
-from collections.abc import Mapping
+from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import Prefetch, QuerySet
 
 from accounts.models import AccessLog, Device, Personnel
 from accounts.personnel_serializers import AccessLogFilterSerializer
@@ -27,56 +28,90 @@ def scoped_personnel(membership: Membership, permission: str) -> QuerySet[Person
     )
 
 
-def operational_projection(person: Personnel, viewer: Membership) -> dict[str, Any]:
-    """DP03 allowlist: no identity credentials, RFC metadata, evaluations or issuer proof."""
-    from people.models import Certification
+def operational_projections(
+    people: Sequence[Personnel], viewer: Membership
+) -> list[dict[str, Any]]:
+    """DP03 allowlist for a page of people: no identity credentials, RFC metadata, evaluations or
+    issuer proof. Certifications, revocations, profiles and devices load once for the page."""
+    from people.models import Certification, CertificationRevocation
     from people.selectors import scoped_facts
 
-    certifications = scoped_facts(
-        Certification.objects.filter(
-            organization=viewer.organization,
-            subject_id=person.membership.user_id,
-            center_id=person.center_id,
-            quadrant=person.quadrant,
-        ),
-        effective_scope(viewer),
-        "training.read",
-    ).select_related("training_version__training")
+    if not people:
+        return []
+    user_ids = {person.membership.user_id for person in people}
     at = server_now()
-    return {
-        "id": person.membership.user_id,
-        "display_name": person.display_name,
-        "center_id": person.center_id,
-        "quadrant_id": person.quadrant_id,
-        "work_email": person.work_email,
-        "work_phone": person.work_phone,
-        "is_active": person.membership.is_active,
-        "profiles": list(
-            person.membership.profiles.filter(organization=viewer.organization, is_active=True)
-            .order_by("slug")
-            .values_list("slug", flat=True)
-        ),
-        "trainings": [
-            {
-                "training_code": row.training_version.training.code,
-                "valid_from": row.valid_from,
-                "valid_to": row.valid_to,
-                "is_revoked": row.revocations.filter(effective_from__lte=at).exists(),
-            }
-            for row in certifications
-        ],
-        "devices": list(
-            Device.objects.filter(
+    certifications = (
+        scoped_facts(
+            Certification.objects.filter(
                 organization=viewer.organization,
-                sessions__user_id=person.membership.user_id,
-                sessions__revoked_at__isnull=True,
-                is_revoked=False,
+                subject_id__in=user_ids,
+                center_id__in={person.center_id for person in people},
+            ),
+            effective_scope(viewer),
+            "training.read",
+        )
+        .select_related("training_version__training")
+        .prefetch_related(
+            Prefetch(
+                "revocations",
+                queryset=CertificationRevocation.objects.filter(effective_from__lte=at),
+                to_attr="revoked_by_now",
             )
-            .order_by("id")
-            .values("id", "label")
-            .distinct()
-        ),
-    }
+        )
+    )
+    by_context: dict[tuple[Any, Any, Any], list[Certification]] = defaultdict(list)
+    for row in certifications:
+        by_context[(row.subject_id, row.center_id, row.quadrant_id)].append(row)
+    profiles: dict[Any, list[str]] = defaultdict(list)
+    for user_id, slug in (
+        Membership.profiles.through.objects.filter(
+            membership__organization=viewer.organization,
+            membership__user_id__in=user_ids,
+            profile__organization=viewer.organization,
+            profile__is_active=True,
+        )
+        .order_by("profile__slug")
+        .values_list("membership__user_id", "profile__slug")
+    ):
+        profiles[user_id].append(slug)
+    devices: dict[Any, list[dict[str, Any]]] = defaultdict(list)
+    for user_id, device_id, label in (
+        Device.objects.filter(
+            organization=viewer.organization,
+            sessions__user_id__in=user_ids,
+            sessions__revoked_at__isnull=True,
+            is_revoked=False,
+        )
+        .order_by("id")
+        .values_list("sessions__user_id", "id", "label")
+        .distinct()
+    ):
+        devices[user_id].append({"id": device_id, "label": label})
+    return [
+        {
+            "id": person.membership.user_id,
+            "display_name": person.display_name,
+            "center_id": person.center_id,
+            "quadrant_id": person.quadrant_id,
+            "work_email": person.work_email,
+            "work_phone": person.work_phone,
+            "is_active": person.membership.is_active,
+            "profiles": profiles[person.membership.user_id],
+            "trainings": [
+                {
+                    "training_code": row.training_version.training.code,
+                    "valid_from": row.valid_from,
+                    "valid_to": row.valid_to,
+                    "is_revoked": bool(getattr(row, "revoked_by_now", [])),
+                }
+                for row in by_context[
+                    (person.membership.user_id, person.center_id, person.quadrant_id)
+                ]
+            ],
+            "devices": devices[person.membership.user_id],
+        }
+        for person in people
+    ]
 
 
 def scoped_access_log(membership: Membership) -> QuerySet[AccessLog]:

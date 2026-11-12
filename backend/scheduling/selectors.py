@@ -74,6 +74,20 @@ def assignment_at(quadrant: Quadrant, instant: datetime) -> AssignmentVersion | 
     )
 
 
+def current_assignments(
+    organization: Organization, quadrants: Iterable[Quadrant], instant: datetime
+) -> dict[UUID, AssignmentVersion]:
+    """`assignment_at` for many quadrants in one query: the same row each call would pick."""
+    current: dict[UUID, AssignmentVersion] = {}
+    for version in AssignmentVersion.objects.filter(
+        organization=organization,
+        quadrant_id__in=[quadrant.pk for quadrant in quadrants],
+        valid_from__lte=instant,
+    ).order_by("-valid_from", "-version"):
+        current.setdefault(version.quadrant_id, version)
+    return current
+
+
 def current_risks(membership: Membership, start: date) -> QuerySet[RiskCategoryVersion]:
     latest = RiskCategoryVersion.objects.filter(block=OuterRef("block"), week_start=start).order_by(
         "-version"
@@ -315,9 +329,12 @@ def assignment_rows(membership: Membership, query: dict[str, Any]) -> list[dict[
     instant = timezone.now()
     day = instant.astimezone(ZoneInfo(membership.organization.timezone)).date()
     loads = task_loads(task_query(membership, week_start(membership.organization, day)))
+    listed = list(quadrants)
+    current = current_assignments(membership.organization, listed, instant)
+    target = daily_target(membership.organization, day)  # one rule read for the whole page
     rows = []
-    for quadrant in quadrants:
-        assignment = assignment_at(quadrant, instant)
+    for quadrant in listed:
+        assignment = current.get(quadrant.pk)
         courier = str(assignment.courier_id) if assignment and assignment.courier_id else None
         if query.get("courier") and courier != str(query["courier"]):
             continue
@@ -330,7 +347,7 @@ def assignment_rows(membership: Membership, query: dict[str, Any]) -> list[dict[
                 "revision": assignment.version if assignment else 0,
                 "assignment_version": str(assignment.pk) if assignment else None,
                 "load": loads.get(courier, 0),
-                "target": daily_target(membership.organization, day),
+                "target": target,
                 "blockers": [] if courier else [{"code": "unassigned"}],
             }
         )

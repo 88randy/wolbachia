@@ -2,7 +2,7 @@
 
 from typing import Any, cast
 
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
@@ -25,14 +25,21 @@ from geography.history import (
     VersionHistoryQuerySerializer,
     filter_version_history,
 )
-from geography.models import Block, Quadrant, SamplingPoint
+from geography.models import (
+    Block,
+    BlockVersion,
+    PointVersion,
+    Quadrant,
+    QuadrantVersion,
+    SamplingPoint,
+)
 from geography.permissions import (
     QUADRANT_CLOSE,
     QUADRANT_PUBLISH,
     QUADRANT_READ,
     SAMPLING_POINT_CREATE,
 )
-from geography.selectors import block_suggestion, get_quadrant
+from geography.selectors import block_suggestion, get_quadrant, with_current_version
 from geography.serializers import (
     BlockCreateSerializer,
     BlockQuerySerializer,
@@ -92,10 +99,25 @@ class GeographyViewSet(OrgScopedViewSet):
     def membership(self) -> Membership:
         return cast(Membership, self.request.membership)  # type: ignore[attr-defined]
 
+    version_model: type[Model]
+    version_parent_field: str
+    version_ordering: tuple[str, ...] = ("-revision",)
+    captured_ordering: tuple[str, ...] = ("-effective_from", "-revision")
+
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return cast("QuerySet[Any]", self.__class__.queryset).none()
-        return super().get_queryset()
+        queryset = super().get_queryset()
+        if self.action not in {"list", "retrieve"}:
+            return queryset
+        captured_at = self._query().get("captured_at")
+        versions = self.version_model._default_manager.all()
+        if captured_at:
+            versions = versions.filter(effective_from__lte=captured_at)
+        ordering = self.captured_ordering if captured_at else self.version_ordering
+        return with_current_version(
+            queryset, versions.order_by(*ordering), self.version_parent_field
+        )
 
     def get_serializer_context(self) -> dict[str, Any]:
         context = dict(super().get_serializer_context())
@@ -130,6 +152,8 @@ class GeographyViewSet(OrgScopedViewSet):
 class QuadrantViewSet(GeographyViewSet):
     query_serializer_class = QuadrantQuerySerializer
     queryset = Quadrant.objects.select_related("center").all()
+    version_model = QuadrantVersion
+    version_parent_field = "quadrant"
     serializer_class = QuadrantSerializer
     required_permissions = {
         "list": QUADRANT_READ,
@@ -226,6 +250,8 @@ class QuadrantViewSet(GeographyViewSet):
 class BlockViewSet(GeographyViewSet):
     query_serializer_class = BlockQuerySerializer
     queryset = Block.objects.select_related("quadrant__center").all()
+    version_model = BlockVersion
+    version_parent_field = "block"
     serializer_class = BlockSerializer
     required_permissions = {
         "list": QUADRANT_READ,
@@ -300,6 +326,10 @@ class SamplingPointViewSet(GeographyViewSet):
     query_serializer_class = SamplingPointQuerySerializer
     history_query_serializer_class = PointHistoryQuerySerializer
     queryset = SamplingPoint.objects.select_related("block__quadrant__center").all()
+    version_model = PointVersion
+    version_parent_field = "point"
+    version_ordering = ("-version",)
+    captured_ordering = ("-effective_from", "-version")
     serializer_class = SamplingPointSerializer
     required_permissions = {
         "list": QUADRANT_READ,

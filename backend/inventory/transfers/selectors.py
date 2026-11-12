@@ -3,26 +3,46 @@
 from decimal import Decimal
 from typing import Any, cast
 
-from django.db.models import Case, CharField, Exists, OuterRef, QuerySet, Value, When
+from django.db.models import Case, CharField, Exists, OuterRef, Prefetch, QuerySet, Value, When
 from django.http import Http404
 from rest_framework.filters import BaseFilterBackend
 from rest_framework.request import Request
 
 from inventory.transfers.custody import context_location
-from inventory.transfers.models import Discrepancy, ResolutionOutcome, Transfer, TransferEvent
+from inventory.transfers.models import (
+    Discrepancy,
+    Transfer,
+    TransferEvent,
+)
 from inventory.transfers.scope import visible_transfers
 from inventory.transfers.serializers import TransferQuerySerializer
 from uploads.access import UploadActor, actor_from_request
 
 
 def transfer_state(transfer: Transfer) -> str:
-    if transfer.discrepancies.filter(resolution__isnull=False).exists():
+    """Reads `discrepancies` and `events` through `.all()`, so the list prefetch serves it."""
+    discrepancies = list(transfer.discrepancies.all())
+    resolved = [hasattr(discrepancy, "resolution") for discrepancy in discrepancies]
+    if any(resolved):
         return "resolved"
-    if transfer.discrepancies.filter(resolution__isnull=True).exists():
+    if discrepancies:
         return "discrepancy"
-    kinds = set(transfer.events.values_list("kind", flat=True))
+    kinds = {event.kind for event in transfer.events.all()}
     return (
         "received" if "receive" in kinds else ("dispatched" if "dispatch" in kinds else "prepared")
+    )
+
+
+def with_transfer_projection(rows: QuerySet[Any], prefix: str = "") -> QuerySet[Any]:
+    """Everything `TransferSerializer` reads, loaded once for the page. `prefix` is the path to the
+    transfer when the rows are not transfers (e.g. `transfer__` for discrepancies)."""
+    events = TransferEvent.objects.select_related(
+        "stock_operation", "resolution", "discrepancy"
+    ).prefetch_related("receipt_lines")
+    return rows.prefetch_related(
+        f"{prefix}lines__lot",
+        Prefetch(f"{prefix}events", queryset=events),
+        f"{prefix}discrepancies__resolution__outcomes__line",
     )
 
 
@@ -56,7 +76,8 @@ def discrepancy_rows(actor: UploadActor, permission: str) -> QuerySet[Discrepanc
         Discrepancy.objects.filter(
             organization=actor.organization, transfer__in=visible_transfers(actor, permission)
         )
-        .select_related("transfer", "receipt_event")
+        .select_related("transfer", "receipt_event", "resolution__event__stock_operation")
+        .prefetch_related("lines", "holds__lot", "holds__resolution")
         .annotate(
             current_status=Case(
                 When(resolution__isnull=False, then=Value("closed")),
@@ -69,25 +90,28 @@ def discrepancy_rows(actor: UploadActor, permission: str) -> QuerySet[Discrepanc
 
 
 def outstanding_custody(transfer: Transfer) -> dict[str, str]:
-    if not transfer.events.filter(kind="dispatch").exists():
+    events = list(transfer.events.all())
+    if not any(event.kind == "dispatch" for event in events):
         return {}
+    receipt = next((event for event in events if event.kind == "receive"), None)
     received = (
-        {
-            str(row.line_id): row.quantity
-            for row in transfer.events.get(kind="receive").receipt_lines.all()
-        }
-        if transfer.events.filter(kind="receive").exists()
-        else {}
+        {}
+        if receipt is None
+        else {str(row.line_id): row.quantity for row in receipt.receipt_lines.all()}
     )
     quantities = {
         str(line.pk): line.quantity - received.get(str(line.pk), Decimal(0))
         for line in transfer.lines.all()
     }
-    for outcome in ResolutionOutcome.objects.filter(
-        resolution__discrepancy__transfer=transfer, line__kind="missing"
-    ).select_related("line"):
-        key = str(outcome.line.line_id)
-        quantities[key] = quantities.get(key, Decimal(0)) - outcome.quantity
+    for discrepancy in transfer.discrepancies.all():
+        resolution = getattr(discrepancy, "resolution", None)
+        if resolution is None:
+            continue
+        for outcome in resolution.outcomes.all():
+            if outcome.line.kind != "missing":
+                continue
+            key = str(outcome.line.line_id)
+            quantities[key] = quantities.get(key, Decimal(0)) - outcome.quantity
     return {
         key: format(quantity.normalize(), "f")
         for key, quantity in quantities.items()

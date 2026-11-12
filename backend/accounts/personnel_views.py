@@ -17,7 +17,7 @@ from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 from accounts.models import AccessLog, Personnel, User
 from accounts.personnel_selectors import (
     filter_access_log,
-    operational_projection,
+    operational_projections,
     scoped_access_log,
     scoped_personnel,
 )
@@ -178,10 +178,10 @@ class PersonnelViewSet(
     def operational(self, request: Request) -> Response:
         rows = self.get_queryset()
         page = self.paginate_queryset(rows)
-        data = [
-            operational_projection(person, request.membership)  # type: ignore[attr-defined]
-            for person in (page if page is not None else rows)
-        ]
+        data = operational_projections(
+            list(page if page is not None else rows),
+            request.membership,  # type: ignore[attr-defined]
+        )
         serialized = OperationalPersonnelSerializer(data, many=True).data
         return self.get_paginated_response(serialized) if page is not None else Response(serialized)
 
