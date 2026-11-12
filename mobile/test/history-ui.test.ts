@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { messages } from "@wolbachia/i18n";
 import type { Locale } from "@wolbachia/i18n";
 import type { HistoryEntry } from "../src/features/history/domain.ts";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const ENTRY: HistoryEntry = {
@@ -40,9 +40,10 @@ function assertHistoryCards(render: Render, locale: Locale) {
     });
     const copy = texts(nodes);
     assert.ok(copy.includes(messages[locale][key]));
-    assert.ok(copy.includes(ENTRY.reason));
-    assert.ok(copy.includes(ENTRY.author));
-    assert.ok(copy.includes(ENTRY.voidsId));
+    assert.ok(copy.includes(`${messages[locale]["mobile.history.reason"]}: ${ENTRY.reason}`));
+    // Couriers never see internal ids: the author and the voided target stay out of the card.
+    assert.ok(!copy.includes(ENTRY.author));
+    assert.ok(!copy.includes(ENTRY.voidsId));
     assert.ok(copy.includes(locale === "en" ? "Archived finding" : "Hallazgo archivado"));
     for (const node of nodes.filter((candidate) => candidate.type === "Text")) {
       assert.equal(node.props.numberOfLines, undefined);
@@ -77,12 +78,11 @@ function assertSearchActions(render: Render, locale: Locale) {
   const controls = header.filter((node) => node.type === "Pressable");
   assert.equal(controls.length, 2);
   for (const control of controls) {
-    const style = (control.props.style as (state: { pressed: boolean }) => unknown)({
-      pressed: false,
-    });
-    assert.ok(Number(flattenStyle(style).minHeight) >= 48);
+    assert.ok(minHeightOf(control) >= 48);
   }
-  const back = controls[1];
+  const back = controls.find(
+    (control) => control.props.accessibilityLabel === messages[locale]["mobile.history.allShifts"],
+  );
   assert.ok(back);
   (back.props.onPress as () => void)();
   assert.equal(returned, true);

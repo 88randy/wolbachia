@@ -7,7 +7,7 @@ import { refreshSampleConfiguration } from "../src/features/samples/refresh-conf
 import { SampleEditorController } from "../src/features/samples/editor-controller.ts";
 import type { SamplePatch, SampleState } from "../src/features/samples/types.ts";
 import { deferred } from "./support/auth-fakes.ts";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const FEATURE = "mobile/src/features/samples/";
@@ -79,13 +79,7 @@ function press(node: RenderNode | undefined): void {
   assert.ok(node);
   (node.props.onPress as () => void)();
 }
-function minTarget(node: RenderNode): number {
-  const style =
-    typeof node.props.style === "function"
-      ? (node.props.style as (input: { pressed: boolean }) => unknown)({ pressed: false })
-      : node.props.style;
-  return Number(flattenStyle(style).minHeight);
-}
+const minTarget = minHeightOf;
 const MATRIX = (["es-MX", "en"] as const).flatMap((locale) =>
   (["light", "dark"] as const).flatMap((scheme) =>
     [1, 1.3].map((fontScale) => ({ locale, scheme, fontScale })),
@@ -122,9 +116,15 @@ function checkCapture(options: (typeof MATRIX)[number]): void {
   );
   const fields = nodes.filter((node) => node.type === "TextInput");
   const refs = render(`${FEATURE}SampleReferences.tsx`, "SampleReferences", { model: capture });
+  // The courier reads names, never internal ids.
   assert.ok(
-    ["sample-139", "lot-139", "method-139", "other-origin"].every((reference) =>
-      texts(refs).includes(reference),
+    ["LOT-139", "Configured other origin", "Named verified method"].every((label) =>
+      texts(refs).includes(label),
+    ),
+  );
+  assert.ok(
+    ["sample-139", "lot-139", "method-139", "other-origin"].every(
+      (id) => !texts(refs).includes(id),
     ),
   );
   const [code, other] = fields;
@@ -190,7 +190,7 @@ void test("P20 separates phone/server/review/rejection and preserves lab reminde
     model: model({ status: "server_received", receiptAt: "2026-11-10T18:00:00Z" }),
   });
   assert.ok(!texts(received).includes(messages["es-MX"]["mobile.sample.deliver"]));
-  assert.ok(texts(received).includes(messages["es-MX"]["mobile.sample.noResultAssumption"]));
+  assert.ok(texts(received).includes(messages["es-MX"]["mobile.sample.received"]));
 });
 void test("P20 initial entry restores durable own work and unavailable sources explain recovery", () => {
   const render = componentHarness(DEFAULT_OPTIONS).render,

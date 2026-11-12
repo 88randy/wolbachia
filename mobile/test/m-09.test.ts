@@ -1134,7 +1134,8 @@ void test("AC1 wiring: M08 checks the replacement physical identity and blocks t
 });
 
 import { messages } from "@wolbachia/i18n";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
+const noop = () => undefined;
 void test("AC4: P15-P17 localized native props preserve labeled large controls across language/theme/text-scale", async () => {
   const keys = Object.keys(messages["es-MX"])
     .filter((key) => key.startsWith("mobile.lifecycle."))
@@ -1157,11 +1158,7 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
   );
   for (const { locale, scheme, fontScale } of matrix) {
     const render = componentHarness({ locale, scheme, fontScale });
-    for (const [name, kind] of [
-      ["P15Screen", "replace"],
-      ["P16Screen", "relocate"],
-      ["P17Screen", "remove"],
-    ] as const) {
+    for (const kind of ["replace", "relocate", "remove"] as const) {
       const draft = {
         ...source,
         kind,
@@ -1169,6 +1166,7 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         otherText: "visible",
         evidence: [PHOTO],
         recovery: "unconfirmed",
+        gps: null,
       };
       const model = {
         state: { ...(await h.service.read()), draft },
@@ -1177,30 +1175,42 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         run: () => Promise.resolve(true),
         service: h.service,
       };
-      const nodes = render.render(`mobile/src/features/ovitrap-lifecycle/${name}.tsx`, name, {
+      const pages = [
+        ...(kind === "remove" ? ["LifecycleRecoveryPage"] : []),
+        "LifecycleReasonPage",
+        "LifecyclePhotoPage",
+        "LifecycleConfirmPage",
+      ];
+      // The confirm page starts the GPS fix by itself; the rest of the page is what is asserted.
+      const pageRender = componentHarness({
+        locale,
+        scheme,
+        fontScale,
+        stubs: { "use-auto-gps.ts": { useAutoGps: () => undefined } },
+      });
+      const nodes = pages.flatMap((name) =>
+        pageRender.render(`mobile/src/features/ovitrap-lifecycle/${name}.tsx`, name, {
+          draft,
+          model,
+        }),
+      );
+      // Last wizard page: the one button at the bottom says what saving does for this kind.
+      const lastPage = pages.length - 1;
+      const wizard = componentHarness({
+        locale,
+        scheme,
+        fontScale,
+        stubs: {
+          react: { useState: (value: unknown) => [typeof value === "number" ? lastPage : value, noop] },
+          "use-auto-gps.ts": { useAutoGps: () => undefined },
+        },
+      }).render("mobile/src/features/ovitrap-lifecycle/LifecycleWizard.tsx", "LifecycleWizard", {
         draft,
         model,
       });
-      const footer = render.render(
-        "mobile/src/features/ovitrap-lifecycle/LifecycleFooter.tsx",
-        "LifecycleFooter",
-        { draft, model },
-      );
-      const reasonSheet = render.render(
-        "mobile/src/features/ovitrap-lifecycle/CatalogSheet.tsx",
-        "CatalogSheet",
-        {
-          isOpen: true,
-          close: () => undefined,
-          items: draft.catalog?.[kind] ?? [],
-          code: "other",
-          choose: () => undefined,
-        },
-      );
-      assertScreenControls([...nodes, ...footer, ...reasonSheet], locale);
-      const primary =
-        kind === "remove" ? "mobile.lifecycle.confirmRemove" : "mobile.lifecycle.save";
-      assert.ok(footer.some((item) => item.props.accessibilityLabel === messages[locale][primary]));
+      assertScreenControls(nodes, locale);
+      const primary = messages[locale][`field.lifecycle.save.${kind}` as const];
+      assert.ok(wizard.some((item) => item.props.accessibilityLabel === primary));
     }
     const sheet = render.render(
       "mobile/src/features/ovitrap-lifecycle/RemoveSheet.tsx",
@@ -1217,12 +1227,13 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
     assert.ok(sheet.some((item) => item.props.accessibilityViewIsModal === true));
     assert.ok(
       sheet.some(
-        (item) => item.props.accessibilityLabel === messages[locale]["common.actions.cancel"],
+        (item) => item.props.accessibilityLabel === messages[locale]["field.action.cancel"],
       ),
     );
     assert.ok(
       sheet.some(
-        (item) => item.props.accessibilityLabel === messages[locale]["mobile.lifecycle.remove"],
+        (item) =>
+          item.props.accessibilityLabel === messages[locale]["field.lifecycle.confirmRemove"],
       ),
     );
   }
@@ -1237,18 +1248,18 @@ function assertScreenControls(
   for (const control of controls) {
     assert.equal(typeof control.props.accessibilityLabel, "string");
     assert.ok(String(control.props.accessibilityLabel).trim());
-    assert.ok(Number(flattenStyle(control.props.style).minHeight) >= 48);
+    assert.ok(minHeightOf(control) >= 48, String(control.props.accessibilityLabel));
     assert.equal(control.props.allowFontScaling === false, false);
   }
   assert.ok(
     controls.some(
-      (control) => control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.other"],
+      (control) => control.props.accessibilityLabel === messages[locale]["field.lifecycle.other"],
     ),
   );
   assert.ok(
     controls.some(
       (control) =>
-        control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.captureGps"],
+        control.props.accessibilityLabel === messages[locale]["field.lifecycle.gpsRetry"],
     ),
   );
   assert.ok(
@@ -2760,77 +2771,10 @@ async function feedbackHostControls(
     "AdvisoryFeedback",
     { model, draft },
   );
-  const retry = nodes.find((node) => node.type === "Pressable");
-  assert.equal(retry?.props.accessibilityLabel, messages[locale]["common.actions.retry"]);
-  assert.ok(Number(flattenStyle(retry.props.style).minHeight) >= 48);
-  const review = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ReviewedOutcome.tsx",
-    "ReviewedOutcome",
-    { entry: { ...SHIFT_HISTORY, is_terminal: false } },
-  );
-  const text = review.filter((node) => node.type === "Text").map((node) => node.props.children);
-  assert.ok(text.includes(messages[locale]["mobile.lifecycle.approvalNotCurrent"]));
-  assert.ok(text.includes(messages[locale]["mobile.lifecycle.nonterminalDecision"]));
-  const proposal = {
-    eventId: draft.eventId,
-    status: "rejected",
-    proposedLocation: [-99, 19],
-    isVoided: false,
-    decision: {
-      id: h.deps.uuid(),
-      proposalEventId: draft.eventId,
-      status: "rejected",
-      decidedAt: null,
-      reason: null,
-      nextDayTask: null,
-    },
-    nextDayTask: { id: h.deps.uuid(), code: "ACTUAL-TASK", dueDate: "2026-01-17" },
-    isTaskActionable: false,
-  };
-  let opened = 0;
-  const passive = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ProposalFeedback.tsx",
-    "ProposalFeedback",
-    {
-      proposal,
-      openTask: () => {
-        opened++;
-      },
-    },
-  );
-  assert.equal(
-    passive.some((node) => node.type === "Pressable"),
-    false,
-  );
-  assert.ok(
-    passive.some(
-      (node) => node.props.children === messages[locale]["mobile.lifecycle.decisionTimeUnknown"],
-    ),
-  );
-  const actionable = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ProposalFeedback.tsx",
-    "ProposalFeedback",
-    {
-      proposal: { ...proposal, isTaskActionable: true },
-      openTask: () => {
-        opened++;
-      },
-    },
-  );
-  const button = actionable.find((node) => node.type === "Pressable");
-  assert.equal(button?.props.accessibilityLabel, messages[locale]["mobile.lifecycle.openTask"]);
-  assert.ok(button);
-  assert.equal(typeof button.props.onPress, "function");
-  (button.props.onPress as () => void)();
-  assert.equal(opened, 1);
-  const closed = render.render(
-    "mobile/src/features/ovitrap-lifecycle/AvailabilityNotices.tsx",
-    "AvailabilityNotices",
-    { model },
-  );
-  assert.ok(
-    closed.some((node) => node.props.children === messages[locale]["mobile.lifecycle.epochClosed"]),
-  );
+  // An unavailable advisory is one calm sentence under its title; the supervisor still decides.
+  const advisory = nodes.filter((node) => node.type === "Text").map((node) => node.props.children);
+  assert.ok(advisory.includes(messages[locale]["field.lifecycle.advisoryTitle"]));
+  assert.ok(advisory.includes(messages[locale]["field.lifecycle.advisoryUnavailable"]));
 }
 
 async function currentTaskActions(

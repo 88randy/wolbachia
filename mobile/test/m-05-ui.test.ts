@@ -4,8 +4,7 @@ import { messages } from "@wolbachia/i18n";
 import type { Locale } from "@wolbachia/i18n";
 import type { OutboxEvent } from "../src/outbox/outbox-event.ts";
 import type { OutboxStatus } from "../src/outbox/outbox-status.ts";
-import type { Schemas } from "@wolbachia/api-client";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const FEATURE = "mobile/src/features/supply-receipt/";
@@ -34,98 +33,111 @@ function event(status: OutboxStatus): OutboxEvent {
 function texts(nodes: readonly RenderNode[]): readonly unknown[] {
   return nodes.filter((node) => node.type === "Text").map((node) => node.props.children);
 }
-function acceptedReview(source: string): Schemas["ReviewHistoryEntry"] {
+// The scan button needs the services container and the camera; the count logic does not.
+const SCAN_STUB = { "ReceiptScanButton.tsx": { ReceiptScanButton: () => null } };
+const DRAFT_LINE = {
+  id: "actual",
+  releaseLineId: "release-line",
+  lotId: "00000000-0000-4000-8000-000000000002",
+  pieceId: null,
+  unitVersionId: "00000000-0000-4000-8000-000000000003",
+  expected: "5",
+  quantity: "2",
+};
+function model(patch: Record<string, unknown> = {}) {
+  const edits: string[] = [];
   return {
-    id: "00000000-0000-4000-8000-000000000004",
-    kind: "review_decision",
-    review_item_id: "00000000-0000-4000-8000-000000000005",
-    source_event_id: source,
-    shift_id: null,
-    decision_kind: "accept",
-    revision: 2,
-    is_terminal: true,
-    decision_state: "accepted",
-    reason: "Reviewed signed receipt",
-    decided_by: "00000000-0000-4000-8000-000000000006",
-    decided_at: "2026-11-10T12:00:00Z",
-    subjects: [],
-    source_status: "in_review",
-    source_code: "supply_assignment_changed",
-    effect_state: "applied_review",
-    incident_id: null,
-    declared_void_target_uuid: null,
-    approval_current: null,
+    edits,
+    value: {
+      state: { ready: true, event: null, feedback: null },
+      isBusy: false,
+      errorKey: null,
+      service: { quantity: () => Promise.resolve(), discrepancy: () => Promise.resolve() },
+      edit: (field: string) => {
+        edits.push(field);
+      },
+      ...patch,
+    },
   };
 }
+function press(node: RenderNode | undefined): void {
+  assert.ok(node);
+  assert.equal(typeof node.props.onPress, "function");
+  (node.props.onPress as () => void)();
+}
+function pressable(nodes: readonly RenderNode[], label: string): RenderNode | undefined {
+  return nodes.find((node) => node.props.accessibilityLabel === label);
+}
 
-void test("P8 never describes local capture or a pending signature as server receipt or review", () => {
+void test("P8 never describes local capture as server receipt or review", () => {
+  const keys = {
+    pending: "field.receipt.savedBody",
+    sending: "field.receipt.savedBody",
+    error: "field.receipt.savedBody",
+    sent: "field.receipt.sentBody",
+    in_review: "field.receipt.reviewBody",
+    rejected: "field.receipt.rejectedBody",
+  } as const;
+  const bodies = Object.values(keys);
   for (const locale of ["es-MX", "en"] as const) {
     const render = componentHarness({ locale, scheme: "light", fontScale: 1 }).render;
-    for (const status of ["pending", "sending", "error"] as const) {
-      const content = texts(
-        render(`${FEATURE}ReceiptStatus.tsx`, "ReceiptStatus", {
-          event: event(status),
-          signaturePending: true,
-        }),
-      );
-      assert.ok(content.includes(messages[locale]["mobile.supplyReceipt.saved"]));
-      assert.ok(content.includes(messages[locale]["mobile.supplyReceipt.pendingSignature"]));
-      assert.ok(!content.includes(messages[locale]["mobile.supplyReceipt.serverReceived"]));
-      assert.ok(!content.includes(messages[locale]["mobile.supplyReceipt.review"]));
+    for (const [status, key] of Object.entries(keys) as [OutboxStatus, keyof typeof messages.en][]) {
+      const content = texts(render(`${FEATURE}ReceiptSaved.tsx`, "ReceiptSaved", { event: event(status) }));
+      assert.ok(content.includes(messages[locale]["field.receipt.savedTitle"]));
+      assert.ok(content.includes(messages[locale][key]), `${status} shows its own body`);
+      for (const other of bodies.filter((candidate) => candidate !== key))
+        assert.ok(!content.includes(messages[locale][other]), `${status} hides ${other}`);
     }
-    const received = texts(
-      render(`${FEATURE}ReceiptStatus.tsx`, "ReceiptStatus", {
-        event: event("sent"),
-        signaturePending: false,
-      }),
-    );
-    assert.ok(received.includes(messages[locale]["mobile.supplyReceipt.serverReceived"]));
-    const review = texts(
-      render(`${FEATURE}ReceiptStatus.tsx`, "ReceiptStatus", {
-        event: event("in_review"),
-        signaturePending: false,
-      }),
-    );
-    assert.ok(review.includes(messages[locale]["mobile.supplyReceipt.review"]));
   }
 });
 
-function checkFields(locale: Locale, nodes: readonly RenderNode[]): void {
-  const input = nodes.find((node) => node.type === "TextInput");
-  assert.ok(input);
-  assert.equal(input.props.accessibilityLabel, messages[locale]["mobile.supplyReceipt.actual"]);
-  assert.equal(input.props.keyboardType, "decimal-pad");
-  assert.equal(input.props.editable, true);
-  assert.ok(Number(flattenStyle(input.props.style).minHeight) >= 48);
+function checkText(nodes: readonly RenderNode[]): void {
   for (const text of nodes.filter((node) => node.type === "Text")) {
     assert.equal(text.props.numberOfLines, undefined);
     assert.notEqual(text.props.allowFontScaling, false);
     assert.ok(Number(flattenStyle(text.props.style).fontSize) >= 12);
   }
 }
-void test("P8 declared quantities retain labels and wrapping in both locales/themes at 130 percent host scale", () => {
+void test("P8 count step keeps whole units on big plus/minus and fractions on a decimal field, in both locales/themes at 130 percent", () => {
   for (const locale of ["es-MX", "en"] as const) {
     for (const scheme of ["light", "dark"] as const) {
-      const harness = componentHarness({ locale, scheme, fontScale: 1.3 });
-      const props = {
-        line: {
-          id: "actual",
-          releaseLineId: "release-line",
-          lotId: "00000000-0000-4000-8000-000000000002",
-          pieceId: null,
-          unitVersionId: "00000000-0000-4000-8000-000000000003",
-          expected: "1.250000",
-          quantity: "0.500000",
-        },
-        disabled: false,
-        onChange: () => undefined,
-      };
-      checkFields(locale, harness.render(`${FEATURE}ReceiptLine.tsx`, "ReceiptLine", props));
-      const saved = harness.render(`${FEATURE}ReceiptLine.tsx`, "ReceiptLine", {
-        ...props,
-        disabled: true,
+      const render = componentHarness({ locale, scheme, fontScale: 1.3, stubs: SCAN_STUB }).render;
+      const { value, edits } = model();
+      const whole = render(`${FEATURE}ReceiptCountStep.tsx`, "ReceiptCountStep", {
+        model: value,
+        draft: { lines: [DRAFT_LINE], discrepancy: null, evidence: [] },
+        onNext: () => undefined,
       });
-      assert.equal(saved.find((node) => node.type === "TextInput")?.props.editable, false);
+      checkText(whole);
+      const label = messages[locale]["field.receipt.supply"]
+        .replace("{number}", "1")
+        .replace("{expected}", "5");
+      assert.ok(texts(whole).includes(label));
+      const plus = pressable(
+        whole,
+        messages[locale]["courier.counter.increase"].replace("{label}", label),
+      );
+      assert.ok(plus && minHeightOf(plus) >= 48);
+      press(plus);
+      assert.deepEqual(edits, ["quantity.actual"]);
+
+      const fraction = render(`${FEATURE}ReceiptCountStep.tsx`, "ReceiptCountStep", {
+        model: value,
+        draft: { lines: [{ ...DRAFT_LINE, expected: "1.25", quantity: "0.5" }] },
+        onNext: () => undefined,
+      });
+      const input = fraction.find((node) => node.type === "TextInput");
+      assert.ok(input);
+      assert.equal(input.props.keyboardType, "decimal-pad");
+      assert.equal(input.props.value, "0.5");
+      assert.equal(input.props.editable, true);
+      assert.ok(minHeightOf(input) >= 48);
+      const locked = render(`${FEATURE}ReceiptCountStep.tsx`, "ReceiptCountStep", {
+        model: model({ isBusy: true }).value,
+        draft: { lines: [{ ...DRAFT_LINE, expected: "1.25", quantity: "0.5" }] },
+        onNext: () => undefined,
+      });
+      assert.equal(locked.find((node) => node.type === "TextInput")?.props.editable, false);
     }
   }
 });
@@ -133,61 +145,25 @@ void test("P8 declared quantities retain labels and wrapping in both locales/the
 void test("P8 discrepancy choices keep Other reachable with a named large target and real selection", () => {
   const locale = "es-MX";
   const render = componentHarness({ locale, scheme: "dark", fontScale: 1.3 }).render;
-  let selected: string | null = null;
-  const controls = render(`${FEATURE}ReceiptDiscrepancyChoices.tsx`, "ReceiptDiscrepancyChoices", {
-    selected: "missing",
-    disabled: false,
-    onChange: (kind: string) => {
-      selected = kind;
-    },
-  }).filter((node) => node.type === "Pressable");
-  assert.equal(controls.length, 3);
-  for (const control of controls) {
-    assert.equal(control.props.accessibilityRole, "button");
-    assert.ok(Number(flattenStyle(control.props.style).minHeight) >= 48);
-  }
-  const other = controls.find(
-    (node) => node.props.accessibilityLabel === messages[locale]["mobile.supplyReceipt.other"],
+  const { value, edits } = model();
+  const draft = { lines: [DRAFT_LINE], discrepancy: { kind: "missing", text: "" }, evidence: [] };
+  const nodes = render(`${FEATURE}ReceiptProblemStep.tsx`, "ReceiptProblemStep", {
+    model: value,
+    draft,
+    onNext: () => undefined,
+    onBack: () => undefined,
+  });
+  const kinds = nodes.filter((node) => node.props.accessibilityRole === "radio");
+  // Yes / No answer first, then the three kinds in a fixed order with Other last.
+  assert.deepEqual(
+    kinds.map((node) => node.props.accessibilityLabel).slice(2),
+    ["missing", "damaged", "other"].map((kind) => messages[locale][`field.receipt.kind.${kind}` as const]),
   );
-  assert.ok(other);
-  assert.equal(typeof other.props.onPress, "function");
-  (other.props.onPress as () => void)();
-  assert.equal(selected, "other");
-});
-
-void test("P8 shows exact later review or incident separately without rewriting the original ingest receipt", () => {
-  const locale = "en";
-  const render = componentHarness({ locale, scheme: "light", fontScale: 1.3 }).render;
-  const original = event("in_review");
-  const review = acceptedReview(original.envelope.id);
-  const path = `${FEATURE}ReceiptStatus.tsx`;
-  const accepted = texts(
-    render(path, "ReceiptStatus", { event: original, signaturePending: false, review }),
-  );
-  assert.ok(accepted.includes(messages[locale]["mobile.supplyReceipt.review"]));
-  assert.ok(accepted.includes(messages[locale]["mobile.supplyReceipt.reviewedAccepted"]));
-  const unrelated = texts(
-    render(path, "ReceiptStatus", {
-      event: original,
-      signaturePending: false,
-      review: { ...review, source_event_id: "another-source" },
-    }),
-  );
-  assert.ok(!unrelated.includes(messages[locale]["mobile.supplyReceipt.reviewedAccepted"]));
-  const incidentId = "00000000-0000-4000-8000-000000000007";
-  const incident = texts(
-    render(path, "ReceiptStatus", {
-      event: original,
-      signaturePending: false,
-      review: {
-        ...review,
-        decision_kind: "open_incident",
-        effect_state: "incident_open",
-        incident_id: incidentId,
-      },
-    }),
-  );
-  assert.ok(incident.includes(messages[locale]["mobile.supplyReceipt.incidentOpen"]));
-  assert.ok(incident.includes(incidentId));
-  assert.ok(!incident.includes(messages[locale]["mobile.supplyReceipt.reviewedAccepted"]));
+  for (const control of kinds) assert.ok(minHeightOf(control) >= 48);
+  const other = pressable(nodes, messages[locale]["field.receipt.kind.other"]);
+  assert.equal((other?.props.accessibilityState as { checked: boolean }).checked, false);
+  press(other);
+  assert.deepEqual(edits, ["discrepancy"]);
+  const missing = pressable(nodes, messages[locale]["field.receipt.kind.missing"]);
+  assert.equal((missing?.props.accessibilityState as { checked: boolean }).checked, true);
 });

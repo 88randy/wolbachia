@@ -15,6 +15,8 @@ interface Options {
   readonly locale: Locale;
   readonly scheme: "light" | "dark";
   readonly fontScale: number;
+  /** Replaces a module whose path ends with the key (for example a hook that needs services). */
+  readonly stubs?: Readonly<Record<string, unknown>>;
 }
 const SHARED_MODULES: Readonly<Record<string, unknown>> = {
   "@wolbachia/tokens": tokens,
@@ -26,13 +28,22 @@ const SHARED_MODULES: Readonly<Record<string, unknown>> = {
 function nativeRequire(name: string, options: Options): unknown {
   const theme = options.scheme === "dark" ? tokens.darkTheme : tokens.lightTheme;
   if (Object.hasOwn(SHARED_MODULES, name)) return SHARED_MODULES[name];
+  const stub = Object.entries(options.stubs ?? {}).find(([suffix]) => name.endsWith(suffix));
+  if (stub) return stub[1];
   if (name.endsWith("I18nProvider.tsx"))
     return { useT: () => createTranslate(options.locale), useLocale: () => options.locale };
+  // Header chrome that reads the sync service; none of the screens under test assert on it.
+  if (name.endsWith("SyncChip.tsx")) return { SyncChip: () => null };
+  if (name.endsWith("NavigationProvider.tsx"))
+    return { useNavigation: () => ({ popToRoot: () => undefined, pop: () => undefined, push: () => undefined }) };
   if (name.endsWith("ThemeProvider.tsx"))
     return {
       useTheme: () => ({ theme, scheme: options.scheme }),
       useStyles: (factory: (theme: tokens.Theme) => unknown) => factory(theme),
     };
+  if (name === "lucide-react-native")
+    // Every icon is a decorative SVG host; the tests assert on labels and targets, not glyphs.
+    return new Proxy({}, { get: () => (props: Record<string, unknown>) => node("Svg", props) });
   if (name === "react-native-svg") return { __esModule: true, default: "Svg", Path: "Path" };
   if (name === "react") return { useState: (value: unknown) => [value, () => undefined] };
   if (name === "react/jsx-runtime") return { jsx: node, jsxs: node, Fragment: "Fragment" };
@@ -71,7 +82,9 @@ export function componentHarness(options: Options) {
       },
     }).outputText;
     const require = (name: string): unknown =>
-      nativeRequire(name, options) ?? load(resolve(dirname(absolute), name));
+      nativeRequire(name, options) ??
+      // Bare package names (expo-*, ...) are native modules these host tests never execute.
+      (name.startsWith(".") ? load(resolve(dirname(absolute), name)) : {});
     runInNewContext(compiled, { require, exports, module: { exports } }, { filename: absolute });
     return exports;
   };
@@ -98,4 +111,16 @@ export function flattenStyle(value: unknown): Record<string, unknown> {
       unknown
     >;
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+/**
+ * Minimum touch height of a rendered host node in dp: an explicit `minHeight` style, or the
+ * Tailwind class `min-h-N` / `h-N` (N x 4 dp) that the shared kit controls use.
+ */
+export function minHeightOf(node: RenderNode): number {
+  const raw = node.props.style;
+  const style = typeof raw === "function" ? (raw as (input: { pressed: boolean }) => unknown)({ pressed: false }) : raw;
+  const fromStyle = Number(flattenStyle(style).minHeight);
+  if (Number.isFinite(fromStyle)) return fromStyle;
+  const match = /(?:^|\s)(?:min-)?h-(\d+)(?:\s|$)/.exec(String(node.props.className ?? ""));
+  return match?.[1] === undefined ? Number.NaN : Number(match[1]) * 4;
 }
