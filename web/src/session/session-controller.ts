@@ -3,7 +3,7 @@ import { clearExpectedAttestation, setExpectedAttestation } from "./attestation"
 import { forgetIdentity, notifyIdentityChange, recordIdentity } from "./identity";
 import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-key";
-import { removeOrganizationQueries } from "./organization-cache";
+import { isSessionQuery, removeOrganizationQueries } from "./organization-cache";
 import {
   clearOrganizationSlug,
   getOrganizationSlug,
@@ -87,7 +87,7 @@ export type BeginKind = "leave" | "verify" | "passive";
  */
 export function leaveKnown(queryClient: QueryClient): Promise<void> {
   bumpEpoch();
-  const cancelled = queryClient.cancelQueries();
+  const cancelled = queryClient.cancelQueries({ predicate: isSessionQuery });
   removeOrganizationQueries(queryClient);
   forgetIdentity(queryClient);
   clearExpectedAttestation();
@@ -191,7 +191,7 @@ export function failIfCurrent(queryClient: QueryClient, token: Token): Promise<v
 export function commitSignedOut(queryClient: QueryClient, token: Token): number | undefined {
   if (!isLatest(token)) return undefined;
   bumpEpoch();
-  void queryClient.cancelQueries();
+  void queryClient.cancelQueries({ predicate: isSessionQuery });
   removeOrganizationQueries(queryClient);
   forgetIdentity(queryClient);
   clearExpectedAttestation();
