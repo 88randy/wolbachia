@@ -141,7 +141,8 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
     user: USER,
     start: "/inventory/reconciliations",
     run: async (a) => {
-      await a.point(a.page.getByRole("button", { name: "Justificar" }).first());
+      await a.point(a.page.getByRole("heading", { name: "Cuadrar entregas" }));
+      await a.point(a.page.getByRole("button", { name: "Más opciones" }).first());
     },
   },
   "courierDelivery/void": {
@@ -156,8 +157,8 @@ export const INVENTORY_STEPS: Record<string, StepScript> = {
     user: USER,
     start: "/inventory/reconciliations",
     run: async (a) => {
-      await a.click(a.page.getByRole("button", { name: "Justificar" }).first());
-      await a.click(a.page.getByRole("combobox", { name: /Motivo/ }));
+      await a.click(a.page.getByRole("button", { name: "Más opciones" }).first());
+      await a.clickIfThere(a.page.getByRole("menuitem", { name: /Justificar/ }));
     },
   },
 
