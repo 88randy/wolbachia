@@ -4,8 +4,10 @@ import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
-import { requirePermission } from "../router/guards";
+import { ForbiddenError, requirePermission } from "../router/guards";
+import { canAny } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
+import { ComparisonPage } from "./comparison/ComparisonPage";
 import { DashboardsHome } from "./DashboardsHome";
 import { W53Page, W54Page, W55Page } from "./dashboard-pages";
 import { ENTOMOLOGY_READ, OPERATIONS_READ, WOLBACHIA_READ } from "./permissions";
@@ -50,4 +52,18 @@ export const dashboardsRoutes = [
     W54Page,
     "analytics.dashboards.prevalence.title",
   ),
+  createRoute({
+    getParentRoute: () => authenticatedRoute,
+    path: "/dashboards/comparison",
+    staticData: { crumb: "comparison.crumb" },
+    validateSearch: tableSearchSchema,
+    beforeLoad: ({ context }) => {
+      // One indicator needs the operations dashboard permission, the others the entomology one.
+      if (!canAny(context.me, [OPERATIONS_READ, ENTOMOLOGY_READ])) {
+        throw new ForbiddenError("dashboards");
+      }
+    },
+    component: ComparisonPage,
+    errorComponent: AreaErrorState,
+  }),
 ];

@@ -1,4 +1,4 @@
-import { FileDown, Globe, History, Inbox, Share2 } from "lucide-react";
+import { Clock, FileDown, Globe, History, Inbox, Share2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HubCardItem } from "../components/templates/HubCard";
 import { HubPage } from "../components/templates/HubPage";
@@ -37,6 +37,13 @@ export function RegulatoryHome() {
       link: { to: "/regulatory/access-log" },
       title: t("regulatory.page.accessLog"),
       description: t("regulatory.home.accessLog"),
+    },
+    can(me, "access_log.read") && {
+      id: "retention",
+      icon: Clock,
+      link: { to: "/regulatory/retention" },
+      title: t("regulatory.page.retention"),
+      description: t("regulatory.home.retention"),
     },
     can(me, "portal.manage") && {
       id: "portal",

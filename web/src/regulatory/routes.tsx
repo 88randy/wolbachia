@@ -9,6 +9,7 @@ import { AccessLogPage } from "./access/AccessLogPage";
 import { ArcoPage } from "./arco/ArcoPage";
 import { ExportsPage } from "./exports/ExportsPage";
 import { PortalSettingsPage } from "./portal-settings/PortalSettingsPage";
+import { RetentionPage } from "./retention/RetentionPage";
 import { RegulatoryHome } from "./RegulatoryHome";
 import { DataTransfersPage } from "./transfers/DataTransfersPage";
 
@@ -40,5 +41,6 @@ export const regulatoryRoutes = [
   screen("/regulatory/access-log/export-receipts", "access_log.read", () => (
     <AccessLogPage tab="exports" />
   )),
+  screen("/regulatory/retention", "access_log.read", RetentionPage),
   screen("/regulatory/portal-settings", "portal.manage", PortalSettingsPage),
 ];

@@ -1,4 +1,6 @@
 import { regulatory } from "./regulatory.ts";
+import { comparison } from "./comparison.ts";
+import { apiKeys } from "./apiKeys.ts";
 import { portal } from "./portal.ts";
 import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
@@ -77,6 +79,8 @@ export const en: Record<MessageKey, string> = {
   ...evaluations,
   ...lab,
   ...regulatory,
+  ...comparison,
+  ...apiKeys,
   ...portal,
   ...shift,
   ...scheduling,

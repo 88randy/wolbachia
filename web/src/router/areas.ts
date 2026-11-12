@@ -133,6 +133,7 @@ export const AREAS = [
       "role.read",
       "incident.manage_type",
       "user.read",
+      "api_key.read",
     ],
   },
   // Platform admins only (`/me/` is_platform_admin), never an organization permission.

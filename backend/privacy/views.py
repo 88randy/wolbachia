@@ -25,10 +25,19 @@ from core.time import localdate, server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.models import Membership, Organization
 from privacy import portal
+from privacy.api_keys import ApiKeyInput, issue_api_key, revoke_api_key
 from privacy.exports import ExportRequest, build_export, to_csv, to_xlsx
-from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
+from privacy.models import (
+    ApiKey,
+    ArcoRequest,
+    DataTransferAuthorization,
+    ExportLog,
+    PortalSettings,
+)
 from privacy.names import person_name, with_actor_name
 from privacy.permissions import (
+    API_KEY_MANAGE,
+    API_KEY_READ,
     ARCO_MANAGE,
     ARCO_READ,
     EXPORT_RUN,
@@ -36,7 +45,12 @@ from privacy.permissions import (
     TRANSFER_AUTHORIZATION_MANAGE,
     TRANSFER_AUTHORIZATION_READ,
 )
+from privacy.retention import retention_overview
 from privacy.serializers import (
+    ApiKeyCreatedSerializer,
+    ApiKeyCreateSerializer,
+    ApiKeyRevokeSerializer,
+    ApiKeySerializer,
     ArcoCreateSerializer,
     ArcoRequestSerializer,
     ArcoResolveSerializer,
@@ -44,6 +58,7 @@ from privacy.serializers import (
     ExportLogSerializer,
     ExportQuerySerializer,
     PortalSettingsSerializer,
+    RetentionSerializer,
     TransferAuthorizationCreateSerializer,
     TransferAuthorizationSerializer,
     TransferRevocationSerializer,
@@ -432,3 +447,115 @@ class PortalLogoView(PortalView):
         response["Cache-Control"] = "public, max-age=300"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+
+@method_decorator(never_cache, name="dispatch")
+class ApiKeyViewSet(
+    OrgScopedViewSetMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """W66: one key per institution. The secret is in the creation answer only; revoke, never edit."""
+
+    queryset = (
+        ApiKey.objects.select_related("center", "quadrant")
+        .annotate(
+            created_by_name=person_name("created_by_id"),
+            revoked_by_name=person_name("revoked_by_id"),
+        )
+        .order_by("-created_at", "-id")
+    )
+    serializer_class = ApiKeySerializer
+    pagination_class = StreamCursorPagination
+    http_method_names = ["get", "head", "post", "options"]
+    required_permissions = {
+        "list": API_KEY_READ,
+        "retrieve": API_KEY_READ,
+        "create": API_KEY_MANAGE,
+        "revoke": API_KEY_MANAGE,
+    }
+
+    def get_queryset(self) -> Any:  # noqa: ANN401
+        rows = super().get_queryset()
+        params = self.request.query_params
+        search = (params.get("search") or "").strip()
+        if search:
+            rows = rows.filter(institution__icontains=search)
+        now = server_now()
+        wanted = params.get("status")
+        if wanted == "revoked":
+            rows = rows.filter(revoked_at__isnull=False)
+        elif wanted == "expired":
+            rows = rows.filter(revoked_at__isnull=True, valid_until__lte=now)
+        elif wanted == "scheduled":
+            rows = rows.filter(revoked_at__isnull=True, valid_from__gt=now, valid_until__gt=now)
+        elif wanted == "active":
+            rows = rows.filter(revoked_at__isnull=True, valid_from__lte=now, valid_until__gt=now)
+        return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("search", str, description="Institution contains."),
+            OpenApiParameter(
+                "status", str, enum=["active", "scheduled", "expired", "revoked"], required=False
+            ),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(request=ApiKeyCreateSerializer, responses={201: ApiKeyCreatedSerializer})
+    def create(self, request: Request, *args: object, **kwargs: object) -> Response:
+        payload = ApiKeyCreateSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        data = payload.validated_data
+        created, token = issue_api_key(
+            request.organization,  # type: ignore[attr-defined]
+            request.user,  # type: ignore[arg-type]
+            ApiKeyInput(
+                institution=data["institution"],
+                center_id=data["center_id"],
+                quadrant_id=data["quadrant_id"],
+                endpoints=tuple(data["endpoints"]),
+                rate_limit_per_day=data["rate_limit_per_day"],
+                valid_from=data["valid_from"],
+                valid_until=data["valid_until"],
+            ),
+        )
+        row = self.get_queryset().get(pk=created.pk)
+        row.secret = token  # type: ignore[attr-defined]
+        return Response(
+            ApiKeyCreatedSerializer(row).data,
+            status=201,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @extend_schema(request=ApiKeyRevokeSerializer, responses=ApiKeySerializer)
+    @action(detail=True, methods=["post"])
+    def revoke(self, request: Request, pk: str | None = None) -> Response:
+        payload = ApiKeyRevokeSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        key = self.get_object()
+        revoke_api_key(
+            key,
+            request.user,  # type: ignore[arg-type]
+            payload.validated_data["reason"],
+        )
+        return Response(ApiKeySerializer(self.get_queryset().get(pk=pk)).data)
+
+
+class RetentionViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
+    """W61: the retention jobs that exist today, read-only."""
+
+    queryset = ApiKey.objects.none()
+    pagination_class = None
+    http_method_names = ["get", "head", "options"]
+    required_permissions = {"overview": "access_log.read"}
+
+    @extend_schema(responses=RetentionSerializer)
+    def overview(self, request: Request) -> Response:
+        return Response(
+            RetentionSerializer(retention_overview()).data,
+            headers={"Cache-Control": "private, no-store"},
+        )

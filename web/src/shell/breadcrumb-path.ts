@@ -36,6 +36,9 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "access-log": "regulatory.page.accessLog",
   "export-receipts": "regulatory.access.tab.exports",
   "portal-settings": "regulatory.page.portal",
+  retention: "regulatory.page.retention",
+  comparison: "comparison.crumb",
+  "api-keys": "apiKeys.crumb",
   records: "shell.crumb.records",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
