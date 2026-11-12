@@ -2,7 +2,7 @@
 """Demo storage location, supply types, lots, readings and the courier's supply plan (writes)."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import uuid5
@@ -210,6 +210,7 @@ def ensure_courier_plan(
 ) -> None:
     """Plan today supplies for the courier; the command id makes a rerun a replay (writes)."""
     lines = []
+    today = localdate(actor.organization)
     for spec in SUPPLIES:
         if spec.biological and not biological:
             continue  # the biological lot only covers the first couriers
@@ -217,7 +218,7 @@ def ensure_courier_plan(
         version = lot.supply.versions.order_by("-revision").first()
         if version is None:
             continue
-        line_id = uuid5(NAMESPACE, f"assignment-line:{courier.user_id}:{spec.code}")
+        line_id = uuid5(NAMESPACE, f"assignment-line:{courier.user_id}:{spec.code}:{today}")
         lines.append(
             {
                 "id": line_id,
@@ -227,24 +228,24 @@ def ensure_courier_plan(
                 "quantity": Decimal(spec.courier_quantity),
             }
         )
-    if not lines or _plan_exists(actor.organization, courier):
+    if not lines or _plan_exists(actor.organization, courier, today):
         return
     values = {
-        "command_id": uuid5(NAMESPACE, f"assignment-command:{courier.user_id}"),
+        "command_id": uuid5(NAMESPACE, f"assignment-command:{courier.user_id}:{today}"),
         "courier_id": courier.user_id,
         "origin_id": stock.location.pk,
-        "date": localdate(actor.organization),
+        "date": today,
         "shift_id": None,
         "lines": lines,
     }
     write_assignment(AssignmentWrite(actor, values))
 
 
-def _plan_exists(organization: Organization, courier: Membership) -> bool:
+def _plan_exists(organization: Organization, courier: Membership, day: date) -> bool:
     from inventory.allocations.models import SupplyAssignment
 
     return SupplyAssignment.objects.filter(
-        organization=organization, courier_id=courier.user_id
+        organization=organization, courier_id=courier.user_id, date=day
     ).exists()
 
 
