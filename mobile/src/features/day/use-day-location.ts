@@ -1,62 +1,34 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import type { LocationSource, LocationState } from "./location.ts";
-/** A generation cancels late permission/watch promises when the app backgrounds or the screen unmounts. */
+import { subscribeLocation } from "./subscribe-location.ts";
+import type { AppStatePort } from "./subscribe-location.ts";
+
+const APP: AppStatePort = {
+  // A reading that is not there yet (null before the first event) is not proof of background.
+  current: () => AppState.currentState ?? "active",
+  onChange: (listener) => {
+    const subscription = AppState.addEventListener("change", listener);
+    return () => {
+      subscription.remove();
+    };
+  },
+};
+
+/**
+ * The state starts as "unavailable" (no banner): "searching" is published only by a source that
+ * has actually started, so the screen never says it is searching with nothing looking.
+ */
 export function useDayLocation(
   source: LocationSource,
-  isShiftOpen: boolean,
+  isNeeded: boolean,
   recheck = 0,
 ): LocationState {
-  const [state, setState] = useState<LocationState>({ kind: "searching" });
+  const [state, setState] = useState<LocationState>({ kind: "unavailable" });
   useEffect(
-    () => subscribeLocation({ source, isShiftOpen, publish: setState }),
+    () => subscribeLocation({ source, isNeeded, publish: setState, app: APP }),
     // `recheck` restarts the source so a new permission or setting is read at once.
-    [source, isShiftOpen, recheck],
+    [source, isNeeded, recheck],
   );
   return state;
-}
-interface LocationSubscriptionInput {
-  readonly source: LocationSource;
-  readonly isShiftOpen: boolean;
-  readonly publish: (state: LocationState) => void;
-}
-function subscribeLocation({ source, isShiftOpen, publish }: LocationSubscriptionInput) {
-  let generation = 0;
-  let stop: (() => void) | undefined;
-  const update = () => {
-    const current = ++generation;
-    stop?.();
-    stop = undefined;
-    // Keep the last known state while the check repeats; resetting it made the banner blink.
-    if (!isShiftOpen) {
-      publish({ kind: "unavailable" });
-      return;
-    }
-    if (AppState.currentState !== "active") return;
-    void source
-      .start((fix) => {
-        if (current === generation) publish(fix);
-      })
-      .then((cancel) => {
-        if (current !== generation) cancel();
-        else stop = cancel;
-      })
-      .catch(() => {
-        if (current === generation) publish({ kind: "searching" });
-      });
-  };
-  update();
-  // Only a real change between in front and not in front restarts the watch.
-  let wasActive = AppState.currentState === "active";
-  const subscription = AppState.addEventListener("change", (state) => {
-    const isActive = state === "active";
-    if (isActive === wasActive) return;
-    wasActive = isActive;
-    update();
-  });
-  return () => {
-    generation += 1;
-    stop?.();
-    subscription.remove();
-  };
 }

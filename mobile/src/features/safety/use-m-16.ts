@@ -127,6 +127,8 @@ function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
   if (location.kind === "off") return "off";
   if (location.kind === "searching") return "searching";
   if (location.kind === "noFix") return "noFix";
+  // Not needed now (locked, or no shift): no banner.
+  if (location.kind === "unavailable") return "ok";
   return safety.quality === "usable" ? "ok" : "unreliable";
 }
 

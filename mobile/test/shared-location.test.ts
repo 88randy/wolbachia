@@ -119,12 +119,12 @@ void test("a denied permission is tried again by the next viewer", async () => {
     seen.push(state);
   });
   await settle();
-  assert.deepEqual(seen, [{ kind: "denied" }]);
+  assert.deepEqual(seen, [{ kind: "searching" }, { kind: "denied" }]);
   const next: LocationState[] = [];
   await f.shared.start((state) => {
     next.push(state);
   });
   await settle();
-  assert.deepEqual(next, [{ kind: "denied" }]);
+  assert.deepEqual(next, [{ kind: "searching" }, { kind: "denied" }]);
   assert.equal(f.calls.watch, 0);
 });

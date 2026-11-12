@@ -3,9 +3,9 @@ import type { LocationSource, LocationState } from "./location.ts";
 
 /** [ASSUMPTION] Technical wait before the phone says it has no exact location; not a business rule. */
 export const NO_FIX_WAIT_MS = 20_000;
-/** A last known position older than this is not shown as the start point. */
 /** Fresh enough for the speed lock without keeping the GPS chip at full speed. */
 const WATCH_INTERVAL_MS = 3000;
+/** A last known position older than this is not shown as the start point. */
 const LAST_KNOWN_MAX_AGE_MS = 5 * 60_000;
 
 function fromNative(fix: Location.LocationObject): LocationState {
@@ -54,7 +54,7 @@ class Watch {
     this.#publish(fromNative(fix));
   };
   publish(state: LocationState): void {
-    this.#publish(state);
+    if (!this.#isStopped) this.#publish(state);
   }
   onStop(remove: () => void): void {
     this.#removers.push(remove);
@@ -78,15 +78,14 @@ async function isAllowed(api: Api, watch: Watch): Promise<boolean> {
   return true;
 }
 
-async function follow(deps: LocationDeps, watch: Watch): Promise<void> {
-  const { api, schedule } = deps;
-  const last = await api.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS });
-  watch.publish(last === null ? { kind: "searching" } : fromNative(last));
-  watch.onStop(
-    schedule(() => {
-      if (!watch.isStopped && !watch.hasFix) watch.publish({ kind: "noFix" });
-    }, NO_FIX_WAIT_MS),
-  );
+async function follow(api: Api, watch: Watch): Promise<void> {
+  // Last known only fills the gap; nothing below waits for it.
+  void api
+    .getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS })
+    .then((last) => {
+      if (last !== null && !watch.hasFix) watch.publish(fromNative(last));
+    })
+    .catch(() => undefined);
   void api
     .getCurrentPositionAsync({ accuracy: api.Accuracy.Balanced })
     .then(watch.onFix)
@@ -104,19 +103,30 @@ async function follow(deps: LocationDeps, watch: Watch): Promise<void> {
 
 /**
  * Foreground fixes only; the caller stops this on screen exit, background or closed shift. No pings.
- * Quick start: last known position, one Balanced read and one Balanced watch (they work indoors). If nothing arrives in time it says noFix, once.
+ * It says "searching" as it starts and arms the no-fix wait at once, so a native call that never
+ * answers still ends in noFix (never a search that goes on forever). One Balanced read and one
+ * Balanced watch, which work indoors.
  */
 export function createAndroidLocation(deps: LocationDeps): LocationSource {
   return {
     async start(publish) {
       const watch = new Watch(publish);
+      watch.publish({ kind: "searching" });
+      watch.onStop(
+        deps.schedule(() => {
+          if (!watch.hasFix) watch.publish({ kind: "noFix" });
+        }, NO_FIX_WAIT_MS),
+      );
       try {
-        if (!(await isAllowed(deps.api, watch))) return () => undefined;
-        await follow(deps, watch);
+        if (!(await isAllowed(deps.api, watch))) {
+          watch.stop();
+          return () => undefined;
+        }
+        await follow(deps.api, watch);
         return watch.stop;
       } catch {
+        watch.publish({ kind: "noFix" });
         watch.stop();
-        publish({ kind: "noFix" });
         return () => undefined;
       }
     },

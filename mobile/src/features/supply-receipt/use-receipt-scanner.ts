@@ -24,7 +24,8 @@ function useScannerContext(model: M05Model) {
   return useCallback(() => {
     const { model: current, route: screen } = latest.current;
     const snapshot = auth.getSnapshot();
-    if (snapshot.phase !== "unlocked" || AppState.currentState !== "active") return null;
+    if (snapshot.phase !== "unlocked" || (AppState.currentState ?? "active") !== "active")
+      return null;
     const draft = interactiveDraft(current, screen.name);
     if (!draft) return null;
     const identity = acceptedEvidenceOwner({
