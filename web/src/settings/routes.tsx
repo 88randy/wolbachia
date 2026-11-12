@@ -11,6 +11,8 @@ import { RULE_VERSION_READ } from "../rules/permissions";
 import { RuleParameterPage } from "../rules/RuleParameterPage";
 import { RuleParametersPage } from "../rules/RuleParametersPage";
 import { AreaErrorState } from "../states/AreaErrorState";
+import { API_KEY_READ } from "./api-keys/api-keys-queries";
+import { ApiKeysPage } from "./api-keys/ApiKeysPage";
 import { W64Page } from "./incident-types/W64Page";
 import { ORGANIZATION_READ, ROLE_READ } from "./organization/permissions";
 import { W65Page } from "./organization/W65Page";
@@ -115,6 +117,7 @@ export const settingsRoutes = [
   settingsListRoute("/settings/users", "user.read", W48UsersPage),
   personRoute,
   settingsListRoute("/settings/roles", ROLE_READ, W65Page),
+  settingsListRoute("/settings/api-keys", API_KEY_READ, ApiKeysPage),
   settingsListRoute("/settings/catalogs", "catalog.read", CatalogsPage),
   settingsListRoute("/settings/catalogs/$slug", "catalog.read", CatalogsPage),
 ];

@@ -300,6 +300,7 @@ class ReleaseSerializer(OrgScopedModelSerializer):
         model = Release
         fields = [
             "id",
+            "code",
             "declared_event_id",
             "permit_version",
             "permit_code",

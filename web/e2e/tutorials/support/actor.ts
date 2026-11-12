@@ -43,4 +43,28 @@ export class Actor {
     await target.pressSequentially(text, { delay: KEY_DELAY_MS });
     await this.pause(AFTER_CLICK_MS);
   }
+
+  /** Points at a target only when it is on the screen; a missing optional element is skipped. */
+  async pointIfThere(target: Locator, holdMs = 1200): Promise<void> {
+    if (
+      await target
+        .first()
+        .isVisible({ timeout: 4000 })
+        .catch(() => false)
+    ) {
+      await this.point(target.first(), holdMs);
+    }
+  }
+
+  /** Clicks a target only when it is on the screen. */
+  async clickIfThere(target: Locator): Promise<void> {
+    if (
+      await target
+        .first()
+        .isVisible({ timeout: 4000 })
+        .catch(() => false)
+    ) {
+      await this.click(target.first());
+    }
+  }
 }

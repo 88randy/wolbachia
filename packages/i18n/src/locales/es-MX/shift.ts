@@ -8,6 +8,7 @@ export const shift = {
   "shift.page.timeline": "Línea de tiempo disponible",
   "shift.page.history": "Historial de validación",
   "shift.field.reference": "Referencia de jornada",
+  "shift.field.code": "Jornada",
   "shift.field.courier": "Referencia del repartidor",
   "shift.field.motorcycle": "Motocicleta",
   "shift.field.lifecycle": "Estado",

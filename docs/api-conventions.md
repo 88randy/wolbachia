@@ -601,6 +601,10 @@ OpenAPI parameters describe history fields, without the identity-list filters.
 Verified primitives: [DRF search and ordering filters](https://www.django-rest-framework.org/api-guide/filtering/)
 and [Django queryset ordering](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#order-by).
 
+## Shift and release codes
+
+`Shift.code` (`JOR-0128`) and `Release.code` (`LIB-0042`) are read-only, sequential per organization and kind (4 digits, growing past 9999). They are allocated when the record is stored, by `organizations.codes.allocate_code`: a `CodeCounter` row per (organization, kind) locked with `FOR UPDATE NOWAIT` and held until the transaction ends, so numbers are gapless, a rolled back or replayed event consumes none, and a busy counter is the same retryable `429 sync_in_progress` as any other sync lock (leaf lock: taken after every other lock of the writer). `GET /shifts/` and `GET /releases/` accept `?code=`; `GET /shifts/{id}/` and `GET /releases/{id}/` keep working with the id (old links). Existing rows were numbered by creation time in the migrations `shifts.0005_readable_codes` and `releases.0007_readable_codes`.
+
 ## Shared conventions
 
 | Topic | Convention | Status |

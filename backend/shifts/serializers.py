@@ -35,6 +35,7 @@ class ShiftSerializer(OrgScopedModelSerializer):
         model = Shift
         fields = [
             "id",
+            "code",
             "courier",
             "device",
             "motorcycle",

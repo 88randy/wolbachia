@@ -2,6 +2,7 @@ import {
   Bell,
   Building2,
   Contact,
+  KeyRound,
   ListChecks,
   MapPinned,
   ShieldAlert,
@@ -82,6 +83,14 @@ export function SettingsPage() {
       link: { to: "/settings/incident-types" },
       title: t("incidentTypes.page.title"),
       description: t("hub.settings.incidentTypes"),
+    },
+    {
+      id: "api-keys",
+      permission: "api_key.read",
+      icon: KeyRound,
+      link: { to: "/settings/api-keys" },
+      title: t("apiKeys.title"),
+      description: t("apiKeys.hub"),
     },
     {
       id: "notifications",

@@ -8,6 +8,7 @@ export const shift: Record<keyof typeof source, string> = {
   "shift.page.timeline": "Available timeline",
   "shift.page.history": "Validation history",
   "shift.field.reference": "Shift reference",
+  "shift.field.code": "Shift",
   "shift.field.courier": "Courier reference",
   "shift.field.motorcycle": "Motorcycle",
   "shift.field.lifecycle": "Status",

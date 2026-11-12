@@ -5,7 +5,13 @@ from typing import Any
 from rest_framework import serializers
 
 from core.time import localdate, server_now
-from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
+from privacy.models import (
+    ApiKey,
+    ArcoRequest,
+    DataTransferAuthorization,
+    ExportLog,
+    PortalSettings,
+)
 from privacy.portal import PORTAL_INDICATORS
 
 
@@ -166,3 +172,86 @@ class ExportLogSerializer(serializers.ModelSerializer[ExportLog]):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class ApiKeySerializer(serializers.ModelSerializer[ApiKey]):
+    """What the list and the detail show. The secret and its digest are never a field here."""
+
+    center_id = serializers.UUIDField(read_only=True)
+    center_name = serializers.CharField(source="center.name", read_only=True)
+    quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
+    quadrant_code = serializers.CharField(source="quadrant.code", read_only=True, default=None)
+    created_by_name = serializers.CharField(read_only=True, allow_null=True, default=None)
+    revoked_by_name = serializers.CharField(read_only=True, allow_null=True, default=None)
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApiKey
+        fields = [
+            "id",
+            "institution",
+            "prefix",
+            "center_id",
+            "center_name",
+            "quadrant_id",
+            "quadrant_code",
+            "endpoints",
+            "rate_limit_per_day",
+            "valid_from",
+            "valid_until",
+            "status",
+            "revoked_at",
+            "revoke_reason",
+            "revoked_by_name",
+            "created_by_name",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_status(self, obj: ApiKey) -> str:
+        if obj.revoked_at is not None:
+            return "revoked"
+        now = server_now()
+        if obj.valid_until <= now:
+            return "expired"
+        return "scheduled" if obj.valid_from > now else "active"
+
+
+class ApiKeyCreatedSerializer(ApiKeySerializer):
+    """The one response that carries the secret: the creation answer, never a read."""
+
+    secret = serializers.CharField(read_only=True)
+
+    class Meta(ApiKeySerializer.Meta):
+        fields = [*ApiKeySerializer.Meta.fields, "secret"]
+        read_only_fields = fields
+
+
+class ApiKeyCreateSerializer(serializers.Serializer[Any]):
+    institution = serializers.CharField(max_length=200)
+    center_id = serializers.UUIDField()
+    quadrant_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    endpoints = serializers.ListField(
+        child=serializers.CharField(max_length=32), allow_empty=False, max_length=20
+    )
+    rate_limit_per_day = serializers.IntegerField(min_value=1, max_value=1_000_000)
+    valid_from = serializers.DateTimeField()
+    valid_until = serializers.DateTimeField()
+
+
+class ApiKeyRevokeSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(max_length=2000)
+
+
+class RetentionRowSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField()
+    period_days = serializers.IntegerField()
+    action = serializers.ChoiceField(choices=("delete", "unlink"))
+    last_run_at = serializers.DateTimeField(allow_null=True)
+    records_processed = serializers.IntegerField(allow_null=True)
+
+
+class RetentionSerializer(serializers.Serializer[Any]):
+    nightly_at = serializers.CharField()
+    timezone = serializers.CharField()
+    rows = RetentionRowSerializer(many=True)

@@ -18,4 +18,9 @@ urlpatterns = [
         AnalyticsViewSet.as_view({"get": "wolbachia"}),
         name="analytics-wolbachia-prevalence",
     ),
+    path(
+        "analytics/comparison/",
+        AnalyticsViewSet.as_view({"get": "comparison"}),
+        name="analytics-comparison",
+    ),
 ]

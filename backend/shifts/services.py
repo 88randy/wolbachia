@@ -31,6 +31,7 @@ from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.permissions import FIELD_EVENT_SYNC
 from field_sync.registry import EventContext
 from field_sync.selectors import captured_scope, membership_snapshots
+from organizations.codes import SHIFT_CODE, allocate_code
 from organizations.models import Organization
 from shifts.codes import (
     CENTER_INACTIVE,
@@ -288,6 +289,7 @@ def _insert_shift(ctx: EventContext, new: NewShift) -> Shift:
         with transaction.atomic():
             return Shift.objects.create(
                 id=new.shift_id,
+                code=allocate_code(ctx.organization, SHIFT_CODE),
                 organization=ctx.organization,
                 created_by=ctx.user,
                 courier=ctx.user,

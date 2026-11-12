@@ -210,6 +210,7 @@ def test_sql_release_completion_refuses_a_debit_that_differs_from_its_source(rel
             status="accepted",
         )
         duplicate = Release.objects.create(
+            code="LIB-9999",
             organization=context.organization,
             created_by=context.phone.user,
             declared_event_id=source.pk,

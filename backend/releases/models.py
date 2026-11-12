@@ -179,6 +179,8 @@ class ReleaseSchedule(ReleaseRecord):
 
 
 class Release(ReleaseRecord):
+    # Short human code (LIB-0042), allocated when the release is stored: sequential per organization.
+    code = models.CharField(max_length=50, editable=False)
     declared_event_id = models.UUIDField(unique=True)
     permit_version = models.ForeignKey(
         PermitVersion, on_delete=models.PROTECT, related_name="releases"
@@ -206,4 +208,5 @@ class Release(ReleaseRecord):
             *ReleaseRecord.Meta.constraints,
             models.CheckConstraint(condition=Q(quantity__gt=0), name="releases_quantity_positive"),
             models.UniqueConstraint(fields=["schedule_task"], name="releases_task_once"),
+            models.UniqueConstraint(fields=["organization", "code"], name="releases_release_code"),
         ]

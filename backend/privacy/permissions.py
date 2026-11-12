@@ -6,6 +6,8 @@ EXPORT_RUN = "export.run"
 ARCO_READ = "arco_request.read"
 ARCO_MANAGE = "arco_request.manage"
 PORTAL_MANAGE = "portal.manage"
+API_KEY_READ = "api_key.read"
+API_KEY_MANAGE = "api_key.manage"
 
 _PRIVACY_CODES = (
     TRANSFER_AUTHORIZATION_READ,
@@ -16,4 +18,4 @@ _PRIVACY_CODES = (
 )
 # `access_log.read` already belongs to the admin personnel codes.
 REGULATORY_CODES = (*_PRIVACY_CODES, "access_log.read")
-ADMIN_CODES = (*_PRIVACY_CODES, PORTAL_MANAGE)
+ADMIN_CODES = (*_PRIVACY_CODES, PORTAL_MANAGE, API_KEY_READ, API_KEY_MANAGE)

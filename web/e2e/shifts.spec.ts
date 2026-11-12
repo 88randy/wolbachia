@@ -33,6 +33,7 @@ const REVIEWER = makeMe({
 function closedShift(): Shift {
   return {
     id: SHIFT_ID,
+    code: "JOR-0034",
     courier: "00000000-0000-4000-8000-000000000001",
     device: "00000000-0000-4000-8000-000000000002",
     motorcycle: "00000000-0000-4000-8000-000000000003",

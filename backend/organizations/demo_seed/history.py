@@ -24,6 +24,7 @@ from core.time import epi_week_label, local_today
 from field_sync.models import FieldEvent
 from fleet.models import EfficiencyStatus, FuelLoad
 from geography.models import SamplingPoint
+from organizations.codes import SHIFT_CODE, allocate_codes
 from organizations.demo_seed import operations
 from organizations.demo_seed.field import demo_id
 from organizations.models import Membership, Organization
@@ -207,7 +208,11 @@ class _Writer:
         PlacementAttempt.objects.bulk_create(self.placements)
         OvitrapReading.objects.bulk_create(self.readings)
         Bag.objects.bulk_create(self.bags)
-        Shift.objects.bulk_create(self.shifts)
+        ordered = sorted(self.shifts, key=lambda shift: (shift.opened_at_device, str(shift.pk)))
+        codes = allocate_codes(self.organization, SHIFT_CODE, len(ordered))
+        for shift, code in zip(ordered, codes, strict=True):
+            shift.code = code
+        Shift.objects.bulk_create(ordered)
         FuelLoad.objects.bulk_create(self.fuel_loads)
 
 

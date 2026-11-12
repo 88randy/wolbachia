@@ -167,3 +167,22 @@ class ConfigurationRevision(ImmutableMixin, OrgScopedModel):
                 name="configuration_revision_unique",
             )
         ]
+
+
+class CodeCounter(OrgScopedModel):
+    """The last number handed out for one kind of short human code (LIB-0042) in an organization.
+
+    A row is locked with FOR UPDATE NOWAIT while a code is allocated (see
+    `organizations.codes.allocate_code`), so two writers never get the same number. It is the one
+    mutable table next to the insert-only records: the counter only ever grows.
+    """
+
+    kind = models.CharField(max_length=30)
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "kind"], name="organizations_codecounter_kind"
+            )
+        ]

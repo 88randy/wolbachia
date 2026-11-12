@@ -176,7 +176,7 @@ mistaking page read context for capture authority.
 | GET | /dashboards/entomology/?week=&quadrant= | indices + configured bands + exclusions; each figure has `link_filters` for its list | ENT, COO, SUP | W53 |
 | GET | /dashboards/prevalence/ | prevalence per quadrant with CI, release periods, threshold | ENT, COO | W54 |
 | GET | /dashboards/operations/ | coverage, productivity vs target, closed houses, readings without count, fleet, supplies, sync | SUP, COO | W55 |
-| GET | /dashboards/compare/?metric=&group_by= | values per center/quadrant | COO | W56 |
+| GET | /analytics/comparison/?indicator=&group_by=&center=&date_from=&date_to= | values per center/quadrant with the previous period (built, replaces `/dashboards/compare/`) | COO | W56 |
 | GET/POST | /official-exports/ · GET /official-exports/{id}/preview/ | formats, preview, history | REG, ENT | W57 |
 
 ## Regulatory / privacy
@@ -186,7 +186,7 @@ mistaking page read context for capture authority.
 | GET/POST/PATCH | /arco-requests/ | type, received, legal deadline remaining, owner, status. Deadline: **[PENDING legal]** | REG | W58 |
 | GET/POST | /data-transfer-authorizations/ · POST /{id}/revoke/ | authorizations | REG | W59 |
 | GET | /access-log/ | read-only access log, filters, export | REG, ADM | W60 |
-| GET/PATCH | /retention-policies/ · GET /retention-runs/ | policies and nightly runs with receipt | REG, ADM | W61 |
+| GET | /retention/ (built, read-only: the two jobs of #54 with their configured periods; `last_run_at` and `records_processed` are null) · PATCH /retention-policies/ · GET /retention-runs/ (missing: policy model and run receipt) | policies and nightly runs with receipt | REG, ADM | W61 |
 
 ## Configuration
 
@@ -199,7 +199,7 @@ mistaking page read context for capture authority.
 | POST | /catalogs/{slug}/items/{id}/deactivate/ | deactivated; "Other" returns `409` | ADM | W63 |
 | GET/POST/PATCH | /incident-types/ | severity, owner, response time, escalation, blocks, required evidence | ADM | W64 |
 | GET | /roles/ · PUT /roles/{id}/permissions/ | matrix profile × action with scope; external roles read-only | ADM | W65 |
-| GET/POST | /api-keys/ · POST /api-keys/{id}/revoke/ | secret returned only in the create response | ADM | W66 |
+| GET/POST | /api-keys/ · POST /api-keys/{id}/revoke/ (built; permissions `api_key.read`, `api_key.manage`; SHA-256 digest only, prefix lookup, constant-time check, `ApiKeyEvent` audit, DB guards; enforcement via `privacy.api_keys.authenticate_api_key`, not wired to any endpoint yet) | secret returned only in the create response | ADM | W66 |
 | GET/POST | /app-versions/ · PATCH /app-versions/minimum/ | published versions, signed APK upload, minimum version | ADM | W67 |
 | GET | /devices/ | phones with app version | ADM | W67 |
 | GET/PATCH | /organization/ | name, country, tz, epi week, languages, logo, label phone | ADM | W68 |

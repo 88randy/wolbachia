@@ -1,8 +1,8 @@
-import { Bug, ChartLine, ListChecks } from "lucide-react";
+import { Bug, ChartLine, ChartNoAxesColumn, ListChecks } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HubCardItem } from "../components/templates/HubCard";
 import { HubPage } from "../components/templates/HubPage";
-import { can } from "../session/can";
+import { can, canAny } from "../session/can";
 import { useMe } from "../session/use-me";
 import { ENTOMOLOGY_READ, OPERATIONS_READ, WOLBACHIA_READ } from "./permissions";
 
@@ -31,6 +31,13 @@ export function DashboardsHome() {
       link: { to: "/dashboards/wolbachia-prevalence" },
       title: t("analytics.dashboards.prevalence.title"),
       description: t("analytics.dashboards.prevalence.description"),
+    },
+    canAny(me, [OPERATIONS_READ, ENTOMOLOGY_READ]) && {
+      id: "comparison",
+      icon: ChartNoAxesColumn,
+      link: { to: "/dashboards/comparison" },
+      title: t("comparison.title"),
+      description: t("comparison.hub"),
     },
   ];
   const items = candidates.filter((item) => item !== false);

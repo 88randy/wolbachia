@@ -8,6 +8,7 @@ import { ErrorState } from "../ui/ErrorState";
 import { Refreshing } from "../ui/Refreshing";
 import { Button } from "../ui/Button";
 import { StatusPill } from "../ui/StatusPill";
+import { useBreadcrumbLabel } from "../shell/breadcrumb-labels";
 import { useShiftRecord } from "./use-shift-record";
 import { validationState } from "./shift-validation";
 import { ShiftSummary } from "./ShiftSummary";
@@ -23,9 +24,10 @@ const STATE_KEYS = {
   outdated: "shift.status.outdated",
 } as const;
 
-export function ShiftRecord({ id }: { id: string }) {
+export function ShiftRecord({ id, reference }: { id: string; reference: string }) {
   const { t } = useTranslation();
   const { query, refresh, isReady, canValidate } = useShiftRecord(id);
+  useBreadcrumbLabel(`/operations/shifts/${reference}`, query.data?.shift?.code);
   if (!query.data) return query.isError ? <ErrorState onRetry={refresh} /> : <CardSkeleton />;
   const { shift, readSequence } = query.data;
   if (shift === null) return <ErrorState onRetry={refresh} />;

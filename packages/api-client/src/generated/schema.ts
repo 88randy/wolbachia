@@ -30,6 +30,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/comparison/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W56: one indicator across centers or quadrants, with the previous period. */
+        get: operations["analytics_comparison_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analytics/entomology/": {
         parameters: {
             query?: never;
@@ -102,6 +119,58 @@ export interface paths {
         get: operations["analytics_wolbachia_prevalence_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/api-keys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W66: one key per institution. The secret is in the creation answer only; revoke, never edit. */
+        get: operations["api_keys_list"];
+        put?: never;
+        /** @description W66: one key per institution. The secret is in the creation answer only; revoke, never edit. */
+        post: operations["api_keys_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/api-keys/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W66: one key per institution. The secret is in the creation answer only; revoke, never edit. */
+        get: operations["api_keys_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/api-keys/{id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description W66: one key per institution. The secret is in the creation answer only; revoke, never edit. */
+        post: operations["api_keys_revoke_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5895,6 +5964,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/retention/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W61: the retention jobs that exist today, read-only. */
+        get: operations["retention_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/review-items/": {
         parameters: {
             query?: never;
@@ -7626,6 +7712,77 @@ export interface components {
             /** Format: date-time */
             effective_from: string;
         };
+        /** @description What the list and the detail show. The secret and its digest are never a field here. */
+        ApiKey: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly institution: string;
+            readonly prefix: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            readonly center_name: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            readonly quadrant_code: string;
+            readonly endpoints: unknown;
+            readonly rate_limit_per_day: number;
+            /** Format: date-time */
+            readonly valid_from: string;
+            /** Format: date-time */
+            readonly valid_until: string;
+            readonly status: string;
+            /** Format: date-time */
+            readonly revoked_at: string | null;
+            readonly revoke_reason: string;
+            readonly revoked_by_name?: string | null;
+            readonly created_by_name?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ApiKeyCreateRequest: {
+            institution: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id?: string | null;
+            endpoints: string[];
+            rate_limit_per_day: number;
+            /** Format: date-time */
+            valid_from: string;
+            /** Format: date-time */
+            valid_until: string;
+        };
+        /** @description The one response that carries the secret: the creation answer, never a read. */
+        ApiKeyCreated: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly institution: string;
+            readonly prefix: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            readonly center_name: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            readonly quadrant_code: string;
+            readonly endpoints: unknown;
+            readonly rate_limit_per_day: number;
+            /** Format: date-time */
+            readonly valid_from: string;
+            /** Format: date-time */
+            readonly valid_until: string;
+            readonly status: string;
+            /** Format: date-time */
+            readonly revoked_at: string | null;
+            readonly revoke_reason: string;
+            readonly revoked_by_name?: string | null;
+            readonly created_by_name?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly secret: string;
+        };
+        ApiKeyRevokeRequest: {
+            reason: string;
+        };
         Application: {
             /** Format: uuid */
             id: string;
@@ -8605,6 +8762,40 @@ export interface components {
             previous: string | null;
             results: components["schemas"]["CommunityZoneOption"][];
         };
+        Comparison: {
+            /** Format: date-time */
+            cutoff: string;
+            indicator: components["schemas"]["IndicatorEnum"];
+            group_by: components["schemas"]["GroupByEnum"];
+            unit: string;
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            /** Format: date */
+            previous_from: string;
+            /** Format: date */
+            previous_to: string;
+            rows: components["schemas"]["ComparisonRow"][];
+        };
+        ComparisonRow: {
+            id: string;
+            /** Format: uuid */
+            center_id: string;
+            center_name: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            quadrant_code: string | null;
+            /** Format: double */
+            numerator: number;
+            denominator: number;
+            /** Format: double */
+            value: number | null;
+            /** Format: double */
+            previous_value: number | null;
+            /** Format: double */
+            delta: number | null;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -9502,6 +9693,12 @@ export interface components {
          * @enum {string}
          */
         GranularityEnum: "day" | "week";
+        /**
+         * @description * `quadrant` - quadrant
+         *     * `center` - center
+         * @enum {string}
+         */
+        GroupByEnum: "quadrant" | "center";
         Health: {
             status: string;
         };
@@ -9988,6 +10185,13 @@ export interface components {
             value: number | null;
             unit: string;
         };
+        /**
+         * @description * `positive_index` - positive_index
+         *     * `coverage` - coverage
+         *     * `eggs_per_ovitrap` - eggs_per_ovitrap
+         * @enum {string}
+         */
+        IndicatorEnum: "positive_index" | "coverage" | "eggs_per_ovitrap";
         /**
          * @description * `releases_total` - releases_total
          *     * `quadrants_covered` - quadrants_covered
@@ -11774,6 +11978,19 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AccessLog"][];
+        };
+        PaginatedApiKeyList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["ApiKey"][];
         };
         PaginatedArcoRequestList: {
             /**
@@ -14604,6 +14821,7 @@ export interface components {
         Release: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly declared_event_id: string;
             /** Format: uuid */
@@ -15271,6 +15489,25 @@ export interface components {
             readonly code: string;
             readonly name: string;
         };
+        Retention: {
+            nightly_at: string;
+            timezone: string;
+            rows: components["schemas"]["RetentionRow"][];
+        };
+        RetentionRow: {
+            code: string;
+            period_days: number;
+            action: components["schemas"]["RetentionRowActionEnum"];
+            /** Format: date-time */
+            last_run_at: string | null;
+            records_processed: number | null;
+        };
+        /**
+         * @description * `delete` - delete
+         *     * `unlink` - unlink
+         * @enum {string}
+         */
+        RetentionRowActionEnum: "delete" | "unlink";
         /**
          * @description * `return_accept` - return_accept
          * @enum {string}
@@ -16067,6 +16304,7 @@ export interface components {
         Shift: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly courier: string;
             /** Format: uuid */
@@ -16130,6 +16368,7 @@ export interface components {
         ShiftDetail: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly courier: string;
             /** Format: uuid */
@@ -17312,6 +17551,52 @@ export interface operations {
             };
         };
     };
+    analytics_comparison_retrieve: {
+        parameters: {
+            query?: {
+                center?: string;
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `quadrant` - quadrant
+                 *     * `center` - center
+                 */
+                group_by?: "quadrant" | "center";
+                /**
+                 * @description * `positive_index` - positive_index
+                 *     * `coverage` - coverage
+                 *     * `eggs_per_ovitrap` - eggs_per_ovitrap
+                 */
+                indicator?: "positive_index" | "coverage" | "eggs_per_ovitrap";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comparison"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     analytics_entomology_retrieve: {
         parameters: {
             query?: {
@@ -17422,6 +17707,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    api_keys_list: {
+        parameters: {
+            query?: {
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /** @description Institution contains. */
+                search?: string;
+                status?: "active" | "expired" | "revoked" | "scheduled";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedApiKeyList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    api_keys_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreated"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    api_keys_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this api key. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKey"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    api_keys_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this api key. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyRevokeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKey"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -27888,6 +28317,8 @@ export interface operations {
         parameters: {
             query?: {
                 center?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
                 /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -28071,6 +28502,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelocationDecisionResult"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    retention_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Retention"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -29204,6 +29666,8 @@ export interface operations {
     shifts_list: {
         parameters: {
             query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
                 courier?: string;
                 date_from?: string;
                 date_to?: string;
