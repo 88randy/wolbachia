@@ -21,6 +21,7 @@ from django.utils import timezone
 
 from accounts.models import Device
 from core.time import epi_week_label, local_today
+from field_sync.envelope import describe_payload
 from field_sync.models import FieldEvent
 from fleet.models import EfficiencyStatus, FuelLoad
 from geography.models import SamplingPoint
@@ -92,6 +93,12 @@ def _utc(day: date, at: time, zone: ZoneInfo) -> datetime:
 
 def _sha(payload: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def event_sha(payload: dict[str, Any]) -> str:
+    """The canonical payload hash the sync pipeline stores; review rebuilds it to trust the row."""
+    stored = json.loads(json.dumps(payload, default=str))
+    return describe_payload(stored).sha256
 
 
 def _courier_by_quadrant() -> dict[str, str]:
@@ -182,7 +189,7 @@ class _Writer:
             type=event_type,
             schema_version=1,
             payload=payload,
-            payload_sha256=_sha(payload),
+            payload_sha256=event_sha(payload),
             device=self.device,
             shift_id=fields.pop("shift_id", None),
             device_time=at,

@@ -55,11 +55,11 @@ def require_prepared_author(identifier: UUID | None) -> None:
         raise LabInProgressError
 
 
-def lock_users(identifiers: set[UUID]) -> list[User]:
+def lock_users(identifiers: set[UUID], *, nowait: bool = True) -> list[User]:
     rows = list(
         User.objects.filter(pk__in=identifiers)
         .order_by("pk")
-        .select_for_update(nowait=True, no_key=True)
+        .select_for_update(nowait=nowait, no_key=True)
     )
     if len(rows) != len(identifiers):
         raise LabInProgressError

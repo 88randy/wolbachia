@@ -80,3 +80,43 @@ def test_refuses_outside_local_settings_and_writes_nothing(settings, tmp_path):
 
     assert not Organization.objects.exists()
     assert not (tmp_path / "demo-credentials.local.md").exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_seeded_field_events_carry_the_canonical_hash_so_every_shift_can_be_approved(
+    settings, tmp_path
+):
+    """Review rebuilds the hash of each source event; a seed hash in another format hid the scope."""
+    from field_sync.envelope import describe_payload
+    from field_sync.models import FieldEvent
+    from reviews.inspection import original_source_envelope
+    from reviews.scope import subject_facts
+    from shifts.models import Shift
+    from shifts.validation import shift_blockers, shift_sources
+
+    settings.DEBUG = True
+    settings.BASE_DIR = tmp_path
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "private"
+
+    call_command("seed_demo")
+
+    wrong = [
+        event.pk
+        for event in FieldEvent.objects.all()
+        if describe_payload(event.payload).sha256 != event.payload_sha256
+    ]
+    assert wrong == []
+    closed = Shift.objects.filter(status="closed").select_related("motorcycle", "organization")
+    assert closed.exists()
+    blocked = {
+        shift.code: sorted(
+            {
+                event.type
+                for event in shift_sources(shift)
+                if not subject_facts(shift.organization, original_source_envelope(event)).resolved
+            }
+        )
+        for shift in closed
+        if "shift_scope_unavailable" in shift_blockers(shift)
+    }
+    assert blocked == {}

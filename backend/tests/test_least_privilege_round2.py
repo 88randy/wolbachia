@@ -5,7 +5,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.test import APIClient
 
 from accounts.models import Personnel
-from geography.models import Quadrant
+from geography.models import Block, Quadrant
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
     WITHDRAWN_DEFAULT_PERMISSIONS,
@@ -78,6 +78,13 @@ def test_default_entomologist_and_regulatory_hold_only_the_narrow_lookups():
     assert "quadrant.read" not in regulatory
 
 
+def test_the_admin_default_holds_every_code_it_must_delegate():
+    admin = set(DEFAULT_PROFILE_PERMISSIONS["admin"])
+
+    for slug, codes in DEFAULT_PROFILE_PERMISSIONS.items():
+        assert set(codes) <= admin, (slug, sorted(set(codes) - admin))
+
+
 def test_quadrant_lookup_serves_codes_and_outlines_only_inside_the_center(
     org_a, make_member, two_centers
 ):
@@ -96,6 +103,27 @@ def test_quadrant_lookup_serves_codes_and_outlines_only_inside_the_center(
     # The narrow code never opens the broad geography reads.
     for path in ("/api/v1/quadrants/", "/api/v1/sampling-points/", "/api/v1/blocks/"):
         assert client.get(path).status_code == 403, path
+
+
+def test_block_lookup_serves_codes_only_inside_the_center(org_a, make_member, two_centers):
+    north, _, quadrants, _ = two_centers
+    user, member = make_member(org_a, ("quadrant.lookup",))
+    set_scope(member, selected(north))
+    for code, key in (("MZ-N", "NORTE"), ("MZ-S", "SUR")):
+        Block.objects.create(organization=org_a, quadrant=quadrants[key], code=code)
+    client = client_for(user)
+
+    listed = client.get("/api/v1/lookups/blocks/")
+    assert listed.status_code == 200, listed.data
+    assert [row["code"] for row in listed.data["results"]] == ["MZ-N"]
+    assert set(listed.data["results"][0]) == {"id", "code", "quadrant"}
+    assert client.get("/api/v1/blocks/").status_code == 403
+
+
+def test_block_lookup_without_a_lookup_code_is_403(org_a, make_member):
+    user, _ = make_member(org_a, ("center.read",))
+
+    assert client_for(user).get("/api/v1/lookups/blocks/").status_code == 403
 
 
 def test_user_lookup_serves_names_only_inside_the_center(org_a, make_member, two_centers):
