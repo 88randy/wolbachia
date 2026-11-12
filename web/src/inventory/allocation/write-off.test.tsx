@@ -79,7 +79,7 @@ test("W39 bag disposal is blocked without a verified RPBI and sends it once veri
     }),
   });
   document.cookie = "csrftoken=test-csrf; path=/";
-  await user.click(await screen.findByRole("button", { name: "Registrar merma o baja" }));
+  await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
   await user.type(
     await screen.findByRole("textbox", { name: "Código del lote o la bolsa" }),
     "B-4471{Enter}",
@@ -121,7 +121,7 @@ test("the warehouse entry applies the same rule to a biological lot and not to a
     },
   });
   async function fill() {
-    await user.click(await screen.findByRole("button", { name: "Registrar merma o baja" }));
+    await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
     await user.type(
       await screen.findByRole("textbox", { name: "Código del lote o la bolsa" }),
       "LOT-01{Enter}",
@@ -146,7 +146,7 @@ test("an unknown and a foreign code are indistinguishable", async () => {
     me: allocationMe(["inventory.write_off"]),
     routes: { ...writeRoutes(), "GET /api/v1/lots/": Response.json(inventoryPage([])) },
   });
-  await user.click(await screen.findByRole("button", { name: "Registrar merma o baja" }));
+  await user.click(await screen.findByRole("button", { name: "Registrar una baja" }));
   const code = await screen.findByRole("textbox", { name: "Código del lote o la bolsa" });
   await user.type(code, "NOPE{Enter}");
   const first = await screen.findByText("No se encontró ese código en tu alcance.");
@@ -168,7 +168,7 @@ test.each(["es-MX", "en"] as const)(
     });
     await user.click(
       await screen.findByRole("button", {
-        name: /Registrar merma o baja|Record shrinkage or write-off/,
+        name: /Registrar una baja|Record a write-off/,
       }),
     );
     await screen.findByRole("dialog");
