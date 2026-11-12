@@ -67,7 +67,7 @@ export const MODULE_STEPS: Record<string, StepScript> = {
   }),
   "scheduleWeek/plan": screen(SUP, "/scheduling/plan", async (a) => {
     await a.click(button(a.page, "Semana siguiente"));
-    await a.click(button(a.page, "Esta semana"));
+    await a.click(button(a.page, "Esta semana").first());
   }),
   "scheduleWeek/pending": screen(SUP, "/scheduling/plan", async (a) => {
     await a.click(button(a.page, "Reasignar pendientes").first());
@@ -80,15 +80,15 @@ export const MODULE_STEPS: Record<string, StepScript> = {
     await a.click(link(a.page, "Ir a intervenciones"));
   }),
   "registerIntervention/new": screen(SUP, "/scheduling/interventions", async (a) => {
-    await a.click(button(a.page, "Registrar intervención"));
+    await a.click(button(a.page, "Registrar intervención").first());
   }),
   "registerIntervention/fill": screen(SUP, "/scheduling/interventions", async (a) => {
-    await a.click(button(a.page, "Registrar intervención"));
+    await a.click(button(a.page, "Registrar intervención").first());
     await a.clickIfThere(a.page.getByRole("combobox").last());
     await a.clickIfThere(a.page.getByRole("option"));
   }),
   "registerIntervention/save": screen(SUP, "/scheduling/interventions", async (a) => {
-    await a.click(button(a.page, "Registrar intervención"));
+    await a.click(button(a.page, "Registrar intervención").first());
     await a.pointIfThere(
       a.page
         .getByRole("dialog")
@@ -101,6 +101,7 @@ export const MODULE_STEPS: Record<string, StepScript> = {
     await a.point(a.page.getByRole("heading").first());
   }),
   "importRisk/file": screen(ADMIN, "/scheduling/risk/import", async (a) => {
+    await a.click(button(a.page, /Siguiente/));
     await a.pointIfThere(a.page.locator("input[type=file]"));
   }),
   "importRisk/check": screen(ADMIN, "/scheduling/risk/import", async (a) => {
@@ -114,14 +115,14 @@ export const MODULE_STEPS: Record<string, StepScript> = {
     await a.point(a.page.getByRole("heading", { name: "Recepción de bolsas" }));
   }),
   "labReceive/code": screen(ENTO, "/lab/bags", async (a) => {
-    await a.type(a.page.getByLabel("Código de bolsa"), "B-TUT-0001");
+    await a.type(a.page.locator("#bag-scan"), "B-TUT-0001");
   }),
   "labReceive/receive": screen(ENTO, "/lab/bags", async (a) => {
-    await a.type(a.page.getByLabel("Código de bolsa"), "B-TUT-0001");
-    await a.point(button(a.page, "Recibir bolsa"));
+    await a.type(a.page.locator("#bag-scan"), "B-TUT-0001");
+    await a.point(button(a.page, "Recibir bolsa").first());
   }),
   "labReceive/noPaddle": screen(ENTO, "/lab/bags", async (a) => {
-    await a.point(button(a.page, "Recibir lectura sin papeleta"));
+    await a.pointIfThere(button(a.page, /sin papeleta/));
   }),
 
   "labCount/open": screen(ENTO, "/lab", async (a) => {
@@ -149,13 +150,17 @@ export const MODULE_STEPS: Record<string, StepScript> = {
   }),
 
   "trainings/courses": screen(SUP, "/people/trainings", async (a) => {
-    await a.click(button(a.page, "Cursos"));
+    await a.click(a.page.getByRole("tab", { name: "Cursos" }).or(button(a.page, "Cursos")).first());
   }),
   "trainings/requirements": screen(SUP, "/people/trainings", async (a) => {
-    await a.click(button(a.page, "Requisitos"));
+    await a.click(
+      a.page.getByRole("tab", { name: "Requisitos" }).or(button(a.page, "Requisitos")).first(),
+    );
   }),
   "trainings/people": screen(SUP, "/people/trainings", async (a) => {
-    await a.click(button(a.page, "Personas"));
+    await a.click(
+      a.page.getByRole("tab", { name: "Personas" }).or(button(a.page, "Personas")).first(),
+    );
   }),
 
   "evaluations/open": screen(SUP, "/people/evaluations", async (a) => {
@@ -274,10 +279,16 @@ export const MODULE_STEPS: Record<string, StepScript> = {
     await a.point(a.page.getByRole("heading").first());
   }),
   "roles/pick": screen(ADMIN, "/settings/roles", async (a) => {
-    await a.clickIfThere(a.page.getByRole("button", { name: /Supervisor|Administrador|Almacén/ }));
+    await a.click(a.page.getByText("Coordinador", { exact: true }).first());
   }),
   "roles/matrix": screen(ADMIN, "/settings/roles", async (a) => {
-    await a.pointIfThere(a.page.getByRole("switch").or(a.page.getByRole("checkbox")));
+    await a.click(a.page.getByRole("button", { name: /Editar permisos/ }).first());
+    await a.pointIfThere(
+      a.page
+        .getByRole("main")
+        .getByRole("checkbox")
+        .or(a.page.getByRole("main").getByRole("switch")),
+    );
   }),
 
   "rules/open": screen(ADMIN, "/settings/rule-parameters", async (a) => {
