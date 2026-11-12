@@ -41,9 +41,9 @@ def _allow_test_database_flush() -> Iterator[None]:
             f"ALTER TABLE {table} ENABLE TRIGGER {trigger}",
         ]
 
-    DatabaseOperations.sql_flush = sql_flush  # type: ignore[method-assign]
+    DatabaseOperations.sql_flush = sql_flush  # type: ignore[method-assign,assignment]
     yield
-    DatabaseOperations.sql_flush = original  # type: ignore[method-assign]
+    DatabaseOperations.sql_flush = original  # type: ignore[method-assign,assignment]
 
 
 @pytest.fixture(autouse=True)

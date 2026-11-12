@@ -248,6 +248,8 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "max_paddle_reuses": (2, "count", 0, 2),
         "revisit_interval_days": (7, "day", 1, 28),
         "departure_requires_offline_map": (0, "count", 0, 1),
+        # 0 either, 1 warehouse, 2 phone: who may sign a delivery.
+        "delivery_signature_mode": (0, "count", 0, 2),
     }
     parameters = RuleParameter.objects.filter(organization=organization).prefetch_related(
         "versions"
@@ -322,9 +324,15 @@ def test_center_endpoint_wires_default_deny_and_organization_and_dimension_isola
     )
     response = api_client.get("/api/v1/centers/", {"code": center.code})
     assert response.status_code == 200
-    assert response.data["results"] == [
-        {"id": str(center.pk), "code": center.code, "name": center.name}
-    ]
+    # The center admin screen added state and counts; the identity fields stay as they were.
+    [row] = response.data["results"]
+    assert {key: row[key] for key in ("id", "code", "name")} == {
+        "id": str(center.pk),
+        "code": center.code,
+        "name": center.name,
+    }
+    assert row["is_active"] is True
+    assert row["deactivated_at"] is None
     for hidden in [unassigned, foreign]:
         assert api_client.get(f"/api/v1/centers/{hidden.pk}/").status_code == 404
     payload = {
