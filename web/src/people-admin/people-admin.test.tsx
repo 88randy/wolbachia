@@ -105,7 +105,7 @@ async function fillNewUser(user: ReturnType<typeof userEvent.setup>) {
   const dialog = screen.getByRole("dialog");
   await user.type(within(dialog).getByLabelText("Nombre completo"), "Luis Mora");
   await user.type(within(dialog).getByLabelText("Usuario para iniciar sesión"), "lmora");
-  await within(dialog).findByRole("option", { name: "Centro Norte" });
+  await within(dialog).findByLabelText("Centro");
   await user.selectOptions(within(dialog).getByLabelText("Centro"), CENTER.id);
   await user.selectOptions(within(dialog).getByLabelText("Perfil"), PROFILE.id);
   return dialog;
