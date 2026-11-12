@@ -51,17 +51,19 @@ function useCameraStart(lifecycle: ReturnType<typeof useScannerLifecycle>) {
       await start();
     }
   };
-  const isHidden = !lifecycle.isCameraVisible;
+  // One listener for the life of the screen; it reads the latest values through a ref.
+  const latest = useRef({ isHidden: !lifecycle.isCameraVisible, start });
+  latest.current = { isHidden: !lifecycle.isCameraVisible, start };
   useEffect(() => {
     const app = AppState.addEventListener("change", (state) => {
-      if (state !== "active" || !isHidden) return;
+      if (state !== "active" || !latest.current.isHidden) return;
       if (isRunning.current) mustRerun.current = true;
-      else void start();
+      else void latest.current.start();
     });
     return () => {
       app.remove();
     };
-  });
+  }, []);
   return { start, isRequesting, cameraError, setCameraError };
 }
 function useScanOrigin(eventId: string | null | undefined) {

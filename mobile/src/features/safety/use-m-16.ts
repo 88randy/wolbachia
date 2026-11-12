@@ -45,7 +45,12 @@ export function useM16(): M16Model {
   const rules = useSafetyRules(sync.lastSyncAt);
   const isShiftOpen = useShiftOpen(sync.lastSyncAt);
   const [recheck, recheckLocation] = useRecheck();
-  const location = useDayLocation(day.location, isShiftOpen, recheck);
+  // No location on the PIN or login screen: nothing there needs it.
+  const location = useDayLocation(
+    day.location,
+    isShiftOpen && session.phase === "unlocked",
+    recheck,
+  );
   const safety = useSafetyState(location, rules);
   const storage = useStorageLevel();
   const gps = useCalmGps(gpsLevel(location, safety));

@@ -46,7 +46,14 @@ function subscribeLocation({ source, isShiftOpen, publish }: LocationSubscriptio
       });
   };
   update();
-  const subscription = AppState.addEventListener("change", update);
+  // Only a real change between in front and not in front restarts the watch.
+  let wasActive = AppState.currentState === "active";
+  const subscription = AppState.addEventListener("change", (state) => {
+    const isActive = state === "active";
+    if (isActive === wasActive) return;
+    wasActive = isActive;
+    update();
+  });
   return () => {
     generation += 1;
     stop?.();

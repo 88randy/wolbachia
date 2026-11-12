@@ -80,10 +80,10 @@ void test("no fix before the wait ends: one calm noFix, and the step and the ban
   const f = fixture();
   await f.source.start(f.publish);
   assert.deepEqual(f.states, [{ kind: "searching" }]);
-  // Balanced first (works indoors), then High to refine.
+  // One Balanced watch only (it works indoors).
   assert.deepEqual(
     f.watchers.map((watcher) => watcher.accuracy),
-    [ACCURACY.Balanced, ACCURACY.High],
+    [ACCURACY.Balanced],
   );
   f.timers[0]?.run();
   assert.deepEqual(f.states.at(-1), { kind: "noFix" });
