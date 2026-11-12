@@ -19,6 +19,7 @@ function present(lines: readonly (string | false | null | undefined)[]): string[
 export function lotLabel(lot: Schemas["Lot"], text: LabelText): LabelRecord {
   const expiry = lot.expiry_date;
   return {
+    kind: "lot",
     code: lot.code,
     lines: present([
       lot.supply_version.label,
@@ -31,6 +32,7 @@ export function lotLabel(lot: Schemas["Lot"], text: LabelText): LabelRecord {
 export function locationLabel(location: Schemas["Location"], text: LabelText): LabelRecord {
   const kind = text.t(`inventory.option.${location.kind}`);
   return {
+    kind: "location",
     code: location.code,
     lines: present([
       location.name,
@@ -42,6 +44,7 @@ export function locationLabel(location: Schemas["Location"], text: LabelText): L
 /** Bag: the date it was registered. */
 export function bagLabel(bag: { code: string; createdAt: string }, text: LabelText): LabelRecord {
   return {
+    kind: "bag",
     code: bag.code,
     lines: present([text.t("labels.line.createdOn", { date: text.date(bag.createdAt) })]),
   };
@@ -53,6 +56,7 @@ export function motorcycleLabel(
   text: LabelText,
 ): LabelRecord {
   return {
+    kind: "motorcycle",
     code: moto.code,
     lines: present([moto.plate && text.t("labels.line.plate", { plate: moto.plate })]),
   };

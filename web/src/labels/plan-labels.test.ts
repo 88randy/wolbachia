@@ -5,7 +5,7 @@ import { qrContent } from "./label-record";
 import type { LabelRecord } from "./label-record";
 import { paginate, parseCopies, planLabels } from "./plan-labels";
 
-const record = (code: string): LabelRecord => ({ code, lines: [] });
+const record = (code: string): LabelRecord => ({ kind: "lot", code, lines: [] });
 
 describe("parseCopies", () => {
   it("keeps whole numbers inside the allowed range", () => {
@@ -42,8 +42,9 @@ describe("planLabels and paginate", () => {
 });
 
 describe("qrContent", () => {
-  it("is only the human code", () => {
-    expect(qrContent({ code: "L-0042", lines: ["Insumo", "Caduca 10 nov 2026"] })).toBe("L-0042");
+  it("is wbf:1:<kind>:<human code> for each kind", () => {
+    for (const kind of ["lot", "bag", "location", "motorcycle"] as const)
+      expect(qrContent({ kind, code: "X-42", lines: ["Insumo"] })).toBe(`wbf:1:${kind}:X-42`);
   });
 });
 

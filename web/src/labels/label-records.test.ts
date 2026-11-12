@@ -20,6 +20,7 @@ describe("label content", () => {
     } as unknown as Schemas["Lot"];
     const record = lotLabel(lot, text);
     expect(record.code).toBe("L-0042");
+    expect(record.kind).toBe("lot");
     expect(record.lines[0]).toBe("Huevos de mosquito");
     expect(record.lines[1]).toContain("cal(2026-12-01)");
     expect(JSON.stringify(record)).not.toContain(UUID);

@@ -5,7 +5,7 @@ Shared label printing. Any list or record screen opens it with `PrintLabelsButto
 
 ## QR convention (fixed, shared with the web camera scanner)
 
-A label's QR encodes **only the record's human code**, exactly as the screens show it (lot code,
+A label's QR encodes `wbf:1:<kind>:<human code>` (kind = lot, bag, location, motorcycle), with the code exactly as the screens show it (lot code,
 bag code, location code, motorcycle code). No URLs, no ids, no personal data. `qrContent()` is
 the one place that decides this.
 
