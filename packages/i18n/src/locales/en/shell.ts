@@ -11,7 +11,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.label": "Main navigation",
   "shell.sidebar.collapse": "Collapse menu",
   "shell.topBar.searchLabel": "Search",
-  "shell.topBar.searchPlaceholder": "Search or scan",
+  "shell.topBar.searchPlaceholder": "Search…",
   "shell.topBar.notificationsSoon": "Not available yet.",
   "shell.topBar.notifications": "Notifications",
   "shell.language.toEnglish": "ES: change language to English",

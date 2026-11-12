@@ -1,12 +1,10 @@
 import { useSearch } from "@tanstack/react-router";
-import { MousePointerClick } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageFrame } from "../../components/templates/PageFrame";
 import { PageHeader } from "../../components/templates/PageHeader";
 import { useMe } from "../../session/use-me";
 import { useDocumentTitle } from "../../shell/use-document-title";
 import { InlineNotice } from "../../ui/InlineNotice";
-import { StateFrame } from "../../ui/StateFrame";
 import { ReviewRecord } from "./ReviewRecord";
 import { ReviewTray } from "./ReviewTray";
 import { useReviewScope } from "./use-review-scope";
@@ -44,20 +42,12 @@ export function W30Page() {
         title={t("reviews.workspace.title")}
         description={t("reviews.workspace.purpose")}
       />
-      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,34rem)]">
-        <div className="min-w-0">
-          <ReviewTray scope={scope} />
+      <ReviewTray scope={scope} />
+      {item && (
+        <div className="min-w-0 max-w-4xl">
+          <ReviewRecord key={item} scope={scope} id={item} />
         </div>
-        <div className="min-w-0 xl:sticky xl:top-4">
-          {item ? (
-            <ReviewRecord key={item} scope={scope} id={item} />
-          ) : (
-            <div className="rounded-2xl border border-dashed border-line-strong bg-surface">
-              <StateFrame icon={MousePointerClick} message={t("reviews.workspace.pick")} />
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </PageFrame>
   );
 }
