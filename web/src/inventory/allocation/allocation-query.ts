@@ -3,6 +3,7 @@ import type { Schemas, operations } from "@wolbachia/api-client";
 import { inventoryScopedOptions } from "../inventory-read-context";
 import type { useInventoryContext } from "../use-inventory-context";
 import type { TableState } from "../../data-table/table-types";
+import { PERSON_NAME_PERMISSIONS, holdsAny } from "../../lookups/lookup-permissions";
 import { allocationRouteScope } from "./allocation-scope";
 
 export type AllocationScope = ReturnType<typeof useInventoryContext>;
@@ -137,17 +138,34 @@ export function lotDirectoryOptions(scope: AllocationScope, route: string) {
   });
 }
 
+/** A person from the names-only lookup; `profiles` carries `courier` when the person is one. */
+export interface CourierEntry {
+  id: string;
+  display_name: string;
+  profiles: readonly string[];
+}
+
+/** Names only (`/lookups/users/`): the broad personnel read is not needed to name a courier. */
 export function courierDirectoryOptions(scope: AllocationScope, route: string) {
-  return inventoryScopedOptions(allocationRouteScope(scope, route), {
+  const options = inventoryScopedOptions(allocationRouteScope(scope, route), {
     key: ["allocation", "couriers", "directory"],
-    queryFn: async ({ signal }) =>
+    queryFn: async ({ signal }): Promise<CourierEntry[]> =>
       unwrap(
-        await scope.client.GET("/api/v1/users/operational/", {
-          params: { query: { is_active: true, page_size: 100 } },
+        await scope.client.GET("/api/v1/lookups/users/", {
+          params: { query: { page_size: 100 } },
           signal,
         }),
-      ).results,
+      ).results.map((person) => ({
+        id: person.id,
+        display_name: person.display_name,
+        profiles: person.is_courier ? ["courier"] : [],
+      })),
   });
+  // Without a lookup permission the request would be a 403: do not send it.
+  return {
+    ...options,
+    enabled: options.enabled && holdsAny(scope.identity.permissions, PERSON_NAME_PERMISSIONS),
+  };
 }
 
 /** Signature state needs the reconciliation read; without that permission it is reported unknown. */

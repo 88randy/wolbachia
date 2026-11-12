@@ -10,14 +10,7 @@ const PATH = `/inventory/assignments?date=2026-11-03&courier=${COURIER_ID}`;
 const PERSON = {
   id: COURIER_ID,
   display_name: "Luis",
-  center_id: COURIER_ID,
-  quadrant_id: null,
-  work_email: "",
-  work_phone: "",
-  is_active: true,
-  profiles: [],
-  trainings: [],
-  devices: [],
+  is_courier: true,
 };
 const SUGGESTION_OFF = {
   status: "unavailable",
@@ -29,7 +22,7 @@ const SUGGESTION_OFF = {
 function routes(frame = reconciliation([{ credited: null, difference: null }])) {
   return {
     ...reasonRoutes(),
-    "GET /api/v1/users/operational/": Response.json(inventoryPage([PERSON])),
+    "GET /api/v1/lookups/users/": Response.json(inventoryPage([PERSON])),
     "GET /api/v1/courier-assignments/suggestion/": Response.json(SUGGESTION_OFF),
     "GET /api/v1/courier-assignments/": Response.json(inventoryPage([frame.assignment])),
     "GET /api/v1/reconciliations/": Response.json(inventoryPage([frame])),

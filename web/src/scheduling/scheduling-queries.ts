@@ -1,5 +1,6 @@
 import { ApiError, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
+import { QUADRANT_NAME_PERMISSIONS, holdsAny } from "../lookups/lookup-permissions";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
 import type { TableState } from "../data-table/table-types";
@@ -198,14 +199,22 @@ export function interventionTypesOptions(client: ApiClient, identity: SessionIde
   });
 }
 
+/** Block codes from the codes-only lookup; with no lookup permission the request is not sent. */
 export function blocksDirectoryOptions(client: ApiClient, identity: SessionIdentity) {
-  return orgScopedQueryOptions(identity, {
+  const options = orgScopedQueryOptions(identity, {
     key: ["blocks", "directory"],
     queryFn: async ({ signal }) =>
       unwrap(
-        await client.GET("/api/v1/blocks/", { params: { query: { page_size: MAX_PAGE } }, signal }),
+        await client.GET("/api/v1/lookups/blocks/", {
+          params: { query: { page_size: MAX_PAGE } },
+          signal,
+        }),
       ).results,
   });
+  return {
+    ...options,
+    enabled: options.enabled && holdsAny(identity.permissions, QUADRANT_NAME_PERMISSIONS),
+  };
 }
 
 export interface DayLoad {

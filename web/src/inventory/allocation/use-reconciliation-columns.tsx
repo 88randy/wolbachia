@@ -8,10 +8,11 @@ import { formatInventoryQuantity } from "../format-inventory-quantity";
 import { DifferenceCell } from "./DifferenceCell";
 import { courierLabel, lotLabel } from "./allocation-labels";
 import type { ReconciliationRow } from "./reconciliation-equation";
+import type { CourierEntry } from "./allocation-query";
 
 interface Directories {
   lots: readonly Schemas["Lot"][] | undefined;
-  couriers: readonly Schemas["OperationalPersonnel"][] | undefined;
+  couriers: readonly CourierEntry[] | undefined;
 }
 type Column = DataTableColumn<ReconciliationRow>;
 type Quantity = (value: string | null) => string;

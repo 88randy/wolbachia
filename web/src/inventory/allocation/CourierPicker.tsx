@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import type { Schemas } from "@wolbachia/api-client";
 import { Combobox } from "../../ui/Combobox";
+import type { CourierEntry } from "./allocation-query";
 
 /** The courier is chosen by name and lives in the address bar, so a view can be shared. */
 export function CourierPicker({
@@ -9,7 +9,7 @@ export function CourierPicker({
   selected,
   date,
 }: {
-  couriers: readonly Schemas["OperationalPersonnel"][];
+  couriers: readonly CourierEntry[];
   selected: string;
   date: string;
 }) {
