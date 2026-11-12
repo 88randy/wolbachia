@@ -6,12 +6,10 @@ export type LocationStatus =
   | { readonly kind: "searching"; readonly accuracyM: number | null }
   | { readonly kind: "missing" };
 
-/** Technical wait before saying the capture goes without an exact location. */
-export const LOCATION_WAIT_MS = 10_000;
-
-export function locationStatus(state: LocationState, hasWaitedLong: boolean): LocationStatus {
+/** The wait itself lives in the location source (`noFix`), so the whole app tells one story. */
+export function locationStatus(state: LocationState): LocationStatus {
   if (state.kind === "granted") return { kind: "ready", accuracyM: state.fix.accuracy_m };
-  if (state.kind === "denied" || state.kind === "off") return { kind: "missing" };
-  if (hasWaitedLong) return { kind: "missing" };
+  if (state.kind === "denied" || state.kind === "off" || state.kind === "noFix")
+    return { kind: "missing" };
   return { kind: "searching", accuracyM: state.kind === "stale" ? state.fix.accuracy_m : null };
 }

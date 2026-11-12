@@ -8,7 +8,7 @@ import { currentLocation } from "../day/location.ts";
 import type { LocationState } from "../day/location.ts";
 import { maxGpsAccuracy } from "../day/location.ts";
 import { useDayLocation } from "../day/use-day-location.ts";
-import { INITIAL_SAFETY, observeSafety, readSafetyRules } from "./domain.ts";
+import { INITIAL_SAFETY, isSameSafety, observeSafety, readSafetyRules } from "./domain.ts";
 import type { SafetyRules, SafetySample, SafetyState } from "./domain.ts";
 import { deriveGlobalStates } from "./global-state.ts";
 import type { GlobalState, GpsLevel, StorageLevel } from "./global-state.ts";
@@ -23,6 +23,8 @@ export interface M16Model {
   readonly rules: SafetyRules;
   readonly globals: readonly GlobalState[];
   readonly isSpeedLocked: boolean;
+  /** The one location stream of the app; capture steps read it instead of opening their own. */
+  readonly location: LocationState;
   /** Reads the location setting again now (after a permission prompt or a trip to settings). */
   readonly recheckLocation: () => void;
 }
@@ -47,6 +49,7 @@ export function useM16(): M16Model {
   const safety = useSafetyState(location, rules);
   const storage = useStorageLevel();
   const gps = useCalmGps(gpsLevel(location, safety));
+  const isOnline = useCalmOnline(sync.isOnline);
   const globals = useMemo(
     () =>
       deriveGlobalStates({
@@ -58,12 +61,19 @@ export function useM16(): M16Model {
         hasClockSkew: session.hasClockSkew,
         gps,
         isBatteryLow: false,
-        isOnline: sync.isOnline,
+        isOnline,
         isShiftOpen,
       }),
-    [safety, session.phase, session.hasClockSkew, storage, gps, sync.isOnline, isShiftOpen],
+    [safety, session.phase, session.hasClockSkew, storage, gps, isOnline, isShiftOpen],
   );
-  return { safety, rules, globals, isSpeedLocked: safety.lockCause !== null, recheckLocation };
+  return {
+    safety,
+    rules,
+    globals,
+    isSpeedLocked: safety.lockCause !== null,
+    location,
+    recheckLocation,
+  };
 }
 
 /** "Looking for your location" only shows after a few seconds without a fix, never at startup. */
@@ -85,10 +95,33 @@ function useCalmGps(level: GpsLevel): GpsLevel {
   return shown;
 }
 
+/**
+ * The connection reading flips at startup (unknown, then online) and on weak wifi. "No signal"
+ * only shows after a few seconds without it, so the lock and PIN screens do not jump.
+ */
+const OFFLINE_GRACE_MS = 3000;
+function useCalmOnline(isOnline: boolean): boolean {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    if (isOnline) {
+      setShown(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setShown(false);
+    }, OFFLINE_GRACE_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isOnline]);
+  return shown;
+}
+
 function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
   if (location.kind === "denied") return "denied";
   if (location.kind === "off") return "off";
   if (location.kind === "searching") return "searching";
+  if (location.kind === "noFix") return "noFix";
   return safety.quality === "usable" ? "ok" : "unreliable";
 }
 
@@ -108,9 +141,15 @@ function useSafetyState(location: LocationState, rules: SafetyRules): SafetyStat
   useEffect(() => {
     const step = () => {
       const nowMs = Date.now();
-      setState((previous) =>
-        observeSafety({ state: previous, sample: sampleOf(location, nowMs), nowMs, rules }),
-      );
+      setState((previous) => {
+        const next = observeSafety({
+          state: previous,
+          sample: sampleOf(location, nowMs),
+          nowMs,
+          rules,
+        });
+        return isSameSafety(previous, next) ? previous : next;
+      });
     };
     step();
     const timer = setInterval(step, TICK_MS);

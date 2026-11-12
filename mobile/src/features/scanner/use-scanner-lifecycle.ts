@@ -3,18 +3,24 @@ import { AppState } from "react-native";
 import { useServices } from "../../app/services-context.ts";
 import { ScannerSession } from "./scanner-session.ts";
 
-/** Lock, background and unmount retire every native/result continuation before another can start. */
+/**
+ * Lock and background hide the camera; any session or token change only retires the scan in
+ * flight (the camera keeps reading, so nothing is lost silently). Unmount retires everything.
+ */
 export function useScannerLifecycle() {
   const { auth, tokens } = useServices();
   const session = useRef(new ScannerSession()).current;
   const revision = useRef(0);
   const [isCameraVisible, setCamera] = useState(false);
-  const stop = useCallback(() => {
+  const retire = useCallback(() => {
     revision.current++;
     session.cancel();
-    setCamera(false);
   }, [session]);
-  useEffect(() => subscribeLifecycle({ auth, tokens, stop }), [auth, tokens, stop]);
+  const stop = useCallback(() => {
+    retire();
+    setCamera(false);
+  }, [retire]);
+  useEffect(() => subscribeLifecycle({ auth, tokens, stop, retire }), [auth, tokens, stop, retire]);
   const lease = () => {
     const original = revision.current;
     return () =>
@@ -22,16 +28,29 @@ export function useScannerLifecycle() {
       auth.getSnapshot().phase === "unlocked" &&
       AppState.currentState === "active";
   };
-  const permissionContext = () =>
-    lease()() ? { eventId: "scanner", sessionKey: String(revision.current) } : null;
-  return { session, stop, lease, permissionContext, isCameraVisible, setCamera };
+  /** The camera may only be shown while the app is unlocked and in front. */
+  const canShowCamera = () => auth.getSnapshot().phase === "unlocked" && isAppActive();
+  return { session, stop, lease, canShowCamera, isCameraVisible, setCamera };
+}
+
+function isAppActive(): boolean {
+  return AppState.currentState === "active";
 }
 
 function subscribeLifecycle(
-  input: Pick<ReturnType<typeof useServices>, "auth" | "tokens"> & { readonly stop: () => void },
+  input: Pick<ReturnType<typeof useServices>, "auth" | "tokens"> & {
+    readonly stop: () => void;
+    readonly retire: () => void;
+  },
 ) {
-  const { auth, tokens, stop } = input;
-  const remove = [auth.subscribe(stop), tokens.subscribe(stop)];
+  const { auth, tokens, stop, retire } = input;
+  const remove = [
+    auth.subscribe(() => {
+      if (auth.getSnapshot().phase === "unlocked") retire();
+      else stop();
+    }),
+    tokens.subscribe(retire),
+  ];
   const app = AppState.addEventListener("change", (state) => {
     if (state !== "active") stop();
   });

@@ -28,7 +28,7 @@ function scannerModel(read: (code: string, isManual: boolean) => Promise<void>) 
     retry: noop,
   };
 }
-void test("P11 denied camera and P21 invalid results keep a named manual way in across locales/themes at 130 percent", () => {
+void test("P11 a typed code is always offered, and a camera problem opens it by itself across locales/themes at 130 percent", () => {
   for (const config of UI_CASES) {
     const { locale } = config;
     const reads: [string, boolean][] = [];
@@ -41,7 +41,7 @@ void test("P11 denied camera and P21 invalid results keep a named manual way in 
       `${FEATURE}ScannerControls.tsx`,
       "ScannerControls",
       {
-        model,
+        model: { ...model, cameraError: null },
       },
     );
     assert.ok(texts(closed).includes(messages[locale]["field.scan.unavailable"]));
@@ -50,9 +50,16 @@ void test("P11 denied camera and P21 invalid results keep a named manual way in 
       undefined,
     );
     const damaged = closed.find(
-      ({ props }) => props.accessibilityLabel === messages[locale]["field.scan.damaged"],
+      ({ props }) => props.accessibilityLabel === messages[locale]["field.scan.typeCode"],
     );
     assert.ok(damaged && minHeightOf(damaged) >= 48);
+    // A camera problem opens the typed code by itself, with the button that fixes the camera.
+    const problem = componentHarness(config).render(
+      `${FEATURE}ScannerControls.tsx`,
+      "ScannerControls",
+      { model },
+    );
+    assert.ok(problem.find(({ type }) => type === "TextInput"));
     // Open: the typed code is retained, editable, and Use this code reads it as manual input.
     const nodes = componentHarness({ ...config, stubs: MANUAL }).render(
       `${FEATURE}ScannerControls.tsx`,

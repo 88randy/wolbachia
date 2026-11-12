@@ -9,6 +9,7 @@ export type GlobalCause =
   | "gpsDenied"
   | "gpsUnreliable"
   | "gpsSearching"
+  | "gpsNoFix"
   | "storageLow"
   | "batteryLow"
   | "noSignal"
@@ -36,7 +37,7 @@ export interface GlobalState {
 }
 
 export type StorageLevel = "ok" | "low" | "full" | "unknown";
-export type GpsLevel = "ok" | "off" | "denied" | "searching" | "unreliable" | "unknown";
+export type GpsLevel = "ok" | "off" | "denied" | "searching" | "noFix" | "unreliable" | "unknown";
 export type UpdateLevel = "none" | "available" | "required";
 
 export interface GlobalInputs {
@@ -65,6 +66,7 @@ const RULES: readonly Rule[] = [
   [(i) => i.isShiftOpen && i.gps === "denied", state("gpsDenied", "warning", "enableLocation")],
   [(i) => i.isShiftOpen && i.gps === "unreliable", state("gpsUnreliable", "info", "waitForFix")],
   [(i) => i.isShiftOpen && i.gps === "searching", state("gpsSearching", "info", "waitForFix")],
+  [(i) => i.isShiftOpen && i.gps === "noFix", state("gpsNoFix", "info", "keepWorkingReview")],
   [(i) => i.storage === "low", state("storageLow", "warning", "freeSpace")],
   [(i) => i.isBatteryLow, state("batteryLow", "info", "chargeOrSaveBattery")],
   [(i) => !i.isOnline, state("noSignal", "info", "keepWorkingSaved")],

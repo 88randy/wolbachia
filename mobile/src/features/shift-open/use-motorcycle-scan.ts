@@ -1,12 +1,13 @@
 import { useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import { Vibration } from "react-native";
+import { ensureCameraAccess } from "../scanner/camera-access.ts";
 import type { MotorcycleOption } from "./domain.ts";
 import { matchMotorcycle } from "./motorcycle-match.ts";
 
 const SCAN_FEEDBACK_MS = 30;
 
-export type ScanProblem = "denied" | "unknown" | null;
+export type ScanProblem = "denied" | "blocked" | "unknown" | null;
 
 /** Opens the camera on demand and resolves a QR to a motorcycle of the downloaded list. */
 export function useMotorcycleScan(
@@ -18,9 +19,13 @@ export function useMotorcycleScan(
   const [problem, setProblem] = useState<ScanProblem>(null);
   const start = async () => {
     setProblem(null);
-    const granted = permission?.granted === true || (await requestPermission()).granted;
-    if (granted) setScanning(true);
-    else setProblem("denied");
+    try {
+      const access = await ensureCameraAccess(permission, requestPermission);
+      if (access === "granted") setScanning(true);
+      else setProblem(access);
+    } catch {
+      setProblem("blocked");
+    }
   };
   const stop = () => {
     setScanning(false);

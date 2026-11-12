@@ -2,6 +2,7 @@ import { CameraView } from "expo-camera";
 import { QrCode, X } from "lucide-react-native";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
+import { openSystemSetting } from "../../system-settings/open-system-setting.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { MotorcycleOption } from "./domain.ts";
@@ -45,8 +46,22 @@ export function MotorcycleScanner({ options, onFound }: Props) {
           }}
         />
       )}
-      {scan.problem === "denied" ? (
-        <InfoNotice tone="warning" message={t("field.scan.cameraDenied")} />
+      {scan.problem === "denied" || scan.problem === "blocked" ? (
+        <InfoNotice
+          tone="warning"
+          message={t(
+            scan.problem === "denied" ? "field.scan.cameraAsk" : "field.scan.cameraDenied",
+          )}
+          action={{
+            label: t(
+              scan.problem === "denied" ? "field.scan.allowCamera" : "field.scan.openSettings",
+            ),
+            onPress: () => {
+              if (scan.problem === "denied") void scan.start();
+              else void openSystemSetting("app");
+            },
+          }}
+        />
       ) : null}
       {scan.problem === "unknown" ? (
         <InfoNotice tone="warning" message={t("field.open.scanUnknown")} />

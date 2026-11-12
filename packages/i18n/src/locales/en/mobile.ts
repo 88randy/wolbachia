@@ -639,6 +639,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.locationDenied": "Location permission denied. You can keep using the list.",
   "mobile.day.locationUnavailable": "Location unavailable. You can keep using the list.",
   "mobile.day.locationSearching": "Looking for your location…",
+  "mobile.day.locationNoFix": "No exact location signal. You can keep going.",
   "mobile.day.locationStale": "Stale location · {seconds} s ago. Distances are hidden.",
   "mobile.day.locationFix": "Location · {seconds} s ago · accuracy ±{accuracy} m",
   "mobile.day.locationUnknownAccuracy": "Location · {seconds} s ago · accuracy unavailable",
@@ -1235,6 +1236,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.causeGpsOff": "Location is turned off.",
   "mobile.global.causeGpsDenied": "The app has no location permission.",
   "mobile.global.causeGpsSearching": "Looking for your location…",
+  "mobile.global.causeGpsNoFix": "No exact location signal.",
   "mobile.global.causeGpsUnreliable": "Looking for your location…",
   "mobile.global.causeBatteryLow": "Low battery.",
   "mobile.global.causeNoSignal":

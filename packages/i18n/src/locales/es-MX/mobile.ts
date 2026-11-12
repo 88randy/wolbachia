@@ -653,6 +653,7 @@ export const mobile = {
   "mobile.day.locationDenied": "Ubicación no autorizada. Puedes seguir con la lista.",
   "mobile.day.locationUnavailable": "Ubicación no disponible. Puedes seguir con la lista.",
   "mobile.day.locationSearching": "Buscando tu ubicación…",
+  "mobile.day.locationNoFix": "Sin señal exacta de ubicación. Puedes seguir.",
   "mobile.day.locationStale":
     "Ubicación desactualizada · hace {seconds} s. No se muestran distancias.",
   "mobile.day.locationFix": "Ubicación · hace {seconds} s · precisión ±{accuracy} m",
@@ -1268,6 +1269,7 @@ export const mobile = {
   "mobile.global.causeGpsOff": "Tu ubicación está apagada.",
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
   "mobile.global.causeGpsSearching": "Buscando tu ubicación…",
+  "mobile.global.causeGpsNoFix": "Sin señal exacta de ubicación.",
   "mobile.global.causeGpsUnreliable": "Buscando tu ubicación…",
   "mobile.global.causeBatteryLow": "Batería baja.",
   "mobile.global.causeNoSignal": "Sin señal: nada se pierde, todo se sube cuando haya red.",

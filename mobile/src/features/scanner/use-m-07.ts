@@ -1,45 +1,67 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCameraPermissions } from "expo-camera";
-import { Linking, Vibration } from "react-native";
+import { AppState, Linking, Vibration } from "react-native";
 import { useServices } from "../../app/services-context.ts";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
 import { useM08 } from "../ovitrap-check/use-m-08.ts";
 import type { QrKind } from "../ovitrap-check/types.ts";
 import type { ScannerError } from "./domain.ts";
 import { useScannerLifecycle } from "./use-scanner-lifecycle.ts";
-import { ReceiptScannerSession } from "../supply-receipt/scanner-session.ts";
+import { ensureCameraAccess } from "./camera-access.ts";
 import type { ScannerDestination } from "./service.ts";
 import type { Route } from "../../navigation/routes.ts";
 
 const SCAN_FEEDBACK_MS = 30;
 
+type CameraError = "denied" | "blocked" | "cameraFailed";
+
+/**
+ * Opens the camera by itself: asks for the permission when it is missing and always lands on a
+ * visible result (preview, or a message with a button). The system prompt sends the app to the
+ * background, so its answer is never discarded because of that; the camera only shows while the
+ * app is unlocked and in front, and it comes back by itself when the app returns.
+ */
 function useCameraStart(lifecycle: ReturnType<typeof useScannerLifecycle>) {
-  const session = useRef(new ReceiptScannerSession()).current;
   const [permission, requestPermission] = useCameraPermissions();
-  const [cameraError, setCameraError] = useState<"denied" | "cameraFailed" | null>(null);
+  const [cameraError, setCameraError] = useState<CameraError | null>(null);
   const [isRequesting, setRequesting] = useState(false);
+  const isRunning = useRef(false);
+  const mustRerun = useRef(false);
   const start = async () => {
-    if (session.isRequesting) return;
-    lifecycle.stop();
-    const isCurrent = lifecycle.lease();
+    if (isRunning.current) return;
+    isRunning.current = true;
     setRequesting(true);
     setCameraError(null);
+    let isGranted = false;
     try {
-      const result = await session.start({
-        current: lifecycle.permissionContext,
-        permission,
-        requestPermission,
-      });
-      if (!isCurrent()) return;
-      lifecycle.setCamera(result.kind === "ready");
-      if (result.kind === "denied") setCameraError("denied");
-      else if (result.kind !== "ready") setCameraError("cameraFailed");
+      const access = await ensureCameraAccess(permission, requestPermission);
+      isGranted = access === "granted";
+      if (access !== "granted") setCameraError(access);
+      else if (lifecycle.canShowCamera()) lifecycle.setCamera(true);
     } catch {
-      if (isCurrent()) setCameraError("cameraFailed");
+      setCameraError("cameraFailed");
     } finally {
+      isRunning.current = false;
       setRequesting(false);
     }
+    const rerun = mustRerun.current;
+    mustRerun.current = false;
+    // The app came back to the front while asking; show the camera now if it was allowed.
+    if (rerun && isGranted) {
+      await start();
+    }
   };
+  const isHidden = !lifecycle.isCameraVisible;
+  useEffect(() => {
+    const app = AppState.addEventListener("change", (state) => {
+      if (state !== "active" || !isHidden) return;
+      if (isRunning.current) mustRerun.current = true;
+      else void start();
+    });
+    return () => {
+      app.remove();
+    };
+  });
   return { start, isRequesting, cameraError, setCameraError };
 }
 function useScanOrigin(eventId: string | null | undefined) {
