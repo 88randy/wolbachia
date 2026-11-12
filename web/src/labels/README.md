@@ -2,8 +2,9 @@
 
 ALL labels are printed from one screen: W19 "Etiquetas QR" (`/inventory/labels`, code in
 `web/src/inventory/labels`). The user picks the kind, searches and ticks records (server-side
-search and paging), and `PrintLabelsButton` opens `PrintLabelsDialog` with the format, copies,
-preview and Print. There is one rendering pipeline (this folder). No other list or record screen
+search and paging) on the left; on the right (sticky, below the list on narrow screens) `LabelPrintPanel`
+shows a live preview of the ticked labels with the format, copies and Print, no modal. There is one
+rendering pipeline (this folder).  No other list or record screen
 prints labels; a record page only links to W19.
 
 ## Record pages: "Imprimir etiqueta"
@@ -26,7 +27,7 @@ A QR encodes `wbf:1:<kind>:<value>`. `qrContent()` is the one place that decides
 | motorcycle | human code   | `parse_code_qr` accepts a code                                             |
 | location   | human code   | no scanner reads locations yet; the code is what the screens show          |
 
-The human code is always printed large on the label; the id never appears as text. Same design
+The human code is always printed large on the label. An id is never visible: if a code looks like a uuid (`visibleText()`), the label and the list show the fallback (the ovitrap point) instead. Same design
 for every kind: QR, big code, up to two context lines (`label-records.ts`).
 
 ## Pieces
@@ -35,7 +36,7 @@ for every kind: QR, big code, up to two context lines (`label-records.ts`).
   query-string schema.
 - `label-formats.ts`: the three formats and limits (copies 1-50, 300 labels per job).
 - `label-records.ts`: pure mappers from API rows to `LabelRecord` (id, code, up to 2 lines).
-- `PrintLabelsDialog.tsx`: format, copies, preview and Print. Remembers the last choice in
+- `LabelPrintPanel.tsx`: format, copies, live preview and Print. Remembers the last choice in
   `localStorage` (`label-preferences.ts`, failures are ignored).
 - `LabelPrintPortal.tsx` + `labels.module.css`: the print layout. A copy of the sheet goes under
   `<body>`; `@media print` hides everything else. Page sizes use named `@page` rules, one per

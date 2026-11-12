@@ -2,13 +2,8 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const labels = {
-  "labels.action.print": "Imprimir etiquetas",
   "labels.action.printOne": "Imprimir etiqueta",
-  "labels.action.printPage": "Imprimir etiquetas de esta página",
-  "labels.action.printSelected": "Imprimir etiquetas de lo marcado",
   "labels.dialog.title": "Imprimir etiquetas",
-  "labels.dialog.description":
-    "Cada etiqueta lleva un código QR y el código del registro, para que después se pueda escanear y llenar el formulario.",
   "labels.dialog.count": "Etiquetas distintas: {count}",
   "labels.dialog.total": "Etiquetas en total: {count}",
   "labels.dialog.tooMany": "Son demasiadas etiquetas. Se imprimen las primeras {count}.",
@@ -22,6 +17,7 @@ export const labels = {
   "labels.copies.hint": "De 1 a {max}.",
   "labels.preview.title": "Vista previa",
   "labels.preview.hint": "Se ve a tamaño real, como saldrá en el papel.",
+  "labels.preview.empty": "Marca registros en la lista y aquí verás sus etiquetas.",
   "labels.qr.alt": "Código QR de {code}",
   "labels.print.button": "Imprimir",
   "labels.print.noRecords": "No hay registros para imprimir.",

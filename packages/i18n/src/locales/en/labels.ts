@@ -2,13 +2,8 @@
 import type { labels as source } from "../es-MX/labels.ts";
 
 export const labels: Record<keyof typeof source, string> = {
-  "labels.action.print": "Print labels",
   "labels.action.printOne": "Print label",
-  "labels.action.printPage": "Print labels of this page",
-  "labels.action.printSelected": "Print labels of the selected rows",
   "labels.dialog.title": "Print labels",
-  "labels.dialog.description":
-    "Each label has a QR code and the record code, so it can be scanned later to fill in the form.",
   "labels.dialog.count": "Different labels: {count}",
   "labels.dialog.total": "Labels in total: {count}",
   "labels.dialog.tooMany": "That is too many labels. The first {count} are printed.",
@@ -22,6 +17,7 @@ export const labels: Record<keyof typeof source, string> = {
   "labels.copies.hint": "From 1 to {max}.",
   "labels.preview.title": "Preview",
   "labels.preview.hint": "Shown at real size, as it will come out on paper.",
+  "labels.preview.empty": "Tick records in the list and their labels appear here.",
   "labels.qr.alt": "QR code of {code}",
   "labels.print.button": "Print",
   "labels.print.noRecords": "There are no records to print.",

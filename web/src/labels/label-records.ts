@@ -78,6 +78,7 @@ export function ovitrapLabel(
     kind: "ovitrap",
     id: ovitrap.id,
     code: ovitrap.code,
+    fallbackCode: ovitrap.point_code,
     lines: present([
       ovitrap.point_code && text.t("labels.line.point", { code: ovitrap.point_code }),
     ]),
