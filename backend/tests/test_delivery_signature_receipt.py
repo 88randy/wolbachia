@@ -33,11 +33,10 @@ def _set_mode(organization, value):
     )
 
 
-def _release_again_with_warehouse_signature(allocation):
+def _signed_release(allocation):  # noqa: F811
     """Void the unsigned release (no stock moved), then release the same plan with a signature."""
     from inventory.allocations.commands import IntentExecution
     from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
-    from inventory.allocations.models import OriginReleaseProof
     from tests.test_inventory_transfers_106 import verified_upload
     from uploads.models import AttachmentLink, Upload
 
@@ -81,7 +80,13 @@ def _release_again_with_warehouse_signature(allocation):
     released = execute_inventory_intent(
         actor, IntentExecution(intent_id, "assignment_release", allocation.assignment_id)
     )
-    release_id = UUID(released.body["release"]["id"])
+    return UUID(released.body["release"]["id"])
+
+
+def _release_again_with_warehouse_signature(allocation):  # noqa: F811
+    from inventory.allocations.models import OriginReleaseProof
+
+    release_id = _signed_release(allocation)
     proof = OriginReleaseProof.objects.get(pk=release_id).proof
     assert proof["signature"]["channel"] == "warehouse_screen"
     return release_id
@@ -129,3 +134,56 @@ def test_a_receipt_without_its_own_signature_needs_a_warehouse_signed_release_in
         assert result["status"] != "accepted"
         assert "supply_signature_required" in str(result)
         assert not SupplyReceipt.objects.exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "forged",
+    [None, False, "", {"channel": "courier_device"}],
+    ids=["json-null", "false", "empty-text", "phone-channel"],
+)
+def test_the_database_refuses_an_unsigned_receipt_unless_the_release_holds_a_warehouse_signature(
+    allocation,  # noqa: F811
+    void_catalog,
+    monkeypatch,
+    forged,
+):
+    """Defense in depth: with the handler check bypassed, the trigger alone refuses a receipt
+    without its own signature when the release's `signature` is not the warehouse-screen one."""
+    from inventory.allocations import signature_mode
+    from inventory.allocations.models import OriginReleaseLine, OriginReleaseProof, SupplyReceipt
+    from tests.sync_support import event
+
+    manager = OriginReleaseProof.objects
+    create = manager.create
+
+    def forging(**values):
+        values["proof"] = {**values["proof"], "signature": forged}
+        return create(**values)
+
+    monkeypatch.setattr(manager, "create", forging)
+    release_id = _signed_release(allocation)
+    monkeypatch.setattr(manager, "create", create)
+    assert OriginReleaseProof.objects.get(pk=release_id).proof["signature"] == forged
+    monkeypatch.setattr(signature_mode, "receipt_signature_problem", lambda *_: None)
+    release_line = OriginReleaseLine.objects.get(release_id=release_id)
+    capture = event(
+        type="supplies.receive",
+        shift_id=str(allocation.shift_id),
+        payload={
+            "command_id": str(uuid4()),
+            "assignment_id": str(allocation.assignment_id),
+            "expected_revision": 0,
+            "plan_revision": 1,
+            "release_id": str(release_id),
+            "signature_upload_id": None,
+            "actual_lines": [
+                {"id": str(uuid4()), "release_line_id": str(release_line.pk), "quantity": "8"}
+            ],
+            "discrepancies": [],
+        },
+    )
+    response = allocation.phone.sync([capture])
+    # The trigger aborts the batch (an impossible state, so no event code exists for it).
+    assert response.status_code == 500
+    assert not SupplyReceipt.objects.exists()
