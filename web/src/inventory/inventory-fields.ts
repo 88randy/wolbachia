@@ -9,6 +9,7 @@ export const fieldKeys: Record<string, MessageKey> = {
   expiry_required: "inventory.field.expiryRequired",
   requires_insecticide_free: "inventory.field.requiresInsecticideFree",
   specification: "inventory.field.specification",
+  gtin: "inventory.field.gtin",
   name: "inventory.field.name",
   kind: "inventory.field.kind",
   center_id: "inventory.field.center",

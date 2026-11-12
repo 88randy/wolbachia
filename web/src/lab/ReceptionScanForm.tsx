@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ScanLine } from "lucide-react";
 import { Button } from "../ui/Button";
-import { TextField } from "../forms/TextField";
+import { ScanField } from "../scan/ScanField";
 import type { ReceptionActions } from "./use-reception-command";
 import type { useReceptionScanner } from "./use-reception-scanner";
 import styles from "./reception.module.css";
@@ -13,19 +13,23 @@ interface ReceptionScanFormProps {
 export function ReceptionScanForm({ actions, scanner }: ReceptionScanFormProps) {
   const { t } = useTranslation();
   return (
-    <form onSubmit={scanner.submit} className={styles.scanForm}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        scanner.submit(scanner.code);
+      }}
+      className={styles.scanForm}
+    >
       <ScanLine aria-hidden="true" className={styles.scanIcon} />
-      <TextField
-        ref={scanner.input}
+      <ScanField
+        inputRef={scanner.input}
         id="bag-scan"
+        expects="bag"
         label={t("labReception.scan.label")}
         aria-describedby="bag-scan-hint"
         value={scanner.code}
-        onChange={(event) => {
-          scanner.setCode(event.target.value);
-        }}
-        autoComplete="off"
-        spellCheck={false}
+        onChange={scanner.setCode}
+        onScan={scanner.submit}
       />
       <Button type="submit" aria-disabled={actions.isReviewRequired || !actions.canSubmit}>
         {t("labReception.scan.submit")}

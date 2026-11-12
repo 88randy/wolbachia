@@ -32,7 +32,8 @@ export function WriteOffTargetFields({ form }: { form: WriteOffForm }) {
           }}
         />
       )}
-      {form.kind === "lot" ? <WriteOffLotPicker form={form} /> : <WriteOffCodeLookup form={form} />}
+      <WriteOffCodeLookup form={form} />
+      {form.kind === "lot" && <WriteOffLotPicker form={form} />}
       <WriteOffLotFields form={form} />
     </>
   );

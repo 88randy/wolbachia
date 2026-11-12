@@ -25,6 +25,7 @@ export const ui: Record<keyof typeof esMX, string> = {
   "ui.toast.blocking": "Notifications that need attention",
   "ui.signaturePad.placeholder": "Sign here",
   "ui.signaturePad.clear": "Clear",
+  "ui.dateField.clear": "Remove the date",
   "ui.signaturePad.ready": "Signature ready",
   "ui.signaturePad.hint": "Sign with your finger or the mouse.",
   "ui.signaturePad.tooShort": "The signature is too short. Sign again.",

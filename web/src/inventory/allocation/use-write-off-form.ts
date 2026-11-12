@@ -11,7 +11,12 @@ import { useAllocationCommand } from "./use-allocation-command";
 import { useReasonFields } from "./use-reason-fields";
 import { useWriteOffLookup } from "./use-write-off-lookup";
 import type { Found } from "./use-write-off-lookup";
-import { buildWriteOffDraft, isBiological, writeOffBlockers } from "./write-off-draft";
+import {
+  buildWriteOffDraft,
+  isBiological,
+  wholeLotQuantity,
+  writeOffBlockers,
+} from "./write-off-draft";
 import type { WriteOffTarget } from "./write-off-draft";
 
 export type WriteOffKind = "lot" | "bag";
@@ -68,6 +73,21 @@ export function useWriteOffForm(scope: AllocationScope, route: string, defaultKi
     inputs.setRpbiUploadId("");
     lookup.clear();
   };
+  /** Scanned, typed or picked code: find the record and fill the rest (all of a lot by default). */
+  const chooseCode = async (code: string) => {
+    inputs.setCode(code);
+    inputs.setQuantity("");
+    inputs.setLocationId("");
+    inputs.setRpbiUploadId("");
+    const found = await lookup.find(inputs.kind, code);
+    if (found?.kind === "lot") inputs.setQuantity(wholeLotQuantity(found.lot));
+  };
+  const startOver = () => {
+    inputs.setCode("");
+    inputs.setQuantity("");
+    inputs.setLocationId("");
+    lookup.clear();
+  };
   const submit = () => {
     const draft = blockers.length === 0 ? buildWriteOffDraft(fields) : null;
     if (draft) void command.send(draft);
@@ -76,6 +96,7 @@ export function useWriteOffForm(scope: AllocationScope, route: string, defaultKi
   const isBio = isBiological(target);
   return {
     ...{ kinds, lookup, reason, command, blockers, target, changeKind, submit, locations, lots },
+    ...{ chooseCode, startOver },
     ...{ ...inputs, locationId, isBiological: isBio },
   };
 }

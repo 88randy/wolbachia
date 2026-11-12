@@ -26,6 +26,7 @@ export const ui = {
   "ui.toast.blocking": "Avisos que requieren atención",
   "ui.signaturePad.placeholder": "Firma aquí",
   "ui.signaturePad.clear": "Borrar",
+  "ui.dateField.clear": "Quitar la fecha",
   "ui.signaturePad.ready": "Firma lista",
   "ui.signaturePad.hint": "Firma con el dedo o el mouse.",
   "ui.signaturePad.tooShort": "La firma es muy corta. Vuelve a firmar.",

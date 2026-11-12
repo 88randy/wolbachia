@@ -23,6 +23,13 @@ export interface BlockerContext {
   minReasonLength: number;
 }
 
+/** The whole lot as a default quantity: `120.000000` becomes `120`, `100` stays `100`. */
+export function wholeLotQuantity(lot: Lot): string {
+  const quantity = lot.quantity ?? "";
+  if (!quantity.includes(".")) return quantity;
+  return quantity.replace(/0+$/, "").replace(/\.$/, "");
+}
+
 /** Whole-Bag disposal is always biological; a Lot depends on its supply version. */
 export function isBiological(target: WriteOffTarget | null) {
   return target?.kind === "bag" || target?.lot.supply_version.is_biological === true;

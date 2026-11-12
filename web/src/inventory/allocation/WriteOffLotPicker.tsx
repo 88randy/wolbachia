@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Combobox } from "../../ui/Combobox";
-import { InlineNotice } from "../../ui/InlineNotice";
 import type { WriteOffForm } from "./use-write-off-form";
 
-/** Pick the lot by its name (supply and code). Nothing to type, nothing to look up by hand. */
+/** The other way in: pick the lot by its name (supply and code) when there is no label to scan. */
 export function WriteOffLotPicker({ form }: { form: WriteOffForm }) {
   const { t } = useTranslation();
   const options = form.lots.map((lot) => ({
@@ -21,14 +20,8 @@ export function WriteOffLotPicker({ form }: { form: WriteOffForm }) {
         options={options}
         placeholder={t("inventory.option.choose")}
         emptyMessage={t("allocation.writeOff.noLots")}
-        onValueChange={(code) => {
-          form.setCode(code);
-          void form.lookup.find("lot", code);
-        }}
+        onValueChange={(code) => void form.chooseCode(code)}
       />
-      {form.lookup.state === "failed" && (
-        <InlineNotice tone="critical">{t("allocation.writeOff.lookupFailed")}</InlineNotice>
-      )}
     </div>
   );
 }

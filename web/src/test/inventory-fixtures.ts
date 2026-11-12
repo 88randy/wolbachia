@@ -43,6 +43,7 @@ export function inventorySupply(overrides: Partial<Schemas["Supply"]> = {}): Sch
     requires_insecticide_free: true,
     expiry_required: true,
     specification: "",
+    gtin: "",
     is_active: true,
     protocol: inventoryProtocol(),
     created_by: null,

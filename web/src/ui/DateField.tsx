@@ -1,5 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { enUS, es } from "react-day-picker/locale";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,7 +37,10 @@ export function DateField(props: {
   max?: string;
   /** Already translated error text: red text below, `aria-invalid` on the button. */
   error?: string | undefined;
+  /** For an optional date: a button under the calendar that empties it. */
+  onClear?: () => void;
 }) {
+  const { t } = useTranslation();
   const { language } = useLanguage();
   const format = useFormatCalendarDate();
   const [isOpen, setIsOpen] = useState(false);
@@ -82,6 +86,18 @@ export function DateField(props: {
               setIsOpen(false);
             }}
           />
+          {props.onClear !== undefined && selected !== undefined && (
+            <button
+              type="button"
+              className="mt-1 w-full rounded-md border-0 bg-transparent px-2 py-1.5 text-left text-[13px] font-semibold text-action-strong hover:bg-surface-muted"
+              onClick={() => {
+                props.onClear?.();
+                setIsOpen(false);
+              }}
+            >
+              {t("ui.dateField.clear")}
+            </button>
+          )}
         </PopoverContent>
       </Popover>
       {props.error !== undefined && (

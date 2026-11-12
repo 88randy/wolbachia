@@ -71,9 +71,23 @@ export function reconciliation(
   };
 }
 
+/** A reason the write-off picker offers (it hides the void-only reasons). */
+function writeOffReason(): Schemas["CatalogItem"] {
+  const [template] = makeVoidReasonItems();
+  return {
+    ...(template as Schemas["CatalogItem"]),
+    id: "expired",
+    code: "expired",
+    label_es: "Caducado",
+    label_en: "Expired",
+  };
+}
+
 export function reasonRoutes(): FakeApiRoutes {
   return {
-    "GET /api/v1/catalogs/void-reason/items/": Response.json(inventoryPage(makeVoidReasonItems())),
+    "GET /api/v1/catalogs/void-reason/items/": Response.json(
+      inventoryPage([...makeVoidReasonItems(), writeOffReason()]),
+    ),
     "GET /api/v1/lookups/users/": Response.json(inventoryPage([])),
   };
 }

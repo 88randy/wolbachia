@@ -102,6 +102,7 @@ export const inventory = {
   "inventory.field.expiryRequired": "Requiere caducidad",
   "inventory.field.requiresInsecticideFree": "Requiere ubicación libre de insecticida",
   "inventory.field.specification": "Especificación",
+  "inventory.field.gtin": "Código de barras (GTIN)",
   "inventory.field.name": "Nombre",
   "inventory.field.kind": "Tipo de ubicación",
   "inventory.field.center": "Centro",

@@ -11,6 +11,11 @@ const supplyIdentity = z.object({
   identity_kind: z.enum(["piece", "lot"]),
   is_biological: z.boolean(),
 });
+/** Empty, or 8, 12, 13 or 14 digits: the backend stores it as one GTIN-14. */
+const gtinText = z
+  .string()
+  .trim()
+  .regex(/^(?:\d{8}|\d{12,14})?$/);
 const decimals = z.string().regex(/^-?\d+(?:\.\d{1,6})?$/);
 export function nullableFlag(value: string | undefined) {
   return value === "true" ? true : value === "false" ? false : null;
@@ -73,6 +78,7 @@ export function supplyPayload(
     expiry_required: nullableFlag(values["expiry_required"]),
     requires_insecticide_free: nullableFlag(values["requires_insecticide_free"]),
     specification: values["specification"] ?? "",
+    gtin: gtinText.parse(values["gtin"] ?? ""),
     ...(hasProtocolEdit ? { protocol: protocolPayload(values) } : {}),
   };
 }

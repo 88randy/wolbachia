@@ -5,6 +5,7 @@ import type { Schemas } from "@wolbachia/api-client";
 import { useFormatCalendarDate } from "../../format/use-formatters";
 import { Combobox } from "../../ui/Combobox";
 import { InlineNotice } from "../../ui/InlineNotice";
+import { ScanField } from "../../scan/ScanField";
 import type { AssignmentDraft, ScanState } from "./use-assignment-draft";
 
 const SCAN_KEYS: Record<Exclude<ScanState, "idle" | "loading">, MessageKey> = {
@@ -42,6 +43,7 @@ export function LotAdder({
   const { t } = useTranslation();
   const formatDay = useFormatCalendarDate();
   const [search, setSearch] = useState("");
+  const [code, setCode] = useState("");
   const added = new Set(draft.lines.map((line) => line.lotId));
   const exact = search.trim().toLowerCase();
   const available = [...lots]
@@ -64,26 +66,40 @@ export function LotAdder({
   }));
   const scan = draft.scan;
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor="allocation-lot" className="text-xs font-bold text-ink">
-        {t("allocation.assignment.lotAdder")}
-      </label>
-      <Combobox
-        id="allocation-lot"
-        value=""
-        options={options}
-        placeholder={t("allocation.assignment.lotAdderPlaceholder")}
-        emptyMessage={t("allocation.assignment.noLots")}
-        onSearch={setSearch}
-        onValueChange={(code) => {
-          setSearch("");
-          void draft.addLot(code);
+    <div className="flex min-w-0 flex-col gap-3">
+      <ScanField
+        id="allocation-lot-scan"
+        expects="lot"
+        label={t("allocation.assignment.scan")}
+        value={code}
+        onChange={setCode}
+        onScan={(scanned) => {
+          if (scanned === "") return;
+          setCode("");
+          void draft.addLot(scanned);
         }}
       />
-      <div aria-live="polite">
-        {scan !== "idle" && scan !== "loading" && (
-          <InlineNotice tone="warning">{t(SCAN_KEYS[scan])}</InlineNotice>
-        )}
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <label htmlFor="allocation-lot" className="text-xs font-bold text-ink">
+          {t("allocation.assignment.lotAdder")}
+        </label>
+        <Combobox
+          id="allocation-lot"
+          value=""
+          options={options}
+          placeholder={t("allocation.assignment.lotAdderPlaceholder")}
+          emptyMessage={t("allocation.assignment.noLots")}
+          onSearch={setSearch}
+          onValueChange={(code) => {
+            setSearch("");
+            void draft.addLot(code);
+          }}
+        />
+        <div aria-live="polite">
+          {scan !== "idle" && scan !== "loading" && (
+            <InlineNotice tone="warning">{t(SCAN_KEYS[scan])}</InlineNotice>
+          )}
+        </div>
       </div>
     </div>
   );

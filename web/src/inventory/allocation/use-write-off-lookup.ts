@@ -26,20 +26,23 @@ export function useWriteOffLookup(scope: AllocationScope) {
   const cache = useQueryClient();
   const [state, setState] = useState<LookupState>("idle");
   const [found, setFound] = useState<Found | null>(null);
-  async function find(kind: "lot" | "bag", code: string) {
+  /** Resolves a code; gives the record it found (null when none, or when this answer is stale). */
+  async function find(kind: "lot" | "bag", code: string): Promise<Found | null> {
     const guard = scope.beginWrite();
     setFound(null);
-    if (guard.isStale() || code.trim() === "") return;
+    if (guard.isStale() || code.trim() === "") return null;
     setState("loading");
     try {
       const value = await resolveCode(scope, { kind, code: code.trim() }, guard.signal);
-      if (guard.isStale() || !scope.isCurrentRead()) return;
+      if (guard.isStale() || !scope.isCurrentRead()) return null;
       setFound(value);
       setState(value ? "idle" : "notFound");
+      return value;
     } catch (error) {
-      if (guard.isStale() || !scope.isCurrentRead()) return;
+      if (guard.isStale() || !scope.isCurrentRead()) return null;
       setState("failed");
       reportSessionError(error, cache);
+      return null;
     }
   }
   const clear = () => {

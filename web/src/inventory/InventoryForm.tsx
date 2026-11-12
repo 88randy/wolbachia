@@ -10,6 +10,7 @@ import type { InventoryFieldsProps } from "./inventory-form-types";
 import styles from "./inventory.module.css";
 import { LotIdentityFields } from "./lots/LotIdentityFields";
 import { LotBiologicalFields } from "./lots/LotBiologicalFields";
+import { LotScanFill } from "./lots/LotScanFill";
 import { LotPlacementFields } from "./lots/LotPlacementFields";
 import { LocationFields } from "./locations/LocationFields";
 import { LotProtocolSummary } from "./lots/LotProtocolSummary";
@@ -38,6 +39,7 @@ function Fields({ kind, fields }: { kind: InventoryKind; fields: InventoryFields
   if (kind === "locations") return <LocationFields {...fields} />;
   return (
     <>
+      {!fields.previous && <LotScanFill {...fields} />}
       <FormSection title={t("inventory.section.lotWhat")}>
         <LotIdentityFields {...fields} />
       </FormSection>
