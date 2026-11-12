@@ -1270,7 +1270,7 @@ export const mobile = {
   "mobile.global.causeGpsDenied": "La app no tiene permiso de ubicación.",
   "mobile.global.causeGpsSearching": "Buscando tu ubicación…",
   "mobile.global.causeGpsNoFix": "Sin señal exacta de ubicación.",
-  "mobile.global.causeGpsUnreliable": "Buscando tu ubicación…",
+  "mobile.global.causeGpsUnreliable": "Tu ubicación es aproximada.",
   "mobile.global.causeBatteryLow": "Batería baja.",
   "mobile.global.causeNoSignal": "Sin señal: nada se pierde, todo se sube cuando haya red.",
   "mobile.global.nextStopMoving":

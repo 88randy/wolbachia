@@ -1237,7 +1237,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.global.causeGpsDenied": "The app has no location permission.",
   "mobile.global.causeGpsSearching": "Looking for your location…",
   "mobile.global.causeGpsNoFix": "No exact location signal.",
-  "mobile.global.causeGpsUnreliable": "Looking for your location…",
+  "mobile.global.causeGpsUnreliable": "Your location is approximate.",
   "mobile.global.causeBatteryLow": "Low battery.",
   "mobile.global.causeNoSignal":
     "No signal: nothing is lost, everything uploads when there is network.",

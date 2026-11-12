@@ -129,7 +129,9 @@ function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
   if (location.kind === "noFix") return "noFix";
   // Not needed now (locked, or no shift): no banner.
   if (location.kind === "unavailable") return "ok";
-  return safety.quality === "usable" ? "ok" : "unreliable";
+  // A fix exists. Unknown speed (a still phone) and an older fix only matter to the speed lock,
+  // not to the courier: only a fix too imprecise for the rule earns a banner.
+  return safety.quality === "poorAccuracy" ? "unreliable" : "ok";
 }
 
 function sampleOf(location: LocationState, nowMs: number): SafetySample | null {
