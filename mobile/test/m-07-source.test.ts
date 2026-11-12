@@ -103,6 +103,7 @@ void test("M07 local resources retain actual supply pins and exclude foreign or 
       startCheck: () => Promise.reject(new Error("Supply routing cannot begin a capture.")),
       enterBag: () => Promise.reject(new Error("Supply routing cannot change a bag.")),
       bindLabel: () => Promise.reject(new Error("Supply routing cannot bind a label.")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
   assert.deepEqual(
@@ -206,6 +207,7 @@ void test("M10 release-device QR and exact manual code route only downloaded pai
       startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
       enterBag: () => Promise.reject(new Error("Unrelated bag")),
       bindLabel: () => Promise.reject(new Error("Unrelated label")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
   for (const isManual of [false, true]) {
@@ -248,6 +250,7 @@ function sampleScanner(admit: Parameters<typeof sampleScannerRoute>[1]["admit"])
       startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
       enterBag: () => Promise.reject(new Error("Unrelated bag")),
       bindLabel: () => Promise.reject(new Error("Unrelated label")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
 }

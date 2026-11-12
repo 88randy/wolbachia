@@ -94,6 +94,10 @@ export class SupplyReceiptService {
       store: this.deps.store,
       bundle: this.deps.bundle,
       feedback: this.#feedback,
+      shiftId: await this.deps.shift().then(
+        (shift) => shift.id,
+        () => null,
+      ),
     });
     this.#requireIdentity(identity);
     if (selected !== this.#selected) throw new ReceiptError("stale_draft");

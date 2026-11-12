@@ -92,8 +92,13 @@ function useScanCommand(
   const { scanner } = useServices();
   const origin = useScanOrigin(eventId);
   const push = useScannerNavigation();
-  const [error, setError] = useState<ScannerError | null>(null);
+  const [error, setErrorState] = useState<ScannerError | null>(null);
+  const [errorPoint, setErrorPoint] = useState<string | null>(null);
   const [isBusy, setBusy] = useState(false);
+  const setError = (next: ScannerError | null, pointCode: string | null = null) => {
+    setErrorState(next);
+    setErrorPoint(pointCode);
+  };
   const shared = {
     scanner,
     lifecycle,
@@ -107,6 +112,7 @@ function useScanCommand(
   return {
     read,
     error: error ?? origin.error,
+    errorPoint,
     isBusy: isBusy || !origin.isReady,
     isLoading: origin.isLoading,
     setError,
@@ -169,7 +175,7 @@ interface ScanCommand {
   readonly scanner: ReturnType<typeof useServices>["scanner"];
   readonly lifecycle: ReturnType<typeof useScannerLifecycle>;
   readonly push: (route: Route) => void;
-  readonly setError: (error: ScannerError | null) => void;
+  readonly setError: (error: ScannerError | null, pointCode?: string | null) => void;
   readonly setBusy: (isBusy: boolean) => void;
   readonly input: import("./domain.ts").ScannerInput;
   readonly eventId: string | null;
@@ -177,7 +183,6 @@ interface ScanCommand {
 async function performScan(command: ScanCommand): Promise<void> {
   const { lifecycle, input, scanner } = command;
   const current = lifecycle.lease();
-  command.setError(null);
   command.setBusy(true);
   try {
     const result = await lifecycle.session.run(
@@ -197,12 +202,11 @@ async function performScan(command: ScanCommand): Promise<void> {
   }
 }
 function finishScan(command: ScanCommand, result: ScannerDestination | "duplicate"): void {
-  if (result === "duplicate") {
-    command.setError("duplicate");
-    return;
-  }
+  // The camera keeps seeing the same code: that is not a new problem, and it must not replace the
+  // real message (for example "already placed at point X") with a dedupe notice.
+  if (result === "duplicate") return;
   if ("error" in result) {
-    command.setError(result.error);
+    command.setError(result.error, result.pointCode ?? null);
     return;
   }
   command.lifecycle.stop();

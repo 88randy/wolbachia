@@ -313,6 +313,21 @@ export class OvitrapService {
       return "read";
     }, eventId);
   }
+  /** The point code where a label is already placed, for the message; null when unknown. */
+  async usedPointCode(
+    value: string,
+    isManual: boolean,
+    eventId: string | null,
+  ): Promise<string | null> {
+    try {
+      const { draft } = await this.#readExpected(eventId);
+      const id = labelId(value, isManual);
+      if (!draft || !id) return null;
+      return draft.assignment?.ovitraps.find((item) => item.id === id)?.point.code ?? null;
+    } catch {
+      return null;
+    }
+  }
   async #isIdentityTaken(id: string, draft: Draft): Promise<boolean> {
     if (id === draft.ovitrapId && draft.labelScanned) return false;
     const { store } = this.#deps;

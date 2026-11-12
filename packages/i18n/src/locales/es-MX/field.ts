@@ -22,6 +22,8 @@ export const field = {
   "field.hint.takePhoto": "Toma una foto de la ovitrampa colocada para seguir.",
   "field.hint.scanLabel": "Escanea la etiqueta para seguir.",
   "field.scan.question.label": "Escanea la etiqueta de la ovitrampa",
+  "field.scan.labelPlacedAt":
+    "Esta ovitrampa ya está colocada en el punto {point}. Escanea una etiqueta nueva.",
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",
   "field.gps.searching": "Buscando tu ubicación…",
   "field.gps.searchingAccuracy": "Buscando tu ubicación… ± {meters} m",

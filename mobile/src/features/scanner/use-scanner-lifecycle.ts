@@ -52,7 +52,9 @@ function subscribeLifecycle(
     tokens.subscribe(retire),
   ];
   const app = AppState.addEventListener("change", (state) => {
-    if (state !== "active") stop();
+    // The camera view stays mounted: the system releases the camera in the background and takes it
+    // back by itself. Tearing the view down here made it flap on every short pause.
+    if (state !== "active") retire();
   });
   return () => {
     stop();

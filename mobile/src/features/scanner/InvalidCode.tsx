@@ -15,12 +15,23 @@ const ERROR_KEYS: Readonly<Record<ScannerError, MessageKey>> = {
 };
 
 /** A code that does not work, in plain words. It never reveals what the code belongs to. */
-export function InvalidCode({ reason }: { readonly reason: ScannerError }) {
+export function InvalidCode({
+  reason,
+  pointCode = null,
+}: {
+  readonly reason: ScannerError;
+  /** Where an already placed label is, when the phone knows it. */
+  readonly pointCode?: string | null;
+}) {
   const t = useT();
   return (
     <InfoNotice
       tone={reason === "storage" ? "danger" : "warning"}
-      message={t(ERROR_KEYS[reason])}
+      message={
+        reason === "labelUsed" && pointCode !== null
+          ? t("field.scan.labelPlacedAt", { point: pointCode })
+          : t(ERROR_KEYS[reason])
+      }
     />
   );
 }

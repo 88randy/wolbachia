@@ -5,6 +5,7 @@ import { EmptyState } from "../../ui/EmptyState.tsx";
 import { Skeleton } from "../../ui/Skeleton.tsx";
 import { ChoiceRow } from "../field-ui/ChoiceRow.tsx";
 import { StepQuestion } from "../field-ui/StepQuestion.tsx";
+import { pendingDeliveries } from "./pending-deliveries.ts";
 import { ReceiptFrame } from "./ReceiptFrame.tsx";
 import type { M05Model } from "./use-m-05.ts";
 
@@ -26,8 +27,10 @@ export function ReleasePicker({ model }: { readonly model: M05Model }) {
         <Skeleton />
       </ReceiptFrame>
     );
-  const releases = state.assignments.flatMap((assignment) =>
-    assignment.releases.map((release) => ({ assignment, release })),
+  const releases = pendingDeliveries(
+    state.assignments,
+    state.shiftId,
+    state.drafts.map((draft) => draft.releaseId),
   );
   const isEmpty = releases.length === 0 && state.drafts.length === 0;
   return (

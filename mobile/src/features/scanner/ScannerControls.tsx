@@ -19,7 +19,7 @@ export function ScannerControls({ model }: { readonly model: M07Model }) {
   const isManual = isTyping || model.cameraError !== null;
   return (
     <View className="gap-3">
-      {model.error ? <InvalidCode reason={model.error} /> : null}
+      {model.error ? <InvalidCode reason={model.error} pointCode={model.errorPoint} /> : null}
       <CameraControls model={model} />
       {isManual ? (
         <>
