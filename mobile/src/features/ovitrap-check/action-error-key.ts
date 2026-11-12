@@ -1,7 +1,7 @@
 import { StaleCaptureError, ConcurrentCaptureError } from "./capture-identity.ts";
 import type { MessageKey } from "@wolbachia/i18n";
 import { OutboxWriteError } from "../../outbox/outbox-repository.ts";
-import { CatalogChangedError, PendingDraftError } from "./ports.ts";
+import { CaptureBlockedError, CatalogChangedError, PendingDraftError } from "./ports.ts";
 import { ImmutableCaptureError } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
 import { CameraError } from "../../attachments/photo-acquisition.ts";
@@ -28,9 +28,21 @@ function acquisitionErrorKey(error: unknown): MessageKey | null {
     return EVIDENCE_KEYS[error.code] ?? "mobile.camera.fileFailed";
   return null;
 }
+const BLOCKED_KEYS: Readonly<Record<string, MessageKey>> = {
+  shift: "mobile.ovitrap.shiftBlocked",
+  review: "mobile.ovitrap.blockedReview",
+  evidence: "mobile.ovitrap.blockedPhoto",
+  prepare: "mobile.ovitrap.blockedPrepare",
+};
+const OUTDATED_GATES = ["scope", "assignment", "point", "catalog", "rules", "weekContext"];
+function blockedKey(gate: string): MessageKey {
+  if (OUTDATED_GATES.includes(gate)) return "mobile.ovitrap.blockedOutdated";
+  return BLOCKED_KEYS[gate] ?? "mobile.ovitrap.blockedStep";
+}
 export function actionErrorKey(error: unknown): MessageKey {
   const acquisition = acquisitionErrorKey(error);
   if (acquisition) return acquisition;
+  if (error instanceof CaptureBlockedError) return blockedKey(error.gate);
   if (error instanceof StaleCaptureError) return "mobile.ovitrap.staleView";
   if (error instanceof ShiftBlockedError) return "mobile.ovitrap.shiftBlocked";
   if (error instanceof ImmutableCaptureError) return "mobile.ovitrap.immutableEdit";

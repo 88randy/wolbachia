@@ -7,6 +7,7 @@ import { EmptyState } from "../../ui/EmptyState.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
 import { Skeleton } from "../../ui/Skeleton.tsx";
+import { UnfinishedNotice } from "../ovitrap-check/UnfinishedNotice.tsx";
 import { RouteCard } from "./RouteCard.tsx";
 import { displayPointCode } from "./point-code.ts";
 import { ACTION_KEYS } from "./presentation.ts";
@@ -43,6 +44,7 @@ export function P9Screen() {
         ) : undefined
       }
     >
+      <UnfinishedNotice />
       <RouteProblems model={model} />
       {model.state === null ? (
         model.isLoading ? (

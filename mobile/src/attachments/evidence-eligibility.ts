@@ -6,6 +6,8 @@ export interface EvidenceSelection {
   readonly isFinal: boolean;
 }
 
+// A receipt signed at the warehouse has no phone signature (signature_upload_id null): it waits for no
+// file. Only a receipt that names a signature waits until that file is verified.
 // UNION deduplicates IDs even with corrupt/cyclic lineage. Edges inspect pending work only;
 // ordinary historical receipts are not reclassified or scanned as dependency blockers.
 const DEPENDENCIES = `edges(parent,child) AS (
@@ -29,7 +31,8 @@ const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) re
       WHERE ref.type<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f WHERE f.id=ref.value
         AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?
         AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id))))))
-    OR (type='supplies.receive' AND NOT EXISTS(SELECT 1 FROM attachment_file f
+    OR (type='supplies.receive' AND json_type(waiting.payload,'$.signature_upload_id') IS NOT NULL
+      AND json_type(waiting.payload,'$.signature_upload_id')<>'null' AND NOT EXISTS(SELECT 1 FROM attachment_file f
       JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
       WHERE f.id=json_extract(waiting.payload,'$.signature_upload_id')
         AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))
