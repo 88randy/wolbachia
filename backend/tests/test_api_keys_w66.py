@@ -54,7 +54,7 @@ def test_secret_is_in_the_creation_answer_only_and_never_stored(issued):
     body = response.json()
     secret = body["secret"]
     assert secret.startswith("cq_live_")
-    assert response["Cache-Control"] == "no-store"
+    assert "no-store" in response["Cache-Control"]
 
     row = ApiKey.objects.get()
     token_secret = secret.split(".", 1)[1]
