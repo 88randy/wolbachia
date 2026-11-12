@@ -34,7 +34,7 @@ export function CenterBelongings({ center }: { center: CenterRow }) {
     label: t(count.labelKey),
     value: (
       <CountLink
-        value={formatNumber(center[count.field])}
+        value={formatNumber(center[count.field] ?? 0)}
         link={{ to: count.to, search: { center: center.id } }}
       />
     ),

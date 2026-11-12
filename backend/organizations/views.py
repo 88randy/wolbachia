@@ -52,6 +52,7 @@ from organizations.serializers import (
     CenterMoveResponseSerializer,
     CenterMoveStockSerializer,
     CenterReadinessSerializer,
+    CenterSerializer,
     CenterUpdateSerializer,
     LogoUploadSerializer,
     MembershipChangeSerializer,
@@ -71,6 +72,7 @@ from organizations.services import (
     ProfileCopy,
     copy_profile,
     create_managed_membership,
+    effective_scope,
     update_membership,
     update_organization,
     update_profile_permissions,
@@ -96,6 +98,10 @@ class MeView(APIView):
         organization = context.organization
         remember_active_organization(request, organization.pk if organization else None)
         return Response(MeSerializer(context).data)
+
+
+# Readers who also manage centers see who closed one, why, and what it holds.
+CENTER_ADMIN_READ_CODES = frozenset({CENTER_UPDATE, CENTER_DEACTIVATE})
 
 
 def _count(model: Any, field: str, **filters: Any) -> Coalesce:  # noqa: ANN401 -- any model
@@ -154,13 +160,24 @@ class CenterViewSet(
         queryset = super().get_queryset()
         if self.action not in ("list", "retrieve"):
             return queryset
-        queryset = _with_counts(queryset)
+        if self._is_center_admin():
+            queryset = _with_counts(queryset)
         if self.action == "list":
             query = CenterListQuerySerializer(data=self.request.query_params)
             query.is_valid(raise_exception=True)
             if not query.validated_data["include_inactive"]:
                 queryset = queryset.filter(is_active=True)
         return queryset
+
+    def _is_center_admin(self) -> bool:
+        permissions = effective_scope(self.request.membership).permissions  # type: ignore[attr-defined]
+        return bool(CENTER_ADMIN_READ_CODES & permissions)
+
+    def get_serializer_class(self) -> type[Any]:
+        """Who closed a center, why, and what it holds are for the center admins only."""
+        if getattr(self, "swagger_fake_view", False) or self._is_center_admin():
+            return CenterAdminSerializer
+        return CenterSerializer
 
     def _actor(self) -> User:
         return cast(User, self.request.user)

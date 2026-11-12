@@ -8,6 +8,7 @@ import styles from "../inventory.module.css";
 import { FormSection } from "../../components/templates/FormSection";
 import { useCan } from "../../session/use-can";
 import { useQuadrantName, NO_NAME } from "../../lookups/use-reference-names";
+import { QUADRANT_NAME_PERMISSIONS } from "../../lookups/lookup-permissions";
 import { MapPointPicker } from "../../map-picker/MapPointPicker";
 function LocationCenter(props: InventoryFieldsProps) {
   const { t } = useTranslation();
@@ -32,7 +33,8 @@ function LocationCenter(props: InventoryFieldsProps) {
 function LocationQuadrant(props: InventoryFieldsProps) {
   const { t } = useTranslation();
   const center = props.values["center_id"] ?? "";
-  const quadrantName = useQuadrantName(useCan()("quadrant.read"));
+  const can = useCan();
+  const quadrantName = useQuadrantName(QUADRANT_NAME_PERMISSIONS.some((code) => can(code)));
   const saved =
     props.previous && "quadrant_code" in props.previous ? props.previous.quadrant_code : null;
   const known = saved ?? quadrantName(props.values["quadrant_id"]);

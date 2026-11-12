@@ -124,6 +124,17 @@ describe("attestation middleware", () => {
     expect(mismatch).not.toHaveBeenCalled();
   });
 
+  test("portal settings are private: an answer for another identity is a mismatch", async () => {
+    setExpectedAttestation("A");
+    await expect(
+      get(
+        clientAnswering(() => attested("B")),
+        "/api/v1/portal-settings/",
+      ),
+    ).rejects.toBeInstanceOf(IdentityMismatchError);
+    expect(mismatch).toHaveBeenCalledOnce();
+  });
+
   test("error answers carry no data and are not compared", async () => {
     setExpectedAttestation("A");
 

@@ -13,15 +13,15 @@ export function readSignatureMode(value: unknown): SignatureMode {
 
 /**
  * Whether the receipt screen shows the signature pad. The app only shows the rule:
- * phone only always asks; warehouse only never asks; either asks while the delivery is not
- * signed yet (it waits for the phone).
+ * phone only always asks; either asks while the delivery is not signed yet (it waits for the
+ * phone). Warehouse only asks just like either: a release under that rule is always signed at
+ * the warehouse, so the pad shows only for a release made before the rule changed.
  */
 export function needsPhoneSignature(
   mode: SignatureMode,
   signature: DeliverySignature | null,
 ): boolean {
   if (mode === 2) return true;
-  if (mode === 1) return false;
   return signature?.state !== "signed";
 }
 

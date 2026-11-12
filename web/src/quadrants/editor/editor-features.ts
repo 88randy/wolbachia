@@ -77,7 +77,8 @@ export function editorFeatures(
   };
 }
 
-export function initialView(quadrants: readonly Schemas["Quadrant"][]) {
+/** Fits the outlines of any quadrant shape: full records or the codes-and-outlines lookup. */
+export function initialView(quadrants: readonly Parameters<typeof geometryOf>[0][]) {
   const vertices = quadrants.flatMap((item) => geometryOf(item)?.coordinates[0] ?? []);
   if (!vertices.length) return { longitude: -89.62, latitude: 20.97, zoom: 12 };
   const longitudes = vertices.map((point) => Number(point[0]));

@@ -85,7 +85,7 @@ export function permitFormChoicesOptions(client: ApiClient, identity: SessionIde
       const query = { page: 1, page_size: OPTIONS_PAGE_SIZE };
       const [types, quadrants] = await Promise.all([
         client.GET("/api/v1/permit-types/", { params: { query }, signal }),
-        client.GET("/api/v1/quadrants/", { params: { query }, signal }),
+        client.GET("/api/v1/lookups/quadrants/", { params: { query }, signal }),
       ]);
       return { types: unwrap(types).results, quadrants: unwrap(quadrants).results };
     },

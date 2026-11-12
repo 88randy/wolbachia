@@ -15,9 +15,10 @@ void test("mode 2 (phone only) always asks for the signature", () => {
   assert.equal(needsPhoneSignature(2, null), true);
 });
 
-void test("mode 1 (warehouse only) never shows the pad", () => {
-  assert.equal(needsPhoneSignature(1, PENDING), false);
+void test("mode 1 (warehouse only) shows the pad only for a release unsigned at the warehouse", () => {
   assert.equal(needsPhoneSignature(1, WAREHOUSE), false);
+  // Released before the rule changed: without the phone signature it could never be received.
+  assert.equal(needsPhoneSignature(1, PENDING), true);
 });
 
 void test("mode 0 (either) asks only while the delivery is not signed", () => {

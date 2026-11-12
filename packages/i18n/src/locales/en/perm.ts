@@ -33,6 +33,7 @@ export const perm: Record<keyof typeof source, string> = {
   "perm.verb.reveal_rfc": "Reveal tax ID of",
   "perm.verb.revoke_device_sessions": "End phone sessions of",
   "perm.verb.operational_read": "View operational data of",
+  "perm.verb.lookup": "View only the names of",
   "perm.verb.run": "Run",
   "perm.verb.sync": "Send",
   "perm.verb.bootstrap": "Prepare",

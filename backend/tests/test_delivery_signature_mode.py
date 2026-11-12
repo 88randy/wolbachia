@@ -81,7 +81,8 @@ def test_without_a_warehouse_signature_the_phone_receipt_completes_it():
         ("either", True, False, None),
         ("either", True, True, None),
         ("phone", True, False, None),
-        ("warehouse", True, False, "supply_signature_channel_not_allowed"),
+        # a release unsigned at the warehouse predates the rule: the phone signature receives it
+        ("warehouse", True, False, None),
         ("warehouse", True, True, "supply_signature_channel_not_allowed"),
     ],
 )

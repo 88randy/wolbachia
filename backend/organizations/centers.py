@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
 
-from django.db import DatabaseError, IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
+from rest_framework.exceptions import NotFound
 
 from accounts.models import User
 from core.exceptions import DomainError, FieldValidationError
@@ -72,6 +73,10 @@ def _audit(  # noqa: PLR0913 -- one audit receipt: action, actor, center, detail
 
 
 RETRYABLE_LOCK_SQLSTATES = frozenset({"55P03", "40P01"})
+# Same mode as `shift.open` takes on its motorcycle's center: it conflicts with deactivation.
+CENTER_SHARE_TRY_LOCK_SQL = (
+    "SELECT is_active FROM organizations_center WHERE id = %s FOR SHARE NOWAIT"
+)
 
 
 def _lock_center(center: Center) -> Center:
@@ -86,6 +91,30 @@ def _lock_center(center: Center) -> Center:
         if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_LOCK_SQLSTATES:
             raise AdministrationBusyError from error
         raise
+
+
+def require_center_authority(center: Center, actor: User, permission: str) -> None:
+    """Recheck under the center lock: the actor's live membership must still grant `permission`
+    over this center. A grant revoked after the request was authorized makes it opaque (404)."""
+    member = Membership.objects.filter(
+        organization_id=center.organization_id, user=actor, is_active=True
+    ).first()
+    if member is None or not effective_scope(member).allows(permission, str(center.pk)):
+        raise NotFound
+
+
+def lock_share_active_center(center_id: object) -> None:
+    """Shared try-lock on a destination center: it cannot be deactivated meanwhile (429)."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(CENTER_SHARE_TRY_LOCK_SQL, [center_id])
+            row = cursor.fetchone()
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_LOCK_SQLSTATES:
+            raise AdministrationBusyError from error
+        raise
+    if row is None or not row[0]:
+        raise CenterStateConflictError
 
 
 def require_all_centers_grant(membership: Membership) -> None:
@@ -129,6 +158,7 @@ def rename_center(center: Center, name: str, actor: User) -> Center:
         raise FieldValidationError("name", "required")
     with transaction.atomic():
         locked = _lock_center(center)
+        require_center_authority(locked, actor, CENTER_UPDATE)
         previous = locked.name
         locked.name = name.strip()
         locked.save(update_fields=["name", "updated_at"])
@@ -142,6 +172,7 @@ def deactivate_center(center: Center, reason: str, actor: User) -> Center:
 
     with transaction.atomic():
         locked = _lock_center(center)
+        require_center_authority(locked, actor, CENTER_DEACTIVATE)
         if not locked.is_active:
             raise CenterStateConflictError
         blockers = closure_blockers(locked)
@@ -168,6 +199,7 @@ def reactivate_center(center: Center, actor: User) -> Center:
     """Reactivate; the previous deactivation stays in the audit log."""
     with transaction.atomic():
         locked = _lock_center(center)
+        require_center_authority(locked, actor, CENTER_DEACTIVATE)
         if locked.is_active:
             raise CenterStateConflictError
         locked.is_active = True

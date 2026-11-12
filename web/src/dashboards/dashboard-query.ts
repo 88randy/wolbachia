@@ -50,7 +50,7 @@ export function quadrantChoicesOptions(
     key: ["analytics", "quadrant-choices", center],
     queryFn: async ({ signal }) => {
       const answer = unwrap(
-        await client.GET("/api/v1/quadrants/", {
+        await client.GET("/api/v1/lookups/quadrants/", {
           params: {
             query: { page_size: 100, ordering: "code", ...(center === "" ? {} : { center }) },
           },

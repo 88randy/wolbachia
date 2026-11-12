@@ -56,7 +56,7 @@ export function useCenterColumns(): DataTableColumn<CenterRow>[] {
     id: count.id,
     headerKey: count.headerKey,
     align: "end",
-    cell: (row) => formatNumber(row[count.field]),
+    cell: (row) => formatNumber(row[count.field] ?? 0),
     link: (row) => ({ to: count.to, search: { center: row.id } }),
   }));
   return [

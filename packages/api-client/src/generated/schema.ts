@@ -3193,6 +3193,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/lookups/quadrants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lookups_quadrants_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lookups/quadrants/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lookups_quadrants_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lookups/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lookups_users_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lookups/users/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lookups_users_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lots/": {
         parameters: {
             query?: never;
@@ -8078,7 +8182,12 @@ export interface components {
          * @enum {string}
          */
         CategoryEnum: "low" | "medium" | "high";
-        /** @description A center as the organization admin manages it; counts come from the queryset annotation. */
+        /**
+         * @description A center as the organization admin manages it; counts come from the queryset annotation.
+         *
+         *     Served only to holders of `center.update` or `center.deactivate`; every other reader gets
+         *     `CenterSerializer`, the same shape with the admin-only fields null.
+         */
         CenterAdmin: {
             /** Format: uuid */
             readonly id: string;
@@ -8091,14 +8200,14 @@ export interface components {
             readonly updated_at: string;
             /** Format: date-time */
             readonly deactivated_at: string | null;
-            readonly deactivated_reason: string;
+            readonly deactivated_reason: string | null;
             readonly deactivated_by_name?: string | null;
             /** @default 0 */
-            readonly quadrant_count: number;
+            readonly quadrant_count: number | null;
             /** @default 0 */
-            readonly warehouse_count: number;
+            readonly warehouse_count: number | null;
             /** @default 0 */
-            readonly motorcycle_count: number;
+            readonly motorcycle_count: number | null;
         };
         CenterCreateRequest: {
             code: string;
@@ -12508,6 +12617,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Quadrant"][];
         };
+        PaginatedQuadrantLookupList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["QuadrantLookup"][];
+        };
         PaginatedQuadrantVersionList: {
             /** @example 123 */
             count: number;
@@ -12970,6 +13094,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Transfer"][];
+        };
+        PaginatedUserLookupList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["UserLookup"][];
         };
         PaginatedWriteOffReadList: {
             /** @example 123 */
@@ -13970,6 +14109,29 @@ export interface components {
             center: string;
             code: string;
             geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        QuadrantLookup: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly center: string;
+            readonly current_version: components["schemas"]["QuadrantOutline"] | null;
+        };
+        QuadrantOutline: {
+            readonly geometry: {
                 /** @enum {string} */
                 type: "Polygon";
                 coordinates: number[][][];
@@ -16990,6 +17152,12 @@ export interface components {
             state: components["schemas"]["StateEnum"];
             /** Format: date-time */
             verified_at: string | null;
+        };
+        UserLookup: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            is_courier: boolean;
         };
         /**
          * @description * `integer` - Integer
@@ -23079,6 +23247,157 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedPlacementOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lookups_quadrants_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedQuadrantLookupList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lookups_quadrants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuadrantLookup"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lookups_users_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                include_inactive?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedUserLookupList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lookups_users_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this personnel. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLookup"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

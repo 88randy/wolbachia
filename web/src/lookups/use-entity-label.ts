@@ -3,6 +3,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { ENTITY_SOURCES, isUuid } from "./entity-sources";
+import { holdsAny } from "./lookup-permissions";
 import type { EntityKind, EntityLabel } from "./entity-sources";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
@@ -22,7 +23,7 @@ export function useEntityLabel(
     key: ["entity", kind, id ?? ""],
     queryFn: ({ signal }) => source.fetchOne(client, id ?? "", signal),
   });
-  const allowed = identity.permissions?.includes(source.permission) === true;
+  const allowed = holdsAny(identity.permissions, source.permission);
   const query = useQuery({
     ...options,
     enabled: options.enabled && allowed && isUuid(id),

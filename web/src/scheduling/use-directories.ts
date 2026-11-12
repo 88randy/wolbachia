@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useSessionIdentity } from "../session/use-session-identity";
-import { couriersOptions, quadrantsOptions } from "./scheduling-queries";
+import { couriersOptions, quadrantNamesOptions } from "./scheduling-queries";
 
 /**
  * `nameOf(courierId)`: the courier name when the people directory is readable, else a numbered
@@ -26,7 +26,7 @@ export function useCouriers(knownIds: readonly string[]) {
         ? t("scheduling.courier.none")
         : (names.get(id) ?? t("scheduling.courier.unknown"));
     const couriers = (directory ?? [])
-      .filter((person) => person.profiles.includes("courier") || ordered.includes(person.id))
+      .filter((person) => person.is_courier || ordered.includes(person.id))
       .map((person) => person.id);
     const unlisted = ordered.filter((id) => !couriers.includes(id));
     return { nameOf, ids: [...couriers, ...unlisted] };
@@ -40,7 +40,7 @@ export function useCourierNames(knownIds: readonly string[]) {
 export function useQuadrantCodes() {
   const client = useApiClient();
   const identity = useSessionIdentity();
-  const rows = useQuery(quadrantsOptions(client, identity)).data;
+  const rows = useQuery(quadrantNamesOptions(client, identity)).data;
   return useMemo(() => {
     const codes = new Map((rows ?? []).map((row) => [row.id, row.code]));
     return (id: string) => codes.get(id) ?? "…";

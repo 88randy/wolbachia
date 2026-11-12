@@ -3,6 +3,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
+from accounts.lookup_views import UserLookupViewSet
 from accounts.personnel_views import AccessLogViewSet
 from accounts.views import (
     CsrfView,
@@ -19,6 +20,7 @@ from accounts.views import (
 router = SimpleRouter()
 router.register("devices", DeviceViewSet, basename="device")
 router.register("users", UserViewSet, basename="user")
+router.register("lookups/users", UserLookupViewSet, basename="user-lookup")
 router.register("access-log", AccessLogViewSet, basename="access-log")
 
 urlpatterns = [

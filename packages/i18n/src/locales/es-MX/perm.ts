@@ -33,6 +33,7 @@ export const perm = {
   "perm.verb.reveal_rfc": "Ver RFC de",
   "perm.verb.revoke_device_sessions": "Cerrar sesiones de teléfono de",
   "perm.verb.operational_read": "Ver datos operativos de",
+  "perm.verb.lookup": "Ver solo nombres de",
   "perm.verb.run": "Ejecutar",
   "perm.verb.sync": "Enviar",
   "perm.verb.bootstrap": "Preparar",

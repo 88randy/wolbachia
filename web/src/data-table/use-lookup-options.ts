@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
+import { holdsAny } from "../lookups/lookup-permissions";
 import type { LookupSource } from "../lookups/lookup-sources";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import { useSessionIdentity } from "../session/use-session-identity";
@@ -12,7 +13,7 @@ export function useLookupOptions(source: LookupSource, search: string, enabled =
     key: ["lookup", source.id, search],
     queryFn: ({ signal }) => source.fetch(client, search, signal),
   });
-  const allowed = identity.permissions?.includes(source.permission) === true;
+  const allowed = holdsAny(identity.permissions, source.permission);
   return useQuery({
     ...options,
     enabled: options.enabled && allowed && enabled,

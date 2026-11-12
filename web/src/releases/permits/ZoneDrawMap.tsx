@@ -19,7 +19,7 @@ import type { PolygonBody } from "./permit-geometry";
 
 interface Props {
   source: MapSource;
-  quadrants: readonly Schemas["Quadrant"][];
+  quadrants: readonly Schemas["QuadrantLookup"][];
   zone: PolygonBody | null;
   onZone: (zone: PolygonBody | null) => void;
   onFailure: () => void;

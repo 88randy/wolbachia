@@ -49,6 +49,14 @@ void test("mode 1 (warehouse): no pad, the receipt only confirms quantities and 
   assert.equal(receiptEvent(draft).payload.signature_upload_id, null);
 });
 
+void test("mode 1 (warehouse): a release made before the rule changed asks for the phone signature", () => {
+  const draft = draftFor(1, false);
+  assert.equal(draft.needsSignature, true);
+  assert.throws(() => {
+    validateReceipt(draft);
+  }, /signature_required/);
+});
+
 void test("mode 0 (either): asks only while the delivery is not signed at the warehouse", () => {
   assert.equal(draftFor(0, false).needsSignature, true);
   const signed = draftFor(0, true);

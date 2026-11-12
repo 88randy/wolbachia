@@ -1,3 +1,5 @@
+import { isPublicApiPath } from "./public-api";
+
 /**
  * The server attests the identity of every response (#82, docs/api-conventions.md "Session
  * identity"): `X-Session-Identity` is an opaque HMAC of the (user, active organization, session) a
@@ -46,11 +48,8 @@ export function resetAttestation(): void {
   onMismatch = undefined;
 }
 
-/**
- * Never compared: login, logout and refresh change the identity on purpose, and the public portal
- * answers anonymous visitors with the same aggregates for everyone (no session, so no header).
- */
-const EXEMPT_PATH_PREFIXES = ["/api/v1/auth/", "/api/v1/portal/"];
+/** Never compared: login, logout and refresh change the identity on purpose. */
+const AUTH_PATH_PREFIX = "/api/v1/auth/";
 /** `/me/` is how an identity is learned: it may be answered while no value is expected yet. */
 const ME_PATH = "/api/v1/me/";
 
@@ -60,7 +59,8 @@ type Kind = "exempt" | "me" | "scoped";
 const issuedUnder = new Map<string, { kind: Kind; expected: string | undefined }>();
 
 function kindOf(schemaPath: string): Kind {
-  if (EXEMPT_PATH_PREFIXES.some((prefix) => schemaPath.startsWith(prefix))) return "exempt";
+  // The public portal answers anonymous visitors the same for everyone (no session, no header).
+  if (schemaPath.startsWith(AUTH_PATH_PREFIX) || isPublicApiPath(schemaPath)) return "exempt";
   return schemaPath === ME_PATH ? "me" : "scoped";
 }
 

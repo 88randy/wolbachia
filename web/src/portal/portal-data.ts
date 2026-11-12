@@ -116,16 +116,24 @@ export function isPortalMissing(error: unknown): boolean {
 
 const ONE_MINUTE_MS = 60_000;
 
+/**
+ * Each portal query is keyed by its public API path first: that is what keeps it (and only it)
+ * across sign in and sign out (`session/public-api.ts`).
+ */
+const PORTAL_HOME = "/api/v1/portal/{org_slug}/";
+const PORTAL_TRENDS = "/api/v1/portal/{org_slug}/releases-by-week/";
+const PORTAL_MAP = "/api/v1/portal/{org_slug}/coverage/";
+
 export function usePortalHome(slug: string) {
   const client = useApiClient();
   return useQuery({
-    queryKey: ["portal", slug, "home"],
+    queryKey: [PORTAL_HOME, slug],
     staleTime: ONE_MINUTE_MS,
     retry: false,
     queryFn: async ({ signal }) =>
       readHome(
         unwrap(
-          await client.GET("/api/v1/portal/{org_slug}/", {
+          await client.GET(PORTAL_HOME, {
             params: { path: { org_slug: slug } },
             signal,
           }),
@@ -137,13 +145,13 @@ export function usePortalHome(slug: string) {
 export function usePortalTrends(slug: string) {
   const client = useApiClient();
   return useQuery({
-    queryKey: ["portal", slug, "trends"],
+    queryKey: [PORTAL_TRENDS, slug],
     staleTime: ONE_MINUTE_MS,
     retry: false,
     queryFn: async ({ signal }) =>
       readTrends(
         unwrap(
-          await client.GET("/api/v1/portal/{org_slug}/releases-by-week/", {
+          await client.GET(PORTAL_TRENDS, {
             params: { path: { org_slug: slug } },
             signal,
           }),
@@ -155,13 +163,13 @@ export function usePortalTrends(slug: string) {
 export function usePortalMap(slug: string) {
   const client = useApiClient();
   return useQuery({
-    queryKey: ["portal", slug, "map"],
+    queryKey: [PORTAL_MAP, slug],
     staleTime: ONE_MINUTE_MS,
     retry: false,
     queryFn: async ({ signal }) =>
       readMap(
         unwrap(
-          await client.GET("/api/v1/portal/{org_slug}/coverage/", {
+          await client.GET(PORTAL_MAP, {
             params: { path: { org_slug: slug } },
             signal,
           }),

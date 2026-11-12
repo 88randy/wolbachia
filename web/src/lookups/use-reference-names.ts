@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import { centersOptions } from "../centers/centers-query";
-import { couriersOptions, quadrantsOptions } from "../scheduling/scheduling-queries";
+import { couriersOptions, quadrantNamesOptions } from "../scheduling/scheduling-queries";
 import { useSessionIdentity } from "../session/use-session-identity";
 
 /** What a screen shows when a name cannot be resolved: never an id. */
@@ -26,7 +26,7 @@ export function useCenterName(): (id: Id) => string {
 export function useQuadrantName(isAllowed = true): (id: Id) => string {
   const client = useApiClient();
   const identity = useSessionIdentity();
-  const options = quadrantsOptions(client, identity);
+  const options = quadrantNamesOptions(client, identity);
   const quadrants = useQuery({ ...options, enabled: options.enabled !== false && isAllowed }).data;
   const names = useMemo(
     () => new Map((quadrants ?? []).map((quadrant) => [quadrant.id, quadrant.code])),

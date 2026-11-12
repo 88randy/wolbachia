@@ -84,19 +84,27 @@ class MeSerializer(serializers.Serializer[Any]):
     must_change_password = serializers.BooleanField(source="user.must_change_password")
 
 
-class CenterSerializer(OrgScopedModelSerializer):
-    class Meta:
-        model = Center
-        fields = ["id", "code", "name"]
-        read_only_fields = fields
+CENTER_ADMIN_ONLY_FIELDS = (
+    "deactivated_at",
+    "deactivated_reason",
+    "deactivated_by_name",
+    "quadrant_count",
+    "warehouse_count",
+    "motorcycle_count",
+)
 
 
 class CenterAdminSerializer(OrgScopedModelSerializer):
-    """A center as the organization admin manages it; counts come from the queryset annotation."""
+    """A center as the organization admin manages it; counts come from the queryset annotation.
 
-    quadrant_count = serializers.IntegerField(read_only=True, default=0)
-    warehouse_count = serializers.IntegerField(read_only=True, default=0)
-    motorcycle_count = serializers.IntegerField(read_only=True, default=0)
+    Served only to holders of `center.update` or `center.deactivate`; every other reader gets
+    `CenterSerializer`, the same shape with the admin-only fields null.
+    """
+
+    quadrant_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    warehouse_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    motorcycle_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    deactivated_reason = serializers.CharField(read_only=True, allow_null=True)
     deactivated_by_name = AuthorNameField("deactivated_by")
 
     class Meta:
@@ -116,6 +124,14 @@ class CenterAdminSerializer(OrgScopedModelSerializer):
             "motorcycle_count",
         ]
         read_only_fields = fields
+
+
+class CenterSerializer(CenterAdminSerializer):
+    """A center for any `center.read` holder: who closed it, why and what it holds stay null."""
+
+    def to_representation(self, instance: Center) -> dict[str, Any]:
+        data = dict(super().to_representation(instance))
+        return {**data, **dict.fromkeys(CENTER_ADMIN_ONLY_FIELDS)}
 
 
 class CenterCreateSerializer(serializers.Serializer[Any]):

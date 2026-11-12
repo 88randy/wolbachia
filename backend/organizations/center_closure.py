@@ -144,6 +144,7 @@ def _failure(error: Exception) -> str:
 def _move_one(motorcycle: Motorcycle, move: tuple[Center, Center], actor: User) -> str:
     """Move one motorcycle under its try-lock after re-authorizing the actor (writes Motorcycle
     and the audit). Returns the item status; raises for an item failure."""
+    from organizations.centers import lock_share_active_center, require_center_authority
     from shifts.access import lock_authorized_motorcycle
     from shifts.permissions import MOTORCYCLE_MANAGE
     from shifts.services import update_motorcycle
@@ -152,6 +153,10 @@ def _move_one(motorcycle: Motorcycle, move: tuple[Center, Center], actor: User) 
     with lock_authorized_motorcycle(motorcycle, actor, MOTORCYCLE_MANAGE) as locked:
         if locked.center_id != origin.pk:
             return "skipped"
+        # The destination is rechecked under the move locks (Motorcycle, then a shared center
+        # lock: the order shift.open uses): still active and still inside the grant.
+        lock_share_active_center(destination.pk)
+        require_center_authority(destination, actor, MOTORCYCLE_MANAGE)
         update_motorcycle(locked, {"center": destination})
         PlatformAuditEntry.objects.create(
             action=PlatformAuditEntry.Action.MOTORCYCLE_CENTER_MOVE,

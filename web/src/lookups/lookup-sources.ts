@@ -1,5 +1,7 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
+import { PERSON_NAME_PERMISSIONS, QUADRANT_NAME_PERMISSIONS } from "./lookup-permissions";
+import type { RequiredPermission } from "./lookup-permissions";
 
 /** One option of a picker filter: the id that goes in the URL and the human label shown. */
 export interface LookupOption {
@@ -13,11 +15,11 @@ export interface LookupOption {
 /**
  * Where a picker filter gets its options. `fetch` asks the API for the first page that matches
  * `search` (server-side search, never a full table in the browser). `permission` hides the
- * picker when the user cannot read that resource.
+ * picker when the user cannot read that resource (a list: any one code is enough).
  */
 export interface LookupSource {
   id: string;
-  permission: string;
+  permission: RequiredPermission;
   fetch: (client: ApiClient, search: string, signal: AbortSignal) => Promise<LookupOption[]>;
 }
 
@@ -75,39 +77,33 @@ function matches(label: string, search: string): boolean {
   return label.toLowerCase().includes(search.trim().toLowerCase());
 }
 
-/** Active operational personnel by name. The endpoint has no search, so the page is filtered here. */
+/** Active staff by name, from the names-only lookup (server-side search). */
 export const PERSON_LOOKUP: LookupSource = {
   id: "people",
-  permission: "user.operational_read",
+  permission: PERSON_NAME_PERMISSIONS,
   fetch: async (client, search, signal) => {
     const page = unwrap(
-      await client.GET("/api/v1/users/operational/", {
-        params: { query: { page_size: LOCAL_PAGE, is_active: true } },
+      await client.GET("/api/v1/lookups/users/", {
+        params: { query: { page_size: PAGE, ...(search ? { search } : {}) } },
         signal,
       }),
     );
-    return page.results
-      .map((person) => ({ value: person.id, label: person.display_name }))
-      .filter((option) => matches(option.label, search))
-      .slice(0, PAGE);
+    return page.results.map((person) => ({ value: person.id, label: person.display_name }));
   },
 };
 
-/** Quadrants by code. The endpoint has no search, so the page is filtered here. */
+/** Quadrants by code, from the codes-only lookup (server-side search). */
 export const QUADRANT_LOOKUP: LookupSource = {
   id: "quadrants",
-  permission: "quadrant.read",
+  permission: QUADRANT_NAME_PERMISSIONS,
   fetch: async (client, search, signal) => {
     const page = unwrap(
-      await client.GET("/api/v1/quadrants/", {
-        params: { query: { page_size: LOCAL_PAGE } },
+      await client.GET("/api/v1/lookups/quadrants/", {
+        params: { query: { page_size: PAGE, ...(search ? { search } : {}) } },
         signal,
       }),
     );
-    return page.results
-      .map((quadrant) => ({ value: quadrant.id, label: quadrant.code }))
-      .filter((option) => matches(option.label, search))
-      .slice(0, PAGE);
+    return page.results.map((quadrant) => ({ value: quadrant.id, label: quadrant.code }));
   },
 };
 

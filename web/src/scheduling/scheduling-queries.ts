@@ -64,14 +64,28 @@ export function assignmentsOptions(client: ApiClient, identity: SessionIdentity)
   });
 }
 
-/** Display names of couriers. A missing or forbidden directory never blocks the screen. */
+/** Display names of staff (names only). A missing or forbidden directory never blocks the screen. */
 export function couriersOptions(client: ApiClient, identity: SessionIdentity) {
   return orgScopedQueryOptions(identity, {
-    key: ["people", "operational"],
+    key: ["people", "names"],
     queryFn: async ({ signal }) =>
       unwrap(
-        await client.GET("/api/v1/users/operational/", {
-          params: { query: { is_active: true, page_size: MAX_PAGE } },
+        await client.GET("/api/v1/lookups/users/", {
+          params: { query: { page_size: MAX_PAGE } },
+          signal,
+        }),
+      ).results,
+  });
+}
+
+/** Quadrant codes and outlines (no blocks, points or history), for names and pickers. */
+export function quadrantNamesOptions(client: ApiClient, identity: SessionIdentity) {
+  return orgScopedQueryOptions(identity, {
+    key: ["quadrants", "names"],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await client.GET("/api/v1/lookups/quadrants/", {
+          params: { query: { page_size: MAX_PAGE } },
           signal,
         }),
       ).results,

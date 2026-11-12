@@ -2,12 +2,14 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from geography.decisions.views import InterventionViewSet
+from geography.lookup_views import QuadrantLookupViewSet
 from geography.map_tiles import MapTilesView
 from geography.release_point_views import ReleasePointViewSet
 from geography.views import BlockViewSet, QuadrantViewSet, SamplingPointViewSet
 
 router = SimpleRouter()
 router.register("quadrants", QuadrantViewSet, basename="quadrant")
+router.register("lookups/quadrants", QuadrantLookupViewSet, basename="quadrant-lookup")
 router.register("blocks", BlockViewSet, basename="block")
 router.register("sampling-points", SamplingPointViewSet, basename="sampling-point")
 router.register("release-points", ReleasePointViewSet, basename="release-point")

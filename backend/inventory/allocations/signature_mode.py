@@ -45,13 +45,15 @@ def receipt_signature_problem(mode: str, has_signature: bool, warehouse_signed: 
 
     A receipt without its own signature is accepted only when the release already carries the
     warehouse-screen signature, which is possible in `either` and `warehouse` mode. In `phone`
-    mode a signature is always needed; in `warehouse` mode a new one is not allowed.
+    mode a signature is always needed. In `warehouse` mode a second one is not allowed, but a
+    release without the warehouse signature (made before the rule changed: `warehouse` mode
+    refuses to release unsigned) still takes the phone signature, or it could never be received.
     """
     if not has_signature:
         if mode == "phone" or not warehouse_signed:
             return "supply_signature_required"
         return None
-    if mode == "warehouse":
+    if mode == "warehouse" and warehouse_signed:
         return "supply_signature_channel_not_allowed"
     return None
 

@@ -5,7 +5,7 @@ import { zoneFromQuadrants } from "./zone-from-quadrants";
 import type { PolygonBody } from "./permit-geometry";
 
 interface Props {
-  quadrants: readonly Schemas["Quadrant"][];
+  quadrants: readonly Schemas["QuadrantLookup"][];
   selected: readonly string[];
   onSelect: (ids: string[], zone: PolygonBody | null) => void;
 }

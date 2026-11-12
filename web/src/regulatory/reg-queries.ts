@@ -246,7 +246,7 @@ export function quadrantsOfCenterOptions({ client, identity }: RegScope, centerI
     key: ["regulatory", "quadrants", centerId],
     queryFn: async ({ signal }) =>
       unwrap(
-        await client.GET("/api/v1/quadrants/", {
+        await client.GET("/api/v1/lookups/quadrants/", {
           params: { query: { center: centerId, page_size: 100 } },
           signal,
         }),

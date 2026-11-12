@@ -19,7 +19,8 @@ async function labelOf({ scope, kind, id }: NameRequest, signal: AbortSignal) {
       return row.name || row.code;
     }
     case "quadrant":
-      return unwrap(await client.GET("/api/v1/quadrants/{id}/", { params: path, signal })).code;
+      return unwrap(await client.GET("/api/v1/lookups/quadrants/{id}/", { params: path, signal }))
+        .code;
     case "location": {
       const row = unwrap(await client.GET("/api/v1/locations/{id}/", { params: path, signal }));
       return row.name || row.code;
@@ -29,7 +30,8 @@ async function labelOf({ scope, kind, id }: NameRequest, signal: AbortSignal) {
     case "bag":
       return unwrap(await client.GET("/api/v1/bags/{id}/", { params: path, signal })).code;
     case "user":
-      return unwrap(await client.GET("/api/v1/users/{id}/", { params: path, signal })).display_name;
+      return unwrap(await client.GET("/api/v1/lookups/users/{id}/", { params: path, signal }))
+        .display_name;
   }
 }
 

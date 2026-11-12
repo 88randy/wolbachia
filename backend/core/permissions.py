@@ -41,3 +41,22 @@ class HasPermissionCode(BasePermission):
             str(center) if center is not None else None,
             str(quadrant) if quadrant is not None else None,
         )
+
+
+class HasAnyPermissionCode(BasePermission):
+    """Grant access when ANY code of `required_any_permissions[action]` is held.
+
+    For narrow lookups (names and codes) that a narrow code or the broad read code both unlock.
+    Scoping stays the view's job: it filters by the union of the grants of those codes.
+    """
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        required_by_action: Mapping[str, tuple[str, ...]] = getattr(
+            view, "required_any_permissions", {}
+        )
+        codes = required_by_action.get(getattr(view, "action", None) or "", ())
+        membership = getattr(request, "membership", None)
+        if not codes or membership is None:
+            return False
+        scope = effective_scope(membership)
+        return any(scope.allows(code) for code in codes)

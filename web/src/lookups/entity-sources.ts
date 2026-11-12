@@ -1,5 +1,7 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
+import { PERSON_NAME_PERMISSIONS, QUADRANT_NAME_PERMISSIONS } from "./lookup-permissions";
+import type { RequiredPermission } from "./lookup-permissions";
 
 /** Kinds of referenced records the UI can name. */
 export type EntityKind = "center" | "quadrant" | "location" | "supply" | "user";
@@ -12,8 +14,8 @@ export interface EntityLabel {
 }
 
 interface EntitySource {
-  /** Permission needed to read the record; without it the name shows as "—". */
-  permission: string;
+  /** Permission needed to read the record (a list: any one); without it the name is "—". */
+  permission: RequiredPermission;
   fetchOne: (client: ApiClient, id: string, signal: AbortSignal) => Promise<EntityLabel>;
 }
 
@@ -33,10 +35,10 @@ export const ENTITY_SOURCES: Record<EntityKind, EntitySource> = {
     },
   },
   quadrant: {
-    permission: "quadrant.read",
+    permission: QUADRANT_NAME_PERMISSIONS,
     fetchOne: async (client, id, signal) => {
       const row = unwrap(
-        await client.GET("/api/v1/quadrants/{id}/", { params: { path: { id } }, signal }),
+        await client.GET("/api/v1/lookups/quadrants/{id}/", { params: { path: { id } }, signal }),
       );
       return { label: row.code };
     },
@@ -60,10 +62,10 @@ export const ENTITY_SOURCES: Record<EntityKind, EntitySource> = {
     },
   },
   user: {
-    permission: "user.read",
+    permission: PERSON_NAME_PERMISSIONS,
     fetchOne: async (client, id, signal) => {
       const row = unwrap(
-        await client.GET("/api/v1/users/{id}/", { params: { path: { id } }, signal }),
+        await client.GET("/api/v1/lookups/users/{id}/", { params: { path: { id } }, signal }),
       );
       return { label: row.display_name };
     },
