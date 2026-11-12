@@ -8,7 +8,7 @@ import {
   labelsSearchSchema,
 } from "../../labels/label-kinds";
 import { toLabelRecord } from "../../labels/label-records";
-import { PrintLabelsButton } from "../../labels/PrintLabelsButton";
+import { LabelPrintPanel } from "../../labels/LabelPrintPanel";
 import { useLabelText } from "../../labels/use-label-text";
 import { useCan } from "../../session/use-can";
 import { LabelControls } from "./LabelControls";
@@ -28,18 +28,14 @@ function LabelTool({
   const text = useLabelText();
   const model = useLabelPicker(start);
   return (
-    <ListPage
-      title={t("inventory.labels.title")}
-      description={t("inventory.labels.description")}
-      actions={
-        <PrintLabelsButton
-          variant="primary"
-          records={model.selected.map((source) => toLabelRecord(source, text))}
-        />
-      }
-    >
+    <ListPage title={t("inventory.labels.title")} description={t("inventory.labels.description")}>
       <LabelControls kinds={kinds} kind={model.kind} onKind={model.chooseKind} />
-      <LabelPicker model={model} />
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        <LabelPicker model={model} />
+        <div className="min-w-0 xl:sticky xl:top-4 xl:self-start">
+          <LabelPrintPanel records={model.selected.map((source) => toLabelRecord(source, text))} />
+        </div>
+      </div>
     </ListPage>
   );
 }

@@ -12,6 +12,22 @@ export interface LabelRecord {
   code: string;
   /** One or two short context lines (a name, a date). Never ids. */
   lines: readonly string[];
+  /** Big text to show when `code` looks like an id (for example the point of an ovitrap). */
+  fallbackCode?: string;
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Ids are never shown to people. */
+export function looksLikeId(text: string): boolean {
+  return UUID_PATTERN.test(text.trim());
+}
+
+/** What a person reads on a label or in a list: the big text and the context lines, never an id. */
+export function visibleText(record: LabelRecord): { heading: string; lines: readonly string[] } {
+  if (!looksLikeId(record.code)) return { heading: record.code, lines: record.lines };
+  const heading = record.fallbackCode ?? record.lines[0] ?? "";
+  return { heading, lines: record.fallbackCode === undefined ? record.lines.slice(1) : [] };
 }
 
 /**

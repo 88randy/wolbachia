@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { inventoryLot, inventoryPage } from "../../test/inventory-fixtures";
@@ -50,20 +50,22 @@ test("choosing a kind reads that kind from the API", async () => {
   );
 });
 
-test("ticked records open the print dialog with format and copies", async () => {
+test("marking records updates the live preview, with format and copies and no dialog", async () => {
   const user = userEvent.setup();
   await openInventory({
     path: "/inventory/labels",
     routes: { "GET /api/v1/lots/": () => Response.json(inventoryPage([inventoryLot()])) },
   });
-  const print = await screen.findByRole("button", { name: "Imprimir etiquetas" });
+  const print = await screen.findByRole("button", { name: "Imprimir" });
   expect(print.getAttribute("aria-disabled")).toBe("true");
+  expect(screen.queryAllByTestId("label")).toHaveLength(0);
+  screen.getByRole("combobox", { name: "Tamaño de etiqueta" });
+  screen.getByLabelText("Copias de cada etiqueta");
   await user.click(await screen.findByRole("checkbox", { name: "Marcar LOT-01" }));
-  await user.click(screen.getByRole("button", { name: "Imprimir etiquetas" }));
-  const dialog = await screen.findByRole("dialog");
-  within(dialog).getByRole("combobox", { name: "Tamaño de etiqueta" });
-  within(dialog).getByLabelText("Copias de cada etiqueta");
-  expect(within(dialog).getAllByTestId("label")).toHaveLength(1);
+  expect(await screen.findAllByTestId("label")).toHaveLength(2);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await user.click(screen.getByRole("checkbox", { name: "Marcar LOT-01" }));
+  expect(screen.queryAllByTestId("label")).toHaveLength(0);
 });
 
 test("a deep link by human code ticks that record", async () => {

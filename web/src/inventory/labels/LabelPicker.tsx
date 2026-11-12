@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchField } from "../../forms/SearchField";
 import { toLabelRecord } from "../../labels/label-records";
+import { visibleText } from "../../labels/label-record";
 import type { LabelSource } from "../../labels/label-records";
 import { useLabelText } from "../../labels/use-label-text";
 import { Button } from "../../ui/Button";
@@ -16,23 +17,21 @@ type Model = ReturnType<typeof useLabelPicker>;
 
 function PickerRow({ model, source }: { model: Model; source: LabelSource }) {
   const { t } = useTranslation();
-  const record = toLabelRecord(source, useLabelText());
+  const { heading, lines } = visibleText(toLabelRecord(source, useLabelText()));
   const id = `label-row-${source.row.id}`;
   return (
     <li className="flex items-center gap-3 border-b border-line py-2 last:border-0">
       <Checkbox
         id={id}
         checked={model.selected.some((entry) => entry.row.id === source.row.id)}
-        aria-label={t("inventory.labels.rowSelect", { code: record.code })}
+        aria-label={t("inventory.labels.rowSelect", { code: heading })}
         onCheckedChange={() => {
           model.toggle(source);
         }}
       />
       <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer flex-col">
-        <span className="text-sm font-semibold whitespace-nowrap text-ink">{record.code}</span>
-        {record.lines.length > 0 && (
-          <span className="text-xs text-ink-3">{record.lines.join(" · ")}</span>
-        )}
+        <span className="text-sm font-semibold whitespace-nowrap text-ink">{heading}</span>
+        {lines.length > 0 && <span className="text-xs text-ink-3">{lines.join(" · ")}</span>}
       </label>
     </li>
   );
