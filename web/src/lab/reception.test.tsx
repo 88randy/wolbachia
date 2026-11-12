@@ -309,7 +309,7 @@ test("received details show boolean field facts and no-paddle receipts never req
   expect(await screen.findByText("Yes", { exact: true })).toBeDefined();
   expect(await screen.findByText("No", { exact: true })).toBeDefined();
   await user.click(screen.getByText("Receive reading without egg paddle", { selector: "summary" }));
-  await user.type(screen.getByRole("textbox", { name: "Reading identifier (UUID)" }), READING_ID);
+  await user.type(screen.getByRole("textbox", { name: "Reading" }), READING_ID);
   await user.click(screen.getByRole("button", { name: "Receive reading without egg paddle" }));
   await screen.findByText(/not added to the count queue/);
   const body = api.requests.find((request) => request.method === "POST")?.body as Record<
@@ -356,9 +356,8 @@ test("switching to expected never authorizes missing from a received placeholder
   );
   await renderApp({ path: "/lab/bags", fetch: api.fetch, language: "en" });
   await screen.findByText("B-030");
-  await userEvent
-    .setup()
-    .selectOptions(screen.getByRole("combobox", { name: "Laboratory state" }), "expected");
+  // The reception views are status tabs (a pressed-button group), not a dropdown.
+  await userEvent.setup().click(screen.getByRole("button", { name: "Expected bags" }));
   expect(screen.queryByRole("button", { name: "Mark missing" })).toBeNull();
   expect(screen.getByRole("status", { name: "Loading content" })).toBeDefined();
   await act(async () => {

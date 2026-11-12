@@ -18,7 +18,7 @@ describe("W35 keyboard counting", () => {
     const { api } = await openCount({
       routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => held },
     });
-    const input = await screen.findByRole("textbox", { name: "Huevos de laboratorio" });
+    const input = await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" });
     await waitFor(() => {
       expect(document.activeElement).toBe(input);
     });
@@ -31,7 +31,7 @@ describe("W35 keyboard counting", () => {
     await screen.findByRole("heading", { name: "B-032" });
     await waitFor(() => {
       expect(document.activeElement).toBe(
-        screen.getByRole("textbox", { name: "Huevos de laboratorio" }),
+        screen.getByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
       );
     });
   });
@@ -39,7 +39,7 @@ describe("W35 keyboard counting", () => {
   test("rejects invalid input inline without sending a count", async () => {
     const value = "1.5";
     const { api } = await openCount();
-    const input = await screen.findByRole("textbox", { name: "Huevos de laboratorio" });
+    const input = await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" });
     fireEvent.change(input, { target: { value } });
     fireEvent.submit(input.closest("form") ?? input);
     expect(
@@ -60,12 +60,12 @@ describe("W35 keyboard counting", () => {
       },
     });
     await userEvent.type(
-      await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+      await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
       "0{Enter}",
     );
     await screen.findByText(/No se confirmó el guardado/);
     expect(
-      screen.getByRole<HTMLInputElement>("textbox", { name: "Huevos de laboratorio" }).value,
+      screen.getByRole<HTMLInputElement>("textbox", { name: "¿Cuántos huevos contaste?" }).value,
     ).toBe("0");
     await userEvent.click(screen.getByRole("button", { name: "Reintentar guardado" }));
     await screen.findByText("Conteo guardado.");
@@ -89,7 +89,7 @@ describe("W35 keyboard counting", () => {
       },
     });
     await userEvent.type(
-      await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+      await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
       "1200{Enter}",
     );
     await userEvent.click(await screen.findByRole("button", { name: "Confirmar conteo alto" }));
@@ -104,14 +104,14 @@ describe("W35 keyboard counting", () => {
       routes: { [`POST /api/v1/bags/${BAG}/counts/`]: apiError(409, "lab_state_conflict") },
     });
     await userEvent.type(
-      await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+      await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
       "12{Enter}",
     );
     await screen.findByText(/Otra captura cambió esta bolsa/);
-    expect(await screen.findByText("counter-31")).toBeDefined();
+    expect(await screen.findByText("Ana Contadora")).toBeDefined();
     expect(document.querySelector('time[datetime="2026-11-03T15:00:00Z"]')).not.toBeNull();
     expect(
-      screen.getByRole<HTMLInputElement>("textbox", { name: "Huevos de laboratorio" }).value,
+      screen.getByRole<HTMLInputElement>("textbox", { name: "¿Cuántos huevos contaste?" }).value,
     ).toBe("12");
   });
 
@@ -128,12 +128,12 @@ describe("W35 keyboard counting", () => {
     await screen.findByRole("alert");
     api.setRoute("GET /api/v1/egg-counts/queue/", pageOf([]));
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
-    expect(await screen.findByText("No hay bolsas recibidas pendientes de conteo.")).toBeDefined();
+    expect(await screen.findByText(/No hay bolsas por contar/)).toBeDefined();
   });
 
   test("exposes English keyboard hints and accessible controls", async () => {
     const { app } = await openCount({ language: "en" });
-    await screen.findByRole("textbox", { name: "Laboratory eggs" });
+    await screen.findByRole("textbox", { name: "How many eggs did you count?" });
     expect(screen.getByText(/Enter.*save/i)).toBeDefined();
     expect((await axe(app.container)).violations).toEqual([]);
   });
@@ -179,8 +179,9 @@ test("history preserves voided observations and corrects through an atomic void 
       },
     },
   });
-  await screen.findAllByText("counter-31");
-  await userEvent.click(screen.getByRole("switch", { name: "Incluir anulados" }));
+  await screen.findAllByText("Ana Contadora");
+  await userEvent.click(screen.getByRole("button", { name: /^Filtros/ }));
+  await userEvent.click(await screen.findByRole("switch", { name: "Incluir anulados" }));
   expect(await screen.findByText("Anulado")).toBeDefined();
   await userEvent.click(screen.getByRole("button", { name: "Corregir conteo" }));
   await userEvent.selectOptions(
