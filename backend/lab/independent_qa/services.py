@@ -1,6 +1,6 @@
 """Independent human facts append under the existing Lab command and Organization arbiter."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -63,6 +63,11 @@ class NumericPublication:
     surface: str
 
 
+_pinned_reader: ContextVar[tuple[UUID, UUID] | None] = ContextVar(
+    "lab_numeric_pinned_reader", default=None
+)
+
+
 @contextmanager
 def numeric_read_transaction(actor: UploadActor) -> Iterator[None]:
     """Pin the actual publishing actor and configuration across query/render/receipt.
@@ -72,17 +77,26 @@ def numeric_read_transaction(actor: UploadActor) -> Iterator[None]:
 
     A read never answers 429 because another read holds the same rows: it takes the locks in the
     same global order as the writers but waits (bounded by `SYNC_LOCK_TIMEOUT_MS`) instead of
-    failing NOWAIT. Write locks stay NOWAIT.
+    failing NOWAIT. Write locks stay NOWAIT. Entering it again for the same actor inside an open
+    one (a page publishing each of its rows) takes nothing new: one lock set per request.
     """
     from lab.transactions import lock_users, mapped_transaction
     from organizations.models import Organization
     from uploads.access import lock_actor
 
+    identity = (actor.user.pk, actor.organization.pk)
+    if _pinned_reader.get() == identity:
+        yield  # a read of this request already holds these locks until its transaction ends
+        return
     with mapped_transaction():
         lock_users({actor.user.pk}, nowait=False)
         lock_actor(actor, nowait=False)
         Organization.objects.select_for_update(no_key=True).get(pk=actor.organization.pk)
-        yield
+        token = _pinned_reader.set(identity)
+        try:
+            yield
+        finally:
+            _pinned_reader.reset(token)
 
 
 _response_publications: ContextVar[list[tuple[Any, NumericPublication]] | None] = ContextVar(
@@ -134,6 +148,48 @@ def publish_numeric_access(
             count=count,
             created_by=actor.user,
             defaults={"organization": actor.organization, "surface": context.surface},
+        )
+
+
+def publish_numeric_access_batch(
+    actor: UploadActor, counts: Sequence[EggCountAttempt], context: NumericPublication
+) -> None:
+    """`publish_numeric_access` for a whole page: the same checks, in constant queries.
+
+    One lock pins the actor and configuration, one query proves every count is inside the read
+    scope and visible to the actor under blind QA (any other count answers 404, as a single
+    publication does), and one insert records the disclosures.
+    """
+    if not counts:
+        return
+    from lab.independent_qa.selectors import blind_visible_counts
+
+    identifiers = {count.pk for count in counts}
+    with numeric_read_transaction(actor):
+        visible = blind_visible_counts(
+            actor,
+            EggCountAttempt.objects.filter(
+                pk__in=identifiers,
+                receipt__reading__in=scoped_readings(actor, context.permission),
+            ),
+        )
+        if set(visible.values_list("pk", flat=True)) != identifiers:
+            raise Http404
+        pending = _response_publications.get()
+        if pending is not None:
+            pending.extend((count, context) for count in counts)
+            return
+        LabNumericDisclosure.objects.bulk_create(
+            [
+                LabNumericDisclosure(
+                    organization=actor.organization,
+                    created_by=actor.user,
+                    count_id=identifier,
+                    surface=context.surface,
+                )
+                for identifier in sorted(identifiers)
+            ],
+            ignore_conflicts=True,
         )
 
 

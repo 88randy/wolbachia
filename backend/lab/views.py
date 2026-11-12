@@ -1,5 +1,6 @@
 """Thin authenticated Lab commands and action-scoped read projections."""
 
+from collections.abc import Callable, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -75,11 +76,19 @@ class LabReadViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet[Any]):
         query.is_valid(raise_exception=True)
         return dict(query.validated_data)
 
-    def page_response(self, rows: QuerySet[Any], projection: Any) -> Response:  # noqa: ANN401 -- closed resource projection
+    def page_response(
+        self,
+        rows: QuerySet[Any],
+        projection: Any,  # noqa: ANN401 -- closed resource projection
+        before_projection: Callable[[list[Any]], None] | None = None,
+    ) -> Response:
+        """`before_projection` sees the whole page once, e.g. to publish it in constant queries."""
         page = self.paginate_queryset(rows)
-        if page is None:
-            return Response([projection(row) for row in rows])
-        return self.get_paginated_response([projection(row) for row in page])
+        items = list(rows) if page is None else list(page)
+        if before_projection is not None:
+            before_projection(items)
+        body = [projection(row) for row in items]
+        return Response(body) if page is None else self.get_paginated_response(body)
 
 
 class LabResultViewSet(LabReadViewSet):
@@ -110,8 +119,16 @@ class LabResultViewSet(LabReadViewSet):
             return self.result_list_response(actor)
 
     def result_list_response(self, actor: Any) -> Response:  # noqa: ANN401 -- actual request UploadActor
+        page_facts: list[selectors.BagLabFacts] = []
+
+        def prepare(page: list[Any]) -> None:
+            selectors.publish_result_page(actor, page)
+            page_facts.append(selectors.result_page_facts(page))
+
         response = self.page_response(
-            self.get_queryset(), lambda row: selectors.published_result_projection(actor, row)
+            self.get_queryset(),
+            lambda row: selectors.result_projection(row, page_facts[0]),
+            prepare,
         )
         if self.result_kind == "count" and "qa_state" in self.request.query_params:
             from lab.independent_qa.services import publish_inferred_counts
@@ -227,14 +244,16 @@ class RecountRequestViewSet(LabReadViewSet):
         with numeric_read_transaction(actor):
             return self.page_response(
                 selectors.recount_rows(actor, self.read_query()),
-                lambda row: self.published_request(actor, row),
+                lambda row: dict(RecountRequestSerializer(row).data),
+                lambda page: self.publish_page(actor, page),
             )
 
-    def published_request(self, actor: Any, row: Any) -> dict[str, Any]:  # noqa: ANN401 -- existing serializer projection boundary
-        from lab.independent_qa.services import NumericPublication, publish_numeric_access
+    def publish_page(self, actor: Any, page: Sequence[Any]) -> None:  # noqa: ANN401 -- actual request UploadActor
+        from lab.independent_qa.services import NumericPublication, publish_numeric_access_batch
 
-        publish_numeric_access(actor, row.count, NumericPublication(COUNT_READ, "request"))
-        return dict(RecountRequestSerializer(row).data)
+        publish_numeric_access_batch(
+            actor, [row.count for row in page], NumericPublication(COUNT_READ, "request")
+        )
 
 
 class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):

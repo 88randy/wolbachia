@@ -89,7 +89,7 @@ class OvitrapViewSet(RecordViewSet):
 class ReadingViewSet(ReadingLabActions, RecordViewSet):
     http_method_names = ["get", "post", "head", "options"]
     queryset = OvitrapReading.objects.select_related(
-        "event", "ovitrap__sampling_point__block__quadrant", "bag"
+        "event", "ovitrap__sampling_point__block__quadrant", "bag", "lab_receipt__bag"
     )
     serializer_class = ReadingSerializer
     required_permissions = {"list": READING_READ, "retrieve": READING_READ, "receive": BAG_RECEIVE}
@@ -99,7 +99,7 @@ class ReadingViewSet(ReadingLabActions, RecordViewSet):
 class BagViewSet(BagLabActions, RecordViewSet):
     http_method_names = ["get", "post", "head", "options"]
     queryset = Bag.objects.select_related(
-        "event", "reading__ovitrap__sampling_point__block__quadrant"
+        "event", "reading__ovitrap__sampling_point__block__quadrant", "lab_receipt"
     )
     serializer_class = BagSerializer
     required_permissions = {

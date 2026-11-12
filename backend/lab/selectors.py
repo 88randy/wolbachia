@@ -1,5 +1,7 @@
 """Current action scope precedes state filters, count, order and page."""
 
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any, cast
 from uuid import UUID
 
@@ -57,7 +59,9 @@ def filter_bags(rows: QuerySet[Bag], values: dict[str, Any]) -> QuerySet[Bag]:
 def result_rows(
     actor: UploadActor, model: type[EggCountAttempt] | type[LabRejection], values: dict[str, Any]
 ) -> QuerySet[Any]:
-    rows: QuerySet[Any] = model.objects.select_related("bag").filter(
+    rows: QuerySet[Any] = model.objects.select_related(
+        "bag", "method_version", "result_revision", "void_fact"
+    ).filter(
         organization=actor.organization, bag__in=filter_bags(scoped_bags(actor, COUNT_READ), values)
     )
     if model is EggCountAttempt:
@@ -360,12 +364,76 @@ def annotate_lab_bags(rows: QuerySet[Bag]) -> QuerySet[Bag]:
     )
 
 
-def bag_lab_projection(bag: Bag) -> dict[str, Any]:
-    from inventory.allocations.bag_dependencies import material_availability
+@dataclass(frozen=True)
+class BagLabFacts:
+    """Facts `bag_lab_projection` reads for a set of bags, loaded in constant queries."""
 
+    latest: dict[UUID, LabResultRevision]
+    effective: set[UUID]
+    missing: set[UUID]
+    material: dict[UUID, dict[str, Any]]
+
+
+def bag_lab_facts(bags: Sequence[Bag]) -> BagLabFacts:
+    from inventory.allocations.models import BagDisposition
+    from lab.models import PaddleReuse
+
+    ids = [bag.pk for bag in bags]
+    latest: dict[UUID, LabResultRevision] = {}
+    revisions = (
+        LabResultRevision.objects.filter(bag_id__in=ids)
+        .select_related("count__recount_request")
+        .order_by("bag_id", "-revision")
+    )
+    for revision in revisions:
+        latest.setdefault(revision.bag_id, revision)
+    dispositions: dict[UUID, Any] = {}
+    for disposition in BagDisposition.objects.filter(bag_id__in=ids).order_by(
+        *(BagDisposition._meta.ordering or ["pk"])
+    ):
+        dispositions.setdefault(disposition.bag_id, disposition)
+    reused = set(
+        PaddleReuse.objects.filter(binding__bag_id__in=ids).values_list(
+            "binding__bag_id", flat=True
+        )
+    )
+    return BagLabFacts(
+        latest=latest,
+        effective=set(
+            effective_effects(Bag.objects.filter(pk__in=ids), "reading__event").values_list(
+                "pk", flat=True
+            )
+        ),
+        missing=set(
+            ReceptionDiscrepancy.objects.filter(bag_id__in=ids, kind="missing").values_list(
+                "bag_id", flat=True
+            )
+        ),
+        material={
+            identifier: _material(dispositions.get(identifier), identifier in reused)
+            for identifier in ids
+        },
+    )
+
+
+def _material(disposition: Any, reused: bool) -> dict[str, Any]:  # noqa: ANN401 -- BagDisposition row
+    """Same shape and rules as `inventory.allocations.bag_dependencies.material_availability`."""
+    return {
+        "available": disposition is None and not reused,
+        "disposition_id": None if disposition is None else str(disposition.pk),
+        "reason": "bag_disposed"
+        if disposition is not None
+        else "paddle_reused"
+        if reused
+        else None,
+    }
+
+
+def bag_lab_projection(bag: Bag, facts: BagLabFacts | None = None) -> dict[str, Any]:
+    facts = facts or bag_lab_facts([bag])
     receipt = getattr(bag, "lab_receipt", None)
-    latest = LabResultRevision.objects.filter(bag=bag).first()
-    if not effective_effects(Bag.objects.filter(pk=bag.pk), "reading__event").exists():
+    latest = facts.latest.get(bag.pk)
+    if bag.pk not in facts.effective:
         status = "no_effective_reading"
     elif latest is not None and latest.count is not None:
         from lab.independent_qa.selectors import obligation_resolution
@@ -381,9 +449,9 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
     elif receipt is not None:
         status = "voided" if latest is not None else "pending_count"
     else:
-        status = "missing" if bag.lab_discrepancies.filter(kind="missing").exists() else "expected"
+        status = "missing" if bag.pk in facts.missing else "expected"
     return {
-        "material": material_availability(bag),
+        "material": facts.material[bag.pk],
         "status": status,
         "revision": 0 if latest is None else latest.revision,
         "receipt_id": None if receipt is None else str(receipt.pk),
@@ -394,40 +462,79 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
     }
 
 
-def published_bag_lab_projection(
-    actor: UploadActor, bag: Bag, permission: str
-) -> dict[str, Any] | None:
-    from lab.independent_qa.selectors import can_read_numeric
+def published_bag_lab_page(
+    actor: UploadActor, bags: Sequence[Bag]
+) -> dict[UUID, dict[str, Any] | None]:
+    """The `lab` block of every bag of a page: None when the actor may not read it.
+
+    Same rules as reading each bag alone (action scope, then blind visibility of the current
+    count, then a recorded disclosure), but with one lock, one visibility query per permission
+    and one disclosure insert for the page.
+    """
+    from lab.independent_qa.selectors import blind_visible_counts
     from lab.independent_qa.services import (
         NumericPublication,
         numeric_read_transaction,
-        publish_numeric_access,
+        publish_numeric_access_batch,
     )
 
+    page: dict[UUID, dict[str, Any] | None] = {bag.pk: None for bag in bags}
+    if not bags:
+        return page
+    ids = [bag.pk for bag in bags]
+    permission_by_bag: dict[UUID, str] = {}
+    for code in (BAG_RECEIVE, COUNT_READ):
+        for identifier in scoped_bags(actor, code).filter(pk__in=ids).values_list("pk", flat=True):
+            permission_by_bag.setdefault(identifier, code)
+    granted = [bag for bag in bags if bag.pk in permission_by_bag]
+    if not granted:
+        return page
     with numeric_read_transaction(actor):
-        current = LabResultRevision.objects.filter(bag=bag).first()
-        if current is not None and current.count is not None:
-            if not can_read_numeric(actor, current.count):
-                return None
-            publish_numeric_access(actor, current.count, NumericPublication(permission, "result"))
-        return bag_lab_projection(bag)
+        facts = bag_lab_facts(granted)
+        counts: dict[UUID, EggCountAttempt] = {}
+        for bag in granted:
+            revision = facts.latest.get(bag.pk)
+            if revision is not None and revision.count is not None:
+                counts[bag.pk] = revision.count
+        visible = set(
+            blind_visible_counts(
+                actor, EggCountAttempt.objects.filter(pk__in={c.pk for c in counts.values()})
+            ).values_list("pk", flat=True)
+        )
+        readable = [bag for bag in granted if bag.pk not in counts or counts[bag.pk].pk in visible]
+        for code in (BAG_RECEIVE, COUNT_READ):
+            published = [
+                counts[bag.pk]
+                for bag in readable
+                if bag.pk in counts and permission_by_bag[bag.pk] == code
+            ]
+            publish_numeric_access_batch(actor, published, NumericPublication(code, "result"))
+        for bag in readable:
+            page[bag.pk] = bag_lab_projection(bag, facts)
+    return page
 
 
-def result_projection(result: EggCountAttempt | LabRejection) -> dict[str, Any]:
-    from inventory.allocations.bag_dependencies import material_availability
-
+def result_projection(
+    result: EggCountAttempt | LabRejection, facts: BagLabFacts | None = None
+) -> dict[str, Any]:
+    """`facts` (from `result_page_facts`) spares the per-result lookups when listing a page."""
+    facts = facts or bag_lab_facts([result.bag])
     projection = (
         count_projection(result)
         if isinstance(result, EggCountAttempt)
         else rejection_projection(result)
     )
-    latest = LabResultRevision.objects.filter(bag=result.bag).first()
+    latest = facts.latest.get(result.bag_id)
     return {
         **projection,
-        "material": material_availability(result.bag),
+        "material": facts.material[result.bag_id],
         "current_revision": 0 if latest is None else latest.revision,
         "is_current": latest is not None and result.pk in {latest.count_id, latest.rejection_id},
     }
+
+
+def result_page_facts(results: Sequence[EggCountAttempt | LabRejection]) -> BagLabFacts:
+    return bag_lab_facts([result.bag for result in results])
 
 
 def published_result_projection(
@@ -438,3 +545,13 @@ def published_result_projection(
 
         publish_numeric_access(actor, result, NumericPublication(COUNT_READ, "result"))
     return result_projection(result)
+
+
+def publish_result_page(
+    actor: UploadActor, results: Sequence[EggCountAttempt | LabRejection]
+) -> None:
+    """Record the numeric disclosure of every count of a page (rejections carry no number)."""
+    from lab.independent_qa.services import NumericPublication, publish_numeric_access_batch
+
+    counts = [result for result in results if isinstance(result, EggCountAttempt)]
+    publish_numeric_access_batch(actor, counts, NumericPublication(COUNT_READ, "result"))

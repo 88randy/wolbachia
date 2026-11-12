@@ -1,12 +1,17 @@
 """OP03 observed facts at a source cutoff; no historical authorization is inferred."""
 
+from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from math import isfinite
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from django.db.models import Count
+
 from core.time import epi_week_label, format_instant
+from organizations.models import Organization
 from ovitraps.lifecycle.models import OvitrapIncidentLink
 from ovitraps.models import Ovitrap, OvitrapReading
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
@@ -57,7 +62,14 @@ def relocation_thresholds(values: dict[str, int | float | None]) -> tuple[int, i
 
 
 def select_advisory_rules(ovitrap: Ovitrap, at: datetime) -> AdvisoryRules | None:
-    query = list_parameters_with_current(ovitrap.organization, at).filter(key__in=THRESHOLD_KEYS)
+    return select_organization_advisory_rules(ovitrap.organization, at)
+
+
+def select_organization_advisory_rules(
+    organization: Organization, at: datetime
+) -> AdvisoryRules | None:
+    """The relocation thresholds depend on the organization and the instant, never on the trap."""
+    query = list_parameters_with_current(organization, at).filter(key__in=THRESHOLD_KEYS)
     rows = list(
         query.values(  # type: ignore[misc]  # current_* are the owner's Subquery annotations.
             "key", "value_type", "current_value", "current_version_id", "current_effective_from"
@@ -74,8 +86,8 @@ def select_advisory_rules(ovitrap: Ovitrap, at: datetime) -> AdvisoryRules | Non
         return None
     parameters = {row["key"]: _rule_tuple(row, values[row["key"]]) for row in rows}
     context = {
-        "timezone": ovitrap.organization.timezone,
-        "epi_week": ovitrap.organization.epi_week,
+        "timezone": organization.timezone,
+        "epi_week": organization.epi_week,
         "parameters": parameters,
     }
     return AdvisoryRules(context, *thresholds)
@@ -90,9 +102,15 @@ def _rule_tuple(row: dict[str, Any], value: int | float | None) -> dict[str, Any
 
 
 def required_weeks(ovitrap: Ovitrap, at: datetime, count: int) -> tuple[str, ...]:
-    local_date = at.astimezone(ZoneInfo(ovitrap.organization.timezone)).date()
+    return organization_required_weeks(ovitrap.organization, at, count)
+
+
+def organization_required_weeks(
+    organization: Organization, at: datetime, count: int
+) -> tuple[str, ...]:
+    local_date = at.astimezone(ZoneInfo(organization.timezone)).date()
     return tuple(
-        epi_week_label(local_date - timedelta(weeks=offset), ovitrap.organization.epi_week)
+        epi_week_label(local_date - timedelta(weeks=offset), organization.epi_week)
         for offset in range(count)
     )
 
@@ -127,3 +145,58 @@ def select_advisory_observation(ovitrap: Ovitrap, at: datetime) -> AdvisoryObser
         event__voided_at__isnull=True,
     ).count()
     return AdvisoryObservation(rules, required, observed, incidents)
+
+
+def select_advisory_observations(
+    ovitraps: Sequence[Ovitrap], at: datetime
+) -> dict[object, AdvisoryObservation | None]:
+    """`select_advisory_observation` for a page of ovitraps in a constant number of queries.
+
+    Rules and required weeks are resolved once per organization; the closed-house weeks and the
+    incident counts of every sampling point come from one grouped query each. Keyed by ovitrap pk.
+    """
+    result: dict[object, AdvisoryObservation | None] = {trap.pk: None for trap in ovitraps}
+    by_organization: dict[object, list[Ovitrap]] = defaultdict(list)
+    for trap in ovitraps:
+        by_organization[trap.organization_id].append(trap)
+    organizations = Organization.objects.in_bulk(list(by_organization))
+    for organization_id, traps in by_organization.items():
+        organization = organizations[organization_id]
+        rules = select_organization_advisory_rules(organization, at)
+        if rules is None:
+            continue
+        required = organization_required_weeks(organization, at, rules.weeks)
+        points = {trap.sampling_point_id for trap in traps}
+        matching: dict[object, set[str]] = defaultdict(set)
+        for point_id, week in (
+            OvitrapReading.objects.filter(
+                organization=organization,
+                ovitrap__sampling_point_id__in=points,
+                finding_code="closed-house",
+                epi_week__in=required,
+                event__device_time__lte=at,
+                event__voided_at__isnull=True,
+            )
+            .values_list("ovitrap__sampling_point_id", "epi_week")
+            .distinct()
+        ):
+            matching[point_id].add(week)
+        incidents = dict(
+            OvitrapIncidentLink.objects.filter(
+                organization=organization,
+                ovitrap__sampling_point_id__in=points,
+                event__device_time__lte=at,
+                event__voided_at__isnull=True,
+            )
+            .values_list("ovitrap__sampling_point_id")
+            .annotate(total=Count("pk"))
+            .order_by()
+        )
+        for trap in traps:
+            observed = tuple(
+                label for label in required if label in matching[trap.sampling_point_id]
+            )
+            result[trap.pk] = AdvisoryObservation(
+                rules, required, observed, incidents.get(trap.sampling_point_id, 0)
+            )
+    return result

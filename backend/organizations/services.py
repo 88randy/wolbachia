@@ -187,6 +187,20 @@ ORGANIZATION_FIELDS = (
 )
 
 
+SCOPE_MEMO_ATTR = "_request_effective_scope"
+
+
+def memoize_effective_scope(membership: Membership) -> Membership:
+    """Opt a request's membership into computing its effective scope once.
+
+    Only the membership resolved for the request opts in (`resolve_active_membership`); every
+    membership a service loads or locks itself stays uncached, so a write that changes
+    profiles or scope is always re-read from the database.
+    """
+    setattr(membership, SCOPE_MEMO_ATTR, None)
+    return membership
+
+
 def effective_scope(
     membership: Membership, *, profiles: list[Profile] | None = None
 ) -> EffectiveScope:
@@ -194,7 +208,20 @@ def effective_scope(
 
     Supply profiles only when captured with the membership in one SQL statement
     (field bootstrap/sync). That path performs no further configuration reads.
+    A membership opted in with `memoize_effective_scope` computes it once per instance.
     """
+    if profiles is None and hasattr(membership, SCOPE_MEMO_ATTR):
+        cached: EffectiveScope | None = getattr(membership, SCOPE_MEMO_ATTR)
+        if cached is None:
+            cached = _compute_effective_scope(membership, None)
+            setattr(membership, SCOPE_MEMO_ATTR, cached)
+        return cached
+    return _compute_effective_scope(membership, profiles)
+
+
+def _compute_effective_scope(
+    membership: Membership, profiles: list[Profile] | None
+) -> EffectiveScope:
     from organizations.selectors import list_active_profiles
 
     if (

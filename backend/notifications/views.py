@@ -16,7 +16,12 @@ from notifications import serializers as wire
 from notifications.cursors import PageRequest, cursor_page
 from notifications.permissions import NOTIFICATION_READ, PREFERENCE_UPDATE
 from notifications.selectors import inbox_rows, preference_rows, usable_grants
-from notifications.services import lock_inbox_member, mark_all_read, mark_read, update_preferences
+from notifications.services import (
+    mark_all_read,
+    mark_read,
+    update_preferences,
+    wait_for_pending_inbox_writers,
+)
 from organizations.models import Membership
 
 
@@ -39,7 +44,9 @@ class NotificationViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
     def list(self, request: Request) -> Response:
         query = wire.NotificationQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
-        member = lock_inbox_member(self.member())
+        member = self.member()
+        if "cursor" not in query.validated_data:
+            wait_for_pending_inbox_writers(member)
         rows = inbox_rows(member)
         page, token = cursor_page(rows, PageRequest(member, query.validated_data))
         return Response(
