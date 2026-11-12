@@ -33,6 +33,11 @@ class ExistingEffect:
 
 def original_source_envelope(source: FieldEvent) -> EventEnvelope:
     snapshot = ReviewSourceSnapshot.objects.filter(source_event=source).first()
+    return envelope_of_source(source, snapshot)
+
+
+def envelope_of_source(source: FieldEvent, snapshot: ReviewSourceSnapshot | None) -> EventEnvelope:
+    """`original_source_envelope` with the source's snapshot already read (None when it has none)."""
     if snapshot is not None:
         return envelope_from_metadata(snapshot.original_envelope, source.payload)
     info = describe_payload(source.payload)

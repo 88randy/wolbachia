@@ -1,8 +1,8 @@
 """Closed regulatory commands and explicit provenance-only read contracts."""
 
-from typing import Any
+from collections import Counter
+from typing import Any, cast
 
-from django.db.models import Count
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
@@ -20,6 +20,9 @@ from releases.models import (
     ReleaseDeviceStatus,
 )
 from releases.selectors import (
+    CURRENT_STATUSES_ATTR,
+    CURRENT_VERSIONS_ATTR,
+    blockers_of,
     current_device_status,
     current_permit_version,
     device_revision,
@@ -138,12 +141,11 @@ class PermitSuspensionSerializer(OrgScopedModelSerializer):
     @extend_schema_field(PermitNoticeSummarySerializer(many=True))
     def get_notices(self, row: PermitSuspension) -> list[dict[str, Any]]:
         """Recorded recipients by kind and delivery outcome; never recipient identities."""
-        rows = (
-            row.notices.values("kind", "status")
-            .annotate(count=Count("id"))
-            .order_by("kind", "status")
-        )
-        return [dict(item) for item in rows]
+        counts = Counter((notice.kind, notice.status) for notice in row.notices.all())
+        return [
+            {"kind": kind, "status": status, "count": count}
+            for (kind, status), count in sorted(counts.items())
+        ]
 
     class Meta:
         model = PermitSuspension
@@ -175,21 +177,39 @@ class PermitSerializer(OrgScopedModelSerializer):
     quadrant_code = serializers.CharField(source="quadrant.code", read_only=True)
     type_name = serializers.SerializerMethodField()
 
+    def _version(self, row: Permit) -> PermitVersion | None:
+        if hasattr(row, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            return next(iter(getattr(row, CURRENT_VERSIONS_ATTR)), None)
+        return current_permit_version(row)
+
+    def _suspension(self, row: Permit) -> PermitSuspension | None:
+        return cast("PermitSuspension | None", getattr(row, "suspension", None))
+
     def get_type_name(self, row: Permit) -> str | None:
-        version = current_permit_version(row)
+        version = self._version(row)
         return None if version is None else str(version.type.name)
 
     @extend_schema_field(PermitVersionSerializer(allow_null=True))
     def get_current_version(self, row: Permit) -> dict[str, Any] | None:
-        version = current_permit_version(row)
-        return None if version is None else dict(PermitVersionSerializer(version).data)
+        version = self._version(row)
+        if version is None:
+            return None
+        return dict(PermitVersionSerializer(version, context=self.context).data)
 
     def get_revision(self, row: Permit) -> int:
-        return permit_revision(row)
+        if not hasattr(row, CURRENT_VERSIONS_ATTR):
+            return permit_revision(row)
+        version, suspension = self._version(row), self._suspension(row)
+        return max(
+            0 if version is None else version.revision,
+            0 if suspension is None else suspension.revision,
+        )
 
     @extend_schema_field(ReleaseBlockerSerializer(many=True))
     def get_blocked_by(self, row: Permit) -> list[dict[str, str]]:
-        return permit_blockers(row)
+        if not hasattr(row, CURRENT_VERSIONS_ATTR):
+            return permit_blockers(row)
+        return blockers_of(self._suspension(row) is not None, self._version(row))
 
     class Meta:
         model = Permit
@@ -219,15 +239,24 @@ class ReleaseDeviceSerializer(OrgScopedModelSerializer):
     revision = serializers.SerializerMethodField()
     blocked_by = serializers.SerializerMethodField()
 
+    def _latest(self, row: ReleaseDevice) -> ReleaseDeviceStatus | None:
+        return next(iter(getattr(row, CURRENT_STATUSES_ATTR)), None)
+
     def get_status(self, row: ReleaseDevice) -> str:
-        return current_device_status(row)
+        if not hasattr(row, CURRENT_STATUSES_ATTR):  # not loaded by the list/detail queryset
+            return current_device_status(row)
+        latest = self._latest(row)
+        return str(row.status if latest is None else latest.status or row.status)
 
     def get_revision(self, row: ReleaseDevice) -> int:
-        return device_revision(row)
+        if not hasattr(row, CURRENT_STATUSES_ATTR):
+            return device_revision(row)
+        latest = self._latest(row)
+        return 1 if latest is None else int(latest.revision or 1)
 
     @extend_schema_field(ReleaseBlockerSerializer(many=True))
     def get_blocked_by(self, row: ReleaseDevice) -> list[dict[str, str]]:
-        if current_device_status(row) == "active":
+        if self.get_status(row) == "active":
             return []
         return [{"reason": "release_device_inactive", "unblocked_by_role": "admin", "link": ""}]
 

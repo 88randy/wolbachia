@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
-from reviews.actions import ReviewDecisionRequest, decide_review, visible_review
+from reviews.actions import ReviewDecisionRequest, decide_review, visible_review_ids
 from reviews.models import ReviewItem
 from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from reviews.selectors import list_review_items
@@ -59,14 +59,15 @@ class ReviewItemViewSet(
             actor_from_request(self.request).organization, **query.validated_data
         )
         actor = actor_from_request(self.request)
-        visible = []
-        for item_id in rows.values_list("pk", flat=True):
+        if self.action == "retrieve":  # only the requested item needs the visibility check
             try:
-                visible_review(actor, item_id, REVIEW_ITEM_READ)
-            except Http404:
-                continue
-            visible.append(item_id)
-        return rows.filter(pk__in=visible)
+                rows = rows.filter(pk=UUID(str(self.kwargs.get("pk"))))
+            except ValueError:
+                return rows.none()
+        candidates = rows.select_related(
+            "field_event__organization", "field_event__device", "field_event__created_by"
+        )
+        return rows.filter(pk__in=visible_review_ids(actor, candidates, REVIEW_ITEM_READ))
 
     @extend_schema(parameters=[ReviewItemFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from contextlib import ExitStack
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
@@ -15,6 +16,7 @@ from core.void_reason import validate_void_reason
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from field_sync.registry import EventHandler, get_handler
+from organizations.scope import EffectiveScope
 from reviews.contracts import SafetyDispositionRequest
 from reviews.evaluation import ReviewEvaluation, evaluation_payload, inspect_review
 from reviews.evidence import bind_review_evidence
@@ -22,7 +24,11 @@ from reviews.exceptions import (
     ReviewBlockedError,
     ReviewConflictError,
 )
-from reviews.inspection import original_source_envelope, validated_original_payload
+from reviews.inspection import (
+    envelope_of_source,
+    original_source_envelope,
+    validated_original_payload,
+)
 from reviews.models import (
     ReviewDecision,
     ReviewDependency,
@@ -30,6 +36,7 @@ from reviews.models import (
     ReviewEffectReceipt,
     ReviewItem,
     ReviewParentClaim,
+    ReviewSourceSnapshot,
     ReviewSubjectScope,
 )
 from reviews.permissions import REVIEW_ITEM_DECIDE
@@ -72,19 +79,48 @@ def visible_review(actor: UploadActor, item_id: UUID, permission: str) -> Review
     )
     if item is None:
         raise Http404
-    try:
-        facts = subject_facts(actor.organization, original_source_envelope(item.field_event))
-    except ValueError:
-        facts = SubjectFacts()
-    scope = current_scope(actor)
-    allowed = (
-        subject_allows(scope, permission, facts)
-        if facts.resolved
-        else unresolved_scope_allows(scope, permission)
-    )
-    if not allowed:
+    snapshot = ReviewSourceSnapshot.objects.filter(source_event_id=item.field_event_id).first()
+    if not _review_allowed(actor, (item, snapshot), (current_scope(actor), permission)):
         raise Http404
     return item
+
+
+def visible_review_ids(
+    actor: UploadActor, items: Iterable[ReviewItem], permission: str
+) -> list[UUID]:
+    """Ids of the items `visible_review` would return, reading the actor's scope only once.
+
+    `items` need `field_event` loaded (select_related); the check per item is the same.
+    """
+    check = (current_scope(actor), permission)
+    rows = list(items)
+    snapshots = {
+        snapshot.source_event_id: snapshot
+        for snapshot in ReviewSourceSnapshot.objects.filter(
+            source_event_id__in=[item.field_event_id for item in rows]
+        )
+    }
+    return [
+        item.pk
+        for item in rows
+        if _review_allowed(actor, (item, snapshots.get(item.field_event_id)), check)
+    ]
+
+
+def _review_allowed(
+    actor: UploadActor,
+    found: tuple[ReviewItem, ReviewSourceSnapshot | None],
+    check: tuple[EffectiveScope, str],
+) -> bool:
+    item, snapshot = found
+    scope, permission = check
+    try:
+        facts = subject_facts(actor.organization, envelope_of_source(item.field_event, snapshot))
+    except ValueError:
+        facts = SubjectFacts()
+    if facts.resolved:
+        return subject_allows(scope, permission, facts)
+    return unresolved_scope_allows(scope, permission)
 
 
 def reference_sources(source: FieldEvent) -> set[UUID]:

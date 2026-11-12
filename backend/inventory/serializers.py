@@ -24,7 +24,7 @@ from inventory.models import (
     SupplyTypeVersion,
 )
 from inventory.policy import BIOLOGICAL_FIELDS, LotSafety
-from inventory.selectors import lot_safety
+from inventory.selectors import lot_safety_batch
 from organizations.scope import EffectiveScope
 from ovitraps.payloads import StrictPayloadSerializer
 from uploads.access import actor_from_request, current_scope
@@ -398,7 +398,15 @@ class LotSerializer(OrgScopedModelSerializer):
     def _safety(self, version: LotVersion) -> LotSafety:
         cache = self.safety_cache
         if version.pk not in cache:
-            cache[version.pk] = lot_safety(version, location=self.context.get("custody_location"))
+            page = getattr(self.parent, "instance", None)
+            batch = [
+                row
+                for row in (page if isinstance(page, list | tuple) else [version])
+                if isinstance(row, LotVersion) and row.pk not in cache
+            ]
+            cache.update(
+                lot_safety_batch(batch or [version], location=self.context.get("custody_location"))
+            )
         return cache[version.pk]
 
     @extend_schema_field(serializers.UUIDField(allow_null=True))

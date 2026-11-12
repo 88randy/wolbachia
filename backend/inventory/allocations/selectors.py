@@ -108,6 +108,7 @@ def reconciliation_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[
     return (
         rows.filter(**{lookup: values[key] for key, lookup in facets.items() if key in values})
         .order_by(values.get("ordering", "-created_at"), "id")
+        .select_related("discrepancy")
         .prefetch_related(
             Prefetch(
                 "assignment",

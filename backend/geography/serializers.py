@@ -20,7 +20,12 @@ from geography.models import (
     QuadrantVersion,
     SamplingPoint,
 )
-from geography.selectors import block_version_at, point_version_at, quadrant_version_at
+from geography.selectors import (
+    CURRENT_VERSIONS_ATTR,
+    block_version_at,
+    point_version_at,
+    quadrant_version_at,
+)
 from organizations.models import Center
 from organizations.selectors import filter_by_effective_scope
 
@@ -201,11 +206,14 @@ class QuadrantSerializer(OrgScopedModelSerializer):
         if written_version := self.context.get("written_version"):
             return dict(QuadrantVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            quadrant_version_at(quadrant, captured_at)
-            if captured_at
-            else quadrant.versions.order_by("-revision").first()
-        )
+        if hasattr(quadrant, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(quadrant, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                quadrant_version_at(quadrant, captured_at)
+                if captured_at
+                else quadrant.versions.select_related("created_by").order_by("-revision").first()
+            )
         return dict(QuadrantVersionSerializer(version).data) if version else None
 
     class Meta:
@@ -222,11 +230,14 @@ class BlockSerializer(OrgScopedModelSerializer):
         if written_version := self.context.get("written_version"):
             return dict(BlockVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            block_version_at(block, captured_at)
-            if captured_at
-            else block.versions.order_by("-revision").first()
-        )
+        if hasattr(block, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(block, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                block_version_at(block, captured_at)
+                if captured_at
+                else block.versions.select_related("created_by").order_by("-revision").first()
+            )
         return dict(BlockVersionSerializer(version).data) if version else None
 
     class Meta:
@@ -244,11 +255,14 @@ class SamplingPointSerializer(OrgScopedModelSerializer):
         if written_version := self.context.get("written_version"):
             return dict(PointVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            point_version_at(point, captured_at)
-            if captured_at
-            else point.versions.order_by("-version").first()
-        )
+        if hasattr(point, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(point, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                point_version_at(point, captured_at)
+                if captured_at
+                else point.versions.select_related("created_by").order_by("-version").first()
+            )
         return dict(PointVersionSerializer(version).data) if version else None
 
     class Meta:

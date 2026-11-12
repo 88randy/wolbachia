@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, cast
 
-from django.db.models import Max, QuerySet
+from django.db.models import Max, OuterRef, Prefetch, QuerySet, Subquery
 
 from core.time import server_now
 from organizations.selectors import filter_by_scope
@@ -70,15 +70,46 @@ def device_revision(device: ReleaseDevice) -> int:
 
 
 def permit_blockers(permit: Permit) -> list[dict[str, str]]:
+    return blockers_of(
+        PermitSuspension.objects.filter(permit=permit).exists(), current_permit_version(permit)
+    )
+
+
+def blockers_of(suspended: bool, version: PermitVersion | None) -> list[dict[str, str]]:
     reasons = []
-    if PermitSuspension.objects.filter(permit=permit).exists():
+    if suspended:
         reasons.append("permit_suspended")
-    version = current_permit_version(permit)
     if version is None:
         reasons.append("permit_unavailable")
     elif not version.valid_from <= server_now() < version.valid_to:
         reasons.append("permit_expired")
     return [{"reason": reason, "unblocked_by_role": "admin", "link": ""} for reason in reasons]
+
+
+CURRENT_VERSIONS_ATTR = "current_versions"
+CURRENT_STATUSES_ATTR = "current_statuses"
+
+
+def with_current_permit_version(permits: QuerySet[Permit]) -> QuerySet[Permit]:
+    """List/detail reads: the latest version (with its type) and the suspension with its notices
+    load for the whole page instead of once per permit."""
+    latest = PermitVersion.objects.filter(permit=OuterRef("permit")).order_by("-revision")
+    current = PermitVersion.objects.filter(pk=Subquery(latest.values("pk")[:1])).select_related(
+        "type"
+    )
+    return permits.select_related("suspension").prefetch_related(
+        Prefetch("versions", queryset=current, to_attr=CURRENT_VERSIONS_ATTR),
+        "suspension__notices",
+    )
+
+
+def with_current_device_status(devices: QuerySet[ReleaseDevice]) -> QuerySet[ReleaseDevice]:
+    """List/detail reads: the latest status row of every device, in one query for the page."""
+    latest = ReleaseDeviceStatus.objects.filter(device=OuterRef("device")).order_by("-revision")
+    current = ReleaseDeviceStatus.objects.filter(pk=Subquery(latest.values("pk")[:1]))
+    return devices.prefetch_related(
+        Prefetch("statuses", queryset=current, to_attr=CURRENT_STATUSES_ATTR)
+    )
 
 
 def scoped_permits(actor: UploadActor, permission: str = PERMIT_MANAGE) -> QuerySet[Permit]:
