@@ -14,7 +14,11 @@ export function useModalDialog(
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog === null) return undefined;
-    const previous = document.activeElement;
+    // A dialog opened from a "⋯" menu item gives focus back to that menu's trigger: the item
+    // itself is gone by then.
+    const active = document.activeElement;
+    const menuTrigger = active?.closest('[role="menu"]')?.getAttribute("aria-labelledby");
+    const previous = (menuTrigger ? document.getElementById(menuTrigger) : null) ?? active;
     dialog.showModal();
     dialog.querySelector<HTMLElement>(initialFocus)?.focus();
     return () => {

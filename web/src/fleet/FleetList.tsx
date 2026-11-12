@@ -19,7 +19,11 @@ export function FleetList() {
       title={t("fleet.page.title")}
       actions={canManage && <Button onClick={dialog.open}>{t("fleet.create.title")}</Button>}
       notices={
-        dialog.isSaved && <InlineNotice tone="success">{t("fleet.action.saved")}</InlineNotice>
+        dialog.isSaved && (
+          <InlineNotice tone="success" role="status">
+            {t("fleet.action.saved")}
+          </InlineNotice>
+        )
       }
     >
       <FleetTable />

@@ -7,6 +7,7 @@ export const FLEET_TABLE: TableQueryConfig = {
   sortableIds: ["code", "plate", "created_at", "center"],
   defaultOrdering: "code",
   supportsVoided: true,
+  limitationsKey: "fleet.page.gaps",
   filters: [
     CENTER_FILTER,
     { kind: "text", key: "code", labelKey: "refresh.table.exactCode", maxLength: 64 },

@@ -450,6 +450,6 @@ describe("fleet action boundaries", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
-    expect(screen.getByText("Cambio guardado.").getAttribute("role")).toBe("status");
+    expect(screen.getByText("Cambio guardado.").closest('[role="status"]')).not.toBeNull();
   });
 });

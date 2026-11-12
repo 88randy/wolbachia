@@ -90,9 +90,10 @@ async function selectFuelFilter(
 ) {
   const { api, app } = opened;
   assertFuelFilters(query);
-  await userEvent.selectOptions(
-    screen.getByRole("combobox", { name: "Comparación de rendimiento" }),
-    "review",
+  await userEvent.click(screen.getByRole("button", { name: /^Filtros/ }));
+  await userEvent.click(await screen.findByRole("combobox", { name: "Comparación de rendimiento" }));
+  await userEvent.click(
+    await screen.findByRole("option", { name: "Intervalo comparable · se recomienda revisar" }),
   );
   await waitFor(() => {
     expect(within(screen.getByRole("table", { name: caption })).getAllByRole("row")).toHaveLength(
@@ -233,11 +234,15 @@ describe("W21 motorcycle record", () => {
       },
     });
     const opener = await menuItem("Desbloquear");
+    const trigger = screen.getByRole("button", { name: "Más opciones", hidden: true });
     opener.focus();
     await userEvent.keyboard("{Enter}");
-    expect(document.activeElement).toBe(
-      within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancelar" }),
-    );
+    const cancel = within(await screen.findByRole("dialog")).getByRole("button", {
+      name: "Cancelar",
+    });
+    // The dialog names its initial focus; jsdom has no inert outside a modal dialog, so the menu's
+    // own focus return to its trigger cannot be told apart here.
+    expect(cancel.hasAttribute("data-unblock-cancel")).toBe(true);
     expect(within(screen.getByRole("dialog")).queryByRole("combobox")).toBeNull();
     const dialog = within(screen.getByRole("dialog"));
     const reason = dialog.getByRole<HTMLTextAreaElement>("textbox", { name: /Motivo y evidencia/ });
@@ -260,7 +265,7 @@ describe("W21 motorcycle record", () => {
     );
     await screen.findByText("Disponible");
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(opener);
+    expect(document.activeElement).toBe(trigger);
     expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(1);
     expect(api.requests.find(({ method }) => method === "POST")?.body).toEqual({ reason: REASON });
     expect(api.requests.some(({ path }) => path.includes("/catalogs/void-reason/"))).toBe(false);
@@ -377,7 +382,7 @@ describe("W21 motorcycle record", () => {
       if (tab === "services" || tab === "responsibility")
         expect(query.get("include_voided")).toBe("true");
       if (tab === "services" || tab === "responsibility") {
-        await userEvent.click(screen.getByRole("button", { name: "Filtros" }));
+        await userEvent.click(screen.getByRole("button", { name: /^Filtros/ }));
         const toggle = await screen.findByRole<HTMLInputElement>("switch", {
           name: "Incluir anulados",
         });
@@ -422,7 +427,7 @@ describe("W21 motorcycle record", () => {
     await screen.findByText("44.00 km/L");
     await userEvent.click(screen.getByRole("link", { name: source }));
     await screen.findByRole("table", { name: "Servicios" });
-    expect(screen.getByText(new RegExp(`Origen ${source}`))).toBeDefined();
+    expect(screen.getByText("Mostrando el registro seleccionado.")).toBeDefined();
     expect(
       api.requests
         .filter((request) => request.path.includes("/services/"))

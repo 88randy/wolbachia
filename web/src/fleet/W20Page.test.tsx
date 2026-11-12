@@ -47,15 +47,18 @@ describe("W20 fleet list", () => {
         .getAllByRole("columnheader")
         .filter((header) => within(header).queryByRole("button"))
         .map((header) => header.textContent),
-    ).toEqual(["Código", "Placa", "Centro (ID)", "Fecha de alta"]);
+    ).toEqual(["Código", "Placa", "Fecha de alta"]);
     await userEvent.click(
       within(screen.getByRole("table")).getByRole("button", { name: "Código" }),
     );
     await waitFor(() => {
       expect(api.requests.some((request) => request.path.includes("ordering=-code"))).toBe(true);
     });
+    // The limitation lives in the (i) hint of the filter bar, not in a banner.
     expect(
-      screen.getByText(/indicadores de kilometraje.*no están disponibles para toda la lista/i),
+      screen.getByRole("button", {
+        name: /indicadores de kilometraje.*no están disponibles para toda la lista/i,
+      }),
     ).toBeDefined();
   });
   test("owns server filters and paging in the URL and preserves them on a record link", async () => {
@@ -79,7 +82,7 @@ describe("W20 fleet list", () => {
     await screen.findByRole("link", { name: "M-02" });
     const readBoundary = reads.length;
     await user.click(screen.getByRole("button", { name: /Fuera de servicio/ }));
-    await user.click(screen.getByRole("button", { name: "Filtros" }));
+    await user.click(screen.getByRole("button", { name: /^Filtros/ }));
     await user.click(await screen.findByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
       expect(app.router.state.location.search).toEqual({
