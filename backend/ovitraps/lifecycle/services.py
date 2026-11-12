@@ -64,6 +64,7 @@ class LifecycleCapture:
 
 
 def _scoped_identity(ctx: EventContext, identifier: UUID) -> Ovitrap:
+
     visible = event_scoped(
         Ovitrap.objects.filter(organization=ctx.organization).select_related(
             "sampling_point__block__quadrant"
