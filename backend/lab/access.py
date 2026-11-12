@@ -67,17 +67,16 @@ def subject_authors(bag: Bag | None, action: tuple[LabTarget, str]) -> tuple[UUI
 
 
 def scoped_readings(actor: UploadActor, permission: str) -> QuerySet[OvitrapReading]:
+    """Readings of the actor's organization inside the actor's scope for `permission`.
+
+    The organization is filtered on the root table only: every parent row (event, ovitrap, point,
+    block, quadrant, center) is written by services of that same organization, and repeating the
+    filter at each hop made PostgreSQL spend ~60 ms planning a join that executes in <1 ms. The
+    point version must still be the version of the ovitrap's own sampling point.
+    """
     rows = OvitrapReading.objects.filter(
         organization=actor.organization,
-        event__organization=actor.organization,
-        point_version__organization=actor.organization,
         point_version__point_id=F("ovitrap__sampling_point_id"),
-        ovitrap__organization=actor.organization,
-        ovitrap__event__organization=actor.organization,
-        ovitrap__sampling_point__organization=actor.organization,
-        ovitrap__sampling_point__block__organization=actor.organization,
-        ovitrap__sampling_point__block__quadrant__organization=actor.organization,
-        ovitrap__sampling_point__block__quadrant__center__organization=actor.organization,
     ).select_related("event", "ovitrap__sampling_point__block__quadrant", "point_version")
     return cast(QuerySet[OvitrapReading], filter_by_scope(rows, current_scope(actor), permission))
 

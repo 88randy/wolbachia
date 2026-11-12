@@ -67,6 +67,21 @@ PROVENANCE_FIELDS = (
 )
 
 
+class OvitrapListSerializer(serializers.ListSerializer[Any]):
+    """Evaluates `suggest_relocation` for the whole page at once."""
+
+    def _child(self) -> serializers.BaseSerializer[Any]:
+        return cast("serializers.BaseSerializer[Any]", self.child)
+
+    def to_representation(self, data: Any) -> list[Any]:  # noqa: ANN401 -- DRF page or queryset
+        from ovitraps.lifecycle.selectors import suggest_relocation_page
+
+        traps = list(data)
+        if isinstance(self.child, OvitrapSerializer):
+            self.child.relocation_page = suggest_relocation_page(traps)
+        return [self._child().to_representation(trap) for trap in traps]
+
+
 class OvitrapSerializer(ProvenanceSerializer):
     id = serializers.UUIDField(source="client_uuid", read_only=True)
     code = serializers.CharField(read_only=True)
@@ -80,6 +95,7 @@ class OvitrapSerializer(ProvenanceSerializer):
 
     is_retired = serializers.SerializerMethodField()
     suggest_relocation = serializers.SerializerMethodField()
+    relocation_page: dict[object, bool] | None = None
 
     def _capture_record(self, instance: Ovitrap) -> PlacementAttempt | PhysicalOvitrapLineage:
         return cast(
@@ -107,10 +123,13 @@ class OvitrapSerializer(ProvenanceSerializer):
     def get_suggest_relocation(self, instance: Ovitrap) -> bool:
         from ovitraps.lifecycle.selectors import suggest_relocation
 
+        if self.relocation_page is not None:
+            return self.relocation_page[instance.pk]
         return suggest_relocation(instance)
 
     class Meta:
         model = Ovitrap
+        list_serializer_class = OvitrapListSerializer
         fields = (
             "id",
             "code",
@@ -128,15 +147,64 @@ class OvitrapSerializer(ProvenanceSerializer):
         read_only_fields = fields
 
 
+class ReadingListSerializer(serializers.ListSerializer[Any]):
+    """Resolves what each reading needs beyond its own row once per page: receipt visibility
+    (one scoped query instead of an actor, a scope and a 9-table lookup per row) and the
+    incident marker of the abandoned and removed ones."""
+
+    def _child(self) -> serializers.BaseSerializer[Any]:
+        return cast("serializers.BaseSerializer[Any]", self.child)
+
+    def to_representation(self, data: Any) -> list[Any]:  # noqa: ANN401 -- DRF page or queryset
+        readings = list(data)
+        request = self.context.get("request")
+        child = self.child
+        if request is not None and isinstance(child, ReadingSerializer):
+            from lab.access import scoped_readings
+            from lab.permissions import BAG_RECEIVE
+            from uploads.access import actor_from_request
+
+            child.receipt_visible = set(
+                scoped_readings(actor_from_request(request), BAG_RECEIVE)
+                .filter(pk__in=[reading.pk for reading in readings])
+                .values_list("pk", flat=True)
+            )
+            child.incident_links = _first_incident_links(readings)
+        return [self._child().to_representation(reading) for reading in readings]
+
+
+def _first_incident_links(readings: list[OvitrapReading]) -> dict[Any, Any]:
+    """The marker `ovitrap.incident_links.first()` would return, for every abandoned/removed one."""
+    from ovitraps.lifecycle.models import OvitrapIncidentLink
+
+    wanted = {
+        reading.ovitrap_id for reading in readings if reading.finding_code in INCIDENT_FINDINGS
+    }
+    markers: dict[Any, Any] = {}
+    for marker in OvitrapIncidentLink.objects.filter(ovitrap_id__in=wanted).order_by(
+        *(OvitrapIncidentLink._meta.ordering or ["pk"])
+    ):
+        markers.setdefault(marker.ovitrap_id, marker)
+    return markers
+
+
+INCIDENT_FINDINGS = {"abandoned", "removed"}
+
+
 class ReadingSerializer(ProvenanceSerializer):
     lab_receipt = serializers.SerializerMethodField()
     incident_link = serializers.SerializerMethodField()
+    receipt_visible: set[Any] | None = None
+    incident_links: dict[Any, Any] | None = None
 
     @extend_schema_field(serializers.UUIDField(allow_null=True))
     def get_incident_link(self, instance: OvitrapReading) -> str | None:
-        if instance.finding_code not in {"abandoned", "removed"}:
+        if instance.finding_code not in INCIDENT_FINDINGS:
             return None
-        marker = instance.ovitrap.incident_links.first()
+        if self.incident_links is not None:
+            marker = self.incident_links.get(instance.ovitrap_id)
+        else:
+            marker = instance.ovitrap.incident_links.first()
         return None if marker is None else str(marker.pk)
 
     ovitrap = serializers.UUIDField(source="ovitrap.client_uuid", read_only=True)
@@ -156,18 +224,24 @@ class ReadingSerializer(ProvenanceSerializer):
         from uploads.access import actor_from_request
 
         request = self.context.get("request")
-        if (
-            request is None
-            or not scoped_readings(actor_from_request(request), BAG_RECEIVE)
-            .filter(pk=instance.pk)
-            .exists()
-        ):
+        if request is None:
+            return None
+        if self.receipt_visible is not None:
+            visible = instance.pk in self.receipt_visible
+        else:
+            visible = (
+                scoped_readings(actor_from_request(request), BAG_RECEIVE)
+                .filter(pk=instance.pk)
+                .exists()
+            )
+        if not visible:
             return None
         receipt = getattr(instance, "lab_receipt", None)
         return None if receipt is None else receipt_projection(receipt)
 
     class Meta:
         model = OvitrapReading
+        list_serializer_class = ReadingListSerializer
         fields = (
             "id",
             "code",
@@ -198,36 +272,45 @@ class ReadingSerializer(ProvenanceSerializer):
         read_only_fields = fields
 
 
+class BagListSerializer(serializers.ListSerializer[Any]):
+    """Resolves the `lab` block of the whole page at once (one lock, constant queries)."""
+
+    def _child(self) -> serializers.BaseSerializer[Any]:
+        return cast("serializers.BaseSerializer[Any]", self.child)
+
+    def to_representation(self, data: Any) -> list[Any]:  # noqa: ANN401 -- DRF page or queryset
+        bags = list(data)
+        request = self.context.get("request")
+        if request is not None and isinstance(self.child, BagSerializer):
+            from lab.selectors import published_bag_lab_page
+            from uploads.access import actor_from_request
+
+            self.child.lab_page = published_bag_lab_page(actor_from_request(request), bags)
+        return [self._child().to_representation(bag) for bag in bags]
+
+
 class BagSerializer(ProvenanceSerializer):
     evaluated_rules = serializers.JSONField(source="reading.evaluated_rules", read_only=True)
     rule_version_ids = serializers.JSONField(source="reading.rule_version_ids", read_only=True)
     lab = serializers.SerializerMethodField()
+    lab_page: dict[Any, dict[str, Any] | None] | None = None
 
     @extend_schema_field(LabBagSummarySerializer(allow_null=True))
     def get_lab(self, instance: Bag) -> dict[str, Any] | None:
-        from lab.access import scoped_bags
-        from lab.permissions import BAG_RECEIVE, COUNT_READ
-        from lab.selectors import published_bag_lab_projection
+        from lab.selectors import published_bag_lab_page
         from uploads.access import actor_from_request
 
         request = self.context.get("request")
         if request is None:
             return None
-        actor = actor_from_request(request)
-        permission = next(
-            (
-                code
-                for code in (BAG_RECEIVE, COUNT_READ)
-                if scoped_bags(actor, code).filter(pk=instance.pk).exists()
-            ),
-            None,
-        )
-        if permission is None:
-            return None
-        return published_bag_lab_projection(actor, instance, permission)
+        page = self.lab_page
+        if page is None:
+            page = published_bag_lab_page(actor_from_request(request), [instance])
+        return page[instance.pk]
 
     class Meta:
         model = Bag
+        list_serializer_class = BagListSerializer
         fields = (
             "id",
             "code",

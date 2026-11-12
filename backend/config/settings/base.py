@@ -68,6 +68,10 @@ ASGI_APPLICATION = "config.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 DATABASES = {"default": env.db("DATABASE_URL")}
+# Reuse database connections between requests (a new TLS connection to the managed database costs
+# tens of ms); 0 closes after each request. Health checks drop a connection the server closed.
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DATABASE_CONN_HEALTH_CHECKS", default=True)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = env("REDIS_URL")
