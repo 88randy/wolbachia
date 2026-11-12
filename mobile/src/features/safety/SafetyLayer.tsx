@@ -4,8 +4,14 @@ import type { ReactNode } from "react";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlobalStateList } from "./GlobalStateList.tsx";
+import { useNavigation } from "../../navigation/NavigationProvider.tsx";
+import type { GlobalCause } from "./global-state.ts";
 import { P32Screen } from "./P32Screen.tsx";
 import { useSafety } from "./SafetyProvider.tsx";
+
+const GPS_CAUSES: readonly GlobalCause[] = ["gpsSearching", "gpsNoFix", "gpsUnreliable"];
+/** Screens whose own step already tells the location status; the global banner would repeat it. */
+const OWN_LOCATION_STATUS = new Set(["ovitrapCapture"]);
 
 const styles = StyleSheet.create({ root: { flex: 1 }, screen: { flex: 1 } });
 
@@ -16,7 +22,11 @@ const styles = StyleSheet.create({ root: { flex: 1 }, screen: { flex: 1 } });
 export function SafetyLayer({ children }: { readonly children: ReactNode }) {
   const { safety, rules, globals, isSpeedLocked } = useSafety();
   const insets = useSafeAreaInsets();
-  const banners = globals.filter((state) => state.cause !== "speedLock");
+  const { route } = useNavigation();
+  const hidesGps = OWN_LOCATION_STATUS.has(route.name);
+  const banners = globals.filter(
+    (state) => state.cause !== "speedLock" && !(hidesGps && GPS_CAUSES.includes(state.cause)),
+  );
   const hasBanners = banners.length > 0;
   // Banners sit under the status bar; the screen below then must not pad the status bar again.
   const screenInsets = useMemo(

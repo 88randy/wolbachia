@@ -1,5 +1,6 @@
 import { QrCode } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
+import { openSystemSetting } from "../../system-settings/open-system-setting.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { isReceiptReadOnly } from "./editing.ts";
@@ -22,7 +23,24 @@ export function ReceiptScanButton({ model }: { readonly model: M05Model }) {
         }}
       />
       {scanner.errorKey ? (
-        <InfoNotice tone="warning" message={t("field.receipt.scanProblem")} />
+        <InfoNotice
+          tone="warning"
+          message={t(
+            scanner.errorKey === "mobile.supplyReceipt.scannerPermission"
+              ? scanner.errorKey
+              : "field.receipt.scanProblem",
+          )}
+          action={
+            scanner.errorKey === "mobile.supplyReceipt.scannerPermission"
+              ? {
+                  label: t("field.scan.openSettings"),
+                  onPress: () => {
+                    void openSystemSetting("app");
+                  },
+                }
+              : undefined
+          }
+        />
       ) : null}
       {model.state?.feedback === "duplicate" ? (
         <InfoNotice tone="info" message={t("field.receipt.scanDuplicate")} />

@@ -1,25 +1,26 @@
-import { Flashlight, FlashlightOff, QrCode, Settings } from "lucide-react-native";
+import { Camera, Flashlight, FlashlightOff, QrCode, Settings } from "lucide-react-native";
+import type { MessageKey } from "@wolbachia/i18n";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { M07Model } from "./use-m-07.ts";
 
-/** Torch, camera problems and a way to start again; the camera itself opens on its own. */
+const MESSAGE: Readonly<Record<NonNullable<M07Model["cameraError"]>, MessageKey>> = {
+  denied: "field.scan.cameraAsk",
+  blocked: "field.scan.cameraDenied",
+  cameraFailed: "field.scan.cameraFailed",
+};
+
+/** Torch and camera problems; every problem has the button that fixes it. */
 export function CameraControls({ model }: { readonly model: M07Model }) {
   const t = useT();
+  const { cameraError } = model;
   return (
     <>
-      {model.cameraError ? (
+      {cameraError ? (
         <>
-          <InfoNotice
-            tone="warning"
-            message={t(
-              model.cameraError === "denied"
-                ? "field.scan.cameraDenied"
-                : "field.scan.cameraFailed",
-            )}
-          />
-          {model.cameraError === "denied" ? (
+          <InfoNotice tone="warning" message={t(MESSAGE[cameraError])} />
+          {cameraError === "blocked" ? (
             <SecondaryButton
               icon={Settings}
               label={t("field.scan.openSettings")}
@@ -27,8 +28,8 @@ export function CameraControls({ model }: { readonly model: M07Model }) {
             />
           ) : (
             <SecondaryButton
-              icon={QrCode}
-              label={t("field.scan.again")}
+              icon={cameraError === "denied" ? Camera : QrCode}
+              label={t(cameraError === "denied" ? "field.scan.allowCamera" : "field.scan.again")}
               disabled={model.isBusy || model.isRequesting}
               onPress={() => {
                 void model.start();

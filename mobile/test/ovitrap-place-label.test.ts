@@ -5,7 +5,7 @@ import {
   detailPages,
   isPageDone,
 } from "../src/features/ovitrap-check/capture-pages.ts";
-import { LOCATION_WAIT_MS, locationStatus } from "../src/features/ovitrap-check/location-status.ts";
+import { locationStatus } from "../src/features/ovitrap-check/location-status.ts";
 import { currentEventId, harness } from "./support/m-08-harness.ts";
 
 const FREE_ID = "66666666-6666-4666-8666-666666666666";
@@ -60,19 +60,18 @@ void test("a manual UUID works as the label when the sticker is damaged", async 
 });
 
 void test("the location line: searching, ready with accuracy, and missing after the wait", () => {
-  assert.deepEqual(locationStatus({ kind: "searching" }, false), {
+  assert.deepEqual(locationStatus({ kind: "searching" }), {
     kind: "searching",
     accuracyM: null,
   });
   const fix = { lat: 19, lng: -99, accuracy_m: 25, fixedAt: 1 };
-  assert.deepEqual(locationStatus({ kind: "granted", fix }, false), {
+  assert.deepEqual(locationStatus({ kind: "granted", fix }), {
     kind: "ready",
     accuracyM: 25,
   });
-  assert.deepEqual(locationStatus({ kind: "searching" }, true), { kind: "missing" });
-  assert.deepEqual(locationStatus({ kind: "denied" }, false), { kind: "missing" });
-  assert.deepEqual(locationStatus({ kind: "off" }, false), { kind: "missing" });
-  assert.ok(LOCATION_WAIT_MS > 0);
+  assert.deepEqual(locationStatus({ kind: "noFix" }), { kind: "missing" });
+  assert.deepEqual(locationStatus({ kind: "denied" }), { kind: "missing" });
+  assert.deepEqual(locationStatus({ kind: "off" }), { kind: "missing" });
 });
 
 void test("a label that already belongs to a downloaded ovitrap is refused", async () => {
