@@ -32,7 +32,7 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.param.reminderBeforeEnd": "Reminder before the shift ends",
   "rules.param.maxPaddleReuses": "Maximum egg paddle reuses",
   "rules.param.revisitInterval": "Revisit interval",
-  "rules.param.departureRequiresOfflineMap": "Departure requires saved map (1 = yes, 0 = no)",
+  "rules.param.departureRequiresOfflineMap": "Departure requires saved map",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "meters",
@@ -116,7 +116,13 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.status.inForce": "In force",
   "rules.status.superseded": "Superseded",
   "rules.status.voided": "Voided",
-  "rules.param.maxGpsAccuracyM": "Maximum GPS accuracy (m)",
-  "rules.param.deliverySignatureMode":
-    "Where the courier signs a delivery (0 = either, 1 = warehouse, 2 = phone)",
+  "rules.param.maxGpsAccuracyM": "Maximum GPS accuracy",
+  "rules.param.deliverySignatureMode": "Where the courier signs a delivery",
+  "rules.param.dailyTaskTarget": "Daily task target",
+  "rules.param.pinMaxAttempts": "Maximum PIN attempts",
+  "rules.option.no": "No",
+  "rules.option.yes": "Yes",
+  "rules.option.signatureEither": "Warehouse or phone",
+  "rules.option.signatureWarehouse": "Warehouse screen",
+  "rules.option.signaturePhone": "Courier's phone",
 };

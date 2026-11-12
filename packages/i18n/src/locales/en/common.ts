@@ -6,6 +6,8 @@ export const common: Record<keyof typeof source, string> = {
   "common.actions.save": "Save",
   "common.actions.cancel": "Cancel",
   "common.actions.retry": "Try again",
+  "common.file.choose": "Choose file",
+  "common.file.none": "No file selected",
   "common.actions.close": "Close",
   "common.actions.goHome": "Go to home",
   "common.actions.void": "Void",

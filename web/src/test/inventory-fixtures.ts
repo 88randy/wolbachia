@@ -60,6 +60,7 @@ export function inventoryLocation(
     revision: 1,
     center: INVENTORY_CENTER,
     quadrant: null,
+    quadrant_code: null,
     name: "Synthetic store",
     kind: "warehouse",
     geometry: { type: "Point", coordinates: [-99, 19] },

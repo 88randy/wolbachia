@@ -5,6 +5,7 @@ export const portal: Record<keyof typeof esPortal, string> = {
   "portal.nav.home": "Home",
   "portal.nav.trends": "Trends",
   "portal.nav.map": "Map",
+  "portal.nav.summary": "Summary",
   "portal.footer.privacy":
     "This portal only shows totals. It never shows data about people or exact locations.",
   "portal.footer.source": "Data from {organization}.",

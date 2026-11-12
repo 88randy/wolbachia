@@ -39,6 +39,7 @@ export const shell = {
   "shell.nav.regulatory": "Regulatorio",
   "shell.nav.settings": "Configuración",
   "shell.nav.platform": "Organizaciones",
+  "shell.nav.portal": "Portal público",
 
   // Web user menu (top bar)
   "shell.userMenu.button": "Menú de usuario",

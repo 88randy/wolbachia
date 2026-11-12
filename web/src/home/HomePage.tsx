@@ -77,12 +77,14 @@ export function HomePage() {
       )}
       <HomeKpis items={all} />
       {data && <HomeAttention summary={data} />}
-      <section aria-labelledby="home-shortcuts" className="flex flex-col gap-3">
-        <h2 id="home-shortcuts" className="m-0 text-base font-semibold">
-          {t("hub.home.shortcuts")}
-        </h2>
-        <HubGrid items={shortcuts} label={t("hub.home.shortcuts")} />
-      </section>
+      {shortcuts.length > 0 && (
+        <section aria-labelledby="home-shortcuts" className="flex flex-col gap-3">
+          <h2 id="home-shortcuts" className="m-0 text-base font-semibold">
+            {t("hub.home.shortcuts")}
+          </h2>
+          <HubGrid items={shortcuts} label={t("hub.home.shortcuts")} />
+        </section>
+      )}
     </HomeDashboard>
   );
 }

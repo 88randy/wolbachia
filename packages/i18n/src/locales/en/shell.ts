@@ -39,6 +39,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.regulatory": "Regulatory",
   "shell.nav.settings": "Settings",
   "shell.nav.platform": "Organizations",
+  "shell.nav.portal": "Public portal",
 
   // Web user menu (top bar)
   "shell.userMenu.button": "User menu",

@@ -30,7 +30,7 @@ function Before({ parameter }: { parameter: RuleParameter }) {
         <NotConfiguredBadge />
       ) : (
         <p className={classNames(styles.bigValue, styles.struck)}>
-          {formatNumber(value)} {labels.unit(parameter.unit)}
+          {labels.valueText(parameter, value, formatNumber)}
         </p>
       )}
       {since !== null && (
@@ -41,16 +41,13 @@ function Before({ parameter }: { parameter: RuleParameter }) {
 }
 
 /** The value being typed, and the day it would start when one is chosen. */
-function After({ value, date, unit }: { value: number; date: string; unit: string }) {
+function After({ text, date }: { text: string; date: string }) {
   const { t } = useTranslation();
-  const formatNumber = useFormatNumber();
   const formatCalendarDate = useFormatCalendarDate();
   return (
     <div className={styles.after}>
       <p className={styles.term}>{t("rules.compare.after")}</p>
-      <p className={styles.bigValue}>
-        {formatNumber(value)} {unit}
-      </p>
+      <p className={styles.bigValue}>{text}</p>
       {date !== "" && (
         <p className={styles.detail}>
           {t("rules.compare.from", { date: formatCalendarDate(date) })}
@@ -69,6 +66,7 @@ export function VersionComparison({ parameter, control }: ComparisonProps) {
   const { t } = useTranslation();
   const titleId = useId();
   const labels = useParameterLabels();
+  const formatNumber = useFormatNumber();
   const [raw, date] = useWatch({ control, name: ["value", "effectiveFrom"] });
   const next = validValueOf(raw, boundsOf(parameter));
   if (next === null) return null;
@@ -79,7 +77,7 @@ export function VersionComparison({ parameter, control }: ComparisonProps) {
       </h3>
       <div className={styles.compare}>
         <Before parameter={parameter} />
-        <After value={next} date={date} unit={labels.unit(parameter.unit)} />
+        <After text={labels.valueText(parameter, next, formatNumber)} date={date} />
       </div>
     </section>
   );

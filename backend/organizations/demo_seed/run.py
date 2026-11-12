@@ -7,6 +7,7 @@ from django.core.management.base import CommandError
 
 from geography.models import Quadrant
 from organizations.demo_seed import (
+    community,
     custody_history,
     field,
     geography,
@@ -81,6 +82,8 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     )
     retrying(lambda: samples_history.ensure_samples(organization, members, device, catalog))
     retrying(lambda: incidents_history.ensure_incidents(organization, members, quadrants))
+    community.ensure_activity_types(organization, admin)
+    retrying(lambda: community.ensure_activities(organization, members["demo-promoter"]))
     entomologist = UploadActor(members["demo-entomologist"].user, organization)
     lab_history.ensure_lab_history(organization, entomologist)
     retrying(lambda: pcr_history.ensure_pcr_history(organization, members, device))

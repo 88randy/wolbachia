@@ -81,7 +81,7 @@ export function useVersionColumns(options: VersionColumnsOptions): readonly Colu
   const { parameter, canVoid, onVoid, blockedNoteId } = options;
   return useMemo(() => {
     const write: Writers = {
-      value: (version) => `${formatNumber(version.value)} ${labels.unit(parameter.unit)}`,
+      value: (version) => labels.valueText(parameter, version.value, formatNumber),
       day: formatCalendarDate,
       moment: formatDateTime,
       author: authorName,

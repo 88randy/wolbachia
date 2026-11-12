@@ -90,6 +90,9 @@ export const hub: Record<keyof typeof source, string> = {
   "hub.quadrants.description": "Quadrant map, points and closures.",
   "hub.notifications.description": "Notices and alerts for you.",
   "hub.incidents.description": "Open incidents and their follow-up.",
+  "hub.portal.summary": "Overall program indicators.",
+  "hub.portal.trends": "Releases by week.",
+  "hub.portal.map": "Coverage by quadrant.",
   "hub.settings.description": "Organization, roles, phones and rules.",
   "hub.settings.incidentTypes": "Incident types, severity and owners.",
 };

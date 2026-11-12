@@ -23,7 +23,7 @@ export function PermitDocumentPicker(props: Props) {
   );
   return (
     <div>
-      <PermitDocumentField view={view} isBusy={isBusy} onSelect={onSelect} />
+      <PermitDocumentField view={view} isBusy={isBusy} file={file} onSelect={onSelect} />
       <PermitDocumentActions
         view={view}
         isBusy={isBusy}

@@ -127,7 +127,7 @@ export const AREAS = [
     // Codes that exist today (docs/api-conventions.md, #3 and #4); W62 to W68 refine them.
     requiredPermissions: [
       "catalog.read",
-      "rule_parameter.read",
+      "rule_parameter_version.read",
       "device.read",
       "organization.read",
       "role.read",

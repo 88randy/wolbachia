@@ -61,7 +61,7 @@ export function SettingsPage() {
     },
     {
       id: "rules",
-      permission: "rule_parameter.read",
+      permission: "rule_parameter_version.read",
       icon: SlidersHorizontal,
       link: { to: "/settings/rule-parameters" },
       title: t("rules.page.title"),

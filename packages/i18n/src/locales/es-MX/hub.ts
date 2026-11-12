@@ -90,6 +90,9 @@ export const hub = {
   "hub.quadrants.description": "Mapa de cuadrantes, puntos y cierres.",
   "hub.notifications.description": "Avisos y alertas para ti.",
   "hub.incidents.description": "Incidencias abiertas y su seguimiento.",
+  "hub.portal.summary": "Indicadores generales del programa.",
+  "hub.portal.trends": "Liberaciones por semana.",
+  "hub.portal.map": "Cobertura por cuadrante.",
   "hub.settings.description": "Organización, roles, teléfonos y reglas.",
   "hub.settings.incidentTypes": "Tipos de incidencia, gravedad y responsables.",
 } as const satisfies AreaCatalog<"hub">;

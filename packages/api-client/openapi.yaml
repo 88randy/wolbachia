@@ -26854,6 +26854,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        quadrant_code:
+          type: string
+          readOnly: true
+          nullable: true
         name:
           type: string
           readOnly: true
@@ -26915,6 +26919,7 @@ components:
       - owner_id
       - owner_label
       - quadrant
+      - quadrant_code
       - revision
       - version
     LocationWriteRequest:

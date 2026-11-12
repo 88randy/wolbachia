@@ -133,7 +133,7 @@ class InventoryVersionViewSet(
             latest_versions(self.queryset.model, self.parent_field), actor, permission
         ).select_related(self.parent_field.removesuffix("_id"))
         if self.queryset.model is LocationVersion:
-            return query.select_related("owner__user")
+            return query.select_related("owner__user", "location__quadrant")
         return query.select_related("protocol__incident_type")
 
     def get_object(self) -> Any:  # noqa: ANN401 -- DRF's parent method returns a heterogeneous model
