@@ -26,7 +26,6 @@ export function TableRowFrame({ id, className, children, onClick }: Props) {
       </SortableTableRow>
     );
   return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- pointer shortcut; the code link is the keyboard path
     <tr className={classNames(className, onClick && styles.clickable)} onClick={onClick}>
       {items && <td className={styles.cell} />}
       {children}
