@@ -75,7 +75,7 @@ describe("W1 sign-in: the screen", () => {
       screen.getByText("Las cuentas las da de alta el administrador de tu organización."),
     ).toBeDefined();
     expect(screen.queryByText(/crear cuenta|regístrate|sign up/i)).toBeNull();
-    expect(document.title).toBe("Inicia sesión · Wolbachia");
+    expect(document.title).toBe("Inicia sesión · AedesVision");
   });
 
   test("the password toggle shows and hides it with aria-pressed", async () => {
@@ -210,7 +210,7 @@ describe("W1 sign-in: after signing in", () => {
     await vi.waitFor(() => {
       expect(app.router.state.location.pathname).toBe("/");
     });
-    expect(await screen.findByRole("heading", { level: 1, name: "Inicio" })).toBeDefined();
+    expect(await screen.findByRole("heading", { level: 1, name: /^Hola,/ })).toBeDefined();
   });
 
   test("a user with several organizations chooses one first, keeping the target", async () => {
@@ -377,7 +377,7 @@ describe("W1 sign-in: failures", () => {
     await signIn("ana.supervisora");
 
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "No hay conexión con el servidor",
+      "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
     );
     expect(screen.getByLabelText<HTMLInputElement>("Usuario").value).toBe("ana.supervisora");
     expect(screen.getByLabelText<HTMLInputElement>("Contraseña").value).toBe(PASSWORD);

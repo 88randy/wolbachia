@@ -15,7 +15,7 @@ import { useLabScope } from "../use-lab-scope";
 import { LabDialog } from "./LabDialog";
 import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
 import { ChoiceCard, LabeledSelect } from "./PcrFields";
-import { PCR_TARGETS, eligibleOptions, labsOptions, pcrErrorKey } from "./pcr-api";
+import { PCR_TARGETS, eligibleFacetsOptions, eligibleOptions, labsOptions, pcrErrorKey } from "./pcr-api";
 import type { PcrSample, PcrTarget } from "./pcr-api";
 import { targetKey } from "./pcr-status";
 
@@ -189,11 +189,7 @@ function SampleChooser({
   const [quadrant, setQuadrant] = useState(ALL);
   const [week, setWeek] = useState(ALL);
   const [search, setSearch] = useState("");
-  const facets = useQuery({
-    queryKey: ["pcr-facets", scope.key],
-    queryFn: async ({ signal }) =>
-      unwrap(await scope.client.GET("/api/v1/pcr-batches/eligible-samples/facets/", { signal })),
-  });
+  const facets = useQuery(eligibleFacetsOptions(scope));
   const rows = useQuery(eligibleOptions(scope, { quadrant, epiWeek: week, search, page: 1 }));
   const visible = rows.data?.results ?? [];
   const allOn = visible.length > 0 && visible.every((row) => selected.has(row.id));

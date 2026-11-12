@@ -50,7 +50,7 @@ async function openShell(routes: FakeApiRoutes = {}) {
     ...routes,
   });
   const app = await renderApp({ fetch: api.fetch });
-  await screen.findByRole("heading", { level: 1, name: "Inicio" });
+  await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
   return { api, app };
 }
 
@@ -89,7 +89,7 @@ describe("session expiry: re-authentication over the current page", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Tu sesión terminó" });
     expect(dialog.textContent).toContain("lo que tenías sin guardar se conserva");
-    expect(screen.getByRole("heading", { level: 1, name: "Inicio" })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 1, name: /^Hola,/ })).toBeDefined();
     expect(app.router.state.location.pathname).toBe("/");
   });
 
@@ -278,7 +278,7 @@ describe("session expiry: re-authentication over the current page", () => {
     },
   );
 
-  test.each(["rule_parameter.read", "rule_parameter_version.create"])(
+  test.each(["rule_parameter_version.read", "rule_parameter_version.create"])(
     "a retained draft is removed when %s is revoked",
     async (permission) => {
       const replacement = {

@@ -134,7 +134,7 @@ describe("re-authentication and sign-out are queued, not rejected", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("No hay conexión con el servidor");
+    expect(alert.textContent).toContain("No hay conexión. Revisa tu señal e inténtalo de nuevo.");
     expect(screen.getByRole("dialog")).toBeDefined();
   });
 });
@@ -150,7 +150,7 @@ describe("leaving the page during a pending sign-out", () => {
       ...routes,
     });
     const app = await renderApp({ fetch: api.fetch });
-    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
     await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
     await vi.waitFor(() => {
@@ -194,7 +194,7 @@ describe("leaving the page during a pending sign-out", () => {
 
     held.release(noContent(204));
 
-    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
     expect(order(api)).toEqual(["logout/", "login/"]);
     // The sign-in accepted after the sign-out changed the revision: its /me/ was not wiped.
     expect(app.queryClient.getQueryData(["me"])).toBeDefined();
@@ -221,7 +221,7 @@ describe("leaving the page during a pending sign-out", () => {
 
     held.release(noContent(204));
 
-    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
     expect(order(api)).toEqual(["logout/", "logout/", "login/"]);
     expect(app.queryClient.getQueryData(["me"])).toBeDefined();
   });
@@ -241,7 +241,7 @@ describe("a /me/ of the closed session cannot survive the sign-out", () => {
       [LOGOUT]: noContent(204),
     });
     const app = await renderApp({ fetch: api.fetch });
-    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
     const refetch = app.queryClient.refetchQueries({ queryKey: ["me"] });
     await vi.waitFor(() => {
       expect(meCalls).toBe(2);
@@ -340,7 +340,7 @@ describe("leaving a pending re-authentication", () => {
     fireEvent.change(screen.getByLabelText("Usuario"), { target: { value: "ana.supervisora" } });
     fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: PASSWORD } });
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await screen.findByRole("heading", { level: 1, name: /^Hola,/ });
     await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 

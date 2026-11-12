@@ -199,29 +199,29 @@ describe("document title (WCAG 2.4.2)", () => {
   test("each area sets its own title", async () => {
     await renderApp({ path: "/operations", me: OPERATIONS_ME });
 
-    expect(document.title).toBe("Operación · Wolbachia");
+    expect(document.title).toBe("Operación · AedesVision");
   });
 
   test("navigating changes the title", async () => {
     await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
-    expect(document.title).toBe("Inicio · Wolbachia");
+    expect(document.title).toBe("Inicio · AedesVision");
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
 
     await screen.findByRole("heading", { level: 1, name: "Laboratorio" });
-    expect(document.title).toBe("Laboratorio · Wolbachia");
+    expect(document.title).toBe("Laboratorio · AedesVision");
   });
 
   test("not found has a translated title", async () => {
     await renderApp({ path: "/nope", language: "en" });
 
-    expect(document.title).toBe("We couldn't find this page · Wolbachia");
+    expect(document.title).toBe("We couldn't find this page · AedesVision");
   });
 
   test("a route error sets the error title", async () => {
     await renderThrowingRoute();
 
     await screen.findByRole("heading", { name: "Algo salió mal en esta pantalla" });
-    expect(document.title).toBe("Algo salió mal en esta pantalla · Wolbachia");
+    expect(document.title).toBe("Algo salió mal en esta pantalla · AedesVision");
   });
 });
