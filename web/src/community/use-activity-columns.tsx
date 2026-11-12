@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useCenterColumns } from "../data-table/center-column";
 import type { DataTableColumn } from "../data-table/table-types";
+import { useFormatCalendarDate } from "../format/use-formatters";
 import { useLanguage } from "../i18n/use-language";
 import { ActivityStatusPill } from "./ActivityStatusPill";
 import { typeLabel } from "./activity-labels";
@@ -12,16 +13,31 @@ import type { CommunityActivity } from "./community-query";
 export function useActivityColumns(): readonly DataTableColumn<CommunityActivity>[] {
   const { i18n } = useTranslation();
   const { language } = useLanguage();
+  const formatCalendarDate = useFormatCalendarDate();
   const columns = useMemo<DataTableColumn<CommunityActivity>[]>(
     () => [
-      { id: "activity_date", headerKey: "community.column.date", cell: (r) => r.activity_date },
-      { id: "code", headerKey: "community.column.code", cell: (r) => r.code },
+      {
+        id: "activity_date",
+        headerKey: "community.column.date",
+        cell: (r) => (
+          <span className="whitespace-nowrap">{formatCalendarDate(r.activity_date)}</span>
+        ),
+      },
+      {
+        id: "code",
+        headerKey: "community.column.code",
+        cell: (r) => <span className="whitespace-nowrap">{r.code}</span>,
+      },
       {
         id: "type",
         headerKey: "community.column.type",
         cell: (r) => typeLabel(r.type_snapshot, language),
       },
-      { id: "zone", headerKey: "community.column.zone", cell: (r) => r.zone_code },
+      {
+        id: "zone",
+        headerKey: "community.column.zone",
+        cell: (r) => <span className="whitespace-nowrap">{r.zone_code}</span>,
+      },
       {
         id: "attendance",
         headerKey: "community.column.attendance",
@@ -44,7 +60,7 @@ export function useActivityColumns(): readonly DataTableColumn<CommunityActivity
         cell: (r) => <ActivityStatusPill isVoided={r.is_voided} />,
       },
     ],
-    [i18n.language, language],
+    [i18n.language, language, formatCalendarDate],
   );
   return useCenterColumns(columns, (r) => r.center_id, { after: "code" });
 }

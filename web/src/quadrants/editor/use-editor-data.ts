@@ -3,6 +3,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import { centersOptions } from "../../centers/centers-query";
+import { PERMIT_MANAGE } from "../../releases/permits/permissions";
+import { useCan } from "../../session/use-can";
 import type { GeographyScope } from "../geography/use-w-15";
 import {
   editorBlocksOptions,
@@ -20,7 +22,13 @@ export function useEditorData(scope: GeographyScope) {
   const blocks = useQuery(editorBlocksOptions(scope));
   const points = useQuery(editorPointsOptions(scope));
   const releasePoints = useQuery(editorReleasePointsOptions(scope));
-  const permits = useQuery({ ...editorPermitsOptions(scope), retry: false });
+  const can = useCan();
+  // Permit zones only feed a warning: without permit.manage they are never requested.
+  const permits = useQuery({
+    ...editorPermitsOptions(scope),
+    retry: false,
+    enabled: can(PERMIT_MANAGE),
+  });
   const centers = useQuery(centersOptions(scope.client, scope.identity));
   const activePoints = useMemo(
     () =>
