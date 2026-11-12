@@ -2,11 +2,11 @@
 
 from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import cast
+from typing import Any, cast
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -43,7 +43,7 @@ class AnalyticsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         "wolbachia": WOLBACHIA_READ,
     }
 
-    def get_permissions(self) -> list[BasePermission]:
+    def get_permissions(self) -> list[Any]:
         # The comparison is gated by the indicator asked for, not by one fixed code.
         if getattr(self, "action", None) == "comparison":
             return [IsAuthenticated(), ComparisonPermission()]
