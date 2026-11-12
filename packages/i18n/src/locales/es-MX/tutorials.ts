@@ -290,7 +290,8 @@ export const tutorials = {
   // Inventory: print labels.
   "tutorials.printLabels.title": "Imprimir etiquetas",
   "tutorials.printLabels.pick.label": "Elegir qué imprimir",
-  "tutorials.printLabels.pick.caption": "Abre un registro, o marca varios en la lista.",
+  "tutorials.printLabels.pick.caption":
+    "En Etiquetas QR elige el tipo (lotes, bolsas, papeletas, ovitrampas, motos o ubicaciones) y marca los registros. Desde un registro, «Imprimir etiqueta» te trae aquí con ese registro marcado.",
   "tutorials.printLabels.action.label": "Imprimir etiquetas",
   "tutorials.printLabels.action.caption": "Toca Imprimir etiquetas.",
   "tutorials.printLabels.size.label": "Tamaño y copias",

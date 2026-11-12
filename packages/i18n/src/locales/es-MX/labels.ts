@@ -30,4 +30,5 @@ export const labels = {
   "labels.line.expires": "Caduca {date}",
   "labels.line.createdOn": "Registrada {date}",
   "labels.line.plate": "Placas {plate}",
+  "labels.line.point": "Punto {code}",
 } as const satisfies AreaCatalog<"labels">;

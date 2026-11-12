@@ -1,19 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../data-table/DataTable";
-import { FleetListFilters } from "./FleetListFilters";
+import { FleetFilters } from "./FleetFilters";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
+import { useFormatDateTime } from "../format/use-format-date-time";
 import { useFleetScope } from "./use-fleet-scope";
+import { useVoidReasonLabel, voidInfoOf } from "../void";
 import { fleetListOptions } from "./fleet-query";
 import { FLEET_PAGE_SIZE, FLEET_TABLE } from "./fleet-table";
 import { useFleetColumns } from "./use-fleet-columns";
 import { useFleetCounts } from "./use-fleet-counts";
 import { useFleetRowMenu } from "./use-fleet-row-menu";
-import { useFleetVoidOf } from "./use-fleet-void-of";
+import { useFleetAuthor } from "./use-fleet-author";
 import { useDisplaySettled } from "../session/use-visible-session-state";
 import { CardSkeleton } from "../ui/CardSkeleton";
-import { useFleetLabels } from "./use-fleet-labels";
 export function FleetTable() {
   const { t } = useTranslation();
   const controller = useTableUrlState(FLEET_TABLE);
@@ -22,13 +23,14 @@ export function FleetTable() {
   const columns = useFleetColumns();
   const counts = useFleetCounts(scope, controller.state);
   const rowMenu = useFleetRowMenu();
-  const labels = useFleetLabels();
-  const voidOf = useFleetVoidOf();
+  const author = useFleetAuthor();
+  const format = useFormatDateTime();
+  const reasonLabel = useVoidReasonLabel();
   const isSettled = useDisplaySettled(scope.identity.isSettled);
   if (!isSettled) return <CardSkeleton />;
   return (
     <>
-      <FleetListFilters controller={controller} counts={counts} rows={query.data?.results ?? []} />
+      <FleetFilters controller={controller} quickCounts={counts} />
       <DataTable
         caption={t("fleet.table.caption")}
         columns={columns}
@@ -36,9 +38,8 @@ export function FleetTable() {
         controller={controller}
         rowLink={rowMenu.link}
         rowMenu={rowMenu.menu}
-        selection={labels.selection}
         data={pageTableData(query, controller.state.page, FLEET_PAGE_SIZE)}
-        voidOf={voidOf}
+        voidOf={(item) => voidInfoOf(item, author, { formatWhen: format, reasonLabel })}
       />
     </>
   );

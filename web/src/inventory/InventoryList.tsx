@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../components/templates/ListPage";
 import { InlineNotice } from "../ui/InlineNotice";
+import { DataTable } from "../data-table/DataTable";
 import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
@@ -11,10 +12,11 @@ import { applyPatch } from "../data-table/table-state";
 import { inventoryListOptions } from "./inventory-query";
 import { INVENTORY_TABLES, INVENTORY_PAGE_SIZE } from "./inventory-table";
 import { useInventoryContext } from "./use-inventory-context";
+import { useCenterColumns } from "../data-table/center-column";
+import { useInventoryColumns } from "./use-inventory-columns";
 import type { InventoryKind, InventoryRecord } from "./inventory-links";
+import { InventoryCreateDialog } from "./InventoryCreateDialog";
 import { LocationsMap } from "./locations/LocationsMap";
-import { InventoryPageActions } from "./InventoryPageActions";
-import { InventoryTable } from "./InventoryTable";
 function useInventoryTable(kind: InventoryKind) {
   const base = useTableUrlState(INVENTORY_TABLES[kind]);
   const navigate = useNavigate();
@@ -26,19 +28,26 @@ function useInventoryTable(kind: InventoryKind) {
     },
   );
 }
+/** The kind's columns; lots and locations also show their center. */
+function useListColumns(kind: InventoryKind) {
+  const base = useInventoryColumns(kind);
+  const withCenter = useCenterColumns(base, (row) => ("center" in row ? row.center : null), {
+    after: "name",
+  });
+  return kind === "supplies" ? base : withCenter;
+}
 export function InventoryList({ kind }: { kind: InventoryKind }) {
   const { t } = useTranslation();
   const controller = useInventoryTable(kind);
   const scope = useInventoryContext();
   const query = useQuery(inventoryListOptions(scope, kind, controller.state));
-  const rows = query.data?.results ?? [];
-  const locations = rows.every((row) => "geometry" in row) ? rows : [];
+  const columns = useListColumns(kind);
+  const locations = query.data?.results.every((row) => "geometry" in row) ? query.data.results : [];
   const title = t(`inventory.page.${kind}`);
-  const data = pageTableData<InventoryRecord>(query, controller.state.page, INVENTORY_PAGE_SIZE);
   return (
     <ListPage
       title={title}
-      actions={<InventoryPageActions kind={kind} rows={rows} />}
+      actions={scope.readContext.mode === "admission" && <InventoryCreateDialog kind={kind} />}
       notices={
         scope.readContext.mode === "custody" && (
           <InlineNotice tone="info">{t("inventory.context.readonly")}</InlineNotice>
@@ -46,7 +55,13 @@ export function InventoryList({ kind }: { kind: InventoryKind }) {
       }
     >
       <FilterBar controller={controller} />
-      <InventoryTable kind={kind} title={title} controller={controller} data={data} />
+      <DataTable<InventoryRecord>
+        caption={title}
+        columns={columns}
+        getRowId={(row) => row.id}
+        controller={controller}
+        data={pageTableData<InventoryRecord>(query, controller.state.page, INVENTORY_PAGE_SIZE)}
+      />
       {kind === "locations" && <LocationsMap locations={locations} />}
     </ListPage>
   );

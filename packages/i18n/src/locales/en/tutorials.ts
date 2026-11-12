@@ -291,7 +291,8 @@ export const tutorials: Record<keyof typeof source, string> = {
   // Inventory: print labels.
   "tutorials.printLabels.title": "Print labels",
   "tutorials.printLabels.pick.label": "Choose what to print",
-  "tutorials.printLabels.pick.caption": "Open a record, or tick several in the list.",
+  "tutorials.printLabels.pick.caption":
+    "In QR labels pick the type (lots, bags, egg paddles, ovitraps, motorcycles or locations) and tick the records. From a record, “Print label” brings you here with that record ticked.",
   "tutorials.printLabels.action.label": "Print labels",
   "tutorials.printLabels.action.caption": "Tap Print labels.",
   "tutorials.printLabels.size.label": "Size and copies",

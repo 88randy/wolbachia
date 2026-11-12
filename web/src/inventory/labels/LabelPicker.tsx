@@ -1,44 +1,49 @@
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchField } from "../../forms/SearchField";
+import { toLabelRecord } from "../../labels/label-records";
+import type { LabelSource } from "../../labels/label-records";
+import { useLabelText } from "../../labels/use-label-text";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { ErrorState } from "../../ui/ErrorState";
 import { CardSkeleton } from "../../ui/CardSkeleton";
-import type { useLabelSheet } from "./use-label-sheet";
-import { LABEL_PAGE_SIZE } from "./label-query";
-import styles from "./labels.module.css";
+import type { useLabelPicker } from "./use-label-picker";
+import { labelPageSize } from "./label-query";
 
-type Model = ReturnType<typeof useLabelSheet>;
+type Model = ReturnType<typeof useLabelPicker>;
+
+function PickerRow({ model, source }: { model: Model; source: LabelSource }) {
+  const { t } = useTranslation();
+  const record = toLabelRecord(source, useLabelText());
+  const id = `label-row-${source.row.id}`;
+  return (
+    <li className="flex items-center gap-3 border-b border-line py-2 last:border-0">
+      <Checkbox
+        id={id}
+        checked={model.selected.some((entry) => entry.row.id === source.row.id)}
+        aria-label={t("inventory.labels.rowSelect", { code: record.code })}
+        onCheckedChange={() => {
+          model.toggle(source);
+        }}
+      />
+      <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer flex-col">
+        <span className="text-sm font-semibold whitespace-nowrap text-ink">{record.code}</span>
+        {record.lines.length > 0 && (
+          <span className="text-xs text-ink-3">{record.lines.join(" · ")}</span>
+        )}
+      </label>
+    </li>
+  );
+}
 
 function PickerRows({ model }: { model: Model }) {
-  const { t } = useTranslation();
   return (
-    <ul className={styles["picker"]}>
-      {model.items.map((item) => {
-        const checked = model.selected.some((entry) => entry.id === item.id);
-        const id = `label-row-${item.id}`;
-        return (
-          <li
-            key={item.id}
-            className="flex items-center gap-3 border-b border-line py-2 last:border-0"
-          >
-            <Checkbox
-              id={id}
-              checked={checked}
-              aria-label={t("inventory.labels.rowSelect", { code: item.code })}
-              onCheckedChange={() => {
-                model.toggle(item);
-              }}
-            />
-            <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer flex-col">
-              <span className="text-sm font-semibold text-ink">{item.code}</span>
-              {item.caption && <span className="text-xs text-ink-3">{item.caption}</span>}
-            </label>
-          </li>
-        );
-      })}
+    <ul className="m-0 flex max-h-[28rem] list-none flex-col overflow-y-auto p-0">
+      {model.items.map((source) => (
+        <PickerRow key={source.row.id} model={model} source={source} />
+      ))}
     </ul>
   );
 }
@@ -82,7 +87,7 @@ function PickerToolbar({ model }: { model: Model }) {
   );
 }
 
-/** Searchable checklist of records of the chosen type. */
+/** Searchable checklist of records of the chosen kind. */
 export function LabelPicker({ model }: { model: Model }) {
   const { t } = useTranslation();
   return (
@@ -98,9 +103,9 @@ export function LabelPicker({ model }: { model: Model }) {
         />
         <PickerToolbar model={model} />
         <PickerBody model={model} />
-        {model.total > LABEL_PAGE_SIZE && (
+        {model.total > labelPageSize(model.kind) && (
           <p className="m-0 text-xs text-ink-3">
-            {t("inventory.labels.truncated", { count: LABEL_PAGE_SIZE })}
+            {t("inventory.labels.truncated", { count: labelPageSize(model.kind) })}
           </p>
         )}
       </div>
