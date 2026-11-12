@@ -43,9 +43,7 @@ describe("geography permission and scope isolation", () => {
       });
       await screen.findByRole("heading", { name: "No encontramos esta p\u00e1gina" });
       expect(screen.queryByRole("heading", { name: "C-07" })).toBeNull();
-      expect(
-        screen.queryByRole("textbox", { name: "Forma en el mapa" }),
-      ).toBeNull();
+      expect(screen.queryByRole("textbox", { name: "Forma en el mapa" })).toBeNull();
     },
   );
   test("changing only active scope clears rows and ignores an earlier pending answer", async () => {

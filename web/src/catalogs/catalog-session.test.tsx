@@ -59,7 +59,9 @@ test.each(["organization", "user"])(
       await catalogs.promise;
     });
     await waitFor(() => {
-      expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain("B catalog");
+      expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain(
+        "B catalog",
+      );
     });
     expect(screen.queryByRole("row", { name: /Private A row/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();

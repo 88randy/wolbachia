@@ -35,7 +35,13 @@ function nativeRequire(name: string, options: Options): unknown {
   // Header chrome that reads the sync service; none of the screens under test assert on it.
   if (name.endsWith("SyncChip.tsx")) return { SyncChip: () => null };
   if (name.endsWith("NavigationProvider.tsx"))
-    return { useNavigation: () => ({ popToRoot: () => undefined, pop: () => undefined, push: () => undefined }) };
+    return {
+      useNavigation: () => ({
+        popToRoot: () => undefined,
+        pop: () => undefined,
+        push: () => undefined,
+      }),
+    };
   if (name.endsWith("ThemeProvider.tsx"))
     return {
       useTheme: () => ({ theme, scheme: options.scheme }),
@@ -118,9 +124,14 @@ export function flattenStyle(value: unknown): Record<string, unknown> {
  */
 export function minHeightOf(node: RenderNode): number {
   const raw = node.props.style;
-  const style = typeof raw === "function" ? (raw as (input: { pressed: boolean }) => unknown)({ pressed: false }) : raw;
+  const style =
+    typeof raw === "function"
+      ? (raw as (input: { pressed: boolean }) => unknown)({ pressed: false })
+      : raw;
   const fromStyle = Number(flattenStyle(style).minHeight);
   if (Number.isFinite(fromStyle)) return fromStyle;
-  const match = /(?:^|\s)(?:min-)?h-(\d+)(?:\s|$)/.exec(String(node.props.className ?? ""));
+  const match = /(?:^|\s)(?:min-)?h-(\d+)(?:\s|$)/.exec(
+    typeof node.props.className === "string" ? node.props.className : "",
+  );
   return match?.[1] === undefined ? Number.NaN : Number(match[1]) * 4;
 }

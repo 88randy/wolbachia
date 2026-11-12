@@ -37,11 +37,18 @@ void test("P11 denied camera and P21 invalid results keep a named manual way in 
       return Promise.resolve();
     });
     // Closed by default: the invalid result is explained and "damaged label" is the only way in.
-    const closed = componentHarness(config).render(`${FEATURE}ScannerControls.tsx`, "ScannerControls", {
-      model,
-    });
+    const closed = componentHarness(config).render(
+      `${FEATURE}ScannerControls.tsx`,
+      "ScannerControls",
+      {
+        model,
+      },
+    );
     assert.ok(texts(closed).includes(messages[locale]["field.scan.unavailable"]));
-    assert.equal(closed.find(({ type }) => type === "TextInput"), undefined);
+    assert.equal(
+      closed.find(({ type }) => type === "TextInput"),
+      undefined,
+    );
     const damaged = closed.find(
       ({ props }) => props.accessibilityLabel === messages[locale]["field.scan.damaged"],
     );

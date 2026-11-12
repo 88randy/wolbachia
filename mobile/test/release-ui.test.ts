@@ -178,7 +178,9 @@ function assertBlocked({
     (node) => typeof node.props.accessibilityLabel === "string" && node.props.accessible === true,
   );
   assert.equal(blocked.length, RELEASE_GATE_NAMES.length);
-  assert.ok(texts(gates).some((text) => String(text).includes(t["mobile.release.contactSupervisor"])));
+  assert.ok(
+    texts(gates).some((text) => String(text).includes(t["mobile.release.contactSupervisor"])),
+  );
 }
 
 void test("P18 separates phone save, pending evidence, server receipt, review and critical rejection", () => {

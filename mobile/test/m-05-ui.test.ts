@@ -80,8 +80,13 @@ void test("P8 never describes local capture as server receipt or review", () => 
   const bodies = Object.values(keys);
   for (const locale of ["es-MX", "en"] as const) {
     const render = componentHarness({ locale, scheme: "light", fontScale: 1 }).render;
-    for (const [status, key] of Object.entries(keys) as [OutboxStatus, keyof typeof messages.en][]) {
-      const content = texts(render(`${FEATURE}ReceiptSaved.tsx`, "ReceiptSaved", { event: event(status) }));
+    for (const [status, key] of Object.entries(keys) as [
+      OutboxStatus,
+      keyof typeof messages.en,
+    ][]) {
+      const content = texts(
+        render(`${FEATURE}ReceiptSaved.tsx`, "ReceiptSaved", { event: event(status) }),
+      );
       assert.ok(content.includes(messages[locale]["field.receipt.savedTitle"]));
       assert.ok(content.includes(messages[locale][key]), `${status} shows its own body`);
       for (const other of bodies.filter((candidate) => candidate !== key))

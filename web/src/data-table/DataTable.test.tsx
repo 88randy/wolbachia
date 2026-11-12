@@ -514,7 +514,9 @@ describe("states", () => {
       propsOf({ data: dataOf({ rows: [], error: new TypeError("offline"), refetch }) }),
     );
 
-    expect(screen.getByRole("alert").textContent).toContain("No hay conexión. Revisa tu señal e inténtalo de nuevo.");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
+    );
     await user.click(screen.getByRole("button", { name: "Reintentar" }));
 
     expect(refetch).toHaveBeenCalledOnce();

@@ -1,6 +1,5 @@
 import { reconcileSession } from "../session/session-reconcile";
 import { act, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import type { MapProps } from "../quadrants/geography/map-types";
 import { quadrant, pageOf } from "../quadrants/geography/geography-test-helpers";

@@ -14,7 +14,10 @@ test("identifies the selected bag in global history and its correction dialog", 
   await openCount({
     path: "/lab/count-history",
     routes: {
-      "GET /api/v1/egg-counts/": pageOf([count(), count({ id: otherCount, bag_id: otherBag, bag_code: otherCode })]),
+      "GET /api/v1/egg-counts/": pageOf([
+        count(),
+        count({ id: otherCount, bag_id: otherBag, bag_code: otherCode }),
+      ]),
       [`GET /api/v1/egg-counts/${otherCount}/void-context/`]: Response.json({
         id: otherCount,
         kind: "count",

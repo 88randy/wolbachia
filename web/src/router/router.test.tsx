@@ -21,24 +21,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
-  home: "Inicio",
-  notifications: "Notificaciones",
-  incidents: "Incidentes",
-  operations: "Supervisión",
-  scheduling: "Programación",
-  quadrants: "Cuadrantes y muestreo",
-  releases: "Liberaciones",
-  community: "Comunidad",
-  inventory: "Inventario",
-  fleet: "Flota",
-  lab: "Laboratorio",
-  people: "Personal",
-  dashboards: "Tableros",
-  regulatory: "Regulatorio",
-  settings: "Configuración",
-  platform: "Organizaciones",
-};
 const OPERATIONS_ME = makeMe({
   permissions: ["review_item.read"],
   scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },

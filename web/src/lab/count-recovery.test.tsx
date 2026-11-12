@@ -39,7 +39,10 @@ test("a confirmed high count replays the complete command after a lost response"
 
 test("background queue changes do not move the active numeric draft", async () => {
   const { api, app } = await openCount();
-  await userEvent.type(await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }), "12");
+  await userEvent.type(
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
+    "12",
+  );
   api.setRoute("GET /api/v1/egg-counts/queue/", pageOf([{ ...candidate("B-032"), id: "bag-32" }]));
   await act(async () => {
     await app.queryClient.invalidateQueries({

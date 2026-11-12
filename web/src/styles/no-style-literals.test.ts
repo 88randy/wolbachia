@@ -47,7 +47,10 @@ const KNOWN_DIMMED: readonly string[] = [
   "styles/global.css: select:disabled",
 ];
 function relative(found: string): string {
-  return found.replace(SRC_DIR, "").replace(/^[\\/]/, "").replaceAll("\\", "/");
+  return found
+    .replace(SRC_DIR, "")
+    .replace(/^[\\/]/, "")
+    .replaceAll("\\", "/");
 }
 function expectOnlyKnown(found: readonly string[], known: readonly string[]) {
   const paths = found.map(relative);

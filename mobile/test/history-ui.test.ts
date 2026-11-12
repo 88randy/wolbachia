@@ -40,7 +40,9 @@ function assertHistoryCards(render: Render, locale: Locale) {
     });
     const copy = texts(nodes);
     assert.ok(copy.includes(messages[locale][key]));
-    assert.ok(copy.includes(`${messages[locale]["mobile.history.reason"]}: ${ENTRY.reason}`));
+    assert.ok(
+      copy.includes(`${messages[locale]["mobile.history.reason"]}: ${String(ENTRY.reason)}`),
+    );
     // Couriers never see internal ids: the author and the voided target stay out of the card.
     assert.ok(!copy.includes(ENTRY.author));
     assert.ok(!copy.includes(ENTRY.voidsId));

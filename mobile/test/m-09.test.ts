@@ -1201,7 +1201,9 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         scheme,
         fontScale,
         stubs: {
-          react: { useState: (value: unknown) => [typeof value === "number" ? lastPage : value, noop] },
+          react: {
+            useState: (value: unknown) => [typeof value === "number" ? lastPage : value, noop],
+          },
           "use-auto-gps.ts": { useAutoGps: () => undefined },
         },
       }).render("mobile/src/features/ovitrap-lifecycle/LifecycleWizard.tsx", "LifecycleWizard", {

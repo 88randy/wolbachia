@@ -10,7 +10,7 @@ export function ClosureScreen({ model, readiness }: { model: ClosureModel; readi
   return (
     <DetailPage
       title={t("closure.page.title", { code: model.quadrant.code })}
-      description={t("closure.page.purpose")}
+      subtitle={t("closure.page.purpose")}
     >
       <Card
         title={t("closure.readiness.title")}

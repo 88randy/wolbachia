@@ -37,8 +37,8 @@ export function installComboboxSelectOptions() {
   const originalSetup = userEvent.setup.bind(userEvent);
   (userEvent as { setup: typeof userEvent.setup }).setup = (...args) => {
     const user = originalSetup(...args);
-    patch(user as unknown as Clicker & { selectOptions: unknown });
+    patch(user);
     return user;
   };
-  patch(userEvent as unknown as Clicker & { selectOptions: unknown });
+  patch(userEvent);
 }

@@ -357,7 +357,9 @@ test("fetches all catalog and item pages without following arbitrary next URLs",
   });
   await renderApp({ path: CATALOG_PATH, fetch: api.fetch });
   expect(await screen.findByText("Último")).toBeDefined();
-  expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain("Intervenciones");
+  expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain(
+    "Intervenciones",
+  );
   expect(api.requests.filter((request) => request.path.includes("page=2"))).toHaveLength(2);
   expect(screen.queryByRole("button", { name: /Siguiente/ })).toBeNull();
 });
@@ -606,7 +608,9 @@ test("reorder uses the oldest item-page revision even when the catalog query is 
     await catalogs.promise;
   });
   await waitFor(() => {
-    expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain("Intervenciones");
+    expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain(
+      "Intervenciones",
+    );
   });
   await act(async () => {
     firstPage.release(

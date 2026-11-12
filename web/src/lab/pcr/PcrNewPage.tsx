@@ -15,7 +15,13 @@ import { useLabScope } from "../use-lab-scope";
 import { LabDialog } from "./LabDialog";
 import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
 import { ChoiceCard, LabeledSelect } from "./PcrFields";
-import { PCR_TARGETS, eligibleFacetsOptions, eligibleOptions, labsOptions, pcrErrorKey } from "./pcr-api";
+import {
+  PCR_TARGETS,
+  eligibleFacetsOptions,
+  eligibleOptions,
+  labsOptions,
+  pcrErrorKey,
+} from "./pcr-api";
 import type { PcrSample, PcrTarget } from "./pcr-api";
 import { targetKey } from "./pcr-status";
 
@@ -121,19 +127,29 @@ export function PcrNewPage() {
             />
           </div>
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-            <legend className="mb-2 text-[13px] font-semibold text-ink">{t("pcr.wizard.targets")}</legend>
+            <legend className="mb-2 text-[13px] font-semibold text-ink">
+              {t("pcr.wizard.targets")}
+            </legend>
             <div className="flex flex-wrap gap-3">
               {PCR_TARGETS.map((target) => (
                 <ChoiceCard
                   key={target}
                   checked={targets.includes(target)}
                   title={t(targetKey(target))}
-                  icon={target === "wolbachia" ? <Shield aria-hidden="true" className="size-5" /> : <Bug aria-hidden="true" className="size-5" />}
+                  icon={
+                    target === "wolbachia" ? (
+                      <Shield aria-hidden="true" className="size-5" />
+                    ) : (
+                      <Bug aria-hidden="true" className="size-5" />
+                    )
+                  }
                   onToggle={() => {
                     setTargets((current) =>
                       current.includes(target)
                         ? current.filter((value) => value !== target)
-                        : PCR_TARGETS.filter((value) => value === target || current.includes(value)),
+                        : PCR_TARGETS.filter(
+                            (value) => value === target || current.includes(value),
+                          ),
                     );
                   }}
                 />

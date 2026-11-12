@@ -91,7 +91,9 @@ async function selectFuelFilter(
   const { api, app } = opened;
   assertFuelFilters(query);
   await userEvent.click(screen.getByRole("button", { name: /^Filtros/ }));
-  await userEvent.click(await screen.findByRole("combobox", { name: "Comparación de rendimiento" }));
+  await userEvent.click(
+    await screen.findByRole("combobox", { name: "Comparación de rendimiento" }),
+  );
   await userEvent.click(
     await screen.findByRole("option", { name: "Intervalo comparable · se recomienda revisar" }),
   );
