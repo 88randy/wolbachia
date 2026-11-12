@@ -11,7 +11,7 @@ export const field = {
   "field.capture.backToRoute": "Ver mi ruta",
   "field.capture.labelQuestion": "Escanea la etiqueta de la ovitrampa",
   "field.capture.labelHint":
-    "Es el QR pegado en la ovitrampa nueva. Así queda ligada a este punto.",
+    "Es el QR pegado en la ovitrampa nueva. Si no se puede escanear, escribe el número que dice OVT.",
   "field.capture.labelScan": "Escanear etiqueta",
   "field.capture.labelAgain": "Escanear otra etiqueta",
   "field.capture.labelReady": "Etiqueta lista.",
@@ -23,6 +23,8 @@ export const field = {
   "field.hint.scanLabel": "Escanea la etiqueta para seguir.",
   "field.scan.question.label": "Escanea la etiqueta de la ovitrampa",
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",
+  "field.scan.labelUnknown":
+    "No encontramos esa etiqueta. Revisa el número que está escrito en grande o usa una etiqueta nueva.",
   "field.gps.searching": "Buscando tu ubicación…",
   "field.gps.searchingAccuracy": "Buscando tu ubicación… ± {meters} m",
   "field.gps.ready": "Ubicación lista.",

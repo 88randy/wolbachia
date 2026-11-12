@@ -84,7 +84,8 @@ export class ScannerService {
     const result = await this.#deps.ovitrap.bindLabel(input.value, input.isManual, eventId);
     if (!isCurrent()) return { error: "unavailable" };
     if (result === "read") return { route: { name: "ovitrapCapture" } };
-    return { error: result === "used" ? "labelUsed" : "invalid" };
+    if (result === "used") return { error: "labelUsed" };
+    return { error: result === "unknown" ? "labelUnknown" : "invalid" };
   }
   async #startCapture(
     resource: ScannerResource,

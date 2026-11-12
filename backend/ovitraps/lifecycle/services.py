@@ -28,6 +28,7 @@ from organizations.models import Membership, Organization
 from ovitraps import codes
 from ovitraps.capture import Capture, capture_context
 from ovitraps.findings import CatalogChoice, resolve_item, validate_other_text
+from ovitraps.labels import code_for_new_ovitrap
 from ovitraps.lifecycle.exceptions import RemovalConflictError, RemovalInProgressError
 from ovitraps.lifecycle.models import (
     OvitrapIncidentLink,
@@ -64,7 +65,6 @@ class LifecycleCapture:
 
 
 def _scoped_identity(ctx: EventContext, identifier: UUID) -> Ovitrap:
-
     visible = event_scoped(
         Ovitrap.objects.filter(organization=ctx.organization).select_related(
             "sampling_point__block__quadrant"
@@ -188,6 +188,7 @@ def _append_replacement(
                 created_by=ctx.user,
                 event_id=ctx.envelope.id,
                 client_uuid=payload["replacement_id"],
+                code=code_for_new_ovitrap(ctx.organization, payload["replacement_id"]),
                 sampling_point=resolved.ovitrap.sampling_point,
                 point_version=resolved.capture.point_version,
             )

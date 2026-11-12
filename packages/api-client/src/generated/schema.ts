@@ -1999,6 +1999,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/ovitrap-labels/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /field/ovitrap-labels/`: unplaced labels a phone keeps to resolve a typed code offline. */
+        get: operations["field_ovitrap_labels_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/rules/": {
         parameters: {
             query?: never;
@@ -4229,6 +4246,23 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["organization_logo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ovitrap-labels/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description `POST /ovitrap-labels/`: register `count` new stickers (uuid + `OVT-0001` code). */
+        post: operations["ovitrap_labels_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11910,6 +11944,20 @@ export interface components {
             point_code: string;
             suggest_relocation: boolean;
             entries: components["schemas"]["HistoryEntry"][];
+        };
+        /** @description `id` is the QR identity: the sticker carries `wbf:1:ovitrap:<id>`. */
+        OvitrapLabel: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        OvitrapLabelMintRequest: {
+            count: number;
+        };
+        OvitrapLabelPool: {
+            labels: components["schemas"]["OvitrapLabel"][];
         };
         /** @enum {string} */
         OvitrapLifecycleStatusEnum: "active" | "voided";
@@ -21551,6 +21599,37 @@ export interface operations {
             };
         };
     };
+    field_ovitrap_labels_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvitrapLabelPool"][];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     field_rules_list: {
         parameters: {
             query?: never;
@@ -25468,6 +25547,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationSettings"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ovitrap_labels_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OvitrapLabelMintRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvitrapLabelPool"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
