@@ -173,7 +173,7 @@ class SupplyTypeViewSet(InventoryVersionViewSet):
         "protocol_incident_type_options": "supply_type.create",
     }
     code_lookup_field = "supply_type__code"
-    search_fields = ["supply_type__code", "label"]
+    search_fields = ["supply_type__code", "label", "gtin"]
     ordering_aliases = {"code": "supply_type__code"}
     inventory_facets = {
         "is_active": "is_active",
