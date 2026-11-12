@@ -89,7 +89,8 @@ def test_a_busy_counter_answers_lock_not_available_and_the_retry_gets_the_next_n
         release_lock.set()
         thread.join(timeout=15)
     assert held == ["JOR-0001"]
-    assert allocate_code(org_a, SHIFT_CODE) == "JOR-0002"
+    with transaction.atomic():
+        assert allocate_code(org_a, SHIFT_CODE) == "JOR-0002"
 
 
 @pytest.mark.django_db(transaction=True)
@@ -197,6 +198,7 @@ def test_backfill_numbers_existing_shifts_by_creation_time_and_reseals_the_guard
     first, second = ShiftFactory(organization=org_a), ShiftFactory(organization=org_a)
     other_org = ShiftFactory(organization=org_b)
     with connection.cursor() as cursor:
+        cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")  # the fixtures leave no pending events
         cursor.execute("ALTER TABLE shifts_shift DISABLE TRIGGER shifts_shift_guard")
         cursor.execute(
             "ALTER TABLE shifts_shift DROP CONSTRAINT shift_unique_code_per_organization"
