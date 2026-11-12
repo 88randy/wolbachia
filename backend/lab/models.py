@@ -76,6 +76,14 @@ class BagReceipt(LabFact):
     )
     scope_quadrant_lookup: ClassVar[str] = "reading__ovitrap__sampling_point__block__quadrant_id"
 
+    class Meta(LabFact.Meta):
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_bagreceipt_org_id_uniq"
+            ),
+        ]
+
 
 class ReceptionDiscrepancy(LabFact):
     bag = models.ForeignKey(
@@ -200,6 +208,9 @@ class EggCountAttempt(LabFact):
 
     class Meta(LabFact.Meta):
         constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_eggcountattempt_org_id_uniq"
+            ),
             *LabFact.Meta.constraints,
             models.UniqueConstraint(fields=["bag", "ordinal"], name="lab_count_ordinal"),
             models.CheckConstraint(

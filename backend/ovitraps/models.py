@@ -41,8 +41,11 @@ class Ovitrap(OvitrapRecord):
     class Meta(OvitrapRecord.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="ovitraps_ovitrap_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "client_uuid"], name="ovitrap_org_client_uuid"
-            )
+            ),
         ]
 
     @property
@@ -86,13 +89,16 @@ class OvitrapReading(OvitrapRecord):
     class Meta(OvitrapRecord.Meta):
         indexes = [models.Index(fields=["organization", "ovitrap", "epi_week"])]
         constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="ovitraps_ovitrapreading_org_id_uniq"
+            ),
             models.CheckConstraint(
                 condition=(
                     models.Q(paddle_present=False, has_eggs__isnull=True)
                     | models.Q(paddle_present=True, has_eggs__isnull=False)
                 ),
                 name="ovitrap_reading_conditional_eggs",
-            )
+            ),
         ]
 
 
@@ -108,7 +114,8 @@ class Bag(OvitrapRecord):
 
     class Meta(OvitrapRecord.Meta):
         constraints = [
-            models.UniqueConstraint(fields=["organization", "code"], name="ovitrap_bag_org_code")
+            models.UniqueConstraint(fields=["organization", "id"], name="ovitraps_bag_org_id_uniq"),
+            models.UniqueConstraint(fields=["organization", "code"], name="ovitrap_bag_org_code"),
         ]
 
 

@@ -141,8 +141,11 @@ class Center(OrgScopedModel):
         ordering = ["code", "id"]
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="organizations_center_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="center_unique_code_per_organization"
-            )
+            ),
         ]
 
     def __str__(self) -> str:

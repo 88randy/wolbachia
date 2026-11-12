@@ -14,6 +14,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - Configuration tables opt in to `core.table_filters`: validated DRF search, explicit strict ordering and stable id ties on lists only. Their [exact query contract](../docs/api-conventions.md#configuration-table-queries-224) preserves scoped parents, existing defaults, protected Other and field snapshots (#224).
 - Reported incidents have scoped workspace filters, protected critical-first order, archived policy/current parent hints and action-paired form options; see [incidents/README.md](incidents/README.md#reported-workspace-reads-304). The default fleet facade and all incident writers remain independent (#304).
 - Django admin is not mounted on purpose (it can delete).
+- **Same organization at the database.** Reads filter `organization` at the root table only (`lab/access.py`), so PostgreSQL itself refuses cross-organization links: the parents of the geography, ovitrap and lab chains (and `FieldEvent`, `Center`) carry `UNIQUE (organization_id, id)` (declared in their `Meta`), and every FK to them also has a composite FK `(organization_id, <fk>) -> parent (organization_id, id)`, `DEFERRABLE INITIALLY DEFERRED` like Django's own FKs. The composite constraints live only in the database (`lab/migrations/0013`, `0014`: added `NOT VALID`, then validated; the list `PAIRS` there is the inventory). A new FK to one of those parents must be added to a new migration of the same shape. Guarded by `tests/test_org_same_fk.py`.
 
 ## Layout
 

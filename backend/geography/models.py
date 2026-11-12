@@ -19,8 +19,11 @@ class Quadrant(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_quadrant_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_quadrant_org_code"
-            )
+            ),
         ]
 
     @property
@@ -54,8 +57,11 @@ class Block(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_block_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_block_org_code"
-            )
+            ),
         ]
 
     @property
@@ -84,8 +90,11 @@ class SamplingPoint(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_samplingpoint_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_point_org_code"
-            )
+            ),
         ]
 
     @property
@@ -106,7 +115,10 @@ class PointVersion(ImmutableMixin, OrgScopedModel):
 
     class Meta(ImmutableMixin.Meta):
         constraints = [
-            models.UniqueConstraint(fields=["point", "version"], name="geography_point_version")
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_pointversion_org_id_uniq"
+            ),
+            models.UniqueConstraint(fields=["point", "version"], name="geography_point_version"),
         ]
         indexes = [models.Index(fields=["point", "-effective_from"])]
 
