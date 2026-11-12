@@ -19,7 +19,9 @@ export function SupplyDetails({ resource }: { readonly resource: ScannerResource
           {t("field.scan.supplyTitle")}
         </AppText>
       </View>
-      <AppText variant="bodyStrong">{t("field.scan.supplyQuantity", { quantity: supply.expected })}</AppText>
+      <AppText variant="bodyStrong">
+        {t("field.scan.supplyQuantity", { quantity: supply.expected })}
+      </AppText>
       <AppText tone="secondary">{t("field.scan.supplyDate", { date: supply.date })}</AppText>
     </View>
   );

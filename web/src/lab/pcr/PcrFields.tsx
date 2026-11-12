@@ -14,14 +14,27 @@ interface LabeledSelectProps {
 }
 
 /** A label above one combobox picker (search inside the dropdown). */
-export function LabeledSelect({ label, value, options, onChange, placeholder, className }: LabeledSelectProps) {
+export function LabeledSelect({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder,
+  className,
+}: LabeledSelectProps) {
   const id = useId();
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-[13px] font-semibold text-ink">
         {label}
       </label>
-      <Combobox id={id} value={value} options={options} onValueChange={onChange} placeholder={placeholder} />
+      <Combobox
+        id={id}
+        value={value}
+        options={options}
+        onValueChange={onChange}
+        placeholder={placeholder}
+      />
     </div>
   );
 }

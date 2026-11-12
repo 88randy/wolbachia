@@ -6,8 +6,16 @@ export function RouteProblems({ model }: { readonly model: M06Model }) {
   return (
     <>
       <RouteProblem failure={model.errors.read} retry={model.read} isBusy={model.isLoading} />
-      <RouteProblem failure={model.errors.refresh} retry={model.refresh} isBusy={model.isRefreshing} />
-      <RouteProblem failure={model.errors.action} retry={model.retryAction} isBusy={model.isActing} />
+      <RouteProblem
+        failure={model.errors.refresh}
+        retry={model.refresh}
+        isBusy={model.isRefreshing}
+      />
+      <RouteProblem
+        failure={model.errors.action}
+        retry={model.retryAction}
+        isBusy={model.isActing}
+      />
     </>
   );
 }

@@ -116,26 +116,26 @@ function LabForm({
       />
       <FormGrid columns={2}>
         <FormField>
-        <TextField
-          id="pcr-lab-contact"
-          label={t("pcr.labs.contact")}
-          value={contact}
-          maxLength={200}
-          onChange={(event) => {
-            setContact(event.currentTarget.value);
-          }}
-        />
+          <TextField
+            id="pcr-lab-contact"
+            label={t("pcr.labs.contact")}
+            value={contact}
+            maxLength={200}
+            onChange={(event) => {
+              setContact(event.currentTarget.value);
+            }}
+          />
         </FormField>
         <FormField>
-        <TextField
-          id="pcr-lab-address"
-          label={t("pcr.labs.address")}
-          value={address}
-          maxLength={500}
-          onChange={(event) => {
-            setAddress(event.currentTarget.value);
-          }}
-        />
+          <TextField
+            id="pcr-lab-address"
+            label={t("pcr.labs.address")}
+            value={address}
+            maxLength={500}
+            onChange={(event) => {
+              setAddress(event.currentTarget.value);
+            }}
+          />
         </FormField>
       </FormGrid>
       <FormActions>

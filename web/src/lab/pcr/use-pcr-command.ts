@@ -36,7 +36,9 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
       const client = scope.client;
       switch (command.kind) {
         case "ready":
-          return unwrap(await client.POST("/api/v1/pcr-batches/{id}/ready/", { ...path, body: {} }));
+          return unwrap(
+            await client.POST("/api/v1/pcr-batches/{id}/ready/", { ...path, body: {} }),
+          );
         case "receive":
           return unwrap(
             await client.POST("/api/v1/pcr-batches/{id}/receive/", {
@@ -45,7 +47,9 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
             }),
           );
         case "close":
-          return unwrap(await client.POST("/api/v1/pcr-batches/{id}/close/", { ...path, body: {} }));
+          return unwrap(
+            await client.POST("/api/v1/pcr-batches/{id}/close/", { ...path, body: {} }),
+          );
         case "ship": {
           const body = {
             occurred_at: command.occurred_at ?? null,
@@ -57,11 +61,17 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
         }
         case "undo":
           return unwrap(
-            await client.POST("/api/v1/pcr-batches/{id}/undo/", { ...path, body: { reason: command.reason } }),
+            await client.POST("/api/v1/pcr-batches/{id}/undo/", {
+              ...path,
+              body: { reason: command.reason },
+            }),
           );
         case "void":
           return unwrap(
-            await client.POST("/api/v1/pcr-batches/{id}/void/", { ...path, body: { reason: command.reason } }),
+            await client.POST("/api/v1/pcr-batches/{id}/void/", {
+              ...path,
+              body: { reason: command.reason },
+            }),
           );
         case "void_result":
           return unwrap(
@@ -79,7 +89,10 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
           );
         case "results":
           return unwrap(
-            await client.POST("/api/v1/pcr-batches/{id}/results/", { ...path, body: { rows: command.rows } }),
+            await client.POST("/api/v1/pcr-batches/{id}/results/", {
+              ...path,
+              body: { rows: command.rows },
+            }),
           );
       }
     },
@@ -95,7 +108,12 @@ export function usePcrCommand(batch: PcrDetail, onDone?: () => void) {
       void queryClient.invalidateQueries();
     },
   });
-  return { run: mutation.mutate, runAsync: mutation.mutateAsync, isPending: mutation.isPending, error };
+  return {
+    run: mutation.mutate,
+    runAsync: mutation.mutateAsync,
+    isPending: mutation.isPending,
+    error,
+  };
 }
 
 /** Upload a file through the existing private upload endpoints; returns the verified id. */

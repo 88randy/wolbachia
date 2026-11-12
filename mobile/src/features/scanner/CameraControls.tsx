@@ -13,10 +13,18 @@ export function CameraControls({ model }: { readonly model: M07Model }) {
         <>
           <InfoNotice
             tone="warning"
-            message={t(model.cameraError === "denied" ? "field.scan.cameraDenied" : "field.scan.cameraFailed")}
+            message={t(
+              model.cameraError === "denied"
+                ? "field.scan.cameraDenied"
+                : "field.scan.cameraFailed",
+            )}
           />
           {model.cameraError === "denied" ? (
-            <SecondaryButton icon={Settings} label={t("field.scan.openSettings")} onPress={model.settings} />
+            <SecondaryButton
+              icon={Settings}
+              label={t("field.scan.openSettings")}
+              onPress={model.settings}
+            />
           ) : (
             <SecondaryButton
               icon={QrCode}
