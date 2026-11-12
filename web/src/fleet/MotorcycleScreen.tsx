@@ -1,6 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { DetailPage } from "../components/templates/DetailPage";
 import { Button } from "../ui/Button";
+import { motorcycleLabel } from "../labels/label-records";
+import { PrintLabelsButton } from "../labels/PrintLabelsButton";
+import { useLabelText } from "../labels/use-label-text";
 import type { MotorcycleDetail } from "./fleet-query";
 import type { FleetRecordScope } from "./use-fleet-scope";
 import { FleetTabs } from "./FleetTabs";
@@ -47,6 +50,29 @@ function MotorcycleBody({ screen, tab }: { screen: Props; tab: FleetTab }) {
     />
   );
 }
+/** Prints the label the mobile app scans at shift start; a voided motorcycle has none. */
+function PrintAction({ motorcycle }: { motorcycle: MotorcycleDetail }) {
+  const text = useLabelText();
+  if (motorcycle.voided_at !== null) return null;
+  return (
+    <PrintLabelsButton
+      records={[motorcycleLabel(motorcycle, text)]}
+      labelKey="labels.action.printOne"
+    />
+  );
+}
+/** Header actions: print the label and, with permission, register a service. */
+function HeaderActions({ screen }: { screen: Props }) {
+  const { motorcycle, scope, operations } = screen;
+  return (
+    <>
+      <PrintAction motorcycle={motorcycle} />
+      {canFleetAction(scope, motorcycle.center, "motorcycle.manage") && (
+        <ServiceAction operations={operations} />
+      )}
+    </>
+  );
+}
 /** The one primary action of the header; blocked, it says why on hover and to screen readers. */
 function ServiceAction({ operations }: Pick<Props, "operations">) {
   const { t } = useTranslation();
@@ -79,11 +105,7 @@ export function MotorcycleScreen(props: Props) {
       title={motorcycle.code}
       back={back}
       status={isVerified ? <MotorcycleStatusBadge motorcycle={motorcycle} compact /> : undefined}
-      actions={
-        canFleetAction(scope, motorcycle.center, "motorcycle.manage") && (
-          <ServiceAction operations={operations} />
-        )
-      }
+      actions={<HeaderActions screen={props} />}
       moreActions={menu}
       notices={<MotorcycleNotices {...props} />}
     >

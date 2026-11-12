@@ -29,6 +29,8 @@ import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
 import { InventoryContextNotice } from "./InventoryContextNotice";
+import { PrintLabelsButton } from "../labels/PrintLabelsButton";
+import { useInventoryLabels } from "./use-inventory-labels";
 const updatePermission = {
   supplies: "supply_type.update",
   lots: "lot.update",
@@ -220,6 +222,7 @@ function RecordContent(props: ContentProps) {
       actions={
         <>
           <RecordBack kind={props.kind} />
+          <PrintAction record={props.record} />
           <RefreshAction refresh={refresh} />
         </>
       }
@@ -230,6 +233,11 @@ function RecordContent(props: ContentProps) {
       <RecordCard {...props} refresh={refresh} onSaved={accepted} />
     </DetailPage>
   );
+}
+function PrintAction({ record }: { record: RecordValue }) {
+  const records = useInventoryLabels().toRecords([record]);
+  if (records.length === 0) return null;
+  return <PrintLabelsButton records={records} labelKey="labels.action.printOne" />;
 }
 function RefreshAction({ refresh }: { refresh: () => void }) {
   const { t } = useTranslation();
