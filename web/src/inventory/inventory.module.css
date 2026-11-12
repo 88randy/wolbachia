@@ -77,30 +77,198 @@
   overflow-wrap: anywhere;
 }
 .map {
-  height: calc(var(--space-6) * 6);
+  height: calc(var(--space-6) * 10);
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-card);
 }
-.marker {
+.pinWrap {
+  position: relative;
+  display: block;
+}
+.pin,
+.pinCluster {
   display: grid;
-  gap: var(--space-1);
-  width: calc(var(--space-6) * 2);
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  border: var(--web-focus-ring-width) solid var(--color-surface);
+  box-shadow: var(--shadow-level-1);
+}
+.pin {
+  width: var(--web-control-sm);
+  height: var(--web-control-sm);
+}
+.pin svg,
+.pinCluster svg {
+  width: var(--web-icon-md);
+  height: var(--web-icon-md);
+}
+.pin[data-shape="circle"] {
+  border-radius: var(--radius-full);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.pin[data-shape="square"] {
+  border-radius: var(--radius-sm);
+  background: var(--color-action-strong);
+  color: var(--color-on-action);
+}
+.pin[data-shape="diamond"] {
+  border-radius: var(--radius-sm);
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  transform: rotate(45deg) scale(0.85);
+}
+.pin[data-shape="diamond"] .pinIcon {
+  transform: rotate(-45deg);
+}
+.pinIcon {
+  display: grid;
+}
+.pinCluster {
+  grid-auto-flow: column;
+  gap: var(--space-0-5);
+  min-width: var(--web-control-lg);
+  height: var(--web-control-lg);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  font-size: var(--web-type-body-font-size);
+  font-weight: 700;
+}
+.pinCount {
+  line-height: 1;
+}
+.pin:focus-visible,
+.pinCluster:focus-visible {
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+}
+.pin[aria-expanded="true"],
+.pinCluster[aria-expanded="true"] {
+  box-shadow: 0 0 0 var(--web-focus-ring-width) var(--color-action);
+}
+.pinTip {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  width: max-content;
+  max-width: calc(var(--space-6) * 5);
+  padding: var(--space-0-5) var(--space-1);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  font-size: var(--web-type-caption-font-size);
+  box-shadow: var(--shadow-overlay);
+  pointer-events: none;
   overflow-wrap: anywhere;
+}
+.pinWrap:hover .pinTip,
+.pinWrap:focus-within .pinTip {
+  display: block;
+}
+.pinWrap:has([aria-expanded="true"]) .pinTip {
+  display: none;
+}
+.map :global(.maplibregl-marker:hover),
+.map :global(.maplibregl-marker:focus-within) {
+  z-index: 2;
+}
+.popupShell :global(.maplibregl-popup-content) {
+  padding: 0;
+  border-radius: var(--radius-inner);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-overlay);
+}
+.popupShell :global(.maplibregl-popup-tip) {
+  border-top-color: var(--color-surface);
+  border-bottom-color: var(--color-surface);
+}
+.popup {
+  position: relative;
+  width: min(calc(var(--space-6) * 7), calc(100vw - var(--space-6)));
+  max-height: calc(var(--space-6) * 7);
+  overflow-y: auto;
+  padding: var(--space-2);
   font-family: var(--font-family);
   font-size: var(--web-type-body-font-size);
   line-height: var(--web-type-body-line-height);
-  border: var(--web-focus-ring-width) solid var(--color-action);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  padding: var(--space-1);
+}
+.popupClose {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--web-control-sm);
+  height: var(--web-control-sm);
   border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
 }
-.map :global(.maplibregl-marker:hover) {
-  z-index: 1;
+.popupClose svg {
+  width: var(--web-icon-md);
+  height: var(--web-icon-md);
 }
-.map :global(.maplibregl-marker:focus-within) {
-  z-index: 2;
+.popupClose:focus-visible,
+.popupLink:focus-visible {
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+}
+.popupTitle {
+  margin: 0 var(--space-4) var(--space-1) 0;
+  font-weight: 600;
+}
+.popupDetails {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 var(--space-4) var(--space-2) 0;
+}
+.popupDetails > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-1);
+}
+.popupDetails dt {
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
+  font-weight: 600;
+}
+.popupDetails dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.popupList {
+  display: grid;
+  gap: var(--space-0-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.popupLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--web-control-sm);
+  color: var(--color-action-strong);
+  font-weight: 600;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.popupLink svg {
+  flex: none;
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
 }
 .options {
   display: grid;

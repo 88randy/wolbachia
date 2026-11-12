@@ -179,6 +179,12 @@ export const inventory = {
   "inventory.map.fallback": "Map unavailable. The list and coordinates remain available.",
   "inventory.map.attribution": "OpenStreetMap contributors",
   "inventory.map.coordinates": "Coordinates",
+  "inventory.map.pin": "{kind}: {name}, code {code}. Open details.",
+  "inventory.map.clusterPin": "{count} locations at this spot. Show the list.",
+  "inventory.map.clusterTitle": "{count} locations at this spot",
+  "inventory.map.popupLabel": "Location details",
+  "inventory.map.openRecord": "Open the location",
+  "inventory.map.close": "Close details",
   "inventory.labels.title": "QR labels",
   "inventory.labels.description":
     "Pick the type, tick the records, choose the label size and print.",
