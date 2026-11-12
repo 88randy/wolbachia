@@ -74,7 +74,7 @@ export function CaptureWizard(props: CaptureProps) {
       {model.errorKey ? (
         <InfoNotice
           tone="danger"
-          message={t("field.capture.problem")}
+          message={t(model.errorKey)}
           action={cameraFixAction(model.errorKey, t)}
         />
       ) : null}

@@ -46,6 +46,16 @@ export function bagIdentity(
   return { bagCode: code, bagUuid: null, bagQrHistory: draft.bagQrHistory };
 }
 
+/** Saving was refused for a known reason; the screen shows that reason, never a generic text. */
+export class CaptureBlockedError extends Error {
+  readonly gate: string;
+  constructor(gate: string) {
+    super("Capture blocked: " + gate);
+    this.name = "CaptureBlockedError";
+    this.gate = gate;
+  }
+}
+
 export class CatalogChangedError extends Error {
   constructor() {
     super("Captured choice is absent from the new snapshot.");

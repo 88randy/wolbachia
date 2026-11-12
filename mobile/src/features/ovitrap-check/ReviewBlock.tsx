@@ -14,6 +14,13 @@ const REVIEW_KEYS: Readonly<Record<string, MessageKey>> = {
   location: "field.capture.review.location",
 };
 
+function reasonMessage(reason: string, draft: CaptureProps["draft"], t: ReturnType<typeof useT>) {
+  const accuracy = draft.gps?.accuracy_m;
+  if (reason === "gps" && typeof accuracy === "number" && accuracy > 0)
+    return t("field.capture.review.gpsApprox", { meters: Math.round(accuracy) });
+  return t(REVIEW_KEYS[reason] ?? "field.capture.review.gps");
+}
+
 /** Why the office will look at this capture (location, old rules) and the one tap to accept that. */
 export function ReviewBlock({ model, draft }: CaptureProps) {
   const t = useT();
@@ -21,11 +28,7 @@ export function ReviewBlock({ model, draft }: CaptureProps) {
   return (
     <>
       {reasons.map((reason) => (
-        <InfoNotice
-          key={reason}
-          tone="warning"
-          message={t(REVIEW_KEYS[reason] ?? "field.capture.review.gps")}
-        />
+        <InfoNotice key={reason} tone="warning" message={reasonMessage(reason, draft, t)} />
       ))}
       {reasons.length > 0 ? (
         <ChoiceRow

@@ -534,6 +534,12 @@ export const mobile: Record<keyof typeof source, string> = {
     "This ovitrap point is unknown on the phone. The office will review location and scope; compliance is not confirmed.",
   "mobile.ovitrap.acknowledge": "I understand this capture needs office review",
   "mobile.ovitrap.retryGps": "Retry GPS",
+  "mobile.ovitrap.blockedReview": "Tick that the office will review it to be able to save.",
+  "mobile.ovitrap.blockedPhoto": "A photo is missing to be able to save.",
+  "mobile.ovitrap.blockedPrepare": "The ovitrap preparation is not ticked yet.",
+  "mobile.ovitrap.blockedOutdated":
+    "The data of this point is from another day. Go back to the route and open the point again.",
+  "mobile.ovitrap.blockedStep": "A step is missing before you can save.",
   "mobile.ovitrap.shiftBlocked":
     "This shift does not allow capture or saving. Review the opening with your supervisor; the draft is retained.",
   "mobile.ovitrap.staleWeekContext":

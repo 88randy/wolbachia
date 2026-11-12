@@ -7,6 +7,7 @@ import { CaptureDone } from "./CaptureDone.tsx";
 import { CaptureStart } from "./CaptureStart.tsx";
 import { CaptureWizard } from "./CaptureWizard.tsx";
 import { NeedShift } from "./NeedShift.tsx";
+import { StaleDraftChoice } from "./StaleDraftChoice.tsx";
 import { useAutoPlace } from "./use-auto-place.ts";
 import { useM08 } from "./use-m-08.ts";
 
@@ -38,6 +39,10 @@ export function OvitrapScreen({ pointId }: { readonly pointId?: string }) {
       </ScreenScaffold>
     );
   if (state.event) return <CaptureDone model={model} event={state.event} />;
+  if (state.staleDraft && state.draft)
+    return (
+      <StaleDraftChoice model={model} eventId={state.draft.eventId} stale={state.staleDraft} />
+    );
   if (state.isShiftBlocked && state.draft === null) return <NeedShift />;
   if (state.draft && !state.isShiftBlocked)
     return <CaptureWizard key={state.draft.eventId} model={model} draft={state.draft} />;
