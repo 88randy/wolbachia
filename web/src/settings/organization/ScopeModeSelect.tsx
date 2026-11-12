@@ -1,6 +1,7 @@
 import type { ScopeDimensionChange } from "./scope-types";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
+import { Select } from "../../forms/Select";
 import { useMe } from "../../session/use-me";
 interface Props {
   id: string;
@@ -11,28 +12,25 @@ interface Props {
 export function ScopeModeSelect({ id, dimension, value, onChange }: Props) {
   const { t } = useTranslation();
   const allowed = useMe().scope[dimension];
+  const options = [
+    { value: "none", label: t("orgAdmin.scope.none") },
+    ...(allowed.mode === "none"
+      ? []
+      : [{ value: "selected", label: t("orgAdmin.scope.selected") }]),
+    ...(allowed.mode === "all" || value.mode === "all"
+      ? [{ value: "all", label: t("orgAdmin.scope.all") }]
+      : []),
+  ];
   return (
-    <>
-      <label htmlFor={id}>{t("orgAdmin.scope.mode")}</label>
-      <select
-        id={id}
-        value={value.mode}
-        onChange={(event) => {
-          const mode = event.target.value as Schemas["ModeEnum"];
-          onChange((current) => ({ mode, ids: mode === "selected" ? current.ids : [] }));
-        }}
-      >
-        <option value="none">{t("orgAdmin.scope.none")}</option>
-        <option value="selected" disabled={allowed.mode === "none"}>
-          {t("orgAdmin.scope.selected")}
-        </option>
-        {allowed.mode === "all" && <option value="all">{t("orgAdmin.scope.all")}</option>}
-        {allowed.mode !== "all" && value.mode === "all" && (
-          <option value="all" disabled>
-            {t("orgAdmin.scope.all")}
-          </option>
-        )}
-      </select>
-    </>
+    <Select
+      id={id}
+      label={t("orgAdmin.scope.mode")}
+      value={value.mode}
+      options={options}
+      onChange={(event) => {
+        const mode = event.target.value as Schemas["ModeEnum"];
+        onChange((current) => ({ mode, ids: mode === "selected" ? current.ids : [] }));
+      }}
+    />
   );
 }
