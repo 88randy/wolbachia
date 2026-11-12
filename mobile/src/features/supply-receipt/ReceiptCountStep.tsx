@@ -6,6 +6,7 @@ import { StepQuestion } from "../field-ui/StepQuestion.tsx";
 import { ShiftField } from "../shift-open/ShiftField.tsx";
 import { isReceiptReadOnly } from "./editing.ts";
 import { ReceiptFrame } from "./ReceiptFrame.tsx";
+import { plainQuantity } from "./plain-quantity.ts";
 import { ReceiptScanButton } from "./ReceiptScanButton.tsx";
 import type { ReceiptDraft } from "./receipt-types.ts";
 import type { M05Model } from "./use-m-05.ts";
@@ -48,7 +49,10 @@ export function ReceiptCountStep({ model, draft, onNext }: Props) {
       <StepQuestion title={t("field.receipt.countQuestion")} hint={t("field.receipt.countHint")} />
       <ReceiptScanButton model={model} />
       {draft.lines.map((line, index) => {
-        const label = t("field.receipt.supply", { number: index + 1, expected: line.expected });
+        const label = t("field.receipt.supply", {
+          number: index + 1,
+          expected: plainQuantity(line.expected),
+        });
         const current = Number(line.quantity);
         return Number.isInteger(Number(line.expected)) && Number.isInteger(current) ? (
           <Counter
