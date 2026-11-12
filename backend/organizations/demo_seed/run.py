@@ -5,14 +5,18 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.core.management.base import CommandError
 
+from accounts.models import Device
 from geography.models import Quadrant
+from inventory.models import Location, Lot
 from organizations.demo_seed import (
     community,
     custody_history,
     field,
+    flows,
     geography,
     history,
     incidents_history,
+    inventory,
     lab_history,
     operations,
     pcr_history,
@@ -45,6 +49,22 @@ def require_local_settings() -> None:
         )
 
 
+def _ensure_flows(
+    organization: Organization, members: dict[str, Membership], device: Device
+) -> None:
+    """Delivery states, warehouse transfers in every state and the fleet service history."""
+    admin = UploadActor(members["demo-admin"].user, organization)
+    flows.ensure_delivery_states(organization, admin)
+    locations = Location.objects.filter(organization=organization)
+    route = (
+        locations.get(code=inventory.LOCATION_CODE),
+        locations.get(code=inventory.SECOND_WAREHOUSE_CODE),
+    )
+    lot = Lot.objects.get(organization=organization, code="L-MER-BAG")
+    flows.ensure_transfer_flow(organization, members, device, lot, route)
+    flows.ensure_fleet_services(organization, members["demo-admin"])
+
+
 def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     """Build or complete the whole demo dataset (writes many tables)."""
     require_local_settings()
@@ -59,6 +79,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     }
     with custody_history.frozen_clock(custody_history.history_start()):
         quadrants = retrying(lambda: geography.ensure_geography(centers, admin))
+    geography.ensure_release_points(quadrants, admin)
     personnel.ensure_personnel(organization, members, list(centers.values()))
     operations.ensure_incident_types(
         organization,
@@ -80,8 +101,10 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
             organization, members, quadrants, catalog["version"], device
         )
     )
+    retrying(lambda: _ensure_flows(organization, members, device))
     retrying(lambda: samples_history.ensure_samples(organization, members, device, catalog))
     retrying(lambda: incidents_history.ensure_incidents(organization, members, quadrants))
+    flows.ensure_notifications(organization, members)
     community.ensure_activity_types(organization, admin)
     retrying(lambda: community.ensure_activities(organization, members["demo-promoter"]))
     entomologist = UploadActor(members["demo-entomologist"].user, organization)

@@ -9,7 +9,7 @@ from uuid import uuid5
 
 from lab.access import LabTarget
 from lab.commands import LabCommandInput, execute_lab_command
-from lab.models import EggCountAttempt
+from lab.models import BagReceipt, EggCountAttempt
 from organizations.demo_seed.field import NAMESPACE
 from organizations.demo_seed.history import (
     MEAN_EGGS_BY_WEEK,
@@ -23,6 +23,7 @@ from ovitraps.models import Bag
 from uploads.access import UploadActor
 
 HISTORY_BAG_PREFIX = "B-20"  # history codes look like B-2026W45-0001; phone bags are B-MER-NNN
+PENDING_COUNTS = 6  # received in the latest week but not counted: the count queue has work
 BAGS_PER_WEEK = 18  # each lab command takes seconds; this keeps the seed to a few minutes
 
 
@@ -57,14 +58,17 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
         EggCountAttempt.objects.filter(organization=organization).values_list("bag_id", flat=True)
     )
     counted = 0
+    received_bags = set(
+        BagReceipt.objects.filter(organization=organization).values_list("bag_id", flat=True)
+    )
     per_week: dict[str, int] = {}
-    for bag in bags:  # bags counted in an earlier run use up the weekly share
-        if bag.pk in counted_bags:
+    for bag in bags:  # bags received in an earlier run use up the weekly share
+        if bag.pk in received_bags:
             per_week[bag.reading.epi_week] = per_week.get(bag.reading.epi_week, 0) + 1
     for bag in bags:
-        if bag.pk in counted_bags:
-            continue
         weeks_ago = len(weeks) - weeks.index(bag.reading.epi_week)
+        if bag.pk in counted_bags or (bag.pk in received_bags and weeks_ago == 1):
+            continue
         taken = per_week.get(bag.reading.epi_week, 0)
         if taken >= BAGS_PER_WEEK:
             continue
@@ -74,6 +78,8 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
         # reception and only the missing count is written.
         receive = LabCommandInput("receive", target, _command_id("receive", bag), {})
         retrying(lambda receive=receive: execute_lab_command(entomologist, receive))
+        if weeks_ago == 1 and taken >= BAGS_PER_WEEK - PENDING_COUNTS:
+            continue
         values = {
             "expected_revision": 0,
             "value": _egg_value(bag, weeks_ago),

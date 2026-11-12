@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from geography.models import Block, Quadrant, SamplingPoint
+from geography.models import Block, Quadrant, ReleasePoint, SamplingPoint
+from geography.release_points import ReleasePointCreation, create_release_point
 from geography.services import (
     BlockCreation,
     PointCreation,
@@ -128,3 +129,16 @@ def ensure_geography(centers: dict[str, Center], admin: Membership) -> dict[str,
             slot = BlockSlot(plan, index)
             _ensure_points(_ensure_block(quadrant, slot, admin), slot, admin)
     return quadrants
+
+
+def ensure_release_points(quadrants: dict[str, Quadrant], admin: Membership) -> None:
+    """One planned release point per quadrant, on the street between its blocks (writes)."""
+    for plan in QUADRANT_PLANS:
+        code = f"RP-{plan.code}"
+        if ReleasePoint.objects.filter(organization=admin.organization, code=code).exists():
+            continue
+        location = [
+            round(plan.west + QUADRANT_SIZE / 2, 6),
+            round(plan.south + QUADRANT_SIZE / 2, 6),
+        ]
+        create_release_point(quadrants[plan.code], ReleasePointCreation(admin, code, location))
