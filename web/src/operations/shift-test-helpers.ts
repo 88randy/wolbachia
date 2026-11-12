@@ -53,6 +53,7 @@ export function decision(kind: "approve" | "observe"): Schemas["ShiftDecision"] 
     validation_fingerprint: "synthetic-fingerprint",
     subjects: [],
     created_by: ALLOWED.user.id,
+    created_by_name: "Ana Supervisora",
     created_at: "2026-11-04T15:00:00Z",
   };
 }
