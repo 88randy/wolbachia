@@ -9,6 +9,7 @@ export const releases: Record<keyof typeof source, string> = {
   "releases.records.emptyBody": "When a courier releases eggs, the release shows up here.",
   "releases.records.devicesLink": "Release devices",
   "releases.records.permitsLink": "Permits",
+  "releases.column.code": "Release",
   "releases.column.when": "Date and time",
   "releases.column.permit": "Permit",
   "releases.column.lot": "Lot",

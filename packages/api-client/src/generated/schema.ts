@@ -14442,6 +14442,7 @@ export interface components {
         Release: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly declared_event_id: string;
             /** Format: uuid */
@@ -15905,6 +15906,7 @@ export interface components {
         Shift: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly courier: string;
             /** Format: uuid */
@@ -15968,6 +15970,7 @@ export interface components {
         ShiftDetail: {
             /** Format: uuid */
             readonly id: string;
+            readonly code: string;
             /** Format: uuid */
             readonly courier: string;
             /** Format: uuid */
@@ -27569,6 +27572,8 @@ export interface operations {
         parameters: {
             query?: {
                 center?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
                 /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -28885,6 +28890,8 @@ export interface operations {
     shifts_list: {
         parameters: {
             query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
                 courier?: string;
                 date_from?: string;
                 date_to?: string;

@@ -77,6 +77,7 @@ def test_the_detail_carries_the_motorcycle_odometers_and_checklist(
     assert str(body["opened_event"]) == str(shift.opened_event_id)
     assert set(body) == {
         "id",
+        "code",
         "courier",
         "device",
         "motorcycle",

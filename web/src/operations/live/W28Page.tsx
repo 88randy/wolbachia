@@ -88,8 +88,8 @@ export function W28Page() {
                           {t(isChosen ? "live.showAll" : "live.focus")}
                         </button>
                         <Link
-                          to="/operations/shifts/$id"
-                          params={{ id: shift.id }}
+                          to="/operations/shifts/$code"
+                          params={{ code: shift.code }}
                           className="inline-flex min-h-8 items-center text-action-strong"
                         >
                           {t("live.details")}

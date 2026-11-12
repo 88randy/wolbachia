@@ -8,6 +8,7 @@ from core.time import server_now
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from field_sync.registry import EventContext, EventHandler, register
+from organizations.codes import RELEASE_CODE, allocate_code
 from people.eligibility import AssessmentQuery, assess_training_eligibility
 from people.permissions import PeopleContext
 from releases.models import Permit, PermitSuspension, PermitVersion, Release, ReleaseDevice
@@ -210,6 +211,7 @@ def apply_release(ctx: EventContext, values: dict[str, Any]) -> Release:
     stock = validate_release_stock(ctx, values["lot_id"], values["quantity"])
     gps = ctx.envelope.gps
     release = Release.objects.create(
+        code=allocate_code(ctx.organization, RELEASE_CODE),
         organization=ctx.organization,
         created_by=ctx.user,
         declared_event_id=ctx.envelope.id,

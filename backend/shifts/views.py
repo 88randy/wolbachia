@@ -37,6 +37,7 @@ class ShiftViewSet(
         "approve": SHIFT_VALIDATE,
         "observe": SHIFT_VALIDATE,
     }
+    code_lookup_field = "code"
 
     def get_serializer_class(self) -> type[ShiftSerializer]:
         return ShiftDetailSerializer if self.action == "retrieve" else ShiftSerializer

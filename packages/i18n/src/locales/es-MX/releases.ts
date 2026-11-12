@@ -9,6 +9,7 @@ export const releases = {
   "releases.records.emptyBody": "Cuando un repartidor libere huevos, la liberación aparecerá aquí.",
   "releases.records.devicesLink": "Dispositivos de liberación",
   "releases.records.permitsLink": "Permisos",
+  "releases.column.code": "Liberación",
   "releases.column.when": "Fecha y hora",
   "releases.column.permit": "Permiso",
   "releases.column.lot": "Lote",

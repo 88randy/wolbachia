@@ -12,11 +12,16 @@ export function useReleaseColumns(): readonly DataTableColumn<Release>[] {
   return useMemo(
     () => [
       {
-        id: "created_at",
-        headerKey: "releases.column.when",
-        cell: (row) => format(row.device_time),
-        link: (row) => ({ to: "/releases/records/$id", params: { id: row.id }, search: true }),
+        id: "code",
+        headerKey: "releases.column.code",
+        cell: (row) => row.code,
+        link: (row) => ({
+          to: "/releases/records/$code",
+          params: { code: row.code },
+          search: true,
+        }),
       },
+      { id: "created_at", headerKey: "releases.column.when", cell: (row) => format(row.device_time) },
       { id: "permit", headerKey: "releases.column.permit", cell: (row) => row.permit_code },
       { id: "lot", headerKey: "releases.column.lot", cell: (row) => row.lot_code },
       { id: "device", headerKey: "releases.column.device", cell: (row) => row.release_device_code },

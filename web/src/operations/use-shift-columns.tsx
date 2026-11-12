@@ -10,10 +10,15 @@ export function useShiftColumns(): readonly DataTableColumn<Schemas["Shift"]>[] 
   const courierName = useCouriers([]).nameOf;
   return [
     {
+      id: "code",
+      headerKey: "shift.field.code",
+      cell: (shift) => shift.code,
+      link: (shift) => ({ to: "/operations/shifts/$code", params: { code: shift.code } }),
+    },
+    {
       id: "opened_at_device",
       headerKey: "shift.field.opened",
       cell: (shift) => format(shift.opened_at_device),
-      link: (shift) => ({ to: "/operations/shifts/$id", params: { id: shift.id } }),
     },
     {
       id: "motorcycle",

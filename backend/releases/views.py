@@ -217,6 +217,7 @@ class ReleaseViewSet(ReleaseReadViewSet):
     queryset = Release.objects.none()
     serializer_class = ReleaseSerializer
     required_permissions = {"list": RELEASE_READ, "retrieve": RELEASE_READ}
+    code_lookup_field = "code"
 
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):

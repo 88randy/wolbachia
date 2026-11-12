@@ -14581,6 +14581,14 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
       - name: ordering
         required: false
         in: query
@@ -16444,6 +16452,14 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
       - in: query
         name: courier
         schema:
@@ -35204,6 +35220,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        code:
+          type: string
+          readOnly: true
         declared_event_id:
           type: string
           format: uuid
@@ -35279,6 +35298,7 @@ components:
           nullable: true
       required:
       - blocked_by
+      - code
       - created_at
       - created_by
       - declared_event_id
@@ -38703,6 +38723,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        code:
+          type: string
+          readOnly: true
         courier:
           type: string
           format: uuid
@@ -38768,6 +38791,7 @@ components:
       - close_note
       - closed_at_device
       - closed_event
+      - code
       - courier
       - created_at
       - device
@@ -38868,6 +38892,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        code:
+          type: string
+          readOnly: true
         courier:
           type: string
           format: uuid
@@ -38942,6 +38969,7 @@ components:
       - close_note
       - closed_at_device
       - closed_event
+      - code
       - courier
       - created_at
       - device
