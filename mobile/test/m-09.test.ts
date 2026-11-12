@@ -1134,7 +1134,7 @@ void test("AC1 wiring: M08 checks the replacement physical identity and blocks t
 });
 
 import { messages } from "@wolbachia/i18n";
-import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
+import { componentHarness, minHeightOf } from "./support/m-09-render.ts";
 const noop = () => undefined;
 void test("AC4: P15-P17 localized native props preserve labeled large controls across language/theme/text-scale", async () => {
   const keys = Object.keys(messages["es-MX"])

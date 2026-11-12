@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { messages } from "@wolbachia/i18n";
-import type { Locale } from "@wolbachia/i18n";
 import type { OutboxEvent } from "../src/outbox/outbox-event.ts";
 import type { OutboxStatus } from "../src/outbox/outbox-status.ts";
 import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
@@ -157,7 +156,9 @@ void test("P8 discrepancy choices keep Other reachable with a named large target
   // Yes / No answer first, then the three kinds in a fixed order with Other last.
   assert.deepEqual(
     kinds.map((node) => node.props.accessibilityLabel).slice(2),
-    ["missing", "damaged", "other"].map((kind) => messages[locale][`field.receipt.kind.${kind}` as const]),
+    (["missing", "damaged", "other"] as const).map(
+      (kind) => messages[locale][`field.receipt.kind.${kind}`],
+    ),
   );
   for (const control of kinds) assert.ok(minHeightOf(control) >= 48);
   const other = pressable(nodes, messages[locale]["field.receipt.kind.other"]);
