@@ -63,8 +63,7 @@ body {
   }
 }
 code,
-kbd,
-time {
+kbd {
   font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-variant-numeric);
 }

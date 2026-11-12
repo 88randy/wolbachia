@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): one declarative field. */
 import { useTranslation } from "react-i18next";
 import { useOrganizationTimeZone } from "../../format/use-time-zone";
 import { TextField } from "../../forms/TextField";
@@ -31,7 +32,7 @@ export function EvaluationObservedField({ value, onChange, hasError }: Props) {
           }}
         />
       </div>
-      <div className="w-32">
+      <div className="w-44">
         <TextField
           id="evaluation-observedTime"
           label={t("evaluations.field.observedTime")}

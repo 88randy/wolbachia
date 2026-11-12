@@ -45,7 +45,7 @@ export function ChoiceCard({
       aria-checked={checked}
       onClick={onToggle}
       className={cn(
-        "flex min-h-14 min-w-44 items-center gap-3 rounded-xl border px-4 text-left text-sm font-semibold transition-colors",
+        "flex min-h-14 min-w-44 flex-none items-center gap-3 rounded-xl border px-4 text-left text-sm font-semibold whitespace-nowrap transition-colors",
         checked
           ? "border-action bg-action text-on-action"
           : "border-line bg-surface text-ink hover:bg-surface-muted",

@@ -6,7 +6,7 @@ import { useCan } from "../session/use-can";
 import { StatusPill } from "../ui/StatusPill";
 import type { DataTableColumn } from "../data-table/table-types";
 import type { Count, LabScope } from "./lab-query";
-import { LabName } from "./LabName";
+import { nameOrDash } from "../lookups/use-reference-names";
 import { EmptyValue } from "../ui/EmptyValue";
 import { CorrectCountDialog } from "./CorrectCountDialog";
 function observationColumns(language: string): DataTableColumn<Count>[] {
@@ -33,7 +33,7 @@ function whoWhenColumns(format: ReturnType<typeof useFormatDateTime>): DataTable
     {
       id: "created_by",
       headerKey: "lab.history.author",
-      cell: (count) => <LabName kind="user" id={count.created_by} />,
+      cell: (count) => nameOrDash(count.created_by_name),
     },
     {
       id: "created_at",
