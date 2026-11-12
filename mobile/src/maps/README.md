@@ -23,6 +23,6 @@ shift screens. Place it inside a plain flex `View` (never a scroll container).
   The app downloads it once into `Paths.document/maps/` and reads it with `pmtiles://file:///...`,
   so it works offline. No request ever goes to `tile.openstreetmap.org`.
 - Regenerate or enlarge the extract with `pmtiles extract https://build.protomaps.com/<YYYYMMDD>.pmtiles
-  merida.pmtiles --bbox=... --maxzoom=15` (go-pmtiles).
+merida.pmtiles --bbox=... --maxzoom=15` (go-pmtiles).
 - No glyphs or sprites are bundled: road names and place labels are not drawn; the app draws
   point and zone labels itself.

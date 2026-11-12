@@ -34,6 +34,7 @@ function state(): ReceiptState {
     event: null,
     feedback: null,
     signaturePending: false,
+    shiftId: null,
   };
 }
 

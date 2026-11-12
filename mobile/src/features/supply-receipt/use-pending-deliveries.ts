@@ -12,7 +12,14 @@ export function usePendingDeliveries(): number {
       supplyReceipt
         .read()
         .then((state) => {
-          if (isActive) setCount(countPendingDeliveries(state.assignments));
+          if (isActive)
+            setCount(
+              countPendingDeliveries(
+                state.assignments,
+                state.shiftId,
+                state.drafts.map((draft) => draft.releaseId),
+              ),
+            );
         })
         .catch(() => {
           if (isActive) setCount(0);

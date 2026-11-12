@@ -30,7 +30,7 @@ export function ReceiptFrame({ model, step, onBack, footer, children }: Props) {
       }
       footer={footer}
     >
-      {model.errorKey ? <InfoNotice tone="danger" message={t("field.receipt.problem")} /> : null}
+      {model.errorKey ? <InfoNotice tone="danger" message={t(model.errorKey)} /> : null}
       {model.state?.feedback === "invalid" ? (
         <InfoNotice tone="warning" message={t("field.receipt.invalidCode")} />
       ) : null}

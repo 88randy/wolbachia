@@ -9,6 +9,7 @@ import type { SupplyProjectionSource } from "./projection-types.ts";
 import type { Schemas } from "@wolbachia/api-client";
 export const EMPTY_RECEIPT: ReceiptState = {
   ready: false,
+  shiftId: null,
   assignments: [],
   drafts: [],
   draft: null,
@@ -38,6 +39,7 @@ export async function readReceiptState(input: {
   readonly store: ReceiptStore;
   readonly bundle: Pick<DayBundleService, "withSupplyAssignments">;
   readonly feedback: ReceiptState["feedback"];
+  readonly shiftId?: string | null;
 }): Promise<ReceiptState> {
   const drafts = await input.store.list(ownerKey(input.identity.owner));
   const selected = input.selected ?? drafts[0]?.eventId ?? null;
@@ -50,6 +52,7 @@ export async function readReceiptState(input: {
       eventId: stored?.draft.eventId ?? null,
     })),
     drafts,
+    shiftId: input.shiftId ?? null,
     feedback: input.feedback,
     ...(await receiptDetails(stored, input.store)),
   };

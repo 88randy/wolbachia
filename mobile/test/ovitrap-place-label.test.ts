@@ -80,3 +80,13 @@ void test("a label that already belongs to a downloaded ovitrap is refused", asy
   const eventId = await currentEventId(h.store);
   assert.equal(await h.service.bindLabel(TAKEN, false, eventId), "used");
 });
+
+void test("a label already placed says at which point, and an unknown one says nothing", async () => {
+  const h = await harness();
+  await h.service.startPlace(await currentEventId(h.store));
+  const eventId = await currentEventId(h.store);
+  assert.equal(await h.service.bindLabel(TAKEN, false, eventId), "used");
+  const code = await h.service.usedPointCode(TAKEN, false, eventId);
+  assert.ok(code !== null && code.length > 0);
+  assert.equal(await h.service.usedPointCode(LABEL, false, eventId), null);
+});

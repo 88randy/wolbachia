@@ -38,6 +38,8 @@ export interface ReceiptDraft {
 export interface ReceiptState {
   readonly review?: Schemas["ReviewHistoryEntry"] | null;
   readonly ready: boolean;
+  /** The open shift, so the list only offers deliveries that can be received now. */
+  readonly shiftId: string | null;
   readonly assignments: readonly Schemas["SupplyBundle"][];
   readonly drafts: readonly ReceiptDraft[];
   readonly draft: ReceiptDraft | null;

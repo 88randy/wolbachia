@@ -22,6 +22,7 @@ export const field = {
   "field.hint.takePhoto": "Take a photo of the placed ovitrap to continue.",
   "field.hint.scanLabel": "Scan the label to continue.",
   "field.scan.question.label": "Scan the ovitrap label",
+  "field.scan.labelPlacedAt": "This ovitrap is already placed at point {point}. Scan a new label.",
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",
   "field.gps.searching": "Looking for your location…",
   "field.gps.searchingAccuracy": "Looking for your location… ± {meters} m",

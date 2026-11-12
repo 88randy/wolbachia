@@ -19,7 +19,7 @@ interface Dependencies {
   readonly resources: (turn: LifecycleSourceTurn) => Promise<readonly ScannerResource[]>;
   readonly ovitrap: Pick<
     OvitrapService,
-    "startCheck" | "enterBag" | "bindLabel" | "draftBuffer" | "update"
+    "startCheck" | "enterBag" | "bindLabel" | "usedPointCode" | "draftBuffer" | "update"
   >;
 }
 interface OpenInput {
@@ -28,7 +28,8 @@ interface OpenInput {
   readonly isCurrent: () => boolean;
 }
 export type ScannerDestination =
-  { readonly route: Route } | { readonly error: import("./domain.ts").ScannerError };
+  | { readonly route: Route }
+  | { readonly error: import("./domain.ts").ScannerError; readonly pointCode?: string | null };
 /** Resolves only current downloaded scope; opening a capture awaits its existing durable writer. */
 export class ScannerService {
   readonly #deps: Dependencies;
@@ -84,7 +85,9 @@ export class ScannerService {
     const result = await this.#deps.ovitrap.bindLabel(input.value, input.isManual, eventId);
     if (!isCurrent()) return { error: "unavailable" };
     if (result === "read") return { route: { name: "ovitrapCapture" } };
-    return { error: result === "used" ? "labelUsed" : "invalid" };
+    if (result !== "used") return { error: "invalid" };
+    const pointCode = await this.#deps.ovitrap.usedPointCode(input.value, input.isManual, eventId);
+    return { error: "labelUsed", pointCode };
   }
   async #startCapture(
     resource: ScannerResource,
