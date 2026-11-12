@@ -203,6 +203,7 @@ class ShiftFactory(DjangoModelFactory):
         is_closed = False
 
     id = factory.LazyFunction(uuid.uuid4)
+    code = factory.Sequence(lambda n: f"JOR-{n:04d}")
     organization = factory.SubFactory(OrganizationFactory)
     courier = factory.SubFactory(UserFactory)
     created_by = factory.SelfAttribute("courier")

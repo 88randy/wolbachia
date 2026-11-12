@@ -7,6 +7,7 @@ export function ReleaseFacts({ release }: { release: Release }) {
   const { t, i18n } = useTranslation();
   const format = useFormatDateTime();
   const rows: [string, string][] = [
+    [t("releases.column.code"), release.code],
     [t("releases.column.permit"), release.permit_code],
     [t("releases.column.lot"), release.lot_code],
     [t("releases.column.device"), release.release_device_code],

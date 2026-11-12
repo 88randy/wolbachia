@@ -53,7 +53,7 @@ const liveRoute = createRoute({
 });
 const shiftRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: "/operations/shifts/$id",
+  path: "/operations/shifts/$code",
   beforeLoad: ({ context }) => {
     requirePermission("operations", context.me, "shift.read");
   },

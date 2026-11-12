@@ -60,7 +60,7 @@ const releasesRoute = createRoute({
 });
 const releaseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
-  path: "/releases/records/$id",
+  path: "/releases/records/$code",
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("releases", context.me, RELEASE_READ);

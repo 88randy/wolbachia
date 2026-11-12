@@ -266,8 +266,8 @@ test("the W29 entry list sends URL status and page to the server", async () => {
   await screen.findByRole("cell", { name: "M-03" });
   const rowLink = screen
     .getAllByRole("link")
-    .find((link) => link.getAttribute("href") === SHIFT_PATH);
-  expect(rowLink?.getAttribute("href")).toBe(SHIFT_PATH);
+    .find((link) => link.getAttribute("href") === "/operations/shifts/JOR-0034");
+  expect(rowLink?.textContent).toBe("JOR-0034");
   const request = api.requests.find((entry) => entry.path.startsWith("/api/v1/shifts/?"));
   const params = new URLSearchParams(request?.path.split("?")[1]);
   expect(params.get("status")).toBe("closed");
