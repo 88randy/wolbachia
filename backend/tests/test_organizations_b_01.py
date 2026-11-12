@@ -322,9 +322,11 @@ def test_center_endpoint_wires_default_deny_and_organization_and_dimension_isola
     )
     response = api_client.get("/api/v1/centers/", {"code": center.code})
     assert response.status_code == 200
-    assert response.data["results"] == [
-        {"id": str(center.pk), "code": center.code, "name": center.name}
-    ]
+    [row] = response.data["results"]
+    assert (row["id"], row["code"], row["name"]) == (str(center.pk), center.code, center.name)
+    # A plain reader (no center.update / center.deactivate) never gets the admin facts.
+    assert row["deactivated_reason"] is None
+    assert row["motorcycle_count"] is None
     for hidden in [unassigned, foreign]:
         assert api_client.get(f"/api/v1/centers/{hidden.pk}/").status_code == 404
     payload = {
