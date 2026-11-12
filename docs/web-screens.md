@@ -89,17 +89,17 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W53 | Entomology dashboard | ENT, COO, SUP | with bands; without configured thresholds; drill-down to a reading in ≤ 5 clicks; table per chart; exclusions note; 1440; EN; dark | R8 |
 | W54 | Wolbachia prevalence | ENT, COO | line per quadrant with confidence interval; release band; dotted threshold; 1440; dark | — |
 | W55 | Operations dashboard | SUP, COO | coverage, productivity vs target, closed houses, readings without count, fleet, supplies, sync | — |
-| W56 | Comparison | COO | bars + table across centers or quadrants for one indicator | — |
+| W56 | Comparison | COO | bars + table across centers or quadrants for one indicator | built (`/dashboards/comparison`, `GET /analytics/comparison/`); numbers do not link to record lists yet |
 | W57 | Official exports (E-Ov2 preview) | REG, ENT | 3-step wizard; RFC empty without authorization; export history | — |
 | W58 | ARCO requests | REG | type, received date, remaining legal time (bar changes color), owner, status | — |
 | W59 | Data transfers | REG | authorizations for personal data leaving the platform; exports check this list | R4 |
 | W60 | Access log | REG, ADM | who viewed/exported personal data, when, from where, what; read-only; filters + export | — |
-| W61 | Retention | REG, ADM | per data type: period, action at expiry, last nightly run + receipt | — |
+| W61 | Retention | REG, ADM | per data type: period, action at expiry, last nightly run + receipt | read-only (`/regulatory/retention`, `GET /retention/`) over the two existing jobs (#54); no policy model or run receipt exists yet |
 | W62 | Rule parameters (versioned) | ADM | editing creates a new version; before/after; effective date; history; never overwrites | R9; built in #36 (`/settings/rule-parameters`) |
 | W63 | Catalogs | ADM | tabs per catalog; items in use are deactivated, never deleted | implemented in #35 (`/settings/catalogs`); in-use counts and authors need backend follow-up |
 | W64 | Incident types | ADM | icon, default severity, owner, response time, escalation, what it blocks, required evidence; "Other" cannot be deactivated | — |
 | W65 | Roles and permissions matrix | ADM | profiles × actions with scope per cell; external profiles fixed read-only | — |
-| W66 | API keys | ADM | one key per institution with geo scope, endpoints, limit, validity; shown once | — |
+| W66 | API keys | ADM | one key per institution with geo scope, endpoints, limit, validity; shown once | built (`/settings/api-keys`, `/api-keys/`); no endpoint consumes a key yet |
 | W67 | Mobile app versions and phones | ADM | published and minimum version; signed APK upload with notes; phones with version | phones list built in #29 (`/settings/phones`); the rest — |
 | W68 | Organization | ADM | name, country, time zone, epi week, languages, logo, label phone | — |
 | W69 | Portal home | GOB | 3-section top nav; plain-language sentence; data cut-off date per figure; access-log notice | R10 |
