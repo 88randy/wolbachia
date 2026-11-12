@@ -109,6 +109,8 @@ def _prepare(
     actor: UploadActor, code: str, route: tuple[Location, Location], lot: Lot, qty: str
 ) -> None:
     version = lot.supply.versions.order_by("-revision").first()
+    if version is None:
+        raise RuntimeError(f"Supply of lot {lot.code} has no version")
     values = {
         "code": code,
         "origin_id": route[0].pk,

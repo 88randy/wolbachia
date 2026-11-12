@@ -37,6 +37,14 @@ def _data_section(result: DemoResult) -> list[str]:
     lines.append(f"- Release permit `{releases.PERMIT_CODE}`, device `{releases.DEVICE_CODE}`")
     lines.append(f"- Storage location `{inventory.LOCATION_CODE}`; supplies:")
     lines += [f"  - `{spec.code}` ({spec.label})" for spec in inventory.SUPPLIES]
+    lines.append(
+        f"- Traslados: `{inventory.DEMO_TRANSFER_CODE}` preparado, `T-DEMO-02` en tránsito, "
+        "`T-DEMO-03` recibido completo, `T-DEMO-04` recibido con faltante (diferencia DIF-0001)"
+    )
+    lines.append(
+        "- Entregas de hoy: demo-courier-1/4/5/6 planeadas, demo-courier-2 liberada, "
+        "demo-courier-3 liberada y cancelada"
+    )
     return lines
 
 
