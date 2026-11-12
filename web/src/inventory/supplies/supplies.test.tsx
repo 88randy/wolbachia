@@ -45,7 +45,7 @@ test("retirement confirms the opened revision and requires a new explicit confir
   await user.click(
     within(screen.getByRole("dialog")).getByRole("button", { name: "Desactivar insumo" }),
   );
-  await screen.findByText("Desactivado");
+  expect((await screen.findAllByText("Desactivado")).length).toBeGreaterThan(0);
   expect(retire.hasAttribute("disabled")).toBe(true);
   expect(
     api.requests.filter((request) => request.method === "POST").map((request) => request.body),

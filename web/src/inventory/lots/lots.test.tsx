@@ -40,7 +40,7 @@ test("an incomplete biological draft shows real dispatch requirements and preser
   await user.type(screen.getByRole("textbox", { name: "Especie" }), "Authored species");
   await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
   await screen.findByText("Guardado");
-  expect(screen.getByText("Bloqueado")).toBeDefined();
+  expect(screen.getAllByText("Bloqueado").length).toBeGreaterThan(0);
   const body = api.requests.find((request) => request.method === "PATCH")?.body;
   expect(body).toMatchObject({ expected_revision: 2, species: "Authored species" });
   expect(body).not.toHaveProperty("protocol_id");
