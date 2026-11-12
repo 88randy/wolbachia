@@ -2,6 +2,7 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 import { InfoHint } from "../ui/InfoHint";
 import { ExportButton } from "./ExportButton";
 import { FilterChips } from "./FilterChips";
@@ -25,6 +26,9 @@ export interface FilterBarProps {
   /** Screen-owned pickers (lookups with their own data) shown inside "Filtros". */
   extraFilters?: ReactNode;
 }
+
+/** More tabs than this do not fit beside the search: they take their own row under it. */
+const WIDE_QUICK_OPTIONS = 4;
 
 function panelCount(controller: TableController, keys: readonly string[]): number {
   const active = keys.filter((key) => key in controller.state.filters).length;
@@ -73,7 +77,10 @@ export function FilterBar(props: FilterBarProps) {
         )}
         {layout.quick && (
           <QuickFilter
-            className="hidden md:inline-flex"
+            className={cn(
+              "hidden md:inline-flex",
+              layout.quick.options.length > WIDE_QUICK_OPTIONS && "order-last basis-full",
+            )}
             filter={layout.quick}
             value={state.filters[layout.quick.key]}
             counts={quickCounts}

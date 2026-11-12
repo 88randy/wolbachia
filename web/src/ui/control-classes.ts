@@ -1,11 +1,11 @@
 /**
  * One control look for every picker-style button (Combobox, DateField, option and range pickers)
- * and the toolbar fields: 40 px (`--web-control-lg`), 12 px radius, one border, 14 px text.
+ * and the toolbar fields: 40 px (`--web-control-lg`), 12 px radius, one border, 14 px text, never wider than 36 rem (a lone field on a 1440 px page is not a banner).
  * Text inputs get the same numbers from `styles/global.css` and `forms/form.module.css`; Button
  * `md` is 40 px too, so a button beside a field lines up exactly.
  */
 export const CONTROL_BOX =
-  "h-[var(--web-control-lg)] min-h-[var(--web-control-lg)] w-full min-w-0 rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink shadow-xs";
+  "h-[var(--web-control-lg)] min-h-[var(--web-control-lg)] w-full max-w-xl min-w-0 rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink shadow-xs";
 
 /** Picker-style trigger button: the control box plus layout, hover and disabled state. */
 export const CONTROL_TRIGGER = `${CONTROL_BOX} inline-flex items-center gap-2 text-left hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60`;

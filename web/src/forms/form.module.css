@@ -31,7 +31,7 @@
 }
 
 .control {
-  max-width: 100%;
+  max-width: min(100%, 36rem);
   display: flex;
   align-items: center;
   gap: var(--space-1);
