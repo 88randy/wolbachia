@@ -26,15 +26,15 @@ export function useScannerLifecycle() {
     return () =>
       original === revision.current &&
       auth.getSnapshot().phase === "unlocked" &&
-      AppState.currentState === "active";
+      (AppState.currentState ?? "active") === "active";
   };
-  /** The camera may only be shown while the app is unlocked and in front. */
-  const canShowCamera = () => auth.getSnapshot().phase === "unlocked" && isAppActive();
+  /**
+   * The camera shows whenever the app is unlocked. Going to the background hides it through the
+   * AppState listener; the AppState reading is not trusted here, because a wrong or missing one
+   * left the preview hidden with no message (placement entry point).
+   */
+  const canShowCamera = () => auth.getSnapshot().phase === "unlocked";
   return { session, stop, lease, canShowCamera, isCameraVisible, setCamera };
-}
-
-function isAppActive(): boolean {
-  return AppState.currentState === "active";
 }
 
 function subscribeLifecycle(

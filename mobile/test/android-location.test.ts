@@ -138,9 +138,9 @@ void test("a fix after noFix recovers to ready, and stopping removes watchers an
 void test("services off and denied permission are reported once and nothing is watched", async () => {
   const off = fixture({ isServiceOn: false });
   await off.source.start(off.publish);
-  assert.deepEqual(off.states, [{ kind: "off" }]);
+  assert.deepEqual(off.states, [{ kind: "searching" }, { kind: "off" }]);
   const denied = fixture({ isGranted: false });
   await denied.source.start(denied.publish);
-  assert.deepEqual(denied.states, [{ kind: "denied" }]);
+  assert.deepEqual(denied.states, [{ kind: "searching" }, { kind: "denied" }]);
   assert.equal(off.watchers.length + denied.watchers.length, 0);
 });

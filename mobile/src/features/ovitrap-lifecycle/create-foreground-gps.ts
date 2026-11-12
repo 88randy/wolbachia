@@ -8,7 +8,7 @@ export function createForegroundGps(source: LocationSource): ForegroundLifecycle
     source,
     now: () => new Date(),
     activity: {
-      isActive: () => AppState.currentState === "active",
+      isActive: () => (AppState.currentState ?? "active") === "active",
       subscribe: (listener) => {
         const subscription = AppState.addEventListener("change", listener);
         return () => {
