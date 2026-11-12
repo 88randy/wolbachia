@@ -6,7 +6,7 @@ import type { FuelDraft, FuelState } from "../src/features/fuel/types.ts";
 import type { OutboxStatus } from "../src/outbox/outbox-status.ts";
 import type { OutboxEvent } from "../src/outbox/outbox-event.ts";
 import { REVIEW_HISTORY } from "./support/lifecycle-contract-fixtures.ts";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const FEATURE = "mobile/src/features/fuel/";
@@ -61,18 +61,16 @@ function state(patch: Partial<FuelState> = {}): FuelState {
 function texts(nodes: readonly RenderNode[]) {
   return nodes.filter((node) => node.type === "Text").map((node) => node.props.children);
 }
+/** A notice may append the reviewer's reason after the outcome text. */
+function hasNotice(list: readonly unknown[], text: string): boolean {
+  return list.some((item) => item === text || String(item).startsWith(`${text} `));
+}
 function press(node: RenderNode | undefined): void {
   assert.ok(node);
   assert.equal(typeof node.props.onPress, "function");
   (node.props.onPress as () => void)();
 }
-function minTarget(node: RenderNode): number {
-  const style =
-    typeof node.props.style === "function"
-      ? (node.props.style as (input: { pressed: boolean }) => unknown)({ pressed: false })
-      : node.props.style;
-  return Number(flattenStyle(style).minHeight);
-}
+const minTarget = minHeightOf;
 function checkTextScaling(nodes: readonly RenderNode[]): void {
   for (const node of nodes.filter((node) => node.type === "Text")) {
     assert.equal(node.props.numberOfLines, undefined);
@@ -113,12 +111,21 @@ void test("P22 host matrix keeps fixed motorcycle, units, numeric fields, retake
       assert.ok(litres);
       (litres.props.onChangeText as (value: string) => void)("NaN");
       assert.deepEqual(edits[0], ["litres", "NaN"], "invalid raw input stays in the editor");
-      const refill = form.find((node) => node.props.accessibilityRole === "switch");
-      assert.ok(refill);
-      assert.equal(refill.props.accessibilityLabel, messages[locale]["mobile.fuel.fullRefill"]);
-      assert.equal((refill.props.accessibilityState as { checked: boolean }).checked, false);
-      assert.ok(minTarget(refill) >= 48);
-      press(refill);
+      assert.ok(texts(form).includes(messages[locale]["mobile.fuel.fullRefill"]));
+      const [no, yes] = [
+        form.find(
+          (node) => node.props.accessibilityLabel === messages[locale]["courier.choice.no"],
+        ),
+        form.find(
+          (node) => node.props.accessibilityLabel === messages[locale]["courier.choice.yes"],
+        ),
+      ];
+      assert.ok(no && yes);
+      assert.equal(no.props.accessibilityRole, "radio");
+      assert.equal((no.props.accessibilityState as { checked: boolean }).checked, true);
+      assert.equal((yes.props.accessibilityState as { checked: boolean }).checked, false);
+      assert.ok(minTarget(yes) >= 48);
+      press(yes);
       assert.deepEqual(edits[1], ["isFullRefill", true]);
       const receipt = render(`${FEATURE}FuelReceipt.tsx`, "FuelReceipt", { model });
       const image = receipt.find((node) => node.type === "Image");
@@ -159,7 +166,8 @@ function checkForm(locale: Locale, nodes: readonly RenderNode[]) {
   );
   assert.ok(inputs.every((node) => node.props.editable === true && minTarget(node) >= 48));
   assert.ok(texts(nodes).includes(DRAFT.motorcycleCode));
-  assert.ok(texts(nodes).includes(DRAFT.currency));
+  // The currency is part of the amount label ("Amount (MXN)"), not a separate text.
+  assert.ok(String(inputs[1]?.props.accessibilityLabel).includes(DRAFT.currency));
 }
 
 void test("P22 separates phone save, pending receipt, server receipt and exact later review in both languages", () => {
@@ -180,9 +188,9 @@ void test("P22 separates phone save, pending receipt, server receipt and exact l
     const review = { ...REVIEW_HISTORY, source_event_id: DRAFT.eventId };
     const reviewed = content(state({ event: event("in_review"), review }));
     assert.ok(reviewed.includes(messages[locale]["mobile.fuel.reviewPending"]));
-    assert.ok(reviewed.includes(messages[locale]["mobile.fuel.reviewedAccepted"]));
+    assert.ok(hasNotice(reviewed, messages[locale]["mobile.fuel.reviewedAccepted"]));
     const unrelated = content(state({ event: event("in_review"), review: REVIEW_HISTORY }));
-    assert.ok(!unrelated.includes(messages[locale]["mobile.fuel.reviewedAccepted"]));
+    assert.ok(!hasNotice(unrelated, messages[locale]["mobile.fuel.reviewedAccepted"]));
     const absentReceipt = content(
       state({ event: event("sent"), receiptPending: false, draft: { ...DRAFT, receipt: null } }),
     );

@@ -18,13 +18,12 @@ import {
 } from "./transfer-fixtures";
 
 // B04 byte/verification rules are owned by transfer-evidence.test.ts; this suite owns custody wiring.
-vi.mock("./TransferEvidence", () => ({
-  TransferEvidence: ({
-    label,
+// The drawn signature is replaced by one button that verifies it (the pad itself needs a canvas).
+vi.mock("./TransferSignature", () => ({
+  TransferSignature: ({
     onVerified,
     isBlocked,
   }: {
-    label: string;
     onVerified: (id: string) => void;
     isBlocked?: boolean;
   }) => (
@@ -35,7 +34,7 @@ vi.mock("./TransferEvidence", () => ({
         onVerified(TRANSFER_SIGNATURE_ID);
       }}
     >
-      {label}
+      Firmar
     </button>
   ),
 }));
@@ -46,11 +45,23 @@ function receptionRoutes(current: () => Schemas["Transfer"]): FakeApiRoutes {
     [`GET /api/v1/transfers/${TRANSFER_ID}/`]: () => Response.json(current()),
   };
 }
+/**
+ * The scanner now sits in the collapsed "something arrived that was not on the list" block: every
+ * listed line already starts as "arrived as expected". Opens it (once) and returns the scan box.
+ */
+async function openScanner() {
+  const existing = screen.queryByRole("textbox", { name: es["transfers.scan.label"] });
+  if (existing) return existing;
+  await userEvent.click(
+    await screen.findByRole("button", { name: es["transfers.receive.extras"] }),
+  );
+  return screen.findByRole("textbox", { name: es["transfers.scan.label"] });
+}
 async function scanAndSign(user: ReturnType<typeof userEvent.setup>) {
-  const scanner = await screen.findByRole("textbox", { name: es["transfers.scan.label"] });
+  const scanner = await openScanner();
   await user.type(scanner, transferLine().lot_id);
   await user.keyboard("{Enter}");
-  await user.click(screen.getByRole("button", { name: es["transfers.signature.receiver"] }));
+  await user.click(screen.getByRole("button", { name: "Firmar" }));
 }
 function receiveRequests(api: { requests: { method: string; path: string; body: unknown }[] }) {
   return api.requests.filter(
@@ -168,7 +179,7 @@ test("a stock conflict refreshes current transfer facts and retains the signatur
       },
     },
   });
-  await user.click(await screen.findByRole("button", { name: es["transfers.signature.sender"] }));
+  await user.click(await screen.findByRole("button", { name: "Firmar" }));
   await user.click(screen.getByRole("button", { name: es["transfers.action.dispatch"] }));
   await screen.findByText(es["inventory.blocker.lotExpired"], { exact: false });
   await screen.findByRole("button", { name: es["transfers.write.review"] });
@@ -234,7 +245,7 @@ test("center-only scope may read a transfer whose warehouse locations have no qu
     },
     routes: receptionRoutes(() => transfer()),
   });
-  await screen.findByRole("textbox", { name: es["transfers.scan.label"] });
+  await openScanner();
   expect(screen.queryByText(es["transfers.page.denied"])).toBeNull();
 });
 
@@ -260,7 +271,7 @@ test("reopening a committed receipt shows saved quantities without a new empty r
   await screen.findByText("0.8");
   expect(screen.getByText("0.2")).toBeDefined();
   expect(screen.queryByRole("textbox", { name: es["transfers.scan.label"] })).toBeNull();
-  expect(screen.queryByRole("button", { name: es["transfers.signature.receiver"] })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Firmar" })).toBeNull();
 });
 
 test("an explicit none scope denies a deep link before requesting transfer content", async () => {
@@ -295,7 +306,7 @@ test("a changed scope clears current receipt content and ignores a late detail f
       },
     },
   });
-  await screen.findByRole("textbox", { name: es["transfers.scan.label"] });
+  await openScanner();
   shouldHold = true;
   act(() => {
     void app.queryClient.invalidateQueries({
@@ -375,7 +386,7 @@ test.each(["scope", "activeCenter"] as const)(
       expect(hasStarted).toBe(true);
     });
     expect(screen.queryByRole("textbox", { name: es["transfers.scan.label"] })).toBeNull();
-    expect(screen.queryByRole("button", { name: es["transfers.signature.receiver"] })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Firmar" })).toBeNull();
     await act(async () => {
       shouldHold = false;
       release(Response.json(transfer()));
@@ -435,7 +446,7 @@ test.each(["deniedRead", "revokedAction"] as const)(
     await act(async () => {
       await app.queryClient.refetchQueries({ queryKey: ["me"] });
     });
-    await screen.findByRole("textbox", { name: es["transfers.scan.label"] });
+    await openScanner();
     expect(
       screen.getByText(
         es["transfers.line.count"].replace("{expected}", "1").replace("{received}", "0"),
@@ -472,7 +483,7 @@ test("revoking a frozen dispatch grant reveals permitted reception after the cur
       },
     },
   });
-  await user.click(await screen.findByRole("button", { name: es["transfers.signature.sender"] }));
+  await user.click(await screen.findByRole("button", { name: "Firmar" }));
   await user.click(screen.getByRole("button", { name: es["transfers.action.dispatch"] }));
   await screen.findByText(es["transfers.write.retained"]);
   const allowed = transferMe();
@@ -485,8 +496,8 @@ test("revoking a frozen dispatch grant reveals permitted reception after the cur
   await act(async () => {
     await app.queryClient.refetchQueries({ queryKey: ["me"] });
   });
-  await screen.findByRole("textbox", { name: es["transfers.scan.label"] });
-  expect(screen.queryByRole("button", { name: es["transfers.signature.sender"] })).toBeNull();
+  await openScanner();
+  expect(screen.queryByRole("button", { name: "Firmar" })).toBeNull();
   expect(
     api.requests.filter(
       (request) => request.method === "POST" && request.path.endsWith("/dispatch/"),

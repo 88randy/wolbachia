@@ -53,12 +53,16 @@ test.each(["organization", "user"])(
       expect(screen.queryByRole("row", { name: /Private A row/ })).toBeNull();
     });
     expect(app.router.state.location.pathname).toBe(CATALOG_PATH);
-    expect(screen.queryByRole("link", { name: "Intervenciones" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Catálogos disponibles" })).toBeNull();
     await act(async () => {
       catalogs.release([{ ...CATALOG, label_es: "B catalog" }]);
       await catalogs.promise;
     });
-    await screen.findByRole("link", { name: "B catalog" });
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: "Catálogos disponibles" }).textContent).toContain(
+        "B catalog",
+      );
+    });
     expect(screen.queryByRole("row", { name: /Private A row/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => {

@@ -248,6 +248,8 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "max_paddle_reuses": (2, "count", 0, 2),
         "revisit_interval_days": (7, "day", 1, 28),
         "departure_requires_offline_map": (0, "count", 0, 1),
+        # 0 either, 1 warehouse, 2 phone: who may sign a delivery.
+        "delivery_signature_mode": (0, "count", 0, 2),
     }
     parameters = RuleParameter.objects.filter(organization=organization).prefetch_related(
         "versions"
@@ -324,6 +326,7 @@ def test_center_endpoint_wires_default_deny_and_organization_and_dimension_isola
     assert response.status_code == 200
     [row] = response.data["results"]
     assert (row["id"], row["code"], row["name"]) == (str(center.pk), center.code, center.name)
+    assert row["is_active"] is True
     # A plain reader (no center.update / center.deactivate) never gets the admin facts.
     assert row["deactivated_reason"] is None
     assert row["motorcycle_count"] is None

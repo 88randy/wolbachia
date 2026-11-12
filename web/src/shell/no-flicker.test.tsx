@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { LOADING_DELAY_MS } from "../ui/use-delayed-flag";
 import { createFakeApi, makeMe } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
+import { pickFilterOption } from "../test/filter-bar-helpers";
 
 const ME = "GET /api/v1/me/";
 const DEVICES = "GET /api/v1/devices/";
@@ -124,7 +125,7 @@ test("changing a filter keeps the rows and shows no skeleton while the answer ta
   const watch = watchFlicker();
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-  await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "Revocado");
+  await pickFilterOption(user, "Estado", "Revocado");
   await act(async () => {
     await vi.advanceTimersByTimeAsync(FAST_MS * 2);
   });
@@ -155,7 +156,7 @@ test("a refetch that lasts longer than the delay shows the subtle indicator, not
   await screen.findByRole("row", { name: /Phone 1/ });
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-  await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "Revocado");
+  await pickFilterOption(user, "Estado", "Revocado");
   await act(async () => {
     await vi.advanceTimersByTimeAsync(LOADING_DELAY_MS * 2);
   });

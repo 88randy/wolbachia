@@ -1,13 +1,12 @@
 import { reconcileSession } from "../session/session-reconcile";
 import { act, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { messages } from "@wolbachia/i18n";
 import type { MapProps } from "../quadrants/geography/map-types";
 import { quadrant, pageOf } from "../quadrants/geography/geography-test-helpers";
 import { createFakeApi, makeMe } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 import { centerStorageKey, writeCenter } from "./center-selection";
+import { CENTER_PICKER, centerPicker, chooseCenter } from "../test/center-picker";
 vi.mock("../quadrants/geography/GeographyMap", () => ({
   default: ({ quadrants }: MapProps) => (
     <div role="region" aria-label="Map results">
@@ -46,15 +45,8 @@ test("changing A to B clears the URL center and requests only B for the table an
   });
   const app = await renderApp({ path: "/quadrants?center=center-a", fetch: api.fetch });
   await screen.findByRole("cell", { name: "Q-A" });
-  await userEvent.click(
-    screen.getByRole("button", { name: messages["es-MX"]["geography.map.open"] }),
-  );
   expect((await screen.findByRole("region", { name: "Map results" })).textContent).toBe("Q-A");
-  await screen.findByRole("option", { name: "B · Beta" });
-  await userEvent.selectOptions(
-    screen.getByRole("combobox", { name: "Filtro de centro" }),
-    "center-b",
-  );
+  await chooseCenter("Beta");
   await waitFor(() => {
     expect(api.requests.some((request) => request.path.includes("center=center-b"))).toBe(true);
   });
@@ -66,13 +58,8 @@ test("changing A to B clears the URL center and requests only B for the table an
   });
   await screen.findByRole("cell", { name: "Q-B" });
   expect(screen.queryByRole("cell", { name: "Q-A" })).toBeNull();
-  await userEvent.click(
-    screen.getByRole("button", { name: messages["es-MX"]["geography.map.open"] }),
-  );
   expect((await screen.findByRole("region", { name: "Map results" })).textContent).toBe("Q-B");
-  expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Filtro de centro" }).value).toBe(
-    "center-b",
-  );
+  expect((await centerPicker()).textContent).toContain("Beta");
 });
 
 test("revoking center.read and narrowing grants clears A before unfiltered quadrant queries and cache keys", async () => {
@@ -103,11 +90,7 @@ test("revoking center.read and narrowing grants clears A before unfiltered quadr
     },
   });
   const app = await renderApp({ path: "/quadrants", fetch: api.fetch });
-  await screen.findByRole("option", { name: "A · Alpha" });
-  await userEvent.selectOptions(
-    screen.getByRole("combobox", { name: "Filtro de centro" }),
-    "center-a",
-  );
+  await chooseCenter("Alpha");
   await waitFor(() => {
     expect(screen.queryByRole("cell", { name: "Q-B" })).toBeNull();
   });
@@ -145,7 +128,7 @@ test("revoking center.read and narrowing grants clears A before unfiltered quadr
   });
   await screen.findByRole("cell", { name: "Q-B" });
   expect(screen.queryByRole("cell", { name: "Q-A" })).toBeNull();
-  expect(screen.queryByRole("combobox", { name: "Filtro de centro" })).toBeNull();
+  expect(screen.queryByRole("combobox", { name: CENTER_PICKER })).toBeNull();
   expect(window.localStorage.getItem(key)).toBeNull();
   const scoped = app.queryClient
     .getQueryCache()

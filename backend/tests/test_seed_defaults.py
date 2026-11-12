@@ -183,7 +183,16 @@ def test_catalogs_have_the_expected_initial_items() -> None:
         if catalog.slug == "paddle-type":
             expected.insert(0, "standard")
         if catalog.slug == "void-reason":
-            expected = ["data-entry-error", "duplicate-record", "wrong-location", "other"]
+            # Plus the reasons the write-off form reads from this catalog.
+            expected = [
+                "data-entry-error",
+                "duplicate-record",
+                "wrong-location",
+                "expired",
+                "damaged",
+                "lost",
+                "other",
+            ]
         assert codes_in_catalog == expected
     other = CatalogItem.objects.filter(organization=organization, is_other=True).first()
     assert (other.label_es, other.label_en, other.is_active) == (
@@ -335,6 +344,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_READ,
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
+        "analytics.operations.read",
+        "analytics.entomology.read",
     }
     assert by_slug["entomologist"] == {
         "sample.read",
@@ -359,6 +370,16 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "reading.read",
         "schedule.read",
         "risk_import.apply",
+        USER_OPERATIONAL_READ,
+        "quadrant.read",
+        "analytics.entomology.read",
+        "analytics.wolbachia.read",
+        "shipment.read",
+        "material_request.read",
+        "pcr.read",
+        "pcr.manage",
+        # The paddle list (W37) is read with this code.
+        "egg_paddle.reuse",
     }
     assert by_slug["community_promoter"] == {
         *reader,
@@ -387,6 +408,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "lot.create",
         "lot.update",
         "condition.create",
+        # The delivery form lists couriers by name.
+        USER_OPERATIONAL_READ,
     }
     assert by_slug["coordinator"] == {
         USER_OPERATIONAL_READ,
@@ -407,9 +430,44 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "quadrant.read",
         "quadrant.publish",
         "sampling_point.create",
+        "analytics.operations.read",
+        "analytics.entomology.read",
+        "analytics.wolbachia.read",
+        "pcr.read",
+        "pcr.manage",
+        REVIEW_ITEM_READ,
     }
-    assert by_slug["regulatory"] == reader | {"permit.manage", "permit.suspend", "release.read"}
+    assert by_slug["regulatory"] == reader | {
+        "permit.manage",
+        "permit.suspend",
+        "release.read",
+        "quadrant.read",
+        "access_log.read",
+        "arco_request.read",
+        "arco_request.manage",
+        "export.run",
+        "transfer_authorization.read",
+        "transfer_authorization.manage",
+    }
     assert by_slug["admin"] == {
+        # Added since: analytics, PCR, lab shipments and material requests, the regulatory
+        # screens, the portal and the center administration.
+        "analytics.operations.read",
+        "analytics.entomology.read",
+        "analytics.wolbachia.read",
+        "pcr.read",
+        "pcr.manage",
+        "shipment.read",
+        "material_request.read",
+        "arco_request.read",
+        "arco_request.manage",
+        "transfer_authorization.read",
+        "transfer_authorization.manage",
+        "export.run",
+        "portal.manage",
+        "center.create",
+        "center.update",
+        "center.deactivate",
         "sample.collect",
         "sample.void",
         "sample.read",
@@ -805,7 +863,9 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
     entomologist.refresh_from_db()
     admin.refresh_from_db()
     assert "recount.create" not in entomologist.permission_codes
-    assert not {"recount.adjudicate", "egg_paddle.reuse"} & set(entomologist.permission_codes)
+    assert "recount.adjudicate" not in entomologist.permission_codes
+    # The entomologist reads the paddle list with this code, so the seed keeps granting it.
+    assert "egg_paddle.reuse" in entomologist.permission_codes
     assert "recount.adjudicate" not in admin.permission_codes
     assert "egg_paddle.reuse" in admin.permission_codes
     assert "lot.update" not in warehouse.permission_codes
@@ -855,15 +915,19 @@ def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str)
     assert code in profile.seeded_permission_codes
 
 
-def test_only_courier_and_admin_sync_and_only_supervisor_and_admin_read_review_items() -> None:
+def test_only_courier_and_admin_sync_and_only_supervisor_coordinator_and_admin_read_review_items() -> (
+    None
+):
     by_slug = DEFAULT_PROFILE_PERMISSIONS
 
     assert sorted(s for s, codes in by_slug.items() if FIELD_EVENT_SYNC in codes) == [
         "admin",
         "courier",
     ]
+    # The coordinator reads the review inbox too (it follows the supervisors' queue).
     assert sorted(s for s, codes in by_slug.items() if REVIEW_ITEM_READ in codes) == [
         "admin",
+        "coordinator",
         "supervisor",
     ]
 

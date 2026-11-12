@@ -85,7 +85,8 @@ test.each(["approve", "observe"] as const)(
     });
     const history = screen.getByRole("region", { name: "Historial de validación" });
     expect(await within(history).findByText(saved.reason)).toBeDefined();
-    expect(within(history).getByText(ALLOWED.user.id)).toBeDefined();
+    // The author shows by name, never by id.
+    expect(within(history).getByText("Ana Supervisora")).toBeDefined();
     expect(api.requests.find((request) => request.method === "POST")?.body).toEqual({
       reason: saved.reason,
       expected_revision: 0,

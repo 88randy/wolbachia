@@ -1,7 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ApiError } from "@wolbachia/api-client";
-import { Check, CheckCheck, Download, FileUp, PackageCheck, Send, Truck, Upload } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  Download,
+  FileUp,
+  PackageCheck,
+  Send,
+  Truck,
+  Upload,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -26,7 +35,15 @@ import { useLabScope } from "../use-lab-scope";
 import { FilePicker, ReasonDialog, ReceiveDialog, ShipDialog } from "./PcrDialogs";
 import { PCR_MANAGE, pcrDetailOptions } from "./pcr-api";
 import type { PcrDetail } from "./pcr-api";
-import { FLOW, NEXT_ACTION, STATUS_TONE, outcomeKey, outcomeTone, statusKey, targetKey } from "./pcr-status";
+import {
+  FLOW,
+  NEXT_ACTION,
+  STATUS_TONE,
+  outcomeKey,
+  outcomeTone,
+  statusKey,
+  targetKey,
+} from "./pcr-status";
 import { usePcrCommand, usePcrDownload, usePcrUpload } from "./use-pcr-command";
 
 /** One PCR test by its human code. */
@@ -37,7 +54,8 @@ export function PcrDetailPage() {
   const query = useQuery(pcrDetailOptions(scope, code ?? ""));
   useBreadcrumbLabel(`/lab/pcr/${code ?? ""}`, code);
   if (!code || query.data === null) return <NotFoundState />;
-  if (query.error instanceof ApiError && [403, 404].includes(query.error.status)) return <NotFoundState />;
+  if (query.error instanceof ApiError && [403, 404].includes(query.error.status))
+    return <NotFoundState />;
   if (query.data) return <PcrRecord batch={query.data} />;
   if (query.error)
     return (
@@ -63,8 +81,10 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
   const manage = can(PCR_MANAGE);
   const next = NEXT_ACTION[batch.status];
   const live = batch.status !== "voided" && batch.status !== "closed";
-  const primary = manage && next && (
-    next === "results" ? (
+  const primary =
+    manage &&
+    next &&
+    (next === "results" ? (
       <Link
         to="/lab/pcr/$code/results"
         params={{ code: batch.code }}
@@ -84,8 +104,7 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
       >
         {t(`pcr.action.${next}`)}
       </Button>
-    )
-  );
+    ));
   const secondary =
     manage && batch.status === "results_received" ? (
       <Link
@@ -123,7 +142,9 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
     <DetailPage
       code={t("pcr.list.title")}
       title={batch.code}
-      status={<StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>}
+      status={
+        <StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>
+      }
       subtitle={`${batch.external_lab.name} · ${targets}`}
       back={{ label: t("pcr.list.title"), link: { to: "/lab/pcr" } }}
       actions={
@@ -137,8 +158,12 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
       moreActions={moreActions}
       notices={
         <>
-          {batch.status === "voided" && <InlineNotice tone="critical">{t("pcr.detail.voidedNotice")}</InlineNotice>}
-          {batch.status === "closed" && <InlineNotice tone="success">{t("pcr.detail.done")}</InlineNotice>}
+          {batch.status === "voided" && (
+            <InlineNotice tone="critical">{t("pcr.detail.voidedNotice")}</InlineNotice>
+          )}
+          {batch.status === "closed" && (
+            <InlineNotice tone="success">{t("pcr.detail.done")}</InlineNotice>
+          )}
         </>
       }
       aside={<History batch={batch} />}
@@ -158,16 +183,35 @@ function PcrRecord({ batch }: { batch: PcrDetail }) {
               label: t("pcr.col.shippedAt"),
               value: batch.shipped_at ? formatDate(batch.shipped_at) : <EmptyValue />,
             },
-            ...(batch.notes ? [{ label: t("pcr.detail.notes"), value: batch.notes, wide: true }] : []),
+            ...(batch.notes
+              ? [{ label: t("pcr.detail.notes"), value: batch.notes, wide: true }]
+              : []),
           ]}
         />
       </DetailSection>
-      <SamplesCard batch={batch} onVoidResult={(resultId) => {
-        setDialog({ resultId });
-      }} canManage={manage && live} formatDateTime={formatDateTime} />
+      <SamplesCard
+        batch={batch}
+        onVoidResult={(resultId) => {
+          setDialog({ resultId });
+        }}
+        canManage={manage && live}
+        formatDateTime={formatDateTime}
+      />
       <ReportCard batch={batch} canManage={manage} />
-      <ShipDialog batch={batch} open={dialog === "ship"} onOpenChange={(open) => { setDialog(open ? "ship" : null); }} />
-      <ReceiveDialog batch={batch} open={dialog === "receive"} onOpenChange={(open) => { setDialog(open ? "receive" : null); }} />
+      <ShipDialog
+        batch={batch}
+        open={dialog === "ship"}
+        onOpenChange={(open) => {
+          setDialog(open ? "ship" : null);
+        }}
+      />
+      <ReceiveDialog
+        batch={batch}
+        open={dialog === "receive"}
+        onOpenChange={(open) => {
+          setDialog(open ? "receive" : null);
+        }}
+      />
       {dialog !== null && dialog !== "ship" && dialog !== "receive" && (
         <ReasonDialog
           batch={batch}
@@ -212,7 +256,11 @@ function Stepper({ batch }: { batch: PcrDetail }) {
               <span
                 className={cn(
                   "grid size-6 flex-none place-items-center rounded-full text-xs",
-                  done ? "bg-success-fg text-surface" : isCurrent ? "bg-surface text-action-strong" : "bg-surface-muted",
+                  done
+                    ? "bg-success-fg text-surface"
+                    : isCurrent
+                      ? "bg-surface text-action-strong"
+                      : "bg-surface-muted",
                 )}
               >
                 {done ? <Check aria-hidden="true" className="size-3.5" /> : index + 1}
@@ -239,7 +287,9 @@ function SamplesCard({
 }) {
   const { t } = useTranslation();
   const current = new Map(
-    batch.results.filter((row) => row.current).map((row) => [`${row.sample_id}:${row.target}`, row]),
+    batch.results
+      .filter((row) => row.current)
+      .map((row) => [`${row.sample_id}:${row.target}`, row]),
   );
   const history = batch.results.filter((row) => !row.current);
   return (
@@ -276,9 +326,15 @@ function SamplesCard({
                   return (
                     <td key={target} className="px-3 py-2">
                       <span className="flex flex-wrap items-center gap-2">
-                        <StatusPill tone={outcomeTone(target, result.outcome)}>{t(outcomeKey(result.outcome))}</StatusPill>
-                        {result.serotype && <span className="text-xs font-semibold">{result.serotype}</span>}
-                        {result.ct_value && <span className="text-xs text-ink-2 tabular-nums">{`${t("pcr.col.ct")} ${result.ct_value}`}</span>}
+                        <StatusPill tone={outcomeTone(target, result.outcome)}>
+                          {t(outcomeKey(result.outcome))}
+                        </StatusPill>
+                        {result.serotype && (
+                          <span className="text-xs font-semibold">{result.serotype}</span>
+                        )}
+                        {result.ct_value && (
+                          <span className="text-xs text-ink-2 tabular-nums">{`${t("pcr.col.ct")} ${result.ct_value}`}</span>
+                        )}
                         {canManage && !lockable && (
                           <CardMenu
                             items={[
@@ -300,7 +356,9 @@ function SamplesCard({
           </tbody>
         </table>
       </div>
-      {batch.results.length === 0 && <p className="m-0 mt-3 text-sm text-ink-2">{t("pcr.detail.noResults")}</p>}
+      {batch.results.length === 0 && (
+        <p className="m-0 mt-3 text-sm text-ink-2">{t("pcr.detail.noResults")}</p>
+      )}
       {history.length > 0 && (
         <ul className="m-0 mt-4 flex list-none flex-col gap-1 border-t border-line p-0 pt-3 text-xs text-ink-2">
           {history.map((row) => (
@@ -310,7 +368,9 @@ function SamplesCard({
               </span>{" "}
               <strong>{t(row.voided ? "pcr.detail.voidedResult" : "pcr.detail.replaced")}</strong> ·{" "}
               {row.author_name} · {formatDateTime(row.created_at)}
-              {row.void_reason && <> · {t("pcr.detail.reasonLabel", { reason: row.void_reason })}</>}
+              {row.void_reason && (
+                <> · {t("pcr.detail.reasonLabel", { reason: row.void_reason })}</>
+              )}
             </li>
           ))}
         </ul>
@@ -332,7 +392,9 @@ function ReportCard({ batch, canManage }: { batch: PcrDetail; canManage: boolean
   return (
     <DetailSection title={t("pcr.detail.report")}>
       <div className="flex flex-col gap-3">
-        {batch.reports.length === 0 && <p className="m-0 text-sm text-ink-2">{t("pcr.detail.noReport")}</p>}
+        {batch.reports.length === 0 && (
+          <p className="m-0 text-sm text-ink-2">{t("pcr.detail.noReport")}</p>
+        )}
         {batch.reports.map((report, index) => (
           <div key={report.id} className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm">
@@ -404,28 +466,52 @@ function History({ batch }: { batch: PcrDetail }) {
         {[...batch.events].reverse().map((event) => (
           <li key={event.id} className={cn("flex gap-3", event.undone && "opacity-60")}>
             <span className="mt-1 grid size-7 flex-none place-items-center rounded-full bg-tint text-action-strong">
-              {event.kind === "ship" ? <Send aria-hidden="true" className="size-3.5" /> : <Check aria-hidden="true" className="size-3.5" />}
+              {event.kind === "ship" ? (
+                <Send aria-hidden="true" className="size-3.5" />
+              ) : (
+                <Check aria-hidden="true" className="size-3.5" />
+              )}
             </span>
             <div className="flex min-w-0 flex-col gap-0.5 text-sm">
               <span className={cn("font-semibold", event.undone && "line-through")}>
                 {t(`pcr.event.${event.kind}`)}
-                {event.undone && <span className="ml-2 text-xs font-semibold text-warning-fg no-underline">{t("pcr.detail.undone")}</span>}
+                {event.undone && (
+                  <span className="ml-2 text-xs font-semibold text-warning-fg no-underline">
+                    {t("pcr.detail.undone")}
+                  </span>
+                )}
               </span>
               <span className="text-xs text-ink-2">
                 {event.author_name} · {formatDateTime(event.occurred_at)}
               </span>
               {event.tracking_number && (
-                <span className="text-xs">{t("pcr.detail.tracking", { number: event.tracking_number })}</span>
+                <span className="text-xs">
+                  {t("pcr.detail.tracking", { number: event.tracking_number })}
+                </span>
               )}
-              {event.carrier && <span className="text-xs">{t("pcr.detail.carrier", { name: event.carrier })}</span>}
-              {event.reason && <span className="text-xs">{t("pcr.detail.reasonLabel", { reason: event.reason })}</span>}
+              {event.carrier && (
+                <span className="text-xs">{t("pcr.detail.carrier", { name: event.carrier })}</span>
+              )}
+              {event.reason && (
+                <span className="text-xs">
+                  {t("pcr.detail.reasonLabel", { reason: event.reason })}
+                </span>
+              )}
               {event.has_evidence && (
                 <button
                   type="button"
                   className="w-fit text-xs font-semibold text-action-strong underline"
                   onClick={() => {
-                    const extension = event.evidence_type === "application/pdf" ? "pdf" : event.evidence_type === "image/png" ? "png" : "jpg";
-                    void download({ kind: "evidence", id: batch.id, event_id: event.id }, `${batch.code}-envio.${extension}`);
+                    const extension =
+                      event.evidence_type === "application/pdf"
+                        ? "pdf"
+                        : event.evidence_type === "image/png"
+                          ? "png"
+                          : "jpg";
+                    void download(
+                      { kind: "evidence", id: batch.id, event_id: event.id },
+                      `${batch.code}-envio.${extension}`,
+                    );
                   }}
                 >
                   {t("pcr.detail.downloadEvidence")}

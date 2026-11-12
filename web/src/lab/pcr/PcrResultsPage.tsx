@@ -55,7 +55,9 @@ function ResultsWorkspace({ batch }: { batch: PcrDetail }) {
     <DetailPage
       code={batch.code}
       title={t("pcr.results.title")}
-      status={<StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>}
+      status={
+        <StatusPill tone={STATUS_TONE[batch.status]}>{t(statusKey(batch.status))}</StatusPill>
+      }
       subtitle={t("pcr.results.description")}
       notices={
         <>
@@ -152,7 +154,10 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
         <Card title={t("pcr.results.previewTitle")}>
           <div className="flex flex-col gap-3">
             <p className="m-0 text-sm font-semibold" aria-live="polite">
-              {t("pcr.results.previewSummary", { valid: preview.valid_count, errors: preview.error_count })}
+              {t("pcr.results.previewSummary", {
+                valid: preview.valid_count,
+                errors: preview.error_count,
+              })}
             </p>
             <div className="max-h-[28rem] overflow-auto rounded-xl border border-line">
               <table className="w-full border-collapse text-sm">
@@ -169,11 +174,20 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                 </thead>
                 <tbody>
                   {preview.rows.map((row) => (
-                    <tr key={row.line} className={row.problems.length ? "border-t border-line bg-critical-bg" : "border-t border-line"}>
+                    <tr
+                      key={row.line}
+                      className={
+                        row.problems.length
+                          ? "border-t border-line bg-critical-bg"
+                          : "border-t border-line"
+                      }
+                    >
                       <td className="px-3 py-2 text-right tabular-nums">{row.line}</td>
                       <td className="px-3 py-2 font-semibold">{row.sample_code}</td>
                       <td className="px-3 py-2">{row.target ? t(targetKey(row.target)) : "—"}</td>
-                      <td className="px-3 py-2">{row.outcome ? t(outcomeKey(row.outcome)) : "—"}</td>
+                      <td className="px-3 py-2">
+                        {row.outcome ? t(outcomeKey(row.outcome)) : "—"}
+                      </td>
                       <td className="px-3 py-2">{row.serotype || "—"}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{row.ct_value ?? "—"}</td>
                       <td className="px-3 py-2">
@@ -185,9 +199,15 @@ function CsvUpload({ batch, isSaving, onApply }: ApplyProps) {
                         ) : (
                           <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-critical-fg">
                             {row.problems.map((error) => (
-                              <li key={`${error.field}-${error.code}`} className="inline-flex items-center gap-1">
+                              <li
+                                key={`${error.field}-${error.code}`}
+                                className="inline-flex items-center gap-1"
+                              >
                                 <AlertTriangle aria-hidden="true" className="size-4 flex-none" />
-                                {t(`pcr.row.${error.code}` as MessageKey, error.params as Record<string, unknown>)}
+                                {t(
+                                  `pcr.row.${error.code}` as MessageKey,
+                                  error.params as Record<string, unknown>,
+                                )}
                               </li>
                             ))}
                           </ul>
@@ -236,13 +256,18 @@ interface Draft {
 function ResultGrid({ batch, isSaving, onApply }: ApplyProps) {
   const { t } = useTranslation();
   const current = new Map(
-    batch.results.filter((row) => row.current).map((row) => [`${row.sample_id}:${row.target}`, row]),
+    batch.results
+      .filter((row) => row.current)
+      .map((row) => [`${row.sample_id}:${row.target}`, row]),
   );
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [problem, setProblem] = useState<string>();
   const outcomes = [
     { value: "", label: t("pcr.results.choose") },
-    ...(["positive", "negative", "invalid"] as const).map((value) => ({ value, label: t(outcomeKey(value)) })),
+    ...(["positive", "negative", "invalid"] as const).map((value) => ({
+      value,
+      label: t(outcomeKey(value)),
+    })),
   ];
   const serotypes = [
     { value: "", label: t("pcr.results.noSerotype") },
@@ -268,7 +293,9 @@ function ResultGrid({ batch, isSaving, onApply }: ApplyProps) {
         sample_id: sampleId,
         target: target as PcrTarget,
         outcome: draft.outcome as PcrOutcome,
-        serotype: (target === "dengue" && draft.outcome === "positive" ? draft.serotype : "") as Serotype,
+        serotype: (target === "dengue" && draft.outcome === "positive"
+          ? draft.serotype
+          : "") as Serotype,
         ct_value: draft.ct.trim() ? draft.ct.trim().replace(",", ".") : null,
       };
     });

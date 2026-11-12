@@ -24,6 +24,12 @@ export function ReceptionViewSelect({ view, canRead, onChange }: ReceptionViewSe
     ],
   };
   return (
-    <QuickFilter filter={filter} value={view} onChange={(next) => onChange(next ?? "received")} />
+    <QuickFilter
+      filter={filter}
+      value={view}
+      onChange={(next) => {
+        onChange(next ?? "received");
+      }}
+    />
   );
 }

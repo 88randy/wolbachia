@@ -9,7 +9,7 @@ import { ReleaseEditorController } from "../src/features/releases/editor-control
 import type { ReleaseState } from "../src/features/releases/types.ts";
 import { releaseDraft, releaseEnvelope, RELEASE_IDS } from "./support/release-fixtures.ts";
 import { deferred } from "./support/auth-fakes.ts";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const FEATURE = "mobile/src/features/releases/";
@@ -70,12 +70,9 @@ function press(node: RenderNode | undefined): void {
   assert.equal(typeof node.props.onPress, "function");
   (node.props.onPress as () => void)();
 }
-function minTarget(node: RenderNode): number {
-  const style =
-    typeof node.props.style === "function"
-      ? (node.props.style as (input: { pressed: boolean }) => unknown)({ pressed: false })
-      : node.props.style;
-  return Number(flattenStyle(style).minHeight);
+const minTarget = minHeightOf;
+function byLabel(nodes: readonly RenderNode[], label: string): RenderNode | undefined {
+  return nodes.find((node) => node.props.accessibilityLabel === label);
 }
 const MATRIX = (["es-MX", "en"] as const).flatMap((locale) =>
   (["light", "dark"] as const).flatMap((scheme) =>
@@ -83,13 +80,18 @@ const MATRIX = (["es-MX", "en"] as const).flatMap((locale) =>
   ),
 );
 
-void test("P18 host matrix preserves raw quantity, named references, GPS, photo undo and full-width Save", () => {
+void test("P18 host matrix keeps the sachet counter, GPS, photo undo and the Save button reachable", () => {
   for (const options of MATRIX) {
+    const t = messages[options.locale];
     const render = componentHarness(options).render;
     const calls: string[] = [];
     const capture = model({
+      quantity: "3",
       changeQuantity: (value) => {
-        calls.push(value);
+        calls.push(`quantity:${value}`);
+      },
+      blurQuantity: () => {
+        calls.push("blur");
       },
       acquireGps: () => {
         calls.push("gps");
@@ -105,37 +107,27 @@ void test("P18 host matrix preserves raw quantity, named references, GPS, photo 
       },
     });
     const form = render(`${FEATURE}ReleaseCapture.tsx`, "ReleaseCapture", { model: capture });
-    const input = form.find((node) => node.type === "TextInput");
-    assert.ok(input);
-    assert.equal(
-      input.props.accessibilityLabel,
-      messages[options.locale]["mobile.release.quantity"],
-    );
-    assert.equal(input.props.value, "125.50");
-    assert.equal(input.props.keyboardType, "decimal-pad");
-    assert.equal(input.props.editable, true);
-    assert.ok(minTarget(input) >= 48);
-    (input.props.onChangeText as (value: string) => void)("invalid raw quantity");
-    press(presses(form)[0]);
-    const refs = render(`${FEATURE}ReleaseReferences.tsx`, "ReleaseReferences", {
-      refs: capture.refs,
-    });
-    assert.ok(Object.values(capture.refs).every((reference) => texts(refs).includes(reference)));
+    const label = t["courier.flow.release.sachets"];
+    assert.ok(texts(form).includes("3"), "the counter shows the whole sachets");
+    const plus = byLabel(form, t["courier.counter.increase"].replace("{label}", label));
+    assert.ok(plus);
+    press(plus);
+    press(byLabel(form, t["mobile.release.acquireGps"]));
     const photo = render(`${FEATURE}ReleaseEvidence.tsx`, "ReleaseEvidence", { model: capture });
     assert.equal(
       photo.find((node) => node.type === "Image")?.props.accessibilityLabel,
-      messages[options.locale]["mobile.release.photoPreview"],
+      t["mobile.release.photoPreview"],
     );
-    press(presses(photo)[0]);
-    press(presses(photo)[1]);
+    press(byLabel(photo, t["mobile.release.capturePhoto"]));
+    press(byLabel(photo, t["mobile.release.undoPhoto"]));
     const footer = render(`${FEATURE}ReleaseFooter.tsx`, "ReleaseFooter", { model: capture });
-    const save = presses(footer)[0];
+    const save = byLabel(footer, t["courier.flow.release.done"]);
     assert.ok(save);
     assert.equal(save.props.disabled, false);
     assert.ok(minTarget(save) >= 48);
     press(save);
-    assert.deepEqual(calls, ["invalid raw quantity", "gps", "photo", "undo", "save"]);
-    checkScaling([...form, ...photo, ...footer, ...refs]);
+    assert.deepEqual(calls, ["quantity:4", "blur", "gps", "photo", "undo", "save"]);
+    checkScaling([...form, ...photo, ...footer]);
   }
 });
 function checkScaling(nodes: readonly RenderNode[]): void {
@@ -146,7 +138,7 @@ function checkScaling(nodes: readonly RenderNode[]): void {
   }
 }
 
-void test("P19 blocks every missing or failed prerequisite even when a stale caller enables Save", () => {
+void test("P19 blocks every missing or failed prerequisite: no Save at all, only the way to report it", () => {
   for (const locale of ["es-MX", "en"] as const) {
     const render = componentHarness({ locale, scheme: "dark", fontScale: 1.3 }).render;
     const cases = RELEASE_GATE_NAMES.flatMap((name) => [
@@ -174,13 +166,21 @@ function assertBlocked({
   readonly locale: Locale;
   readonly capture: ReleaseViewModel;
 }): void {
+  const t = messages[locale];
   const footer = render(`${FEATURE}ReleaseFooter.tsx`, "ReleaseFooter", { model: capture });
-  assert.equal(presses(footer)[0]?.props.disabled, true);
-  assert.ok(texts(footer).includes(messages[locale]["mobile.release.noBypass"]));
-  assert.ok(texts(footer).includes(messages[locale]["mobile.release.reportSupervisor"]));
+  // A stale caller may still say canSave: the footer offers no Save when a gate is not met.
+  assert.equal(byLabel(footer, t["courier.flow.release.done"]), undefined);
+  assert.ok(byLabel(footer, t["mobile.release.reportSupervisor"]));
+  assert.ok(byLabel(footer, t["mobile.release.reportDevice"]));
   const gates = render(`${FEATURE}ReleaseGates.tsx`, "ReleaseGates", { gates: capture.gates });
-  assert.ok(texts(gates).includes(messages[locale]["mobile.release.contactSupervisor"]));
-  assert.ok(texts(gates).includes(messages[locale]["mobile.release.noBypass"]));
+  assert.ok(texts(gates).includes(t["courier.flow.release.blockedTitle"]));
+  const blocked = gates.filter(
+    (node) => typeof node.props.accessibilityLabel === "string" && node.props.accessible === true,
+  );
+  assert.equal(blocked.length, RELEASE_GATE_NAMES.length);
+  assert.ok(
+    texts(gates).some((text) => String(text).includes(t["mobile.release.contactSupervisor"])),
+  );
 }
 
 void test("P18 separates phone save, pending evidence, server receipt, review and critical rejection", () => {
@@ -213,7 +213,7 @@ void test("P18 separates phone save, pending evidence, server receipt, review an
   }
 });
 
-void test("P18 local read failure keeps retry and all partial blockers visible without an enabled capture", () => {
+void test("P18 local read failure keeps retry and all partial blockers visible and the counter inert", () => {
   const render = componentHarness({ locale: "en", scheme: "dark", fontScale: 1.3 }).render;
   const loading = render(`${FEATURE}ReleaseContent.tsx`, "ReleaseContent", {
     model: model({ isLoading: true }),
@@ -223,16 +223,16 @@ void test("P18 local read failure keeps retry and all partial blockers visible w
     loading.some((node) => node.type === "ActivityIndicator"),
     false,
   );
-  assert.equal(
-    loading.some((node) => node.type === "TextInput"),
-    false,
-  );
+  assert.equal(presses(loading).length, 0);
   const calls: string[] = [];
   const unavailable = model({
     errorKey: "mobile.release.detailContractUnavailable",
     gates: [],
     canEdit: false,
     canSave: false,
+    changeQuantity: () => {
+      calls.push("quantity");
+    },
     retry: () => {
       calls.push("retry");
     },
@@ -241,9 +241,14 @@ void test("P18 local read failure keeps retry and all partial blockers visible w
   assert.ok(texts(partial).includes(messages.en["mobile.release.detailContractUnavailable"]));
   assert.ok(texts(partial).includes(messages.en["mobile.release.gateLot"]));
   assert.ok(texts(partial).includes(messages.en["mobile.release.gateDevice"]));
-  assert.equal(partial.find((node) => node.type === "TextInput")?.props.editable, false);
-  press(presses(partial)[0]);
-  assert.deepEqual(calls, ["retry"]);
+  press(byLabel(partial, messages.en["common.actions.retry"]));
+  const plus = partial.find((node) =>
+    String(node.props.accessibilityLabel).startsWith(
+      messages.en["courier.counter.increase"].replace("{label}", ""),
+    ),
+  );
+  press(plus);
+  assert.deepEqual(calls, ["retry"], "an uneditable capture ignores the counter");
 });
 
 void test("P18 chooses exact downloaded task/device identities and prepares only an explicit complete selection", () => {
@@ -265,10 +270,13 @@ void test("P18 chooses exact downloaded task/device identities and prepares only
   const options = render(`${FEATURE}ReleaseChoices.tsx`, "ReleaseChoices", {
     model: capture,
   });
-  assert.ok(texts(options).includes(messages.en["mobile.release.selectionHint"]));
-  assert.equal(presses(options)[0]?.props.disabled, false);
-  press(presses(options)[0]);
-  press(presses(options)[1]);
+  const radios = options.filter((node) => node.props.accessibilityRole === "radio");
+  assert.deepEqual(
+    radios.map((node) => node.props.accessibilityLabel),
+    ["TASK-139", "DEV-139"],
+  );
+  assert.ok(radios.every((node) => node.props.disabled === false && minTarget(node) >= 48));
+  for (const radio of radios) press(radio);
   assert.deepEqual(selected, ["task-139", "device-139"]);
   const frozen = render(`${FEATURE}ReleaseChoices.tsx`, "ReleaseChoices", {
     model: { ...capture, hasDraft: true },
@@ -281,9 +289,10 @@ void test("P18 chooses exact downloaded task/device identities and prepares only
   const begin = render(`${FEATURE}ReleaseBegin.tsx`, "ReleaseBegin", {
     model: { ...capture, hasDraft: false, canBegin: false },
   });
-  assert.equal(presses(begin)[0]?.props.disabled, true);
+  assert.equal(byLabel(begin, messages.en["mobile.release.begin"])?.props.disabled, true);
+  // Without a draft the footer's Save is unavailable as well: blocked gates offer only reporting.
   const footer = render(`${FEATURE}ReleaseFooter.tsx`, "ReleaseFooter", { model: capture });
-  assert.equal(presses(footer)[0]?.props.disabled, true);
+  assert.equal(byLabel(footer, messages.en["courier.flow.release.done"]), undefined);
 });
 
 function editorState(patch: Partial<ReleaseState> = {}): ReleaseState {

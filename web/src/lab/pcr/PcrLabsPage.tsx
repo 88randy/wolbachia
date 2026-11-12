@@ -46,7 +46,11 @@ export function PcrLabsPage() {
   const manage = can(PCR_MANAGE);
   const [editing, setEditing] = useState<ExternalLab>();
   const columns: DataTableColumn<ExternalLab>[] = [
-    { id: "name", headerKey: "pcr.labs.name", cell: (row) => <span className="font-semibold">{row.name}</span> },
+    {
+      id: "name",
+      headerKey: "pcr.labs.name",
+      cell: (row) => <span className="font-semibold">{row.name}</span>,
+    },
     { id: "contact", headerKey: "pcr.labs.contact", cell: (row) => row.contact || <EmptyValue /> },
     { id: "address", headerKey: "pcr.labs.address", cell: (row) => row.address || <EmptyValue /> },
     {

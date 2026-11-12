@@ -119,7 +119,7 @@ describe("permission guard", () => {
     const main = screen.getByRole("main");
     expect(within(main).getByText("Configuración")).toBeDefined();
     expect(screen.getByRole("navigation", { name: "Navegación principal" })).toBeDefined();
-    expect(document.title).toBe("No tienes acceso a esta sección · Wolbachia");
+    expect(document.title).toBe("No tienes acceso a esta sección · AedesVision");
   });
 
   test("offers the way home", async () => {

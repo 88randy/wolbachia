@@ -55,10 +55,7 @@ function useTicked(items: readonly LabelItem[]) {
 function useLabelItems(kind: LabelKind, search: string) {
   const scope = useInventoryContext();
   const debounced = useDebounced(search);
-  const query = useQuery({
-    ...labelItemsOptions(scope, { kind, search: debounced.trim() }),
-    placeholderData: (previous) => previous,
-  });
+  const query = useQuery(labelItemsOptions(scope, { kind, search: debounced.trim() }));
   return { query, items: visibleItems(kind, query.data?.items ?? [], search) };
 }
 

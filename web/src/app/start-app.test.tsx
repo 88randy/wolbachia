@@ -53,7 +53,7 @@ describe("startApp", () => {
     root = await startApp(container, { VITE_API_BASE_URL: "/api/v1" });
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Inicio" })).toBeDefined();
+      expect(screen.getByRole("heading", { name: /^Hola,/ })).toBeDefined();
     });
     expect(consoleError).not.toHaveBeenCalled();
   });

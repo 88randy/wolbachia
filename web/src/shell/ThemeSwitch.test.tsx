@@ -26,7 +26,10 @@ test("the sole top-bar switch follows System until a keyboard toggle stores an e
   const scheme = stubColorScheme(false);
   applyTheme(getInitialTheme());
   await renderApp();
-  const control = within(screen.getByRole("banner")).getByRole("switch", { name: "Tema oscuro" });
+  // The page header inside <main> is a <header> too; the shell banner is the one outside it.
+  const banner = screen.getAllByRole("banner").find((candidate) => !candidate.closest("main"));
+  if (banner === undefined) throw new Error("No shell banner");
+  const control = within(banner).getByRole("switch", { name: "Tema oscuro" });
   expect(screen.getAllByRole("switch")).toHaveLength(1);
   expect(control.getAttribute("aria-checked")).toBe("false");
   act(() => {

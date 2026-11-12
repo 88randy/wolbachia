@@ -82,7 +82,7 @@ test("logo upload sends raster multipart with revision and CSRF while retaining 
     expect(typeof raster === "object" && raster?.type).toBe("image/png");
     expect(csrf).toBe("w03-csrf");
     expect(phone.value).toBe("1234");
-    expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
+    // The revision is no longer printed on the page; the cached organization above carries it.
     expect(screen.getByLabelText("Iniciales de la organización").textContent).toBe("PD");
   } finally {
     document.cookie = "csrftoken=; Max-Age=0; path=/";

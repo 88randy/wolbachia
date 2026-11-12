@@ -38,13 +38,19 @@ function useColumns(): DataTableColumn<PcrRow>[] {
     {
       id: "status",
       headerKey: "pcr.col.status",
-      cell: (row) => <StatusPill tone={STATUS_TONE[row.status]}>{t(statusKey(row.status))}</StatusPill>,
+      cell: (row) => (
+        <StatusPill tone={STATUS_TONE[row.status]}>{t(statusKey(row.status))}</StatusPill>
+      ),
     },
     {
       id: "shipped_at",
       headerKey: "pcr.col.shippedAt",
       cell: (row) =>
-        row.shipped_at ? <time dateTime={row.shipped_at}>{formatDate(row.shipped_at)}</time> : <EmptyValue />,
+        row.shipped_at ? (
+          <time dateTime={row.shipped_at}>{formatDate(row.shipped_at)}</time>
+        ) : (
+          <EmptyValue />
+        ),
     },
   ];
 }
@@ -78,7 +84,11 @@ export function PcrListPage() {
   ) : undefined;
   return (
     <ListPage title={t("pcr.list.title")} description={t("pcr.list.description")}>
-      <FilterBar controller={controller} actions={actions} quickCounts={query.data ? quickCounts : undefined} />
+      <FilterBar
+        controller={controller}
+        actions={actions}
+        quickCounts={query.data ? quickCounts : undefined}
+      />
       <DataTable
         caption={t("pcr.list.title")}
         columns={columns}

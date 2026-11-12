@@ -131,10 +131,15 @@ describe("findUnscopedQueries (the guard itself)", () => {
  */
 describe("org-scoped queries", () => {
   const SRC = join(import.meta.dirname, "..");
-  const EXEMPT = ["session", "api", "test"];
+  // `portal/` is the public read-only portal: no session, keyed by the organization slug in its
+  // URL. The record history is the one infinite (cursor) query: it carries the full scope prefix
+  // by hand because the helper only builds single-page queries.
+  const EXEMPT = ["session", "api", "test", "portal"];
+  const EXEMPT_FILES = ["discovery/discovery-query.ts"];
   const files = readdirSync(SRC, { recursive: true, encoding: "utf8" })
     .filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.(ts|tsx)$/.test(file))
-    .filter((file) => !EXEMPT.includes(file.split(/[\\/]/)[0] ?? ""));
+    .filter((file) => !EXEMPT.includes(file.split(/[\\/]/)[0] ?? ""))
+    .filter((file) => !EXEMPT_FILES.includes(file.replaceAll("\\", "/")));
 
   test("finds the screens' files", () => {
     expect(files.length).toBeGreaterThan(20);

@@ -7,18 +7,22 @@ import type { SampleViewModel } from "./view-model.ts";
 
 export function SampleFeedback({ model }: { readonly model: SampleViewModel }) {
   const t = useT();
-  if (!model.errorKey) return null;
+  // With nothing to pick from, refreshing the downloaded data must stay reachable without an error.
+  const hasNoSources = !model.hasDraft && model.sources.length === 0;
+  if (!model.errorKey && !hasNoSources) return null;
   return (
     <>
-      <InfoNotice
-        tone="danger"
-        message={t(model.errorKey)}
-        action={cameraFixAction(model.errorKey, t)}
-      />
+      {model.errorKey ? (
+        <InfoNotice
+          tone="danger"
+          message={t(model.errorKey)}
+          action={cameraFixAction(model.errorKey, t)}
+        />
+      ) : null}
       <SecondaryButton
         icon={RotateCw}
         disabled={model.isBusy}
-        label={t("common.actions.retry")}
+        label={t(model.errorKey ? "common.actions.retry" : "mobile.sample.refresh")}
         onPress={model.retry}
       />
     </>

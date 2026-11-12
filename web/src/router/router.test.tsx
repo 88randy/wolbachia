@@ -5,7 +5,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { RouterProvider } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -21,30 +21,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
-  home: "Inicio",
-  notifications: "Notificaciones",
-  incidents: "Incidentes",
-  operations: "Supervisión",
-  scheduling: "Programación",
-  quadrants: "Cuadrantes y muestreo",
-  releases: "Liberaciones",
-  community: "Comunidad",
-  inventory: "Inventario",
-  fleet: "Flota",
-  lab: "Laboratorio",
-  people: "Personal",
-  dashboards: "Tableros",
-  regulatory: "Regulatorio",
-  settings: "Configuración",
-  platform: "Organizaciones",
-};
 const OPERATIONS_ME = makeMe({
   permissions: ["review_item.read"],
   scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
 });
 
 describe("area routes", () => {
+  // No area is a "under construction" placeholder any more: each one opens its real page.
   test.each(
     AREAS.filter(
       ({ id }) =>
@@ -59,20 +42,26 @@ describe("area routes", () => {
           "notifications",
         ].includes(id),
     ),
-  )("$path opens the placeholder of $id", async ({ path, id }) => {
-    await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
+  )("$path opens the real page of $id, with one page heading", async ({ path }) => {
+    await renderApp({
+      path,
+      me: makeMe({
+        permissions: ["catalog.read", "motorcycle.read"],
+        is_platform_admin: path === "/platform",
+      }),
+    });
 
-    expect(
-      await screen.findByRole("heading", { level: 1, name: AREA_TITLES_ES[id] }),
-    ).toBeDefined();
-    expect(screen.getByText("Esta sección todavía está en construcción.")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    });
+    expect(screen.queryByText("Esta sección todavía está en construcción.")).toBeNull();
   });
 
   test("/operations opens the permitted workflow instead of a placeholder", async () => {
     await renderApp({ path: "/operations", me: OPERATIONS_ME });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Operación" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Bandeja de revisión" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: /Bandeja de revisión/ }).getAttribute("href")).toBe(
       "/operations/reviews",
     );
     expect(screen.queryByText("Esta sección todavía está en construcción.")).toBeNull();
@@ -82,7 +71,7 @@ describe("area routes", () => {
     const paths = AREAS.map((area) => area.path);
 
     expect(new Set(paths).size).toBe(AREAS.length);
-    expect(AREAS).toHaveLength(14);
+    expect(AREAS).toHaveLength(16);
   });
 
   test.each([
@@ -199,29 +188,29 @@ describe("document title (WCAG 2.4.2)", () => {
   test("each area sets its own title", async () => {
     await renderApp({ path: "/operations", me: OPERATIONS_ME });
 
-    expect(document.title).toBe("Operación · Wolbachia");
+    expect(document.title).toBe("Operación · AedesVision");
   });
 
   test("navigating changes the title", async () => {
     await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
-    expect(document.title).toBe("Inicio · Wolbachia");
+    expect(document.title).toBe("Hola, Ana Pérez · AedesVision");
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
 
     await screen.findByRole("heading", { level: 1, name: "Laboratorio" });
-    expect(document.title).toBe("Laboratorio · Wolbachia");
+    expect(document.title).toBe("Laboratorio · AedesVision");
   });
 
   test("not found has a translated title", async () => {
     await renderApp({ path: "/nope", language: "en" });
 
-    expect(document.title).toBe("We couldn't find this page · Wolbachia");
+    expect(document.title).toBe("We couldn't find this page · AedesVision");
   });
 
   test("a route error sets the error title", async () => {
     await renderThrowingRoute();
 
     await screen.findByRole("heading", { name: "Algo salió mal en esta pantalla" });
-    expect(document.title).toBe("Algo salió mal en esta pantalla · Wolbachia");
+    expect(document.title).toBe("Algo salió mal en esta pantalla · AedesVision");
   });
 });

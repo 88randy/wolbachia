@@ -113,7 +113,8 @@ describe("W33 authoritative closure readiness", () => {
     });
     await userEvent.click(current);
     await userEvent.click(screen.getByRole("button", { name: "Confirmar cierre" }));
-    await screen.findByText("Cierre registrado: closure-receipt-1");
+    // The receipt reference is no longer printed: the confirmation says the closure was recorded.
+    await screen.findByText("Cierre registrado.");
     expect(
       api.requests
         .filter(({ method, path }) => method === "POST" && path === CLOSE_PATH)

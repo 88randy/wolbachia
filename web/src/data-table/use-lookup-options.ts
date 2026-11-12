@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
 import { holdsAny } from "../lookups/lookup-permissions";
 import type { LookupSource } from "../lookups/lookup-sources";
@@ -17,7 +17,6 @@ export function useLookupOptions(source: LookupSource, search: string, enabled =
   return useQuery({
     ...options,
     enabled: options.enabled && allowed && enabled,
-    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 }

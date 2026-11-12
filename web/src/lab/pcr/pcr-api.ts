@@ -160,6 +160,14 @@ export interface EligibleFilters {
   page: number;
 }
 
+export function eligibleFacetsOptions(scope: LabScope) {
+  return orgScopedQueryOptions(scope.identity, {
+    key: ["pcr", "eligible-facets"],
+    queryFn: async ({ signal }) =>
+      unwrap(await scope.client.GET("/api/v1/pcr-batches/eligible-samples/facets/", { signal })),
+  });
+}
+
 export function eligibleOptions(scope: LabScope, filters: EligibleFilters) {
   return orgScopedQueryOptions(scope.identity, {
     key: ["pcr", "eligible", filters],

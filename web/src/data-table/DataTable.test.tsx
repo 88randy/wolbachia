@@ -75,6 +75,16 @@ function propsOf(overrides: Partial<TableTestProps> = {}): TableTestProps {
   };
 }
 
+/** The filter controls live in the "Filtros" popover of the filter bar. */
+async function openFilters(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /^Filtros/ }));
+}
+async function pickStatus(user: ReturnType<typeof userEvent.setup>, label: string) {
+  await openFilters(user);
+  await user.click(await screen.findByRole("combobox", { name: "Estado" }));
+  await user.click(await screen.findByRole("option", { name: label }));
+}
+
 const search = (app: { router: { state: { location: { search: unknown } } } }) =>
   app.router.state.location.search;
 
@@ -97,7 +107,7 @@ describe("table markup and accessibility", () => {
   test("announces the result count in a status region", async () => {
     await renderTable(propsOf());
 
-    const count = screen.getByText("Mostrando 1 a 3 de 3");
+    const count = screen.getByText("1–3 de 3");
 
     expect(count.getAttribute("role")).toBe("status");
   });
@@ -108,7 +118,7 @@ describe("table markup and accessibility", () => {
       { path: "/?page=2" },
     );
 
-    expect(screen.getByText("Mostrando 21 a 23 de 53")).toBeDefined();
+    expect(screen.getByText("21–23 de 53")).toBeDefined();
     expect(screen.getByText("Página 2 de 3")).toBeDefined();
   });
 });
@@ -200,7 +210,7 @@ describe("filters in the URL", () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf(), { path: "/?page=3" });
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "Activo");
+    await pickStatus(user, "Activo");
 
     await waitFor(() => {
       expect(search(app)).toEqual({ status: "open" });
@@ -209,20 +219,23 @@ describe("filters in the URL", () => {
   });
 
   test("a filter in the URL is shown in its control and as a chip on first load", async () => {
+    const user = userEvent.setup();
     await renderTable(propsOf(), { path: "/?status=closed&q=1e3" });
 
-    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Estado" }).value).toBe(
-      "closed",
+    await openFilters(user);
+    expect((await screen.findByRole("combobox", { name: "Estado" })).textContent).toContain(
+      "Revocado",
     );
+    expect(screen.getByRole<HTMLInputElement>("searchbox", { name: "Teléfono" }).value).toBe("1e3");
     expect(screen.getByRole("button", { name: "Quitar filtro Estado: Revocado" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Quitar filtro Teléfono: 1e3" })).toBeDefined();
   });
 
-  test("a text filter applies on Enter and keeps exactly what was typed", async () => {
+  test("the search box applies by itself after a pause and writes what was typed", async () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf());
 
-    await user.type(screen.getByRole("textbox", { name: "Teléfono" }), "  4471{Enter}");
+    await user.type(screen.getByRole("searchbox", { name: "Teléfono" }), "4471");
 
     await waitFor(() => {
       expect(search(app)).toEqual({ q: "4471" });
@@ -244,7 +257,8 @@ describe("filters in the URL", () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf(), { path: "/?status=open&q=abc&ordering=code" });
 
-    await user.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+    // The search box has its own clear button with the same name; the chips' one shows its text.
+    await user.click(screen.getByText("Limpiar filtros"));
 
     await waitFor(() => {
       expect(search(app)).toEqual({ ordering: "code" });
@@ -255,7 +269,7 @@ describe("filters in the URL", () => {
   test("the back button restores the previous filter", async () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf());
-    await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "Activo");
+    await pickStatus(user, "Activo");
     await waitFor(() => {
       expect(search(app)).toEqual({ status: "open" });
     });
@@ -265,7 +279,7 @@ describe("filters in the URL", () => {
     await waitFor(() => {
       expect(search(app)).toEqual({});
     });
-    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "Estado" }).value).toBe("");
+    expect(screen.queryByRole("button", { name: /Quitar filtro Estado/ })).toBeNull();
   });
 
   test("an unknown or invalid parameter is ignored, named in a notice and can be dropped", async () => {
@@ -309,13 +323,15 @@ describe("voided records", () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf());
 
-    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
+    await openFilters(user);
+    await user.click(await screen.findByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
       expect(search(app)).toEqual({ include_voided: "true" });
     });
-    expect(screen.getByRole<HTMLInputElement>("switch", { name: "Incluir anulados" }).checked).toBe(
-      true,
-    );
+    expect(
+      screen.getByRole("switch", { name: "Incluir anulados" }).getAttribute("aria-checked") ??
+        String(screen.getByRole<HTMLInputElement>("switch", { name: "Incluir anulados" }).checked),
+    ).toBe("true");
 
     await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
@@ -498,7 +514,9 @@ describe("states", () => {
       propsOf({ data: dataOf({ rows: [], error: new TypeError("offline"), refetch }) }),
     );
 
-    expect(screen.getByRole("alert").textContent).toContain("No hay conexión con el servidor");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
+    );
     await user.click(screen.getByRole("button", { name: "Reintentar" }));
 
     expect(refetch).toHaveBeenCalledOnce();

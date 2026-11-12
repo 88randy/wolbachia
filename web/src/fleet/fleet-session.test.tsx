@@ -339,10 +339,13 @@ describe("fleet session isolation", () => {
         reads: tracedReads,
       } = await openFleet({
         routes: {
-          [GET]: () =>
-            ++reads === 2
-              ? late.promise
-              : pageOf([motorcycle({ code: reads === 1 ? "OLD-PRIVATE" : "NEW-SCOPED" })]),
+          // The status tabs read their own totals (with is_blocked); only the table's read counts.
+          [GET]: ({ path }) =>
+            path.includes("is_blocked=")
+              ? pageOf([])
+              : ++reads === 2
+                ? late.promise
+                : pageOf([motorcycle({ code: reads === 1 ? "OLD-PRIVATE" : "NEW-SCOPED" })]),
         },
       });
       await screen.findByRole("link", { name: "OLD-PRIVATE" });

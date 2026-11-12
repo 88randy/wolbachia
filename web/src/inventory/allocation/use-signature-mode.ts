@@ -10,6 +10,6 @@ export function useSignatureMode(): SignatureMode {
   const client = useApiClient();
   const identity = useSessionIdentity();
   const query = useQuery(parameterQueryOptions(client, identity, "delivery_signature_mode"));
-  const value = Number(query.data?.value ?? 0);
+  const value = query.data?.value ?? 0;
   return value === 1 ? "warehouse" : value === 2 ? "phone" : "either";
 }

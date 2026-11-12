@@ -26,7 +26,7 @@ export function W28Page() {
   return (
     <DetailPage
       title={t("live.title")}
-      description={t("live.description", { count: live.shifts.length })}
+      subtitle={t("live.description", { count: live.shifts.length })}
       notices={
         <InlineNotice tone="info">
           <p>{t("live.note")}</p>

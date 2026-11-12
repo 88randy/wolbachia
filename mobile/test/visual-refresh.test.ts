@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { messages } from "@wolbachia/i18n";
 import { componentHarness } from "./support/m-09-render.ts";
 import type { ShiftSnapshot } from "../src/features/shift-open/service.ts";
 import type { OutboxEvent } from "../src/outbox/outbox-event.ts";
 import { unlockTitle } from "../src/screens/auth/unlock-presentation.ts";
 import { parseScheme, resolveScheme } from "../src/app/preferences.ts";
-import { FONT_FAMILY, MONO_FONT_FAMILY, textStyleFor } from "../src/theme/typography.ts";
+import { FONT_FAMILY, textStyleFor } from "../src/theme/typography.ts";
 
 void test("appearance is light by default and follows the system only when chosen", () => {
   const defaultPreference = parseScheme(null);
@@ -17,13 +18,15 @@ void test("appearance is light by default and follows the system only when chose
   assert.equal(resolveScheme(parseScheme("unknown"), null), "light");
 });
 
-void test("data and status typography use bundled mono while prose keeps the sans family", () => {
-  const monoFamilies = new Set<string>(Object.values(MONO_FONT_FAMILY));
-  for (const variant of ["number", "code", "status", "overline"] as const) {
-    assert.ok(monoFamilies.has(textStyleFor(variant).fontFamily));
+void test("every text variant uses the bundled sans family, with or without the monospace request", () => {
+  // Owner decision: one family everywhere; tabular figures keep columns aligned instead.
+  const sans = new Set<string>(Object.values(FONT_FAMILY));
+  for (const variant of ["number", "code", "status", "overline", "body", "button"] as const) {
+    assert.ok(sans.has(textStyleFor(variant).fontFamily));
+    assert.equal(textStyleFor(variant, true).fontFamily, textStyleFor(variant).fontFamily);
   }
   assert.equal(textStyleFor("body").fontFamily, FONT_FAMILY.regular);
-  assert.equal(textStyleFor("button", true).fontFamily, MONO_FONT_FAMILY.regular);
+  assert.equal(textStyleFor("h1").fontFamily, FONT_FAMILY.bold);
 });
 
 void test("Home severe review shows one receipt and one actionable blocker without stale copy", () => {
@@ -69,10 +72,7 @@ void test("Home severe review shows one receipt and one actionable blocker witho
       .map((node) => node.props.children)
       .filter(Boolean);
     assert.equal(text.length, 2);
-    assert.match(
-      String(text[0]),
-      locale === "es-MX" ? /Recibido.*En revisi\u00f3n/ : /Received.*In review/,
-    );
+    assert.equal(text[0], messages[locale]["mobile.shiftOpen.receivedInReview"]);
     assert.match(
       String(text[1]),
       locale === "es-MX" ? /falla grave.*supervisor/ : /severe fault.*supervisor/,
