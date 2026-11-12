@@ -5,7 +5,8 @@ import { ListPage } from "../../components/templates/ListPage";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
 import type { DataTableColumn } from "../../data-table/table-types";
-import { useFormatCalendarDate } from "../../format/use-formatters";
+import { useFormatValidityEnd } from "../../format/use-format-date-time";
+import { useFormatDate } from "../../format/use-formatters";
 import { useRegList } from "../../regulatory/use-reg-list";
 import { useCan } from "../../session/use-can";
 import { API_KEY_MANAGE, API_KEY_TABLE, apiKeyOptions } from "./api-keys-queries";
@@ -20,7 +21,8 @@ import { ApiKeyStatus } from "./ApiKeyStatus";
 export function ApiKeysPage() {
   const { t } = useTranslation();
   const can = useCan();
-  const format = useFormatCalendarDate();
+  const formatDay = useFormatDate();
+  const formatEnd = useFormatValidityEnd();
   const { controller, data } = useRegList(API_KEY_TABLE, apiKeyOptions);
   const [created, setCreated] = useState<CreatedKey | null>(null);
   const canManage = can(API_KEY_MANAGE);
@@ -54,7 +56,7 @@ export function ApiKeysPage() {
       id: "validity",
       headerKey: "apiKeys.col.validity",
       cell: (row) =>
-        t("apiKeys.validity", { from: format(row.valid_from), to: format(row.valid_until) }),
+        t("apiKeys.validity", { from: formatDay(row.valid_from), to: formatEnd(row.valid_until) }),
     },
     {
       id: "status",

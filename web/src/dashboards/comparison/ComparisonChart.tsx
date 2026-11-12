@@ -7,7 +7,7 @@ import type { ComparisonRow } from "./comparison-query";
 
 const ROW_HEIGHT = 40;
 const AXIS_HEIGHT = 36;
-const NAME_WIDTH = 150;
+const NAME_WIDTH = 230;
 const MAX_BAR = 26;
 
 interface ComparisonChartProps {

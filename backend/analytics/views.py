@@ -6,8 +6,7 @@ from typing import cast
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -44,6 +43,12 @@ class AnalyticsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         "wolbachia": WOLBACHIA_READ,
     }
 
+    def get_permissions(self) -> list[BasePermission]:
+        # The comparison is gated by the indicator asked for, not by one fixed code.
+        if getattr(self, "action", None) == "comparison":
+            return [IsAuthenticated(), ComparisonPermission()]
+        return super().get_permissions()
+
     def _run(
         self,
         request: Request,
@@ -73,11 +78,6 @@ class AnalyticsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         return self._run(request, DEFAULT_RANGE_DAYS, selectors.wolbachia_dashboard)
 
     @extend_schema(parameters=[ComparisonQuerySerializer], responses=ComparisonSerializer)
-    @action(
-        detail=False,
-        methods=["get"],
-        permission_classes=[IsAuthenticated, ComparisonPermission],
-    )
     def comparison(self, request: Request) -> Response:
         """W56: one indicator across centers or quadrants, with the previous period."""
         query = ComparisonQuerySerializer(data=request.query_params)
