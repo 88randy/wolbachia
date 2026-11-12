@@ -28,7 +28,11 @@ describe("canOpenArea", () => {
   });
 
   test("a pending area is visible to every member until its issue defines a code", () => {
-    expect(canOpenArea(makeMe({ permissions: [] }), area("regulatory"))).toBe(true);
+    expect(canOpenArea(makeMe({ permissions: [] }), { requiredPermissions: "pending" })).toBe(true);
+  });
+
+  test("an area that already has codes is closed to a member without any of them", () => {
+    expect(canOpenArea(makeMe({ permissions: [] }), area("regulatory"))).toBe(false);
   });
 
   test.each(["bag.receive", "egg_count.create", "egg_count.read"])(

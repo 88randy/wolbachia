@@ -22,10 +22,15 @@ describe("visibleNavGroups", () => {
             "bag.receive",
             "egg_count.read",
             "training.read",
+            "schedule.read",
+            "release.read",
+            "community_activity.read",
+            "analytics.operations.read",
+            "export.run",
           ],
         }),
       ),
-    ).toHaveLength(14);
+    ).toHaveLength(15);
   });
 
   test("a user with no permissions sees Home and pending areas, not Settings or Inventory", () => {

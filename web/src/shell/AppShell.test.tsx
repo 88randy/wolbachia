@@ -15,7 +15,10 @@ describe("landmarks", () => {
   test("has banner, navigation, search and main, each once", async () => {
     await renderApp();
 
-    expect(screen.getAllByRole("banner")).toHaveLength(1);
+    // The page heading block is also a <header>, but it lives inside <main>: one shell banner.
+    expect(screen.getAllByRole("banner").filter((banner) => !banner.closest("main"))).toHaveLength(
+      1,
+    );
     expect(screen.getAllByRole("main")).toHaveLength(1);
     expect(screen.getByRole("navigation", { name: "Navegación principal" })).toBeDefined();
     expect(screen.getByRole("search", { name: "Buscar" })).toBeDefined();
@@ -46,15 +49,23 @@ describe("sidebar navigation", () => {
           "review_item.read",
           "bag.receive",
           "training.read",
+          "schedule.read",
+          "release.read",
+          "community_activity.read",
+          "analytics.operations.read",
+          "export.run",
         ],
       }),
     });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });
 
     const links = within(nav).getAllByRole("link");
+    const organizationAreas = AREAS.filter((area) => !("platformOnly" in area));
 
-    expect(links).toHaveLength(14);
-    expect(links.map((link) => link.getAttribute("href"))).toEqual(AREAS.map((area) => area.path));
+    expect(links).toHaveLength(organizationAreas.length);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(
+      organizationAreas.map((area) => area.path),
+    );
   });
 
   test("hides the areas the user may not open, but never Home", async () => {
@@ -74,11 +85,14 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/lab");
     expect(hrefs).not.toContain("/operations");
     expect(hrefs).not.toContain("/people");
-    expect(hrefs).toHaveLength(5);
+    // No area is "pending" any more: without permissions only Home is left.
+    expect(hrefs).toEqual(["/"]);
   });
 
   test("groups the areas under headings", async () => {
-    await renderApp({ me: makeMe({ permissions: ["training.read"] }) });
+    await renderApp({
+      me: makeMe({ permissions: ["training.read", "release.read", "analytics.operations.read"] }),
+    });
 
     expect(screen.getByRole("list", { name: "Operación" })).toBeDefined();
     expect(screen.getByRole("list", { name: "Recursos" })).toBeDefined();

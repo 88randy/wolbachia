@@ -15,6 +15,7 @@ import {
   pageOf,
   requestsTo,
 } from "../test/rules-fixtures";
+import { openFilterPanel } from "../test/filter-bar-helpers";
 
 const PARAMETER_API = "/api/v1/rule-parameters/max_distance_to_point_m/";
 const VERSIONS_API = `${PARAMETER_API}versions/`;
@@ -173,13 +174,14 @@ describe("version history", () => {
     expect(screen.queryByRole("row", { name: /45 metros/ })).toBeNull();
     expect(requestsTo(api, "GET", VERSIONS_API)[0]?.path).toContain("include_voided=false");
 
-    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
+    await openFilterPanel(user);
+    await user.click(await screen.findByRole("switch", { name: "Incluir anulados" }));
 
     const voided = await screen.findByRole("row", { name: /45 metros/ });
     expect(within(voided).getByText("Motivo: Se capturó dos veces")).toBeDefined();
     expect(within(voided).getByText("Anuló: luis.promotor")).toBeDefined();
     expect(within(voided).getByText("Anulado")).toBeDefined();
-    expect(screen.getByText("Mostrando 1 a 4 de 4")).toBeDefined();
+    expect(screen.getByText("1–4 de 4")).toBeDefined();
     expect(requestsTo(api, "GET", VERSIONS_API).at(-1)?.path).toContain("include_voided=true");
   });
 
@@ -283,7 +285,7 @@ describe("version history", () => {
     ).closest("section");
 
     expect(
-      within(history as HTMLElement).getByRole("textbox", { name: "Buscar en motivos" }),
+      within(history as HTMLElement).getByRole("searchbox", { name: "Buscar en motivos" }),
     ).toBeDefined();
     const table = within(await within(history as HTMLElement).findByRole("table"));
     expect(table.queryAllByRole("textbox")).toHaveLength(0);
