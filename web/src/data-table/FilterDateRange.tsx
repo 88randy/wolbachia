@@ -39,7 +39,7 @@ export function FilterDateRange({ from, to, controller }: FilterDateRangeProps) 
         locale={language === "en" ? enUS : es}
         selected={selected}
         onSelect={apply}
-        className="rounded-lg border border-line bg-surface p-2"
+        className="self-center rounded-lg border border-line bg-surface p-2"
       />
       {(selected.from ?? selected.to) && (
         <button

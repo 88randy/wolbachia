@@ -6,6 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useFormatCalendarDate } from "../format/use-formatters";
 import { useLanguage } from "../i18n/use-language";
+import { CONTROL_TRIGGER, FIELD_LABEL_CLASS, FIELD_STACK_CLASS } from "./control-classes";
 import { useDialogContainer } from "./use-dialog-container";
 
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -30,7 +31,7 @@ export function DateField(props: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  /** Control height: `xl` matches the text inputs of a form; `lg` (default) matches the pickers. */
+  /** Kept for old callers: every field is the same 40 px now. */
   size?: "lg" | "xl";
   /** Last day that can be picked (`YYYY-MM-DD`). */
   max?: string;
@@ -44,8 +45,8 @@ export function DateField(props: {
   const selected = parseDay(props.value);
   const last = props.max === undefined ? undefined : parseDay(props.max);
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={props.id} className="text-xs leading-5 font-bold text-ink">
+    <div className={FIELD_STACK_CLASS}>
+      <label htmlFor={props.id} className={FIELD_LABEL_CLASS}>
         {props.label}
       </label>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -57,13 +58,7 @@ export function DateField(props: {
             disabled={props.disabled}
             aria-invalid={props.error === undefined ? undefined : true}
             aria-describedby={props.error === undefined ? undefined : `${props.id}-error`}
-            className={cn(
-              props.size === "xl"
-                ? "min-h-[var(--web-control-xl)]"
-                : "min-h-[var(--web-control-lg)]",
-              "inline-flex w-full min-w-0 items-center gap-2 rounded-lg border bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:opacity-60",
-              props.error === undefined ? "border-line-strong" : "border-critical-fg",
-            )}
+            className={cn(CONTROL_TRIGGER, props.error !== undefined && "border-critical-fg")}
           >
             <CalendarDays aria-hidden="true" className="size-4 flex-none text-ink-2" />
             <span className="min-w-0 flex-1 truncate">{selected ? format(props.value) : "—"}</span>
@@ -85,7 +80,7 @@ export function DateField(props: {
         </PopoverContent>
       </Popover>
       {props.error !== undefined && (
-        <p id={`${props.id}-error`} className="m-0 text-xs text-critical-fg">
+        <p id={`${props.id}-error`} className="m-0 text-xs font-semibold text-critical-fg">
           {props.error}
         </p>
       )}

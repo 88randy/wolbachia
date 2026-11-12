@@ -227,7 +227,7 @@ html
   ) {
   box-sizing: border-box;
   max-width: 100%;
-  min-height: var(--web-control-xl);
+  min-height: var(--web-control-lg);
   padding-inline: var(--space-1-5);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
@@ -238,7 +238,7 @@ html
   font-size: var(--web-type-body-font-size);
 }
 html body textarea {
-  min-height: calc(var(--web-control-xl) * 2);
+  min-height: calc(var(--web-control-lg) * 2);
   padding-block: var(--space-1);
   line-height: var(--web-type-body-line-height);
 }

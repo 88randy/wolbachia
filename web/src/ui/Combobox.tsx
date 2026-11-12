@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CONTROL_TRIGGER } from "./control-classes";
 import { useDialogContainer } from "./use-dialog-container";
 
 export interface ComboboxOption {
@@ -46,9 +47,6 @@ export interface ComboboxProps {
   className?: string;
 }
 
-const TRIGGER =
-  "inline-flex min-h-[var(--web-control-lg)] w-full min-w-0 items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
-
 /** The one picker of the app: a button that opens a list with a search box inside. */
 export function Combobox(props: ComboboxProps) {
   const { t } = useTranslation();
@@ -75,7 +73,7 @@ export function Combobox(props: ComboboxProps) {
           disabled={props.disabled}
           onBlur={props.onBlur}
           className={cn(
-            TRIGGER,
+            CONTROL_TRIGGER,
             props.invalid && "border-critical-fg bg-critical-bg",
             props.className,
           )}

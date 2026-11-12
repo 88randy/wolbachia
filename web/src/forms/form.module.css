@@ -36,7 +36,7 @@
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
-  min-height: var(--web-control-xl);
+  min-height: var(--web-control-lg);
   padding: 0 var(--space-1-5);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
