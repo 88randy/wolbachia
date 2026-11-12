@@ -2,8 +2,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { Combobox } from "../../ui/Combobox";
+import { courierState } from "./use-assignment-route";
 
-/** The courier is chosen by name and lives in the address bar, so a view can be shared. */
+/** The courier is chosen by name; the selection rides in the history state, never as an id in the URL. */
 export function CourierPicker({
   couriers,
   selected,
@@ -17,8 +18,8 @@ export function CourierPicker({
   const navigate = useNavigate();
   const options = couriers.map((person) => ({ value: person.id, label: person.display_name }));
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor="allocation-courier" className="text-xs font-bold text-ink">
+    <div className="flex min-w-0 flex-col gap-1">
+      <label htmlFor="allocation-courier" className="text-xs leading-5 font-bold text-ink">
         {t("allocation.assignment.courier")}
       </label>
       <Combobox
@@ -28,7 +29,11 @@ export function CourierPicker({
         placeholder={t("allocation.assignment.courierPlaceholder")}
         emptyMessage={t("allocation.assignment.noCouriers")}
         onValueChange={(courier) => {
-          void navigate({ to: "/inventory/assignments/new", search: { date, courier } });
+          void navigate({
+            to: "/inventory/assignments/new",
+            search: { date },
+            state: courierState(courier),
+          });
         }}
       />
     </div>

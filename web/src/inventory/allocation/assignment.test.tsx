@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { expect, test } from "vitest";
 import { makeMe } from "../../test/fake-api";
@@ -87,4 +88,19 @@ test.each(["es-MX", "en"] as const)("assignment has no axe violations in %s", as
   });
   await screen.findByRole("heading", { level: 2 });
   expect(await axe(app.container)).toHaveNoViolations();
+});
+
+test("the chosen courier rides in the history state and never as an id in the URL", async () => {
+  const { app } = await openInventory({
+    path: "/inventory/assignments/new?date=2026-11-03",
+    me: allocationMe(["inventory.allocate"]),
+    routes: routes(),
+  });
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Repartidor" }),
+    "Luis",
+  );
+  expect(await screen.findByText(/Entrega para Luis/)).toBeDefined();
+  expect(app.router.state.location.href).not.toContain(COURIER_ID);
+  expect(app.router.state.location.state.courier).toBe(COURIER_ID);
 });

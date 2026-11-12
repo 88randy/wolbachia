@@ -288,4 +288,22 @@ export const tutorials: Record<keyof typeof source, string> = {
   "tutorials.rules.pick.caption": "Tap the rule you want to see.",
   "tutorials.rules.edit.label": "Change the value",
   "tutorials.rules.edit.caption": "Change the value and save. The history stays.",
+  "tutorials.inventoryHub.title": "Inventory",
+  "tutorials.inventoryHub.receive.label": "Receive supplies",
+  "tutorials.inventoryHub.receive.caption": "When supplies arrive, register the new lot.",
+  "tutorials.inventoryHub.transfer.label": "Move between warehouses",
+  "tutorials.inventoryHub.transfer.caption":
+    "Prepare a transfer to move supplies from one warehouse to another.",
+  "tutorials.inventoryHub.deliver.label": "Hand out to couriers",
+  "tutorials.inventoryHub.deliver.caption": "Each day, pick the courier and the lots they take.",
+  "tutorials.inventoryHub.reconcile.label": "Reconcile deliveries",
+  "tutorials.inventoryHub.reconcile.caption":
+    "At the end of the day, check what was used and returned.",
+  "tutorials.inventoryHub.setup.label": "Set up locations",
+  "tutorials.inventoryHub.setup.caption": "Once, add your warehouses and locations.",
+  "tutorials.fleetHub.title": "Fleet",
+  "tutorials.fleetHub.list.label": "See the motorcycles",
+  "tutorials.fleetHub.list.caption": "Open Motorcycles and see the status of each one.",
+  "tutorials.fleetHub.record.label": "Open a motorcycle",
+  "tutorials.fleetHub.record.caption": "Tap the code to see its record, checks and services.",
 };

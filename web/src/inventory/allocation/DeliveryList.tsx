@@ -25,6 +25,7 @@ import {
   deliveryListOptions,
 } from "./allocation-query";
 import { statusOf } from "./use-assignment-panel";
+import { courierState } from "./use-assignment-route";
 
 type Row = Schemas["SupplyAssignmentRead"];
 const COUNTED = ["", "planned", "released", "received", "cancelled"] as const;
@@ -47,7 +48,8 @@ function useColumns(): DataTableColumn<Row>[] {
   const people = useQuery(courierDirectoryOptions(scope, "/inventory/assignments")).data;
   const link = (row: Row) => ({
     to: "/inventory/assignments/new" as const,
-    search: { courier: row.courier_id, date: row.date },
+    search: { date: row.date },
+    state: courierState(row.courier_id),
   });
   return [
     {
@@ -104,7 +106,8 @@ export function DeliveryList() {
     const open = () => {
       void navigate({
         to: "/inventory/assignments/new",
-        search: { courier: row.courier_id, date: row.date },
+        search: { date: row.date },
+        state: courierState(row.courier_id),
       });
     };
     return [

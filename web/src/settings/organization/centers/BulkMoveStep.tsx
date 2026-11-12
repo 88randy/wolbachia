@@ -77,6 +77,8 @@ function AskButton({ label, disabled, loading, onAsk }: AskProps) {
   return (
     <Button
       variant="secondary"
+      size="lg"
+      className="self-end"
       disabled={disabled}
       loading={loading}
       onClick={() => {

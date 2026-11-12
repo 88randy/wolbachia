@@ -8,6 +8,7 @@ import { formatInventoryQuantity } from "../format-inventory-quantity";
 import { DifferenceCell } from "./DifferenceCell";
 import { courierLabel, lotLabel } from "./allocation-labels";
 import type { ReconciliationRow } from "./reconciliation-equation";
+import { courierState } from "./use-assignment-route";
 
 interface Directories {
   lots: readonly Schemas["Lot"][] | undefined;
@@ -58,7 +59,8 @@ function numberColumns(quantity: Quantity, can: (permission: string) => boolean)
         ? {
             link: (row: ReconciliationRow) => ({
               to: "/inventory/assignments/new" as const,
-              search: { date: assignment(row).date, courier: assignment(row).courier_id },
+              search: { date: assignment(row).date },
+              state: courierState(assignment(row).courier_id),
             }),
           }
         : {}),

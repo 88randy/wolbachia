@@ -10,6 +10,8 @@ export interface TutorialStep {
   isDecision?: boolean;
   /** `false` when there is nothing to record (an end state, a wait). Defaults to true. */
   hasClip?: boolean;
+  /** Reuse the clip recorded for a step of another tutorial (hub guides point at existing clips). */
+  clipFrom?: { module: string; tutorial: string; step: string };
   /** Where the flow can go next. Empty = an end of the flow. The first link is the main path. */
   next: readonly StepLink[];
 }

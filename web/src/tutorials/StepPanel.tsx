@@ -60,7 +60,8 @@ function BranchChoices({
 export function StepPanel({ tutorial, player }: { tutorial: Tutorial; player: TutorialPlayer }) {
   const { t } = useTranslation();
   const { step } = player;
-  const urls = clipUrls(tutorial.module, tutorial.id, step.id);
+  const source = step.clipFrom ?? { module: tutorial.module, tutorial: tutorial.id, step: step.id };
+  const urls = clipUrls(source.module, source.tutorial, source.step);
   const hasClip = step.hasClip !== false;
   return (
     <div className="flex flex-col gap-3">

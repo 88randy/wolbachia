@@ -32,7 +32,7 @@ function DeliveryLine({ row, lots }: { row: DeliveryRow; lots: Lots }) {
       <th scope="row">{materialLabel(lots, row.supplyVersionId)}</th>
       <td className={styles.number}>{row.suggested === null ? "—" : format(row.suggested)}</td>
       <td className={styles.number}>{format(row.delivered || "0")}</td>
-      <td>
+      <td className={styles.nowrap}>
         <Icon aria-hidden="true" size={14} /> {t(STATE_KEYS[row.state], { count: format(row.gap) })}
       </td>
     </tr>
@@ -43,21 +43,23 @@ function DeliveryLine({ row, lots }: { row: DeliveryRow; lots: Lots }) {
 export function DeliveryTable({ rows, lots }: { rows: readonly DeliveryRow[]; lots: Lots }) {
   const { t } = useTranslation();
   return (
-    <table className={styles.matrix}>
-      <caption>{t("allocation.assignment.deliveryCaption")}</caption>
-      <thead>
-        <tr>
-          <th scope="col">{t("allocation.reconciliation.supply")}</th>
-          <th scope="col">{t("allocation.assignment.suggested")}</th>
-          <th scope="col">{t("allocation.assignment.delivered")}</th>
-          <th scope="col">{t("allocation.assignment.state")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <DeliveryLine key={row.supplyVersionId} row={row} lots={lots} />
-        ))}
-      </tbody>
-    </table>
+    <div className={styles.scrollX}>
+      <table className={styles.matrix}>
+        <caption>{t("allocation.assignment.deliveryCaption")}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{t("allocation.reconciliation.supply")}</th>
+            <th scope="col">{t("allocation.assignment.suggested")}</th>
+            <th scope="col">{t("allocation.assignment.delivered")}</th>
+            <th scope="col">{t("allocation.assignment.state")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <DeliveryLine key={row.supplyVersionId} row={row} lots={lots} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

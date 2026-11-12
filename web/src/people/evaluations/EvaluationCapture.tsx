@@ -8,7 +8,7 @@ export function EvaluationCapture({ scope }: { scope: EvaluationScope }) {
   const { t } = useTranslation();
   const form = useEvaluationForm(scope);
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-4">
       <RubricLookup
         scope={scope}
         {...(form.command.status === null ? { onSelect: form.select } : {})}
@@ -16,6 +16,6 @@ export function EvaluationCapture({ scope }: { scope: EvaluationScope }) {
       <Card title={t("evaluations.form.title")}>
         <EvaluationEntry form={form} />
       </Card>
-    </>
+    </div>
   );
 }

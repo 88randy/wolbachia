@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import { SearchIcon, CheckIcon } from "lucide-react";
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
@@ -58,21 +57,25 @@ function CommandInput({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
+  // The icon is absolutely placed and the input is padded past it, so text never draws over it.
+  // The focus ring sits on the wrapper (inside the popover padding) so nothing clips it; the
+  // `!` modifiers beat the unlayered global `:focus-visible` rule that would ring the bare input.
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+    <div data-slot="command-input-wrapper" className="p-1.5 pb-1">
+      <div className="relative flex h-9 w-full items-center rounded-lg border border-line-strong bg-surface focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-action">
+        <SearchIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute start-2.5 size-4 shrink-0 text-ink-3"
+        />
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
-            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+            "h-full w-full min-w-0 bg-transparent ps-8 pe-2 text-sm outline-none! shadow-none! focus-visible:outline-none! focus-visible:shadow-none! disabled:cursor-not-allowed disabled:opacity-50",
             className,
           )}
           {...props}
         />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
-      </InputGroup>
+      </div>
     </div>
   );
 }

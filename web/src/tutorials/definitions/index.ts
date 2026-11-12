@@ -1,5 +1,6 @@
 import type { TutorialId } from "../tutorial-routes";
 import type { Tutorial } from "../types";
+import { HUB_TUTORIALS } from "./hubs";
 import { INVENTORY_TUTORIALS } from "./inventory";
 import { MODULE_TUTORIALS } from "./modules";
 
@@ -7,4 +8,5 @@ import { MODULE_TUTORIALS } from "./modules";
 export const TUTORIALS: Readonly<Record<TutorialId, Tutorial>> = {
   ...INVENTORY_TUTORIALS,
   ...MODULE_TUTORIALS,
+  ...HUB_TUTORIALS,
 };

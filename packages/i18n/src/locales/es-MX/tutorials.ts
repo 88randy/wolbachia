@@ -287,4 +287,23 @@ export const tutorials = {
   "tutorials.rules.pick.caption": "Toca la regla que quieres ver.",
   "tutorials.rules.edit.label": "Cambiar el valor",
   "tutorials.rules.edit.caption": "Cambia el valor y guarda. Queda el historial.",
+  "tutorials.inventoryHub.title": "Inventario",
+  "tutorials.inventoryHub.receive.label": "Recibir insumos",
+  "tutorials.inventoryHub.receive.caption": "Cuando llegan insumos, registra el lote nuevo.",
+  "tutorials.inventoryHub.transfer.label": "Mover entre almacenes",
+  "tutorials.inventoryHub.transfer.caption":
+    "Prepara un traslado para pasar insumos de un almacén a otro.",
+  "tutorials.inventoryHub.deliver.label": "Entregar a repartidores",
+  "tutorials.inventoryHub.deliver.caption":
+    "Cada día elige al repartidor y los lotes que se lleva.",
+  "tutorials.inventoryHub.reconcile.label": "Cuadrar entregas",
+  "tutorials.inventoryHub.reconcile.caption":
+    "Al final del día revisa lo que usó y lo que devolvió.",
+  "tutorials.inventoryHub.setup.label": "Preparar ubicaciones",
+  "tutorials.inventoryHub.setup.caption": "Una sola vez, da de alta tus almacenes y ubicaciones.",
+  "tutorials.fleetHub.title": "Flota",
+  "tutorials.fleetHub.list.label": "Ver las motos",
+  "tutorials.fleetHub.list.caption": "Entra a Motos y mira el estado de cada una.",
+  "tutorials.fleetHub.record.label": "Abrir una moto",
+  "tutorials.fleetHub.record.caption": "Toca el código para ver su ficha, revisiones y servicios.",
 } as const satisfies AreaCatalog<"tutorials">;

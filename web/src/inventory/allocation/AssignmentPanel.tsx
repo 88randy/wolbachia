@@ -119,7 +119,7 @@ export function AssignmentPanel(props: {
         ? "allocation.delivery.revised"
         : "allocation.assignment.created";
   return (
-    <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_28rem]">
+    <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_32rem]">
       <Card
         title={title}
         headingLevel={2}

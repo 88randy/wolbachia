@@ -30,6 +30,8 @@ export function DateField(props: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /** Control height: `xl` matches the text inputs of a form; `lg` (default) matches the pickers. */
+  size?: "lg" | "xl";
   /** Last day that can be picked (`YYYY-MM-DD`). */
   max?: string;
   /** Already translated error text: red text below, `aria-invalid` on the button. */
@@ -42,8 +44,8 @@ export function DateField(props: {
   const selected = parseDay(props.value);
   const last = props.max === undefined ? undefined : parseDay(props.max);
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={props.id} className="text-xs font-bold text-ink">
+    <div className="flex min-w-0 flex-col gap-1">
+      <label htmlFor={props.id} className="text-xs leading-5 font-bold text-ink">
         {props.label}
       </label>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -56,7 +58,10 @@ export function DateField(props: {
             aria-invalid={props.error === undefined ? undefined : true}
             aria-describedby={props.error === undefined ? undefined : `${props.id}-error`}
             className={cn(
-              "inline-flex min-h-[var(--web-control-lg)] w-full min-w-0 items-center gap-2 rounded-lg border bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:opacity-60",
+              props.size === "xl"
+                ? "min-h-[var(--web-control-xl)]"
+                : "min-h-[var(--web-control-lg)]",
+              "inline-flex w-full min-w-0 items-center gap-2 rounded-lg border bg-surface px-3 text-left text-[13px] text-ink shadow-xs hover:border-ink-3 disabled:opacity-60",
               props.error === undefined ? "border-line-strong" : "border-critical-fg",
             )}
           >

@@ -21,11 +21,12 @@ export function EvaluationObservedField({ value, onChange, hasError }: Props) {
   const day = local.slice(0, 10);
   const time = local.slice(11, 16);
   return (
-    <div className="flex flex-wrap items-start gap-3">
+    <div className="flex flex-wrap items-end gap-3">
       <div className="w-52">
         <DateField
           id="evaluation-observedAt"
           label={t("evaluations.field.observed")}
+          size="xl"
           value={day}
           onChange={(next) => {
             onChange(fromLocalInput(`${next}T${time || DEFAULT_TIME}`, timeZone));

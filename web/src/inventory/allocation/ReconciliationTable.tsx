@@ -7,6 +7,7 @@ import { useSessionIdentity } from "../../session/use-session-identity";
 import { useReconciliationColumns } from "./use-reconciliation-columns";
 import type { useReconciliationView } from "./use-reconciliation-view";
 import type { ReconciliationRow } from "./reconciliation-equation";
+import { courierState } from "./use-assignment-route";
 
 /** Each line shows delivered, used, returned and the difference; its ⋯ menu offers what is allowed. */
 export function ReconciliationTable({
@@ -46,7 +47,8 @@ export function ReconciliationTable({
           const assignment = row.reconciliation.assignment;
           void navigate({
             to: "/inventory/assignments/new",
-            search: { date: assignment.date, courier: assignment.courier_id },
+            search: { date: assignment.date },
+            state: courierState(assignment.courier_id),
           });
         },
       },

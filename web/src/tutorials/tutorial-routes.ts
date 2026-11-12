@@ -14,8 +14,10 @@ export const TUTORIAL_IDS = [
   "writeOffs",
   "createLocation",
   "suppliesCatalog",
+  "inventoryHub",
   // Other modules
   "fleetMotos",
+  "fleetHub",
   "scheduleWeek",
   "registerIntervention",
   "importRisk",
@@ -38,6 +40,8 @@ export type TutorialId = (typeof TUTORIAL_IDS)[number];
 
 /** Route pattern (as in the router, with `$param`) to its tutorial. */
 export const TUTORIAL_ROUTES: Readonly<Record<string, TutorialId>> = {
+  "/inventory": "inventoryHub",
+  "/fleet": "fleetHub",
   "/inventory/lots": "receiveSupplies",
   "/inventory/lots/new": "receiveSupplies",
   "/inventory/transfers": "moveTransfer",
