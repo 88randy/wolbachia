@@ -25,7 +25,7 @@ from field_sync.envelope import describe_payload
 from field_sync.models import FieldEvent
 from fleet.models import EfficiencyStatus, FuelLoad
 from geography.models import SamplingPoint
-from organizations.codes import SHIFT_CODE, allocate_codes
+from organizations.codes import OVITRAP_CODE, SHIFT_CODE, allocate_codes
 from organizations.demo_seed import operations
 from organizations.demo_seed.field import demo_id
 from organizations.models import Membership, Organization
@@ -211,6 +211,9 @@ class _Writer:
 
     def flush(self) -> None:
         FieldEvent.objects.bulk_create(self.events)
+        ovitrap_codes = allocate_codes(self.organization, OVITRAP_CODE, len(self.ovitraps))
+        for ovitrap, ovitrap_code in zip(self.ovitraps, ovitrap_codes, strict=True):
+            ovitrap.code = ovitrap_code
         Ovitrap.objects.bulk_create(self.ovitraps)
         PlacementAttempt.objects.bulk_create(self.placements)
         OvitrapReading.objects.bulk_create(self.readings)

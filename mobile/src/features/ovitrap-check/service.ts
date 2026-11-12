@@ -10,6 +10,8 @@ import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { normalizePaddle, parseQr, UUID_PATTERN } from "./domain.ts";
 import { captureEvent, voidEvent } from "./events.ts";
 import { newDraft } from "./new-draft.ts";
+import { findPoolLabel, normalizeLabelCode } from "./label-pool.ts";
+import type { PoolLabel } from "./label-pool.ts";
 import type { OvitrapStore, StoredCapture } from "./store.ts";
 import type {
   Draft,
@@ -37,6 +39,8 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly evidenceShift: () => Promise<CaptureShiftAuthorization>;
   readonly refresh?: () => Promise<void>;
+  /** The downloaded pool of unplaced labels; lets a typed `OVT-0001` resolve without a network. */
+  readonly labelPool?: () => Promise<readonly PoolLabel[]>;
   /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
   readonly publishAssignment?: () => Promise<void>;
 }
@@ -81,7 +85,7 @@ function labelId(value: string, isManual: boolean): string | null {
   return parseQr(code, "ovitrap")?.id ?? null;
 }
 /** Outcome of scanning the label of a trap being placed. */
-export type LabelResult = "read" | "invalid" | "used" | "cancelled";
+export type LabelResult = "read" | "invalid" | "used" | "unknown" | "cancelled";
 export class OvitrapService {
   readonly draftBuffer = new OvitrapDraftBuffer();
   readonly #deps: Dependencies;
@@ -298,8 +302,9 @@ export class OvitrapService {
     return this.#write(async () => {
       const { draft, event, draftVersion } = await this.#readExpected(eventId);
       if (!draft || event || draft.mode !== "place") return "cancelled";
-      const id = labelId(value, isManual);
-      if (!id) return "invalid";
+      const identity = await this.#labelIdentity(value, isManual);
+      if ("failure" in identity) return identity.failure;
+      const { id } = identity;
       if (await this.#isIdentityTaken(id, draft)) return "used";
       await this.#updateDraft(
         {
@@ -321,12 +326,25 @@ export class OvitrapService {
   ): Promise<string | null> {
     try {
       const { draft } = await this.#readExpected(eventId);
-      const id = labelId(value, isManual);
+      const identity = await this.#labelIdentity(value, isManual);
+      const id = "id" in identity ? identity.id : null;
       if (!draft || !id) return null;
       return draft.assignment?.ovitraps.find((item) => item.id === id)?.point.code ?? null;
     } catch {
       return null;
     }
+  }
+  /** A typed short code resolves through the downloaded pool, then takes the same path as a scan. */
+  async #labelIdentity(
+    value: string,
+    isManual: boolean,
+  ): Promise<{ readonly id: string } | { readonly failure: "invalid" | "unknown" }> {
+    if (isManual && normalizeLabelCode(value) !== null) {
+      const label = findPoolLabel((await this.#deps.labelPool?.()) ?? [], value);
+      return label ? { id: label.id } : { failure: "unknown" };
+    }
+    const id = labelId(value, isManual);
+    return id ? { id } : { failure: "invalid" };
   }
   async #isIdentityTaken(id: string, draft: Draft): Promise<boolean> {
     if (id === draft.ovitrapId && draft.labelScanned) return false;

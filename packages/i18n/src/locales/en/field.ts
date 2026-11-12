@@ -11,7 +11,7 @@ export const field = {
   "field.capture.backToRoute": "See my route",
   "field.capture.labelQuestion": "Scan the ovitrap label",
   "field.capture.labelHint":
-    "It is the QR stuck on the new ovitrap. It ties the trap to this point.",
+    "It is the QR stuck on the new ovitrap. If it cannot be scanned, type the OVT number printed on it.",
   "field.capture.labelScan": "Scan label",
   "field.capture.labelAgain": "Scan another label",
   "field.capture.labelReady": "Label ready.",
@@ -24,6 +24,8 @@ export const field = {
   "field.scan.question.label": "Scan the ovitrap label",
   "field.scan.labelPlacedAt": "This ovitrap is already placed at point {point}. Scan a new label.",
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",
+  "field.scan.labelUnknown":
+    "We could not find that label. Check the number printed large on it or use a new label.",
   "field.gps.searching": "Looking for your location…",
   "field.gps.searchingAccuracy": "Looking for your location… ± {meters} m",
   "field.gps.ready": "Location ready.",

@@ -26,6 +26,7 @@ class CodeKind:
 
 RELEASE_CODE = CodeKind("release", "LIB")
 SHIFT_CODE = CodeKind("shift", "JOR")
+OVITRAP_CODE = CodeKind("ovitrap", "OVT")
 
 
 def format_code(prefix: str, number: int) -> str:

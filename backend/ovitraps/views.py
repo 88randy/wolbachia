@@ -1,6 +1,7 @@
 """Read-only default-deny resources; session cookie/CSRF and pinned bearer are inherited."""
 
 from typing import Any, cast
+from uuid import UUID
 
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -23,6 +24,7 @@ from ovitraps.serializers import (
     BagQuerySerializer,
     BagSerializer,
     IdentityQuerySerializer,
+    OvitrapQuerySerializer,
     OvitrapSerializer,
     ReadingSerializer,
 )
@@ -49,10 +51,10 @@ class RecordViewSet(
         queryset = super().get_queryset()
         query = self.query_serializer_class(data=self.request.query_params)
         query.is_valid(raise_exception=True)
-        if self.query_serializer_class is IdentityQuerySerializer and (
+        if issubclass(self.query_serializer_class, IdentityQuerySerializer) and (
             code := query.validated_data.get("code")
         ):
-            queryset = queryset.filter(**{self.lookup_field: code})
+            queryset = queryset.filter(**self.code_filter(code))
             query.validated_data.setdefault("status", "all")
         if self.action != "list":
             query.validated_data.setdefault("status", "all")
@@ -62,6 +64,9 @@ class RecordViewSet(
             self.request.membership,  # type: ignore[attr-defined]
             self.required_permissions[self.action],
         )  # type: ignore[attr-defined]
+
+    def code_filter(self, code: Any) -> dict[str, Any]:  # noqa: ANN401 -- validated query value
+        return {self.lookup_field: code}
 
     @extend_schema(parameters=[IdentityQuerySerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -76,6 +81,15 @@ class OvitrapViewSet(RecordViewSet):
     )
     serializer_class = OvitrapSerializer
     required_permissions = {"list": OVITRAP_READ, "retrieve": OVITRAP_READ, "history": OVITRAP_READ}
+    query_serializer_class = OvitrapQuerySerializer
+
+    def code_filter(self, code: Any) -> dict[str, Any]:  # noqa: ANN401 -- validated query value
+        """`?code=` takes the short code (`OVT-0001`) or the identity UUID of the QR."""
+        return {"client_uuid": code} if isinstance(code, UUID) else {"code": code}
+
+    @extend_schema(parameters=[OvitrapQuerySerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(responses=OvitrapHistorySerializer)
     @action(detail=True, methods=["get"])
