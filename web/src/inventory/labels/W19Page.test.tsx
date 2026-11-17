@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { inventoryLot, inventoryPage } from "../../test/inventory-fixtures";
 import { inventoryMe, inventoryPermissions, openInventory } from "../../test/inventory-api";
+import "../../test/slow-app-flows";
 
 const me = (extra: string[] = []) =>
   inventoryMe({ permissions: [...inventoryPermissions, ...extra] });

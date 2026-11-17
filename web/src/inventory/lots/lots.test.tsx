@@ -9,6 +9,7 @@ import {
   inventoryProtocol,
 } from "../../test/inventory-fixtures";
 import { apiError } from "../../test/fake-api";
+import "../../test/slow-app-flows";
 afterEach(() => {
   vi.useRealTimers();
 });

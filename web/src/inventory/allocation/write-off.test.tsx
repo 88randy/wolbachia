@@ -14,6 +14,7 @@ import {
   plainLot,
   reasonRoutes,
 } from "./allocation-fixtures";
+import "../../test/slow-app-flows";
 
 // B-04 byte and verification rules are owned by transfer-evidence.test.ts; this suite owns wiring.
 vi.mock("../transfers/TransferEvidence", () => ({

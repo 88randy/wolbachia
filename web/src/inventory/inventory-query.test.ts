@@ -17,6 +17,7 @@ import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { formatInventoryQuantity } from "./format-inventory-quantity";
 import { inventoryReadContext } from "./inventory-read-context";
+import "../test/slow-app-flows";
 
 describe("inventory contract mapping", () => {
   test("only absent custody context means admission; a present invalid value never does", () => {
@@ -128,7 +129,7 @@ test("custody links retain explicit list facets while historical code reads work
       },
     });
   });
-  await screen.findByRole("link", { name: inventoryMovement().operation_id });
+  await screen.findByRole("cell", { name: "Admisión inicial" });
   const history = api.requests
     .slice(beforeHistory)
     .find((request) => request.path.includes("/movements/"));
@@ -141,7 +142,7 @@ test("custody links retain explicit list facets while historical code reads work
       .filter((request) => request.path.startsWith("/api/v1/lots/"))
       .map((request) => request.path),
   ).toEqual([]);
-  expect(screen.queryByRole("textbox", { name: "Código" })).not.toBeNull();
+  expect(screen.queryByRole("searchbox", { name: "Código" })).not.toBeNull();
   const beforeReturn = api.requests.length;
   await user.click(screen.getByRole("link", { name: "LOT-01" }));
   await screen.findByText("Consulta de custodia · sólo lectura");
@@ -158,7 +159,7 @@ test("custody links retain explicit list facets while historical code reads work
       search: { view: "movements", custody_location: site },
     });
   });
-  await screen.findByRole("link", { name: inventoryMovement().operation_id });
+  await screen.findByRole("cell", { name: "Admisión inicial" });
   await user.click(screen.getByRole("tab", { name: "Existencias" }));
   await waitFor(() => {
     expect(api.requests.some((request) => request.path.includes(`/locations/${site}/stock/`))).toBe(

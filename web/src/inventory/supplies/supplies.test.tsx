@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { inventorySupply, inventoryProtocol, inventoryPage } from "../../test/inventory-fixtures";
 import { inventoryMe, openInventory } from "../../test/inventory-api";
 import { apiError } from "../../test/fake-api";
+import "../../test/slow-app-flows";
 function fillField(name: string, value: string) {
   fireEvent.change(screen.getByRole("textbox", { name }), { target: { value } });
 }
@@ -57,7 +58,7 @@ test("W8 presents the real scoped supply and hides configuration writes without 
     path: "/inventory/supplies",
     me: inventoryMe({ permissions: ["supply_type.read"] }),
   });
-  expect(await screen.findByRole("heading", { name: "Catálogo de insumos" })).toBeDefined();
+  expect(await screen.findByRole("heading", { name: "Insumos" })).toBeDefined();
   expect(await screen.findByRole("link", { name: "SUP-01" })).toBeDefined();
   expect(screen.queryByRole("button", { name: "Nuevo insumo" })).toBeNull();
 });

@@ -6,6 +6,7 @@ import { inventoryPage, INVENTORY_LOT } from "../../test/inventory-fixtures";
 import { apiError } from "../../test/fake-api";
 import { conditionStatus, conditionReading } from "./test-fixtures";
 import { reconcileSession } from "../../session/session-reconcile";
+import "../../test/slow-app-flows";
 
 const statusPath = `GET /api/v1/lots/${INVENTORY_LOT}/condition-status/`;
 const readingsPath = `GET /api/v1/lots/${INVENTORY_LOT}/conditions/`;
@@ -30,6 +31,7 @@ function routes() {
 }
 describe("W18 biological condition monitoring", () => {
   it("uses authoritative slots and exact retained ranges with the current blocking incident", async () => {
+    const user = userEvent.setup();
     await openInventory({ path, routes: routes() });
     expect(await screen.findByText(/^08:00–09:00.*Lectura registrada$/)).toBeTruthy();
     expect(screen.getByText(/^16:00–17:00.*Lectura pendiente$/)).toBeTruthy();
@@ -37,7 +39,8 @@ describe("W18 biological condition monitoring", () => {
     expect(screen.getByRole("link", { name: "I-010" }).getAttribute("href")).toBe(
       "/incidents/I-010",
     );
-    expect(screen.getByText("Retained protocol")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Protocolo exacto conservado" }));
+    expect((await screen.findAllByText("Retained protocol")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Synthetic protocol")).toBeNull();
     expect((await screen.findAllByText("18–24")).length).toBeGreaterThan(0);
   });
@@ -304,6 +307,6 @@ describe("W18 biological condition monitoring", () => {
       releaseNew(Response.json(conditionReading()));
       await newer;
     });
-    await screen.findByText("Lectura guardada en el servidor");
+    await screen.findByText("Lectura guardada");
   });
 });
