@@ -67,6 +67,7 @@ for (const closeShift of [false, true]) {
     const eventId = await currentEventId(h.store);
     await later.continueStale(eventId);
     const saved = await later.save(eventId);
+    assert.ok(saved.event, "a finished stale placement must produce an outbox event");
     assert.equal(saved.event.envelope.type, "ovitrap.place");
     assert.equal(saved.event.envelope.device_time, started.deviceTime);
     assert.equal(saved.event.envelope.shift_id, started.shiftId);
