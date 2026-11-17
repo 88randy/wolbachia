@@ -4,6 +4,7 @@ import { useReceptionScanner } from "./use-reception-scanner";
 import { ReceptionScanForm } from "./ReceptionScanForm";
 import { ReceptionRecoveryNotice } from "./ReceptionRecoveryNotice";
 import { ReceptionFeedback } from "./ReceptionFeedback";
+import { ReceptionOrigin } from "./ReceptionOrigin";
 import styles from "./reception.module.css";
 /** Keep the field mounted and editable; typed next codes survive an in-flight result. */
 export function ReceptionScanner({ actions }: { actions: ReceptionActions }) {
@@ -17,6 +18,7 @@ export function ReceptionScanner({ actions }: { actions: ReceptionActions }) {
         {t("labReception.scan.queued")} · {scanner.pendingCount}
       </p>
       <ReceptionFeedback result={actions.result} code={actions.result?.subject} />
+      <ReceptionOrigin result={actions.result} />
       {actions.isReviewRequired && (
         <ReceptionRecoveryNotice actions={actions} onReview={scanner.review} />
       )}

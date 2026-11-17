@@ -1,6 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
 import type { TableController } from "../data-table/table-types";
-import { BagMetadata } from "./BagMetadata";
+import { BagProvenance } from "./BagProvenance";
 import { CountForm } from "./CountForm";
 import { queueContext } from "./lab-query";
 import type { Candidate, LabScope } from "./lab-query";
@@ -15,7 +15,7 @@ interface EditorProps {
 export function CountEditor(props: EditorProps) {
   return (
     <>
-      <BagMetadata key={"metadata:" + props.bag.id} scope={props.scope} bag={props.bag} />
+      <BagProvenance key={"metadata:" + props.bag.id} bag={props.bag} />
       <CountForm
         key={"form:" + props.bag.id}
         scope={props.scope}

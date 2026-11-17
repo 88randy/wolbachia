@@ -7,6 +7,7 @@ import { useLanguage } from "../i18n/use-language";
 import { StatusPill } from "../ui/StatusPill";
 import type { Tone } from "../ui/tone";
 import { LabName } from "./LabName";
+import { BagCodeLink } from "./trace/BagCodeLink";
 import type { MaterialRow, PaddleRow, RecountRow, SampleRow, ShipmentRow } from "./lab-lists";
 
 export const RECOUNT_TONE: Record<RecountRow["state"], Tone> = {
@@ -50,7 +51,11 @@ export function ResultState({ status }: { status: SampleRow["result_status"] }) 
 
 export function useRecountColumns(): DataTableColumn<RecountRow>[] {
   return [
-    { id: "bag_code", headerKey: "lab.col.bag", cell: (row) => row.bag_code },
+    {
+      id: "bag_code",
+      headerKey: "lab.col.bag",
+      cell: (row) => <BagCodeLink code={row.bag_code} />,
+    },
     { id: "state", headerKey: "lab.col.state", cell: (row) => <RecountState state={row.state} /> },
   ];
 }

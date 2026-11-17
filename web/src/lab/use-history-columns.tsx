@@ -9,12 +9,13 @@ import type { Count, LabScope } from "./lab-query";
 import { nameOrDash } from "../lookups/use-reference-names";
 import { EmptyValue } from "../ui/EmptyValue";
 import { CorrectCountDialog } from "./CorrectCountDialog";
+import { BagCodeLink } from "./trace/BagCodeLink";
 function observationColumns(language: string): DataTableColumn<Count>[] {
   return [
     {
       id: "bag_id",
       headerKey: "lab.history.bag",
-      cell: (count) => count.bag_code ?? <EmptyValue />,
+      cell: (count) => (count.bag_code ? <BagCodeLink code={count.bag_code} /> : <EmptyValue />),
     },
     {
       id: "value",

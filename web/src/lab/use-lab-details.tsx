@@ -6,6 +6,7 @@ import { EmptyValue } from "../ui/EmptyValue";
 import { LabFacts } from "./LabFacts";
 import type { LabFact } from "./LabFacts";
 import { LabName } from "./LabName";
+import { BagCodeLink } from "./trace/BagCodeLink";
 import type { LabDetail } from "./LabDetailSheet";
 import type { MaterialRow, PaddleRow, RecountRow, SampleRow, ShipmentRow } from "./lab-lists";
 import {
@@ -20,7 +21,9 @@ export function useRecountDetail(): (row: RecountRow) => LabDetail {
   return (row) => ({
     title: t("lab.detail.recount", { code: row.bag_code }),
     status: <RecountState state={row.state} />,
-    content: <LabFacts items={[{ label: t("lab.col.bag"), value: row.bag_code }]} />,
+    content: (
+      <LabFacts items={[{ label: t("lab.col.bag"), value: <BagCodeLink code={row.bag_code} /> }]} />
+    ),
   });
 }
 

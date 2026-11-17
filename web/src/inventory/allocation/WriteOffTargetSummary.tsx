@@ -4,6 +4,7 @@ import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
 import type { DescriptionItem } from "../../components/templates/DescriptionGrid";
 import { useLanguage } from "../../i18n/use-language";
 import { EntityName } from "../../lookups/EntityName";
+import { BagCodeLink } from "../../lab/trace/BagCodeLink";
 import { formatInventoryQuantity } from "../format-inventory-quantity";
 import type { WriteOffForm } from "./use-write-off-form";
 import type { WriteOffTarget } from "./write-off-draft";
@@ -43,7 +44,10 @@ export function WriteOffTargetSummary({ form }: { form: WriteOffForm }) {
     target.kind === "lot"
       ? lotItems(target, form, t, language)
       : [
-          { label: t("allocation.writeOff.kindBag"), value: target.bag.code },
+          {
+            label: t("allocation.writeOff.kindBag"),
+            value: <BagCodeLink code={target.bag.code} />,
+          },
           {
             label: t("allocation.writeOff.summary.lotQuantity"),
             value: t("allocation.writeOff.summary.wholeBag"),
