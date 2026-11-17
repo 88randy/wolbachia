@@ -58,6 +58,7 @@ const COPY: Readonly<Record<HomeNext, CardCopy>> = {
     icon: CircleCheck,
     title: "courier.home.closedTitle",
     body: "courier.home.closedBody",
+    action: "courier.home.openShiftAction",
   },
 };
 

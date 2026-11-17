@@ -51,6 +51,8 @@ export const courier = {
   "courier.tile.emergency": "Emergencia",
   "courier.tile.lockedNoShift": "Primero abre tu jornada",
   "courier.tile.lockedBlocked": "Primero resuelve el aviso de arriba",
+  "courier.tile.lockedClosed": "Abre una jornada para usarlo.",
+  "courier.tile.closeDayDone": "Tu jornada ya está cerrada.",
   "courier.help.title": "Ayuda",
   "courier.help.subtitle": "¿Qué necesitas?",
   "courier.help.emergency": "Emergencia",

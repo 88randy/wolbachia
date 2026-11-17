@@ -306,6 +306,15 @@ const MIGRATIONS: readonly (readonly string[])[] = [
   INCIDENT_SCHEMA,
   RELEASE_SCHEMA,
   SAMPLE_SCHEMA,
+  [
+    "DROP TRIGGER shift_open_captured_immutable",
+    `CREATE TRIGGER shift_open_captured_immutable BEFORE UPDATE ON shift_open_state
+      WHEN OLD.opening_event_id IS NOT NULL AND (
+        NEW.opening_event_id IS NOT NULL OR NOT EXISTS
+        (SELECT 1 FROM outbox_event o WHERE o.id = OLD.opening_event_id AND (o.local_status = 'rejected'
+          OR EXISTS (SELECT 1 FROM outbox_event c WHERE c.type = 'shift.close' AND c.shift_id = o.shift_id))))
+      BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected or closed'); END`,
+  ],
 ];
 
 /** Highest schema version this build knows. */

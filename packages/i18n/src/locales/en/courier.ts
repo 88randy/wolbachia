@@ -51,6 +51,8 @@ export const courier = {
   "courier.tile.closeDay": "Close day",
   "courier.tile.emergency": "Emergency",
   "courier.tile.lockedNoShift": "Open your day first",
+  "courier.tile.lockedClosed": "Open a shift to use it.",
+  "courier.tile.closeDayDone": "Your shift is already closed.",
   "courier.tile.lockedBlocked": "Fix the notice above first",
   "courier.help.title": "Help",
   "courier.help.subtitle": "What do you need?",
