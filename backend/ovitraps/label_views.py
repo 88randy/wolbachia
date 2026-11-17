@@ -5,6 +5,7 @@ from typing import Any
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, viewsets
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -12,7 +13,7 @@ from core.views import OrgScopedViewSetMixin
 from field_sync.permissions import FIELD_BOOTSTRAP
 from ovitraps.labels import MAX_MINT, MAX_POOL, mint_labels, unplaced_labels
 from ovitraps.models import OvitrapLabel
-from ovitraps.permissions import OVITRAP_READ
+from ovitraps.permissions import OVITRAP_LABEL_MINT
 
 
 class OvitrapLabelSerializer(serializers.ModelSerializer[OvitrapLabel]):
@@ -35,13 +36,25 @@ class OvitrapLabelPoolSerializer(serializers.Serializer[Any]):
 
 
 class OvitrapLabelViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
-    """`POST /ovitrap-labels/`: register `count` new stickers (uuid + `OVT-0001` code)."""
+    """`POST /ovitrap-labels/` registers `count` new stickers (uuid + `OVT-0001` code);
+    `GET /ovitrap-labels/unplaced/` lists the unplaced ones so they can be printed again."""
 
     queryset = OvitrapLabel.objects.all()
     serializer_class = OvitrapLabelMintSerializer
     pagination_class = None
-    http_method_names = ["post", "options"]
-    required_permissions = {"create": OVITRAP_READ}
+    http_method_names = ["get", "post", "options"]
+    required_permissions = {"create": OVITRAP_LABEL_MINT, "unplaced": OVITRAP_LABEL_MINT}
+
+    def get_queryset(self) -> QuerySet[OvitrapLabel]:
+        if getattr(self, "swagger_fake_view", False):
+            return OvitrapLabel.objects.none()
+        return unplaced_labels(self.request.organization)  # type: ignore[attr-defined]
+
+    @extend_schema(responses=OvitrapLabelPoolSerializer)
+    @action(detail=False, methods=["get"])
+    def unplaced(self, request: Request) -> Response:
+        labels = list(self.get_queryset()[:MAX_POOL])
+        return Response(OvitrapLabelPoolSerializer({"labels": labels}).data)
 
     @extend_schema(request=OvitrapLabelMintSerializer, responses={201: OvitrapLabelPoolSerializer})
     def create(self, request: Request) -> Response:

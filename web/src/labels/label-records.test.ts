@@ -1,5 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { describe, expect, it } from "vitest";
+import { qrContent, visibleText } from "./label-record";
 import {
   bagLabel,
   locationLabel,
@@ -77,6 +78,13 @@ describe("label content", () => {
       code: "PA-1",
       lines: [],
     });
+  });
+
+  it("new ovitrap sticker: QR carries the uuid, the label shows only the OVT code", () => {
+    const row = { id: UUID, code: "OVT-0001", created_at: "2026-11-17T10:00:00Z" };
+    const record = toLabelRecord({ kind: "ovitrap_label", row }, text);
+    expect(qrContent(record)).toBe(`wbf:1:ovitrap:${UUID}`);
+    expect(visibleText(record)).toEqual({ heading: "OVT-0001", lines: [] });
   });
 
   it("toLabelRecord dispatches on the kind of the source row", () => {

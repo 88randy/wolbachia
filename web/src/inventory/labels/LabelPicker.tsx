@@ -32,6 +32,9 @@ function PickerRow({ model, source }: { model: Model; source: LabelSource }) {
       <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer flex-col">
         <span className="text-sm font-semibold whitespace-nowrap text-ink">{heading}</span>
         {lines.length > 0 && <span className="text-xs text-ink-3">{lines.join(" · ")}</span>}
+        {source.kind === "ovitrap_label" && (
+          <span className="text-xs text-ink-3">{t("inventory.labels.unplacedTag")}</span>
+        )}
       </label>
     </li>
   );
@@ -49,8 +52,8 @@ function PickerRows({ model }: { model: Model }) {
 
 function PickerBody({ model }: { model: Model }) {
   const { t } = useTranslation();
-  if (model.query.isPending) return <CardSkeleton />;
-  if (model.query.isError)
+  if (model.canReadPlaced && model.query.isPending) return <CardSkeleton />;
+  if (model.canReadPlaced && model.query.isError)
     return (
       <ErrorState
         message={t("inventory.labels.loadError")}

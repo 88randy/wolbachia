@@ -11130,8 +11130,9 @@ paths:
   /api/v1/ovitrap-labels/:
     post:
       operationId: ovitrap_labels_create
-      description: '`POST /ovitrap-labels/`: register `count` new stickers (uuid +
-        `OVT-0001` code).'
+      description: |-
+        `POST /ovitrap-labels/` registers `count` new stickers (uuid + `OVT-0001` code);
+        `GET /ovitrap-labels/unplaced/` lists the unplaced ones so they can be printed again.
       parameters:
       - in: header
         name: X-Organization
@@ -11152,6 +11153,37 @@ paths:
       - bearerAuth: []
       responses:
         '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OvitrapLabelPool'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/ovitrap-labels/unplaced/:
+    get:
+      operationId: ovitrap_labels_unplaced_retrieve
+      description: |-
+        `POST /ovitrap-labels/` registers `count` new stickers (uuid + `OVT-0001` code);
+        `GET /ovitrap-labels/unplaced/` lists the unplaced ones so they can be printed again.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - ovitrap-labels
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
