@@ -32,6 +32,9 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
     for release in reversed(versions):
         proofs = cast(list[OriginReleaseProof], release._supply_release_proofs)  # type: ignore[attr-defined]
         for proof in proofs:
+            if proof.cancellations.all():
+                # A cancelled release backs no quantity: the phone must not offer it to receive.
+                continue
             releases.append(
                 {
                     "id": str(proof.pk),
