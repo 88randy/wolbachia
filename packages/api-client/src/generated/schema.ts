@@ -422,6 +422,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bags/{bag_code}/trace/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["bags_trace_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bags/{id}/": {
         parameters: {
             query?: never;
@@ -8184,6 +8210,13 @@ export interface components {
          * @enum {string}
          */
         BagDisposalReadKindEnum: "bag";
+        BagTrace: {
+            bag: components["schemas"]["TraceCode"];
+            reading: components["schemas"]["TraceReading"];
+            installed: components["schemas"]["TraceInstalled"];
+            location: components["schemas"]["TraceLocation"];
+            lab: components["schemas"]["TraceLab"] | null;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         /**
@@ -17137,6 +17170,158 @@ export interface components {
             };
             readonly author_name?: string | null;
         };
+        TraceActor: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        TraceArea: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            geometry: unknown;
+        };
+        TraceAttempt: {
+            revision: number;
+            status: string;
+            result: string | null;
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+        };
+        TraceCapture: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: double */
+            accuracy_m: number | null;
+            /** Format: double */
+            distance_to_point_m: number;
+        };
+        TraceCenter: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        TraceCode: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+        };
+        TraceCount: {
+            /** Format: uuid */
+            id: string;
+            ordinal: number;
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+            /** Format: uuid */
+            replaces: string | null;
+            void: components["schemas"]["TraceVoid"] | null;
+        };
+        TraceInstalled: {
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+            /** @description placement or previous_reading */
+            basis: string;
+            exposure_days: number | null;
+        };
+        TraceLab: {
+            status: string;
+            receipt: components["schemas"]["TraceReceipt"] | null;
+            counts: components["schemas"]["TraceCount"][];
+            rejections: components["schemas"]["TraceRejection"][];
+            recounts: components["schemas"]["TraceRecount"][];
+            wolbachia: components["schemas"]["TraceSample"][];
+        };
+        TraceLocation: {
+            ovitrap: components["schemas"]["TraceCode"];
+            point: components["schemas"]["TracePoint"];
+            block: components["schemas"]["TraceArea"];
+            quadrant: components["schemas"]["TraceArea"];
+            center: components["schemas"]["TraceCenter"];
+        };
+        TracePaddleType: {
+            code: string;
+            label_es: string;
+            label_en: string;
+        };
+        TracePcr: {
+            target: string;
+            outcome: string;
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+        };
+        TracePhoto: {
+            /** Format: uuid */
+            id: string;
+            content_type: string;
+        };
+        TracePoint: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            location: number[];
+            version: number;
+        };
+        TraceReading: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            device_time: string;
+            /** Format: date-time */
+            server_received_at: string;
+            courier: components["schemas"]["TraceActor"] | null;
+            paddle_present: boolean;
+            has_eggs: boolean | null;
+            paddle_type: components["schemas"]["TracePaddleType"] | null;
+            finding_code: string;
+            epi_week: string;
+            is_lagged: boolean;
+            /** Format: date-time */
+            voided_at: string | null;
+            void_reason: string;
+            capture: components["schemas"]["TraceCapture"] | null;
+            photos: components["schemas"]["TracePhoto"][];
+        };
+        TraceReceipt: {
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+        };
+        TraceRecount: {
+            role: string;
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+        };
+        TraceRejection: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+            reason: string;
+            void: components["schemas"]["TraceVoid"] | null;
+        };
+        TraceSample: {
+            sample_code: string;
+            /** Format: date-time */
+            received_at: string | null;
+            results: components["schemas"]["TraceAttempt"][];
+            pcr: components["schemas"]["TracePcr"][];
+        };
+        TraceVoid: {
+            /** Format: date-time */
+            at: string;
+            by: components["schemas"]["TraceActor"] | null;
+            reason_code: string;
+            reason: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -18493,6 +18678,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedBagList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bags_trace_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                bag_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BagTrace"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

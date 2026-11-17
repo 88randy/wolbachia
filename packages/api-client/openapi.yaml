@@ -1081,6 +1081,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/{bag_code}/trace/:
+    get:
+      operationId: bags_trace_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: bag_code
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_.-]{1,50}$
+        required: true
+      tags:
+      - bags
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BagTrace'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/bags/{id}/:
     get:
       operationId: bags_retrieve
@@ -21123,6 +21166,27 @@ components:
       - bag
       type: string
       description: '* `bag` - bag'
+    BagTrace:
+      type: object
+      properties:
+        bag:
+          $ref: '#/components/schemas/TraceCode'
+        reading:
+          $ref: '#/components/schemas/TraceReading'
+        installed:
+          $ref: '#/components/schemas/TraceInstalled'
+        location:
+          $ref: '#/components/schemas/TraceLocation'
+        lab:
+          allOf:
+          - $ref: '#/components/schemas/TraceLab'
+          nullable: true
+      required:
+      - bag
+      - installed
+      - lab
+      - location
+      - reading
     BlankEnum:
       enum:
       - ''
@@ -41671,6 +41735,422 @@ components:
       - refs
       - source_id
       - source_type
+    TraceActor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    TraceArea:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        geometry:
+          nullable: true
+      required:
+      - code
+      - geometry
+      - id
+    TraceAttempt:
+      type: object
+      properties:
+        revision:
+          type: integer
+        status:
+          type: string
+        result:
+          type: string
+          nullable: true
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+      required:
+      - at
+      - by
+      - result
+      - revision
+      - status
+    TraceCapture:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        accuracy_m:
+          type: number
+          format: double
+          nullable: true
+        distance_to_point_m:
+          type: number
+          format: double
+      required:
+      - accuracy_m
+      - distance_to_point_m
+      - lat
+      - lng
+    TraceCenter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    TraceCode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+      required:
+      - code
+      - id
+    TraceCount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ordinal:
+          type: integer
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+        replaces:
+          type: string
+          format: uuid
+          nullable: true
+        void:
+          allOf:
+          - $ref: '#/components/schemas/TraceVoid'
+          nullable: true
+      required:
+      - at
+      - by
+      - id
+      - ordinal
+      - replaces
+      - void
+    TraceInstalled:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+        basis:
+          type: string
+          description: placement or previous_reading
+        exposure_days:
+          type: integer
+          nullable: true
+      required:
+      - at
+      - basis
+      - by
+      - exposure_days
+    TraceLab:
+      type: object
+      properties:
+        status:
+          type: string
+        receipt:
+          allOf:
+          - $ref: '#/components/schemas/TraceReceipt'
+          nullable: true
+        counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceCount'
+        rejections:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceRejection'
+        recounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceRecount'
+        wolbachia:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceSample'
+      required:
+      - counts
+      - receipt
+      - recounts
+      - rejections
+      - status
+      - wolbachia
+    TraceLocation:
+      type: object
+      properties:
+        ovitrap:
+          $ref: '#/components/schemas/TraceCode'
+        point:
+          $ref: '#/components/schemas/TracePoint'
+        block:
+          $ref: '#/components/schemas/TraceArea'
+        quadrant:
+          $ref: '#/components/schemas/TraceArea'
+        center:
+          $ref: '#/components/schemas/TraceCenter'
+      required:
+      - block
+      - center
+      - ovitrap
+      - point
+      - quadrant
+    TracePaddleType:
+      type: object
+      properties:
+        code:
+          type: string
+        label_es:
+          type: string
+        label_en:
+          type: string
+      required:
+      - code
+      - label_en
+      - label_es
+    TracePcr:
+      type: object
+      properties:
+        target:
+          type: string
+        outcome:
+          type: string
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+      required:
+      - at
+      - by
+      - outcome
+      - target
+    TracePhoto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content_type:
+          type: string
+      required:
+      - content_type
+      - id
+    TracePoint:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        location:
+          type: array
+          items:
+            type: number
+            format: double
+          maxItems: 2
+          minItems: 2
+        version:
+          type: integer
+      required:
+      - code
+      - id
+      - location
+      - version
+    TraceReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_time:
+          type: string
+          format: date-time
+        server_received_at:
+          type: string
+          format: date-time
+        courier:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+        paddle_present:
+          type: boolean
+        has_eggs:
+          type: boolean
+          nullable: true
+        paddle_type:
+          allOf:
+          - $ref: '#/components/schemas/TracePaddleType'
+          nullable: true
+        finding_code:
+          type: string
+        epi_week:
+          type: string
+        is_lagged:
+          type: boolean
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        void_reason:
+          type: string
+        capture:
+          allOf:
+          - $ref: '#/components/schemas/TraceCapture'
+          nullable: true
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/TracePhoto'
+      required:
+      - capture
+      - courier
+      - device_time
+      - epi_week
+      - finding_code
+      - has_eggs
+      - id
+      - is_lagged
+      - paddle_present
+      - paddle_type
+      - photos
+      - server_received_at
+      - void_reason
+      - voided_at
+    TraceReceipt:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+      required:
+      - at
+      - by
+    TraceRecount:
+      type: object
+      properties:
+        role:
+          type: string
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+      required:
+      - at
+      - by
+      - role
+    TraceRejection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+        reason:
+          type: string
+        void:
+          allOf:
+          - $ref: '#/components/schemas/TraceVoid'
+          nullable: true
+      required:
+      - at
+      - by
+      - id
+      - reason
+      - void
+    TraceSample:
+      type: object
+      properties:
+        sample_code:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceAttempt'
+        pcr:
+          type: array
+          items:
+            $ref: '#/components/schemas/TracePcr'
+      required:
+      - pcr
+      - received_at
+      - results
+      - sample_code
+    TraceVoid:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        by:
+          allOf:
+          - $ref: '#/components/schemas/TraceActor'
+          nullable: true
+        reason_code:
+          type: string
+        reason:
+          type: string
+      required:
+      - at
+      - by
+      - reason
+      - reason_code
     TrainingRead:
       type: object
       description: |-

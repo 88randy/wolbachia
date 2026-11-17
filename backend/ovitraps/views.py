@@ -16,6 +16,7 @@ from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
 from lab.facade import BagLabActions, ReadingLabActions
 from lab.permissions import BAG_RECEIVE, COUNT_CREATE, RECOUNT_CREATE, REJECTION_CREATE
+from lab.trace_view import BagTraceAction
 from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
 from ovitraps.models import Bag, Ovitrap, OvitrapReading
 from ovitraps.permissions import OVITRAP_READ, READING_READ
@@ -110,7 +111,7 @@ class ReadingViewSet(ReadingLabActions, RecordViewSet):
 
 
 @extend_schema_view(list=extend_schema(parameters=[BagQuerySerializer]))
-class BagViewSet(BagLabActions, RecordViewSet):
+class BagViewSet(BagTraceAction, BagLabActions, RecordViewSet):
     http_method_names = ["get", "post", "head", "options"]
     queryset = Bag.objects.select_related(
         "event", "reading__ovitrap__sampling_point__block__quadrant", "lab_receipt"
@@ -119,6 +120,7 @@ class BagViewSet(BagLabActions, RecordViewSet):
     required_permissions = {
         "list": READING_READ,
         "retrieve": READING_READ,
+        "trace": READING_READ,
         "receive": BAG_RECEIVE,
         "mark_missing": BAG_RECEIVE,
         "counts": COUNT_CREATE,
