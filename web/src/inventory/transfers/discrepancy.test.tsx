@@ -4,6 +4,7 @@ import { expect, test } from "vitest";
 import type { Schemas } from "@wolbachia/api-client";
 import { openInventory, inventoryMe } from "../../test/inventory-api";
 import { inventoryPage, INVENTORY_TIME } from "../../test/inventory-fixtures";
+import "../../test/slow-app-flows";
 
 function caseFixture(): Schemas["Discrepancy"] {
   const transfer: Schemas["Transfer"] = {
@@ -87,21 +88,21 @@ test("a lost close response freezes and retries the exact reviewed resolution wi
     },
   });
   await user.selectOptions(
-    await screen.findByRole("combobox", { name: "Cómo se resolvió esta línea" }),
+    await screen.findByRole("combobox", { name: "¿Cómo se resolvió?" }),
     "ack_missing",
   );
   await user.type(
     screen.getByRole("textbox", { name: "Motivo de la resolución" }),
     "Confirmed missing material",
   );
-  await user.click(screen.getByRole("button", { name: "Revisar y cerrar discrepancia" }));
+  await user.click(screen.getByRole("button", { name: "Resolver" }));
   const dialog = await screen.findByRole("dialog");
   await waitFor(() => {
     expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Cancelar" }));
   });
-  await user.click(within(dialog).getByRole("button", { name: "Confirmar resolución" }));
+  await user.click(within(dialog).getByRole("button", { name: "Sí, resolver" }));
   await user.click(await screen.findByRole("button", { name: "Reintentar la misma resolución" }));
-  await screen.findByText("Resolución registrada en el servidor");
+  await screen.findByText("Resolución registrada");
   const writes = api.requests.filter((request) => request.method === "POST");
   expect(writes).toHaveLength(2);
   expect(writes[1]?.body).toEqual(writes[0]?.body);
@@ -152,7 +153,7 @@ test("a changed scope hides the draft behind a current-read barrier and restores
     },
   });
   await user.selectOptions(
-    await screen.findByRole("combobox", { name: "Cómo se resolvió esta línea" }),
+    await screen.findByRole("combobox", { name: "¿Cómo se resolvió?" }),
     "ack_missing",
   );
   await user.type(
@@ -179,14 +180,14 @@ test("a changed scope hides the draft behind a current-read barrier and restores
     (await screen.findByRole<HTMLInputElement>("textbox", { name: "Motivo de la resolución" }))
       .value,
   ).toBe("Permitted private resolution draft");
-  expect(
-    screen.getByRole<HTMLSelectElement>("combobox", { name: "Cómo se resolvió esta línea" }).value,
-  ).toBe("ack_missing");
+  expect(screen.getByRole("combobox", { name: "¿Cómo se resolvió?" }).textContent).toContain(
+    "Dar por perdido",
+  );
   await user.selectOptions(
-    screen.getByRole("combobox", { name: "Cómo se resolvió esta línea" }),
+    screen.getByRole("combobox", { name: "¿Cómo se resolvió?" }),
     "recover_dest",
   );
-  expect(screen.getByLabelText("Nueva firma de recibido")).toBeDefined();
+  expect(screen.getByRole("img", { name: /^Firma: / })).toBeDefined();
   hasChangedScope = false;
   api.setRoute("GET /api/v1/me/", () =>
     Response.json(inventoryMe({ permissions: ["discrepancy.read", "discrepancy.close"] })),
@@ -198,13 +199,13 @@ test("a changed scope hides the draft behind a current-read barrier and restores
     (await screen.findByRole<HTMLInputElement>("textbox", { name: "Motivo de la resolución" }))
       .value,
   ).toBe("Permitted private resolution draft");
-  expect(screen.queryByLabelText("Nueva firma de recibido")).toBeNull();
+  expect(screen.queryByRole("img", { name: /^Firma: / })).toBeNull();
   await user.selectOptions(
-    screen.getByRole("combobox", { name: "Cómo se resolvió esta línea" }),
+    screen.getByRole("combobox", { name: "¿Cómo se resolvió?" }),
     "ack_missing",
   );
-  expect(
-    screen.getByRole<HTMLSelectElement>("combobox", { name: "Cómo se resolvió esta línea" }).value,
-  ).toBe("ack_missing");
+  expect(screen.getByRole("combobox", { name: "¿Cómo se resolvió?" }).textContent).toContain(
+    "Dar por perdido",
+  );
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
 });
