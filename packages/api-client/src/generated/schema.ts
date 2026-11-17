@@ -16752,7 +16752,7 @@ export interface components {
             planning_proof: {
                 [key: string]: unknown;
             };
-            lines: components["schemas"]["AssignmentLine"][];
+            lines: components["schemas"]["SupplyBundleLine"][];
             lifecycle?: components["schemas"]["AssignmentLifecycle"];
             /** Format: uuid */
             organization_id: string;
@@ -16763,6 +16763,20 @@ export interface components {
             reconciliation: components["schemas"]["SupplyReconciliation"] | null;
             releases: components["schemas"]["SupplyReleaseBundle"][];
             receipts: components["schemas"]["SupplyReceiptBundle"][];
+        };
+        /** @description A courier bundle line also carries the supply name, so the phone never shows a number. */
+        SupplyBundleLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id?: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+            name?: string;
         };
         SupplyCancellation: {
             /** Format: uuid */

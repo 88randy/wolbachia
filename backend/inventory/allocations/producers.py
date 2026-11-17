@@ -19,12 +19,14 @@ from inventory.allocations.selectors import (
     projection_assignments,
     reconciliation_projection,
 )
+from inventory.models import SupplyTypeVersion
 from uploads.access import UploadActor
 
 
 def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
     assignment = prepared_projection(assignment)
     base = assignment_projection(assignment)
+    _name_lines(base)
     releases = []
     versions = cast(list[SupplyAssignmentVersion], assignment._supply_plan_versions)  # type: ignore[attr-defined]
     for release in reversed(versions):
@@ -84,6 +86,21 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
         "releases": releases,
         "receipts": receipts,
     }
+
+
+def _name_lines(base: dict[str, Any]) -> None:
+    """Additive: each line carries the label of its supply version (read-only)."""
+    lines = base["lines"]
+    labels = {
+        str(pk): label
+        for pk, label in SupplyTypeVersion.objects.filter(
+            pk__in={line["unit_version_id"] for line in lines}
+        ).values_list("pk", "label")
+    }
+    for line in lines:
+        label = labels.get(str(line["unit_version_id"]))
+        if label:
+            line["name"] = label
 
 
 def build_supplies(ctx: ProducerContext) -> list[dict[str, Any]]:

@@ -40761,7 +40761,7 @@ components:
         lines:
           type: array
           items:
-            $ref: '#/components/schemas/AssignmentLine'
+            $ref: '#/components/schemas/SupplyBundleLine'
         lifecycle:
           $ref: '#/components/schemas/AssignmentLifecycle'
         organization_id:
@@ -40802,6 +40802,35 @@ components:
       - revision
       - shift_id
       - version_id
+    SupplyBundleLine:
+      type: object
+      description: A courier bundle line also carries the supply name, so the phone
+        never shows a number.
+      properties:
+        id:
+          type: string
+          format: uuid
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        name:
+          type: string
+      required:
+      - id
+      - lot_id
+      - quantity
+      - unit_version_id
     SupplyCancellation:
       type: object
       properties:

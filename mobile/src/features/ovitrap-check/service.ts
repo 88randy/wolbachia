@@ -595,11 +595,13 @@ export class OvitrapService {
       ...this.#deps.store.commitStatements(draft, version),
       ...((await this.#deps.evidenceBindings?.(draft)) ?? []),
     ];
-    if (!draft.replacesEventId) return this.#deps.engine.enqueue(event, statements);
-    await this.#deps.engine.enqueue(voidEvent(draft), [
-      eventInsertStatement(event, draft.deviceTime),
-      ...statements,
-    ]);
+    const options = { isLateCapture: draft.isLate === true };
+    if (!draft.replacesEventId) return this.#deps.engine.enqueue(event, statements, options);
+    await this.#deps.engine.enqueue(
+      voidEvent(draft),
+      [eventInsertStatement(event, draft.deviceTime, options), ...statements],
+      options,
+    );
   }
 }
 

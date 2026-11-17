@@ -12,6 +12,8 @@ export interface ScannerResource {
   readonly kind: QrKind;
   readonly id: string;
   readonly code: string | null;
+  /** The label code printed large on an ovitrap (`OVT-0001`); typed by hand when the QR fails. */
+  readonly shortCode?: string | null;
   readonly isRetired?: boolean;
   readonly supply?: {
     readonly assignmentId: string;
@@ -34,8 +36,9 @@ async function resolveOvitrap(turn: LifecycleSourceTurn, id: string) {
 
 async function ovitrapResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
   const rows = await turn.write(() =>
-    db.query(`SELECT id FROM lifecycle_courier_projection WHERE kind='ovitrap'
-      UNION SELECT json_extract(draft,'$.replacementId') AS id FROM lifecycle_capture
+    db.query(`SELECT id, json_extract(body,'$.code') AS short_code FROM lifecycle_courier_projection
+      WHERE kind='ovitrap'
+      UNION SELECT json_extract(draft,'$.replacementId') AS id, NULL AS short_code FROM lifecycle_capture
       WHERE kind='replace' AND json_extract(draft,'$.replacementId') IS NOT NULL ORDER BY id`),
   );
   const resources: ScannerResource[] = [];
@@ -46,6 +49,7 @@ async function ovitrapResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
         kind: "ovitrap",
         id: source.physical.id,
         code: source.point.code,
+        shortCode: typeof row.short_code === "string" ? row.short_code : null,
         isRetired: source.isRetired,
       });
   }

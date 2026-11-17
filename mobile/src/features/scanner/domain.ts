@@ -1,5 +1,6 @@
 import { parseQr } from "../ovitrap-check/domain.ts";
 import type { QrKind } from "../ovitrap-check/types.ts";
+import { normalizeLabelCode } from "../ovitrap-check/label-pool.ts";
 import type { ScannerResource } from "./resource-source.ts";
 
 const HUMAN_CODE_MAX_LENGTH = 50;
@@ -47,10 +48,17 @@ function resolveManual(input: ScannerInput, resources: readonly ScannerResource[
     return { error: "invalid" };
   return chooseResource(
     resources.filter(
-      (resource) => resource.code === code && (!input.expected || resource.kind === input.expected),
+      (resource) =>
+        (resource.code === code || isSameShortCode(resource.shortCode, code)) &&
+        (!input.expected || resource.kind === input.expected),
     ),
     true,
   );
+}
+/** `ovt1`, `OVT-01` and `OVT-0001` are the same printed label. */
+function isSameShortCode(shortCode: string | null | undefined, typed: string): boolean {
+  const normalized = normalizeLabelCode(typed);
+  return normalized !== null && !!shortCode && normalizeLabelCode(shortCode) === normalized;
 }
 function chooseResource(
   matches: readonly ScannerResource[],

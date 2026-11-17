@@ -1,12 +1,13 @@
 import { ArrowRight, Navigation } from "lucide-react-native";
 import { View } from "react-native";
-import { useT } from "../../i18n/I18nProvider.tsx";
+import { useLocale, useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Badge } from "../../ui/Badge.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { kitShadow } from "../../ui/kit-styles.ts";
 import { hasCoordinates } from "./assignment-parser.ts";
+import { distanceMessage } from "./format-distance.ts";
 import type { DayTask } from "./domain.ts";
 import { displayPointCode } from "./point-code.ts";
 import { ACTION_KEYS, markerState } from "./presentation.ts";
@@ -22,6 +23,8 @@ interface Props {
 /** One point of the route: what to do, its state, how far it is, and the two things you can do. */
 export function RouteCard({ row, isActing, navigationFailed, onDirections, onStart }: Props) {
   const t = useT();
+  const locale = useLocale();
+  const distance = row.distanceM === null ? null : distanceMessage(row.distanceM, locale);
   const state = markerState(row);
   const isDone = row.completion === "complete";
   return (
@@ -34,10 +37,8 @@ export function RouteCard({ row, isActing, navigationFailed, onDirections, onSta
           <AppText variant="bodyStrong" tone="secondary">
             {t(ACTION_KEYS[row.task.action])}
           </AppText>
-          {row.distanceM === null ? null : (
-            <AppText tone="secondary">
-              {t("field.day.distance", { meters: Math.round(row.distanceM) })}
-            </AppText>
+          {distance === null ? null : (
+            <AppText tone="secondary">{t(distance.key, distance.params)}</AppText>
           )}
         </View>
         <Badge tone={state.tone} icon={state.icon} label={t(state.key)} />

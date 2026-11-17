@@ -86,7 +86,11 @@ export class ScannerService {
     if (!isCurrent()) return { error: "unavailable" };
     if (result === "read") return { route: { name: "ovitrapCapture" } };
     if (result === "used") {
-      const pointCode = await this.#deps.ovitrap.usedPointCode(input.value, input.isManual, eventId);
+      const pointCode = await this.#deps.ovitrap.usedPointCode(
+        input.value,
+        input.isManual,
+        eventId,
+      );
       return { error: "labelUsed", pointCode };
     }
     return { error: result === "unknown" ? "labelUnknown" : "invalid" };

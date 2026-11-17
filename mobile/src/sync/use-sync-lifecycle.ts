@@ -4,12 +4,13 @@ import { AppState } from "react-native";
 
 import { observeSyncSession } from "./observe-sync-session.ts";
 import { observeConnectivity } from "./connectivity.ts";
+import { IDLE_SYNC_GAP_MS } from "./idle-gap.ts";
 
 import { useServices } from "../app/services-context.ts";
 import { throttleRefresh } from "../features/day/refresh-throttle.ts";
 
-/** [ASSUMPTION] Technical spacing between foreground-triggered passes. */
-const FOREGROUND_SYNC_GAP_MS = 30_000;
+/** Foreground returns (prompts, the camera, notifications) obey the idle gap. */
+const FOREGROUND_SYNC_GAP_MS = IDLE_SYNC_GAP_MS;
 
 /**
  * Starts the sync engine and keeps it informed: connectivity changes, the app coming back to the

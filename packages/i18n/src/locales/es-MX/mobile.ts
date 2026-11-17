@@ -754,6 +754,11 @@ export const mobile = {
   "mobile.storage.saveFailed":
     "No se pudo guardar en el teléfono. Libera espacio e inténtalo de nuevo; nada se envió.",
 
+  "mobile.storage.unexpected":
+    "No se pudo guardar esta vez. Cierra y abre la app e inténtalo de nuevo; tus datos siguen en el teléfono.",
+  "mobile.storage.shiftClosed":
+    "Esa captura es de después de cerrar el turno y no se puede guardar. Empieza una captura nueva.",
+
   "mobile.storage.actionFailed":
     "No se pudo actualizar el almacenamiento del teléfono. Libera espacio e inténtalo de nuevo; tus registros siguen guardados.",
 

@@ -49,5 +49,5 @@ export function formatInboxTime(
     month: "2-digit",
     day: "2-digit",
   }).format(date);
-  return `${day} ? ${moment.clock}`;
+  return `${day} \u00b7 ${moment.clock}`;
 }

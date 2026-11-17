@@ -1,6 +1,7 @@
 import type { SqlExecutor, SqlStatement } from "../db/sql.ts";
 import { readInteger, readText } from "../db/sql.ts";
 import { EvidenceError, ownerKey } from "./types.ts";
+import { IDLE_SYNC_GAP_MS } from "../sync/idle-gap.ts";
 import { RETAINED_PROJECTION_KINDS } from "../features/ovitrap-lifecycle/context-sql.ts";
 import type { EvidenceFence, EvidenceOwner, OwnedEvidence, StoredEvidence } from "./types.ts";
 
@@ -199,12 +200,16 @@ export class AttachmentStore {
     if (!rows.length) throw new EvidenceError("stale_attempt");
   }
 
+  /**
+   * When the next file needs a pass: its own retry time after a failure, or the idle gap for a file
+   * that is only waiting (never "now": that would start a pass every few seconds while idle).
+   */
   async nextRetryDelayMs(now: number): Promise<number | null> {
     const [row] = await this.db.query(
       `SELECT MIN(COALESCE(f.retry_at,?)) AS due FROM ${FILE_PARENT} JOIN attachment_context c
       ON c.owner_key=f.owner_key AND c.is_active=1 WHERE ${NEEDS_TRANSPORT} AND f.metadata IS NOT NULL
       AND e.local_status<>'rejected'`,
-      [new Date(now).toISOString()],
+      [new Date(now + IDLE_SYNC_GAP_MS).toISOString()],
     );
     return typeof row?.due === "string" ? Math.max(0, Date.parse(row.due) - now) : null;
   }

@@ -593,7 +593,14 @@ class SupplyReceiptBundleSerializer(serializers.Serializer[Any]):
     lines = ActualSupplyLineSerializer(many=True)
 
 
+class SupplyBundleLineSerializer(AssignmentLineSerializer):
+    """A courier bundle line also carries the supply name, so the phone never shows a number."""
+
+    name = serializers.CharField(required=False)
+
+
 class SupplyBundleSerializer(SupplyAssignmentReadSerializer):
+    lines = SupplyBundleLineSerializer(many=True)
     organization_id = serializers.UUIDField()
     center_id = serializers.UUIDField()
     quadrant_id = serializers.UUIDField(allow_null=True)

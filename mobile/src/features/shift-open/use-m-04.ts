@@ -2,6 +2,7 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServices } from "../../app/services-context.ts";
 import { OutboxWriteError } from "../../outbox/outbox-repository.ts";
+import { writeErrorKey } from "../../outbox/write-error-key.ts";
 import { DraftBuffer } from "./draft-buffer.ts";
 import type { DraftPatch } from "./draft-buffer.ts";
 import type { ShiftOpenService, ShiftSnapshot } from "./service.ts";
@@ -90,9 +91,7 @@ function useShiftActions(buffer: DraftBuffer, refresh: () => Promise<void>) {
         return true;
       } catch (error) {
         setError(
-          error instanceof OutboxWriteError
-            ? "mobile.storage.saveFailed"
-            : "mobile.storage.actionFailed",
+          error instanceof OutboxWriteError ? writeErrorKey(error) : "mobile.storage.actionFailed",
         );
         return false;
       } finally {

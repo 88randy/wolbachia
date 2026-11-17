@@ -735,6 +735,11 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.storage.saveFailed":
     "It could not be saved on the phone. Free up space and try again; nothing was sent.",
 
+  "mobile.storage.unexpected":
+    "It could not be saved this time. Close and open the app and try again; your data is still on the phone.",
+  "mobile.storage.shiftClosed":
+    "That capture is from after the shift closed and cannot be saved. Start a new capture.",
+
   "mobile.storage.actionFailed":
     "The phone storage could not be updated. Free up space and try again; your records are still saved.",
 

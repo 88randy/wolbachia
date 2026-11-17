@@ -119,7 +119,13 @@ void test("M07 local resources retain actual supply pins and exclude foreign or 
       error: "unavailable",
     });
   assert.deepEqual(resources, [
-    { kind: "ovitrap", id: PROJECTION_TRAP.id, code: PROJECTION_POINT.code, isRetired: false },
+    {
+      kind: "ovitrap",
+      id: PROJECTION_TRAP.id,
+      code: PROJECTION_POINT.code,
+      shortCode: null,
+      isRetired: false,
+    },
     {
       kind: "lot",
       id: id(5),
