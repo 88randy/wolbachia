@@ -2,6 +2,7 @@ import type { SqlExecutor, SqlRow, SqlStatement, SqlValue } from "../db/sql.ts";
 import { eligibleClaim, eligibleRetry } from "../attachments/evidence-eligibility.ts";
 import type { EvidenceSelection } from "../attachments/evidence-eligibility.ts";
 import { readInteger } from "../db/sql.ts";
+import { describeWriteFailure, diagnostics } from "../features/diagnostics/diagnostic-log.ts";
 import {
   readResult,
   readStatus,
@@ -46,10 +47,14 @@ function writeReason(cause: unknown): OutboxWriteReason {
 /** The write failed. The event was NOT saved; `reason` says why (never assume the phone is full). */
 export class OutboxWriteError extends Error {
   readonly reason: OutboxWriteReason;
-  constructor(cause: unknown) {
+  /** Technical line (class, SQLite code, table.column, statement); never values. */
+  readonly diagnostic: string;
+  constructor(cause: unknown, statements: readonly SqlStatement[] = []) {
     super("The event could not be saved on the phone.", { cause });
     this.name = "OutboxWriteError";
     this.reason = writeReason(cause);
+    this.diagnostic = describeWriteFailure(cause, statements);
+    diagnostics.record(this.diagnostic);
   }
 }
 
@@ -132,13 +137,11 @@ export class OutboxRepository {
     extra: readonly SqlStatement[] = [],
     options: InsertOptions = {},
   ): Promise<void> {
+    const statements = [eventInsertStatement(event, this.#now().toISOString(), options), ...extra];
     try {
-      await this.#db.runAtomically([
-        eventInsertStatement(event, this.#now().toISOString(), options),
-        ...extra,
-      ]);
+      await this.#db.runAtomically(statements);
     } catch (error) {
-      throw new OutboxWriteError(error);
+      throw new OutboxWriteError(error, statements);
     }
   }
 

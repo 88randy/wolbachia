@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSafety } from "../safety/SafetyProvider.tsx";
-import { locationStatus } from "./location-status.ts";
+import { locationStatus, storedLocationStatus } from "./location-status.ts";
 import type { LocationStatus } from "./location-status.ts";
 import type { CaptureProps } from "./model.ts";
 
@@ -10,7 +10,8 @@ const STAMPED = new Set<string>();
 export function useDraftLocation({ model, draft }: CaptureProps): LocationStatus {
   const { location } = useSafety();
   const { run, service } = model;
-  const hasFix = location.kind === "granted";
+  const isStored = draft.isLate === true;
+  const hasFix = location.kind === "granted" && !isStored;
   useEffect(() => {
     // The position saved when the draft started may be old: take the live one once per draft and
     // app run, so this step and the review step tell the same story.
@@ -18,5 +19,5 @@ export function useDraftLocation({ model, draft }: CaptureProps): LocationStatus
     STAMPED.add(draft.eventId);
     void run(() => service.refreshGps(draft.eventId), { eventId: draft.eventId });
   }, [hasFix, draft.gps, draft.eventId, run, service]);
-  return locationStatus(location);
+  return isStored ? storedLocationStatus(draft.gps ?? null) : locationStatus(location);
 }

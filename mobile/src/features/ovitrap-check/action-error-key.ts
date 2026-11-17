@@ -1,6 +1,5 @@
 import { StaleCaptureError, ConcurrentCaptureError } from "./capture-identity.ts";
 import type { MessageKey } from "@wolbachia/i18n";
-import { OutboxWriteError } from "../../outbox/outbox-repository.ts";
 import { writeErrorKey } from "../../outbox/write-error-key.ts";
 import { CaptureBlockedError, CatalogChangedError, PendingDraftError } from "./ports.ts";
 import { ImmutableCaptureError } from "./draft-buffer.ts";
@@ -49,5 +48,5 @@ export function actionErrorKey(error: unknown): MessageKey {
   if (error instanceof ImmutableCaptureError) return "mobile.ovitrap.immutableEdit";
   if (error instanceof PendingDraftError) return "mobile.ovitrap.pendingDraft";
   if (error instanceof CatalogChangedError) return "mobile.ovitrap.catalogChanged";
-  return error instanceof OutboxWriteError ? writeErrorKey(error) : "mobile.storage.unexpected";
+  return writeErrorKey(error);
 }

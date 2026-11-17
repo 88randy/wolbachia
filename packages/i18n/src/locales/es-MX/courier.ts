@@ -54,6 +54,12 @@ export const courier = {
   "courier.tile.lockedClosed": "Abre una jornada para usarlo.",
   "courier.tile.closeDayDone": "Tu jornada ya está cerrada.",
   "courier.help.title": "Ayuda",
+  "courier.help.diagnostics": "Información técnica",
+  "courier.diagnostics.title": "Información técnica",
+  "courier.diagnostics.hint":
+    "Si algo falla, muéstrale estas líneas a soporte. No incluyen tus datos.",
+  "courier.diagnostics.empty": "Todavía no hay errores guardados.",
+  "courier.diagnostics.reveal": "Información técnica (mantén presionado)",
   "courier.help.subtitle": "¿Qué necesitas?",
   "courier.help.emergency": "Emergencia",
   "courier.help.emergencyHint": "Pide ayuda de inmediato",

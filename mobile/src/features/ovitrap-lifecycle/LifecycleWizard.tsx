@@ -1,4 +1,5 @@
 import { ArrowRight, Save } from "lucide-react-native";
+import { DiagnosticLine } from "../diagnostics/DiagnosticLine.tsx";
 import { useState } from "react";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
@@ -87,6 +88,7 @@ export function LifecycleWizard(props: LifecycleProps) {
       }
     >
       {model.errorKey ? <InfoNotice tone="danger" message={t("field.lifecycle.problem")} /> : null}
+      <DiagnosticLine errorKey={model.errorKey} />
       <PageBody page={page} {...props} />
       <RemoveSheet
         isOpen={save.isOpen}

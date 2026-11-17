@@ -13,3 +13,13 @@ export function locationStatus(state: LocationState): LocationStatus {
     return { kind: "missing" };
   return { kind: "searching", accuracyM: state.kind === "stale" ? state.fix.accuracy_m : null };
 }
+
+/**
+ * A draft finished late (its shift closed, nothing open now) keeps the position it was made with:
+ * the live stream says nothing about where the trap was, so never wait for it.
+ */
+export function storedLocationStatus(
+  gps: { readonly accuracy_m?: number | null } | null,
+): LocationStatus {
+  return gps === null ? { kind: "missing" } : { kind: "ready", accuracyM: gps.accuracy_m ?? null };
+}

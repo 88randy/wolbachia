@@ -3,4 +3,5 @@
  * kept in alphabetical order so parallel branches merge without conflicts.
  */
 import "../features/community/screens.ts";
+import "../features/diagnostics/screens.ts";
 import "../features/help/screens.ts";

@@ -55,6 +55,12 @@ export const courier = {
   "courier.tile.closeDayDone": "Your shift is already closed.",
   "courier.tile.lockedBlocked": "Fix the notice above first",
   "courier.help.title": "Help",
+  "courier.help.diagnostics": "Technical information",
+  "courier.diagnostics.title": "Technical information",
+  "courier.diagnostics.hint":
+    "If something fails, show these lines to support. They do not include your data.",
+  "courier.diagnostics.empty": "No errors saved yet.",
+  "courier.diagnostics.reveal": "Technical information (press and hold)",
   "courier.help.subtitle": "What do you need?",
   "courier.help.emergency": "Emergency",
   "courier.help.emergencyHint": "Get help right away",
