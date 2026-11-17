@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { LABEL_KIND_SPECS, OVITRAP_LABEL_MINT_PERMISSION } from "../../labels/label-kinds";
 import type { LabelKind } from "../../labels/label-kinds";
 import type { LabelSource } from "../../labels/label-records";
+import { useCan } from "../../session/use-can";
 import { useInventoryContext } from "../use-inventory-context";
 import { labelItemsOptions } from "./label-query";
+import { unplacedOvitrapLabelsOptions } from "./ovitrap-label-query";
+import { useNewOvitrapLabels } from "./use-new-ovitrap-labels";
 
 const SEARCH_DELAY_MS = 300;
 
@@ -38,6 +42,17 @@ function visibleSources(kind: LabelKind, loaded: readonly LabelSource[], search:
   const needle = search.trim().toLowerCase();
   if (!needle) return sources;
   return sources.filter((source) => codeOf(source).toLowerCase().includes(needle));
+}
+
+/** Registered stickers with no ovitrap yet (people with the label permission only), by code. */
+function useUnplacedLabels(isEnabled: boolean, search: string): LabelSource[] {
+  const scope = useInventoryContext();
+  const query = useQuery(unplacedOvitrapLabelsOptions(scope, isEnabled));
+  if (!isEnabled) return [];
+  const needle = search.trim().toLowerCase();
+  return (query.data ?? [])
+    .filter((row) => !needle || row.code.toLowerCase().includes(needle))
+    .map((row): LabelSource => ({ kind: "ovitrap_label", row }));
 }
 
 /** Ticked records survive searches; the dialog prints exactly these. */
@@ -81,29 +96,33 @@ function useDeepLinkTick(start: LabelPickerStart, add: (sources: readonly LabelS
   }, [isDone, found, add]);
 }
 
+/** The records of one kind: placed ones from the server, plus the unplaced stickers to mint. */
+function useKindSources(kind: LabelKind, search: string, debounced: string) {
+  const scope = useInventoryContext();
+  const can = useCan();
+  // Who may only register stickers sees the unplaced ones, not the placed ovitraps.
+  const canReadPlaced = can(LABEL_KIND_SPECS[kind].permission);
+  const placed = labelItemsOptions(scope, { kind, search: debounced.trim() });
+  const query = useQuery({ ...placed, enabled: placed.enabled && canReadPlaced });
+  const canMint = can(OVITRAP_LABEL_MINT_PERMISSION) && kind === "ovitrap";
+  const unplaced = useUnplacedLabels(canMint, search);
+  const items = [...unplaced, ...visibleSources(kind, query.data?.sources ?? [], search)];
+  return { query, items, canMint, canReadPlaced };
+}
+
 /** State of the W19 screen: kind, search and the ticked records. */
 export function useLabelPicker(start: LabelPickerStart) {
-  const scope = useInventoryContext();
   const [kind, setKind] = useState<LabelKind>(start.kind);
   const [search, setSearch] = useState(start.code ?? "");
-  const debounced = useDebounced(search);
-  const query = useQuery(labelItemsOptions(scope, { kind, search: debounced.trim() }));
-  const items = visibleSources(kind, query.data?.sources ?? [], search);
-  const ticked = useTicked(items);
+  const sources = useKindSources(kind, search, useDebounced(search));
+  const ticked = useTicked(sources.items);
+  const newLabels = useNewOvitrapLabels(ticked.add);
   useDeepLinkTick(start, ticked.add);
   const chooseKind = (next: LabelKind) => {
     setKind(next);
     setSearch("");
     ticked.clear();
   };
-  return {
-    kind,
-    chooseKind,
-    search,
-    setSearch,
-    items,
-    total: query.data?.count ?? 0,
-    query,
-    ...ticked,
-  };
+  const total = sources.query.data?.count ?? 0;
+  return { kind, chooseKind, search, setSearch, total, newLabels, ...sources, ...ticked };
 }

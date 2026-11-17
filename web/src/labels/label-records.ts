@@ -85,6 +85,11 @@ export function ovitrapLabel(
   };
 }
 
+/** A registered sticker whose ovitrap is not placed yet: the QR carries its id, the label its code. */
+export function newOvitrapLabel(label: Pick<Schemas["OvitrapLabel"], "id" | "code">): LabelRecord {
+  return { kind: "ovitrap", id: label.id, code: label.code, lines: [] };
+}
+
 /** Egg paddle: only its code. */
 export function paddleLabel(paddle: Pick<Schemas["Paddle"], "id" | "code">): LabelRecord {
   return { kind: "paddle", id: paddle.id, code: paddle.code, lines: [] };
@@ -96,6 +101,7 @@ export type LabelSource =
   | { kind: "bag"; row: Schemas["Bag"] }
   | { kind: "paddle"; row: Schemas["Paddle"] }
   | { kind: "ovitrap"; row: Schemas["Ovitrap"] }
+  | { kind: "ovitrap_label"; row: Schemas["OvitrapLabel"] }
   | { kind: "motorcycle"; row: Schemas["Motorcycle"] }
   | { kind: "location"; row: Schemas["Location"] };
 
@@ -110,6 +116,8 @@ export function toLabelRecord(source: LabelSource, text: LabelText): LabelRecord
       return paddleLabel(source.row);
     case "ovitrap":
       return ovitrapLabel(source.row, text);
+    case "ovitrap_label":
+      return newOvitrapLabel(source.row);
     case "motorcycle":
       return motorcycleLabel(source.row, text);
     case "location":

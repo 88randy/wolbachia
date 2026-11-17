@@ -97,8 +97,14 @@ def test_the_database_refuses_a_repeated_code_in_one_organization(field):
 # --- label endpoints ------------------------------------------------------------------------
 
 
+def allow_minting(field):
+    field.profile.permission_codes = [*field.profile.permission_codes, "lot.create"]
+    field.profile.save()
+
+
 @pytest.mark.django_db
 def test_minting_returns_consecutive_codes_and_uuids(field, api_client):
+    allow_minting(field)
     api_client.force_authenticate(field.batch.user)
 
     response = api_client.post("/api/v1/ovitrap-labels/", {"count": 3}, format="json")
@@ -113,6 +119,7 @@ def test_minting_returns_consecutive_codes_and_uuids(field, api_client):
 @pytest.mark.django_db
 @pytest.mark.parametrize("count", [0, 201, -1, "x", None])
 def test_minting_rejects_a_bad_count(field, api_client, count):
+    allow_minting(field)
     api_client.force_authenticate(field.batch.user)
 
     response = api_client.post("/api/v1/ovitrap-labels/", {"count": count}, format="json")
@@ -129,6 +136,35 @@ def test_minting_needs_a_permission(field, api_client):
     assert (
         api_client.post("/api/v1/ovitrap-labels/", {"count": 1}, format="json").status_code == 403
     )
+    assert api_client.get("/api/v1/ovitrap-labels/unplaced/").status_code == 403
+
+
+@pytest.mark.django_db
+def test_reading_ovitraps_is_not_enough_to_mint_labels(field, api_client):
+    # `ovitrap.read` is in every read-only profile; minting writes records.
+    api_client.force_authenticate(field.batch.user)
+
+    response = api_client.post("/api/v1/ovitrap-labels/", {"count": 1}, format="json")
+
+    assert response.status_code == 403
+    assert not OvitrapLabel.objects.exists()
+
+
+@pytest.mark.django_db
+def test_listing_labels_returns_only_unplaced_ones_of_the_organization(field, api_client):
+    allow_minting(field)
+    organization, user = field.batch.organization, field.batch.user
+    placed, free = mint_labels(organization, user, 2)
+    mint_labels(OrganizationFactory(), user, 1)
+    place(field, identity=placed.client_uuid)
+    api_client.force_authenticate(user)
+
+    response = api_client.get("/api/v1/ovitrap-labels/unplaced/")
+
+    assert response.status_code == 200, response.data
+    assert [(row["id"], row["code"]) for row in response.data["labels"]] == [
+        (str(free.client_uuid), free.code)
+    ]
 
 
 def allow_bootstrap(field):

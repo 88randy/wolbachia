@@ -33,12 +33,10 @@ def _set_mode(organization, value):
     )
 
 
-def _signed_release(allocation):  # noqa: F811
-    """Void the unsigned release (no stock moved), then release the same plan with a signature."""
+def _cancel_release(allocation, release_id):  # noqa: F811
+    """The warehouse cancels a release (no stock moved)."""
     from inventory.allocations.commands import IntentExecution
     from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
-    from tests.test_inventory_transfers_106 import verified_upload
-    from uploads.models import AttachmentLink, Upload
 
     actor = allocation.context.actor
     cancel = prepare_inventory_intent(
@@ -46,7 +44,7 @@ def _signed_release(allocation):  # noqa: F811
         {
             "command_id": uuid4(),
             "kind": "release_cancel",
-            "release_id": allocation.release_id,
+            "release_id": release_id,
             "expected_revision": 1,
             "evidence": [],
             "reason_code": "other",
@@ -59,6 +57,17 @@ def _signed_release(allocation):  # noqa: F811
             UUID(cancel.body["intent"]["id"]), "release_cancel", allocation.assignment_id
         ),
     )
+
+
+def _signed_release(allocation):  # noqa: F811
+    """Void the unsigned release (no stock moved), then release the same plan with a signature."""
+    from inventory.allocations.commands import IntentExecution
+    from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
+    from tests.test_inventory_transfers_106 import verified_upload
+    from uploads.models import AttachmentLink, Upload
+
+    actor = allocation.context.actor
+    _cancel_release(allocation, allocation.release_id)
     upload = verified_upload(actor)
     prepared = prepare_inventory_intent(
         actor,
@@ -186,4 +195,42 @@ def test_the_database_refuses_an_unsigned_receipt_unless_the_release_holds_a_war
     response = allocation.phone.sync([capture])
     # The trigger aborts the batch (an impossible state, so no event code exists for it).
     assert response.status_code == 500
+    assert not SupplyReceipt.objects.exists()
+
+
+@pytest.mark.django_db
+def test_a_receipt_for_a_release_the_warehouse_cancelled_waits_for_review(
+    allocation,  # noqa: F811
+    void_catalog,
+):
+    """The phone still holds a cancelled release (the warehouse cancelled and released again):
+    its quantities are no longer backed, a real `supply_state_conflict` and not a signature bug.
+    """
+    from inventory.allocations.models import OriginReleaseLine, SupplyReceipt
+    from tests.sync_support import event
+
+    stale_release = _release_again_with_warehouse_signature(allocation)
+    _cancel_release(allocation, stale_release)
+    release_line = OriginReleaseLine.objects.get(release_id=stale_release)
+    capture = event(
+        type="supplies.receive",
+        shift_id=str(allocation.shift_id),
+        payload={
+            "command_id": str(uuid4()),
+            "assignment_id": str(allocation.assignment_id),
+            "expected_revision": 0,
+            "plan_revision": 1,
+            "release_id": str(stale_release),
+            "signature_upload_id": None,
+            "actual_lines": [
+                {"id": str(uuid4()), "release_line_id": str(release_line.pk), "quantity": "8"}
+            ],
+            "discrepancies": [],
+        },
+    )
+
+    result = allocation.phone.sync([capture]).data["results"][0]
+
+    assert result["status"] == "in_review"
+    assert "supply_state_conflict" in str(result)
     assert not SupplyReceipt.objects.exists()

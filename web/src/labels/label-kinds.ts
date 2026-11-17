@@ -38,7 +38,23 @@ export const LABEL_KIND_SPECS: Record<LabelKind, LabelKindSpec> = {
   },
 };
 
-export const LABEL_PERMISSIONS = LABEL_KINDS.map((kind) => LABEL_KIND_SPECS[kind].permission);
+/** Registering new ovitrap stickers is an inventory write: the backend asks for this permission. */
+export const OVITRAP_LABEL_MINT_PERMISSION = "lot.create";
+/** Most stickers one request may register (the backend refuses more). */
+export const MAX_NEW_OVITRAP_LABELS = 200;
+
+export const LABEL_PERMISSIONS = [
+  ...LABEL_KINDS.map((kind) => LABEL_KIND_SPECS[kind].permission),
+  OVITRAP_LABEL_MINT_PERMISSION,
+];
+
+/** Ovitrap labels can also be printed by who registers them, without reading placed ovitraps. */
+export function canPrintKind(can: (permission: string) => boolean, kind: LabelKind): boolean {
+  return (
+    can(LABEL_KIND_SPECS[kind].permission) ||
+    (kind === "ovitrap" && can(OVITRAP_LABEL_MINT_PERMISSION))
+  );
+}
 
 export function isLabelKind(value: unknown): value is LabelKind {
   return typeof value === "string" && (LABEL_KINDS as readonly string[]).includes(value);

@@ -4261,8 +4261,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description `POST /ovitrap-labels/`: register `count` new stickers (uuid + `OVT-0001` code). */
+        /**
+         * @description `POST /ovitrap-labels/` registers `count` new stickers (uuid + `OVT-0001` code);
+         *     `GET /ovitrap-labels/unplaced/` lists the unplaced ones so they can be printed again.
+         */
         post: operations["ovitrap_labels_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ovitrap-labels/unplaced/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `POST /ovitrap-labels/` registers `count` new stickers (uuid + `OVT-0001` code);
+         *     `GET /ovitrap-labels/unplaced/` lists the unplaced ones so they can be printed again.
+         */
+        get: operations["ovitrap_labels_unplaced_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -25591,6 +25614,37 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvitrapLabelPool"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ovitrap_labels_unplaced_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
