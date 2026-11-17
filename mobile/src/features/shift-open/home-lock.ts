@@ -13,6 +13,10 @@ export function homeLock(state: ShiftSnapshot | null): HomeLock {
   return state.gate === null ? { kind: "none" } : { kind: "blocked", gate: state.gate };
 }
 
+export function isClosedLock(lock: HomeLock): boolean {
+  return lock.kind === "blocked" && lock.gate === "closed";
+}
+
 /** One plain sentence with the real single reason, or null when nothing is locked. */
 export function lockReasonKey(lock: HomeLock): MessageKey | null {
   if (lock.kind === "none") return null;

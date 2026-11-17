@@ -54,7 +54,9 @@ export function useHomeNext(model: M04Model): HomeNextModel {
       push({ name: "day" });
     },
     loading: null,
-    closed: null,
+    closed: () => {
+      startOpening(false);
+    },
   };
   return { next, go: actions[next], reasonKey: blockedReason(next, model) };
 }

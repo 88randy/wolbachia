@@ -101,6 +101,11 @@ export class ShiftOpenService {
     return this.#write(async () => {
       const state = await this.#deps.store.read();
       if (state.draft === null) await this.#deps.store.createDraft(await this.#newDraft());
+      else if (state.opening && (await this.#deps.store.readGateFacts()).locallyClosedAt)
+        await this.#deps.store.replaceClosedDraft(
+          await this.#newDraft(),
+          state.opening.envelope.id,
+        );
       return this.read();
     });
   }

@@ -1,5 +1,6 @@
 import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
 import { homeLock } from "./home-lock.ts";
+import { UnfinishedNotice } from "../ovitrap-check/UnfinishedNotice.tsx";
 import { HomeNextCard } from "./HomeNextCard.tsx";
 import { HomeShiftDetails } from "./HomeShiftDetails.tsx";
 import { HomeTiles } from "./HomeTiles.tsx";
@@ -11,11 +12,16 @@ import { useM04 } from "./use-m-04.ts";
 export function P3Screen() {
   const model = useM04();
   const next = useHomeNext(model);
-  const hasShift = Boolean(model.state?.opening && model.state.opening.status !== "rejected");
+  const hasShift = Boolean(
+    model.state?.opening &&
+    model.state.opening.status !== "rejected" &&
+    !model.state.locallyClosedAt,
+  );
   return (
     <>
       <SaveFeedback model={model} />
       <HomeNextCard model={next} isBusy={model.isBusy || model.state === null} />
+      <UnfinishedNotice />
       {model.state?.opening ? <HomeShiftDetails state={model.state} /> : null}
       <HomeTiles
         canCapture={Boolean(captureShiftId(model.state))}

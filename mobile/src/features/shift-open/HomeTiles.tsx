@@ -22,7 +22,7 @@ import { ActionGrid } from "../../ui/ActionGrid.tsx";
 import type { ActionTileTone } from "../../ui/ActionTile.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
-import { lockReasonKey } from "./home-lock.ts";
+import { isClosedLock, lockReasonKey } from "./home-lock.ts";
 import type { HomeLock } from "./home-lock.ts";
 
 interface HomeTilesProps {
@@ -93,7 +93,9 @@ const COMMUNITY_TILE: TileSpec = {
 
 /** One short line under a disabled tile: what is missing, in plain words. */
 function lockedHintKey(gate: Gate, lock: HomeLock): MessageKey {
-  if (gate === "shift") return "courier.tile.lockedNoShift";
+  if (gate === "shift")
+    return isClosedLock(lock) ? "courier.tile.closeDayDone" : "courier.tile.lockedNoShift";
+  if (isClosedLock(lock)) return "courier.tile.lockedClosed";
   return lock.kind === "blocked" ? "courier.tile.lockedBlocked" : "courier.tile.lockedNoShift";
 }
 
