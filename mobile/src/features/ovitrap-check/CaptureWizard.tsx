@@ -1,4 +1,5 @@
 import type { MessageKey } from "@wolbachia/i18n";
+import { DiagnosticLine } from "../diagnostics/DiagnosticLine.tsx";
 import { displayPointCode } from "../day/point-code.ts";
 import { ArrowRight, Save } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -78,6 +79,7 @@ export function CaptureWizard(props: CaptureProps) {
           action={cameraFixAction(model.errorKey, t)}
         />
       ) : null}
+      <DiagnosticLine errorKey={model.errorKey} />
       <CaptureNotices {...props} />
       <CapturePageBody page={flow.page} {...props} />
     </ScreenScaffold>

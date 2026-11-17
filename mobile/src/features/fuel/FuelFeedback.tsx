@@ -1,4 +1,5 @@
 import { RotateCw } from "lucide-react-native";
+import { DiagnosticLine } from "../diagnostics/DiagnosticLine.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { cameraFixAction } from "../../system-settings/camera-fix.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
@@ -15,6 +16,7 @@ export function FuelFeedback({ model }: { readonly model: M11Model }) {
         message={t(model.errorKey)}
         action={cameraFixAction(model.errorKey, t)}
       />
+      <DiagnosticLine errorKey={model.errorKey} />
       <SecondaryButton
         icon={RotateCw}
         label={t("common.actions.retry")}

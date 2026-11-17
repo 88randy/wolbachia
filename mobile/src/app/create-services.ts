@@ -25,6 +25,8 @@ import appManifest from "../../package.json";
 import type { TokenStore } from "../auth/token-store.ts";
 import { BUILD_API_BASE_URL, LAN_HTTP_FLAG, allowsPrivateLanHttp } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
+import { diagnosticSink } from "../features/diagnostics/diagnostic-sink.ts";
+import { diagnostics } from "../features/diagnostics/diagnostic-log.ts";
 import { KvStore } from "../db/kv-store.ts";
 import { openDatabase } from "../db/open-database.ts";
 import { OutboxRepository } from "../outbox/outbox-repository.ts";
@@ -89,6 +91,7 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
+  void diagnostics.attach(diagnosticSink(kv));
   const outbox = new OutboxRepository(db, () => new Date());
   const { server, credentials } = await loadIdentity(kv, outbox);
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);

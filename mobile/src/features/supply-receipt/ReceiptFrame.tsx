@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { DiagnosticLine } from "../diagnostics/DiagnosticLine.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
@@ -31,6 +32,7 @@ export function ReceiptFrame({ model, step, onBack, footer, children }: Props) {
       footer={footer}
     >
       {model.errorKey ? <InfoNotice tone="danger" message={t(model.errorKey)} /> : null}
+      <DiagnosticLine errorKey={model.errorKey} />
       {model.state?.feedback === "invalid" ? (
         <InfoNotice tone="warning" message={t("field.receipt.invalidCode")} />
       ) : null}

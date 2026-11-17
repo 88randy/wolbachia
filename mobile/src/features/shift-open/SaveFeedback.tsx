@@ -1,4 +1,5 @@
 import { RotateCw } from "lucide-react-native";
+import { DiagnosticLine } from "../diagnostics/DiagnosticLine.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
@@ -11,6 +12,7 @@ export function SaveFeedback({ model }: { readonly model: M04Model }) {
   return (
     <>
       <InfoNotice tone="danger" message={t("field.open.saveProblem")} />
+      <DiagnosticLine errorKey={model.errorKey} />
       <SecondaryButton
         icon={RotateCw}
         label={t("field.action.retry")}

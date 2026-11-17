@@ -15,6 +15,7 @@ export const KV_KEYS = {
   themePreference: "theme_preference",
   locale: "locale",
   ovitrapLabels: "ovitrap_labels",
+  diagnosticLog: "diagnostic_log",
 } as const;
 
 /** Small key-value settings kept in the same SQLite file as the outbox. */

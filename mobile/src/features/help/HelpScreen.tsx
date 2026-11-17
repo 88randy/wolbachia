@@ -6,6 +6,7 @@ import {
   Settings,
   Siren,
   TriangleAlert,
+  Wrench,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import type { MessageKey } from "@wolbachia/i18n";
@@ -30,6 +31,7 @@ const TILES: readonly { icon: LucideIcon; labelKey: MessageKey; route: Route }[]
   { icon: GraduationCap, labelKey: "courier.help.training", route: { name: "training" } },
   { icon: History, labelKey: "courier.help.history", route: { name: "history" } },
   { icon: Settings, labelKey: "courier.help.settings", route: { name: "settings" } },
+  { icon: Wrench, labelKey: "courier.help.diagnostics", route: { name: "diagnostics" } },
 ];
 
 /** "Ayuda" tab: emergency first, then problems, uploads, trainings, history and settings. */

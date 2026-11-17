@@ -1,5 +1,6 @@
 import type { MessageKey } from "@wolbachia/i18n";
 
+import { describeWriteFailure, diagnostics } from "../features/diagnostics/diagnostic-log.ts";
 import { OutboxWriteError } from "./outbox-repository.ts";
 
 /**
@@ -10,6 +11,9 @@ export function writeErrorKey(error: unknown): MessageKey {
   if (error instanceof OutboxWriteError) {
     if (error.reason === "storage_full") return "mobile.storage.saveFailed";
     if (error.reason === "shift_closed") return "mobile.storage.shiftClosed";
+    return "mobile.storage.unexpected";
   }
+  // Not a failed write: keep what it was, in technical words, for Ayuda > Información técnica.
+  diagnostics.record(describeWriteFailure(error));
   return "mobile.storage.unexpected";
 }
