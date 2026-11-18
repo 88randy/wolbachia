@@ -63,7 +63,9 @@ class ShiftViewSet(
                 raise Http404 from None
         scoped = readable_shifts(actor, scoped, SHIFT_READ)
         if self.action != "list":
-            return scoped.select_related("motorcycle").prefetch_related("checks__item")
+            return scoped.select_related(
+                "motorcycle", "organization", "courier", "opened_event", "closed_event"
+            ).prefetch_related("checks__item")
         return scoped
 
     @extend_schema(parameters=[ShiftFilterSerializer])

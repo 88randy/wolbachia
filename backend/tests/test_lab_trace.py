@@ -130,20 +130,50 @@ def test_unknown_code_and_other_organization_are_not_found(monkeypatch, make_mem
 
 
 def test_trace_query_count_does_not_grow_with_lab_history(monkeypatch):
+    from uuid import UUID
+
+    from lab.access import LabTarget
+    from lab.commands import execute_lab_command
+    from tests.lab_support import command
+
     context = lab_context(monkeypatch)
     bag = capture_bag(context)
-    receive(context, bag)
+    assert receive(context, bag).status == 200
+    original = execute_lab_command(context.actor, count_input(context, bag, 3))
+    assert original.status == 201
+    current = UUID(original.body["count"]["id"])
+    revision = 1
     client = client_for(context.actor.user)
-    client.get(trace_url(bag))  # warm caches (content types, permissions)
 
-    def measure():
+    def append_counts(rows):
+        nonlocal current, revision
+        for _ in range(rows):
+            outcome = command(
+                context,
+                "void_count",
+                LabTarget("count", current),
+                {
+                    "expected_revision": revision,
+                    "reason_code": "data-entry-error",
+                    "reason": "Correct the retained synthetic observation",
+                    "replacement": {"kind": "count", "value": 3, "confirmed_implausible": False},
+                },
+            )
+            assert outcome.status == 200
+            current = UUID(outcome.body["count"]["id"])
+            revision = outcome.body["current_revision"]
+
+    def measure(expected_rows):
         with CaptureQueriesContext(connection) as queries:
-            assert client.get(trace_url(bag)).status_code == 200
+            response = client.get(trace_url(bag))
+        assert response.status_code == 200
+        assert len(response.json()["lab"]["counts"]) == expected_rows
         return len(queries)
 
-    from lab.commands import execute_lab_command
-
-    assert execute_lab_command(context.actor, count_input(context, bag, 3)).status == 201
-    first = measure()
-    assert first <= 45, first  # a fixed budget: no query per count, photo or sample row
-    assert measure() == first
+    append_counts(1)
+    measure(2)  # warm caches (content types, permissions)
+    small = measure(2)
+    append_counts(8)
+    large = measure(10)
+    assert large == small, f"trace: {small} queries for 2 counts, {large} for 10 counts"
+    assert large <= 45

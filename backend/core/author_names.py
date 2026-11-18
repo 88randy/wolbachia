@@ -45,6 +45,17 @@ def resolve_author_names(
     return names
 
 
+def prime_author_names(
+    context: dict[str, Any], organization_id: UUID | str | None, user_ids: Iterable[object]
+) -> None:
+    """Fill the serializer context cache for ids spread over nested serializers (no N+1)."""
+    cache: dict[str, str] = context.setdefault(_CACHE_KEY, {})
+    wanted = {str(user_id) for user_id in user_ids if user_id} - cache.keys()
+    resolved = resolve_author_names(organization_id, wanted)
+    for user_id in wanted:
+        cache[user_id] = resolved.get(user_id, "")
+
+
 def _user_id_of(item: Any, field: str) -> str | None:
     if "." in field:  # a path through relations, e.g. "recipient_membership.user"
         *path, last = field.split(".")

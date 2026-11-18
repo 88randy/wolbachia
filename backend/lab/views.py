@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.author_names import prime_author_names
 from core.exceptions import FieldValidationError
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
@@ -56,7 +57,7 @@ from lab.serializers import (
     ReceptionPolicyWriteSerializer,
     RecountRequestSerializer,
 )
-from uploads.access import actor_from_request
+from uploads.access import actor_from_request, current_scope
 
 UUID_ROUTE = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 VERSION_PARAMETER = OpenApiParameter(
@@ -215,13 +216,19 @@ class LabDiscrepancyViewSet(LabReadViewSet):
             from lab.models import ReceptionDiscrepancy
 
             return ReceptionDiscrepancy.objects.none()
-        return selectors.discrepancy_rows(actor_from_request(self.request), self.read_query())
+        values = self.read_query()
+        if "configuration_pending" not in self.request.query_params:
+            # DRF reads an absent boolean from a QueryDict as False, which would hide every
+            # case still waiting for incident configuration; only an explicit filter applies.
+            values.pop("configuration_pending", None)
+        return selectors.discrepancy_rows(actor_from_request(self.request), values)
 
     @extend_schema(parameters=[LabListQuerySerializer])
     def list(self, request: Request) -> Response:
         actor = actor_from_request(request)
+        scope = current_scope(actor)  # Once per page, not once per row.
         return self.page_response(
-            self.get_queryset(), lambda row: selectors.discrepancy_projection(actor, row)
+            self.get_queryset(), lambda row: selectors.discrepancy_projection(actor, row, scope)
         )
 
     def retrieve(self, request: Request, pk: str | None = None) -> Response:
@@ -286,8 +293,21 @@ class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveMod
     @action(detail=True, methods=["get"])
     def versions(self, request: Request, pk: str | None = None) -> Response:
         method = get_object_or_404(self.get_queryset(), pk=pk)
+        context: dict[str, Any] = {}
+
+        def prime(page: list[Any]) -> None:
+            authors = [row.created_by_id for row in page]
+            authors += [
+                verification.created_by_id
+                for row in page
+                for verification in getattr(row, "read_verifications", ())
+            ]
+            prime_author_names(context, method.organization_id, authors)
+
         return self.page_response(
-            method.versions.all(), lambda row: LabMethodVersionSerializer(row).data
+            selectors.method_version_rows(method),
+            lambda row: LabMethodVersionSerializer(row, context=context).data,
+            prime,
         )
 
     @extend_schema(request=LabMethodWriteSerializer, responses={201: LabMethodVersionSerializer})
