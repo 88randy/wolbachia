@@ -8,6 +8,7 @@ import { cameraFixAction } from "../../system-settings/camera-fix.ts";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
+import { DiscardCaptureBanner } from "./DiscardCaptureBanner.tsx";
 import { CaptureNotices } from "./CaptureNotices.tsx";
 import { CapturePageBody } from "./CapturePageBody.tsx";
 import type { CaptureProps } from "./model.ts";
@@ -80,6 +81,7 @@ export function CaptureWizard(props: CaptureProps) {
         />
       ) : null}
       <DiagnosticLine errorKey={model.errorKey} />
+      <DiscardCaptureBanner {...props} />
       <CaptureNotices {...props} />
       <CapturePageBody page={flow.page} {...props} />
     </ScreenScaffold>

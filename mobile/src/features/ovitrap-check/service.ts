@@ -232,6 +232,14 @@ export class OvitrapService {
     const { draft, event } = await this.#deps.store.read();
     return draft && !event ? 1 : 0;
   }
+  /** The count, and whether the only thing left to do with them is discard (they cannot be saved). */
+  async unfinishedSummary(): Promise<{ readonly count: number; readonly isDiscardOnly: boolean }> {
+    const count = await this.unfinishedCount();
+    if (count === 0) return { count, isDiscardOnly: false };
+    const state = await this.#deps.store.read();
+    const stale = await this.#staleDraft(state, await this.#deps.shiftId());
+    return { count, isDiscardOnly: stale?.invalidReason != null };
+  }
   async #scope(draft: Draft | null) {
     return availability(draft, await this.#deps.store.snapshots());
   }

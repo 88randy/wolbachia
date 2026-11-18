@@ -325,6 +325,14 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       AND NOT EXISTS(${lateCaptureScopeSql("NEW.draft")})
     BEGIN SELECT RAISE(ABORT,'current M08 assignment, capture scope or epoch is unavailable'); END`,
   ],
+  [
+    // Discarding an unsent draft drops its photos; a file that was sent or is bound to an event stays.
+    "DROP TRIGGER attachment_retained",
+    `CREATE TRIGGER attachment_retained BEFORE DELETE ON attachment_file
+      WHEN OLD.state NOT IN ('adopting','ready')
+        OR EXISTS(SELECT 1 FROM attachment_event WHERE evidence_id = OLD.id)
+      BEGIN SELECT RAISE(ABORT,'evidence is retained'); END`,
+  ],
 ];
 
 /** Highest schema version this build knows. */

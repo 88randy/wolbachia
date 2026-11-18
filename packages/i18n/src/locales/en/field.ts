@@ -364,8 +364,15 @@ export const field = {
   "field.stale.reason.scope": "you no longer have access to that point or its quadrant changed",
   "field.stale.reason.retired": "that point or ovitrap has been retired",
   "field.stale.reason.placed": "that ovitrap is already placed",
+  "field.discard.action": "Discard capture",
+  "field.discard.confirm": "Photos that have not been sent are deleted.",
+  "field.discard.yes": "Yes, discard",
   "field.stale.pending": "You have {count} unfinished captures.",
   "field.stale.pendingOne": "You have 1 unfinished capture.",
+  "field.stale.pendingBlocked":
+    "You have {count} unfinished captures that cannot be saved; discard them.",
+  "field.stale.pendingBlockedOne":
+    "You have 1 unfinished capture that cannot be saved; discard it.",
   "field.stale.pendingAction": "Finish or discard",
   "field.scan.again": "Scan again",
   "field.scan.cameraDenied": "Scanning needs camera permission. Turn it on in Settings.",

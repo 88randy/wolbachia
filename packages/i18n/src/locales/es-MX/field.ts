@@ -363,8 +363,15 @@ export const field = {
   "field.stale.reason.scope": "ya no tienes permiso sobre ese punto o su cuadrante cambió",
   "field.stale.reason.retired": "ese punto o esa ovitrampa ya está dada de baja",
   "field.stale.reason.placed": "esa ovitrampa ya está colocada",
+  "field.discard.action": "Descartar captura",
+  "field.discard.confirm": "Se borran las fotos que no se han enviado.",
+  "field.discard.yes": "Sí, descartar",
   "field.stale.pending": "Tienes {count} capturas sin terminar.",
   "field.stale.pendingOne": "Tienes 1 captura sin terminar.",
+  "field.stale.pendingBlocked":
+    "Tienes {count} capturas sin terminar que no se pueden guardar; descártalas.",
+  "field.stale.pendingBlockedOne":
+    "Tienes 1 captura sin terminar que no se puede guardar; descártala.",
   "field.stale.pendingAction": "Terminar o descartar",
   "field.scan.again": "Escanear de nuevo",
   "field.scan.cameraDenied": "Sin permiso de cámara no se puede escanear. Actívalo en Ajustes.",

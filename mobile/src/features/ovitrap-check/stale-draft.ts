@@ -30,7 +30,13 @@ export function staleDraft(input: {
   readonly isLateScopeAvailable?: boolean;
 }): StaleDraft | null {
   const { draft, shiftId, now, snapshots } = input;
-  if (!draft || input.isEvent || draft.isLate === true) return null;
+  if (!draft || input.isEvent) return null;
+  // A draft already chosen to finish late is checked again every time it is opened: the
+  // scope can change after the choice, and the courier must not walk five steps to learn it.
+  if (draft.isLate === true) {
+    const reason = invalidReason(draft, snapshots, input);
+    return reason === null ? null : { createdAt: draft.deviceTime, invalidReason: reason };
+  }
   const isOld = now.getTime() - Date.parse(draft.deviceTime) > DRAFT_MAX_AGE_MS;
   if (draft.shiftId === shiftId && !isOld) return null;
   return { createdAt: draft.deviceTime, invalidReason: invalidReason(draft, snapshots, input) };
