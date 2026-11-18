@@ -7,6 +7,7 @@ import { MapBoundary } from "../../quadrants/geography/MapBoundary";
 import { useMapDisplay } from "../../quadrants/geography/use-map-display";
 import { TraceCoordinates } from "./TraceCoordinates";
 import { TraceLinks } from "./TraceLinks";
+import { tracePlace } from "./map-place";
 import type { BagTrace } from "./trace-query";
 
 const TraceMapView = lazy(() => import("./TraceMapView"));
@@ -44,7 +45,11 @@ export function TraceMap({ trace }: { trace: BagTrace }) {
         <MapBoundary>
           <Suspense fallback={<Skeleton className="h-80 w-full rounded-xl" />}>
             {display.source && (
-              <TraceMapView trace={trace} source={display.source} onFailure={display.fail} />
+              <TraceMapView
+                place={tracePlace(trace)}
+                source={display.source}
+                onFailure={display.fail}
+              />
             )}
           </Suspense>
         </MapBoundary>

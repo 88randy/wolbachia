@@ -67,6 +67,7 @@ export const geography = {
   "geography.blocks.empty": "No proposals available.",
   "geography.points.title": "Sampling points",
   "geography.points.create": "Create point",
+  "geography.points.view": "Details",
   "geography.points.four": "Create four points",
   "geography.points.code": "Fixed point code",
   "geography.points.relocate": "Relocate point",
