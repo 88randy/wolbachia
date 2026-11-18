@@ -27,6 +27,45 @@ test("the story runs installed, collected, received, counts, then the Wolbachia 
   expect(steps.at(-1)?.label).toBe("Wolbachia result: positive");
 });
 
+test("steps are sorted by their own timestamp, not by the order the API lists them", () => {
+  const trace = makeTrace();
+  const lab = trace.lab as NonNullable<typeof trace.lab>;
+  // The receipt happened after the first count was typed in: the story follows the dates.
+  const late = { ...lab, receipt: { at: "2026-11-11T16:30:00Z", by: null } };
+  const ids = buildTimeline({ ...trace, lab: late }, t).map((step) => step.id);
+  const first = ids.indexOf("count-00000000-0000-4000-8000-0000000000c1");
+  const second = ids.indexOf("count-00000000-0000-4000-8000-0000000000c2");
+  expect(first).toBeLessThan(ids.indexOf("received"));
+  expect(ids.indexOf("received")).toBeLessThan(second);
+});
+
+test("steps with the same timestamp keep the process order and a voided one stays in place", () => {
+  const trace = makeTrace();
+  const lab = trace.lab as NonNullable<typeof trace.lab>;
+  const same = "2026-11-12T10:00:00Z";
+  const tied = {
+    ...lab,
+    receipt: { at: same, by: null },
+    counts: lab.counts.map((count) => ({ ...count, at: same })),
+    wolbachia: lab.wolbachia.map((sample) => ({
+      ...sample,
+      received_at: same,
+      results: sample.results.map((row) => ({ ...row, at: same })),
+    })),
+  };
+  const steps = buildTimeline(
+    {
+      ...trace,
+      installed: { ...trace.installed, at: same },
+      reading: { ...trace.reading, device_time: same },
+      lab: tied,
+    },
+    t,
+  );
+  expect(steps.map((step) => step.rank)).toEqual([0, 1, 2, 3, 3, 4, 5]);
+  expect(steps.find((step) => step.label === "Egg count 1")?.voided).toBeDefined();
+});
+
 test("a voided count stays in the story with its reason and author", () => {
   const voided = buildTimeline(makeTrace(), t).find((step) => step.label === "Egg count 1");
   expect(voided?.voided).toEqual({

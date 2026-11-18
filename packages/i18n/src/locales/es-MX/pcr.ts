@@ -22,6 +22,7 @@ export const pcr = {
   "pcr.col.shippedAt": "Fecha de envío",
   "pcr.col.quadrant": "Cuadrante",
   "pcr.col.week": "Semana",
+  "pcr.col.origin": "Origen",
   "pcr.col.collected": "Recolectada",
   "pcr.col.center": "Centro",
   "pcr.col.wolbachia": "Wolbachia",

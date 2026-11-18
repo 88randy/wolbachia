@@ -8,7 +8,7 @@ from accounts.models import User
 from lab.pcr.models import TRANSITIONS, PcrBatch, PcrBatchEvent, PcrResult
 from lab.pcr.permissions import PCR_MANAGE
 from lab.samples.models import WolbachiaSample
-from lab.samples.selectors import filter_samples, scoped_samples
+from lab.samples.selectors import bag_code_of, filter_samples, scoped_samples
 from uploads.access import UploadActor
 
 
@@ -120,6 +120,9 @@ def _sample_entry(sample: WolbachiaSample) -> dict[str, Any]:
         "quadrant_code": quadrant.code if quadrant else None,
         "center_name": sample.center.name,
         "epi_week": reading.epi_week if reading else None,
+        "bag_code": bag_code_of(sample),
+        "origin_label_es": str(sample.origin_snapshot.get("label_es", "")),
+        "origin_label_en": str(sample.origin_snapshot.get("label_en", "")),
         "collected_at": sample.device_time.isoformat(),
     }
 
@@ -145,7 +148,7 @@ def batch_detail(batch: PcrBatch) -> dict[str, Any]:
     )
     superseded = {result.supersedes_id for result in results if result.supersedes_id}
     entries = batch.samples.select_related(
-        "sample__quadrant", "sample__center", "sample__reading"
+        "sample__quadrant", "sample__center", "sample__reading__bag"
     ).order_by("sample__code")
     return {
         **batch_row(batch),

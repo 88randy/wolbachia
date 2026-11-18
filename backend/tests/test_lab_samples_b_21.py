@@ -194,6 +194,7 @@ def test_invalid_disputed_repeat_retains_all_attempts_and_only_valid_final_input
     sample_command(context, sample, "receive")
     missing = sample_snapshot(WolbachiaSample.objects.get(pk=sample.pk))
     assert missing["result_status"] == "missing"
+    assert missing["bag_code"] == "B-111"  # the bag of the reading the sample came from
     assert missing["selected_valid_result"] is None
     assert prevalence_inputs(WolbachiaSample.objects.all()) == {
         "positive": 0,

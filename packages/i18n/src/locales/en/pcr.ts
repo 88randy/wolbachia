@@ -21,6 +21,7 @@ export const pcr: Record<keyof typeof source, string> = {
   "pcr.col.shippedAt": "Shipped on",
   "pcr.col.quadrant": "Quadrant",
   "pcr.col.week": "Week",
+  "pcr.col.origin": "Origin",
   "pcr.col.collected": "Collected",
   "pcr.col.center": "Center",
   "pcr.col.wolbachia": "Wolbachia",

@@ -115,6 +115,9 @@ class PcrSampleEntrySerializer(serializers.Serializer[Any]):
     quadrant_code = serializers.CharField(allow_null=True)
     center_name = serializers.CharField()
     epi_week = serializers.CharField(allow_null=True)
+    bag_code = serializers.CharField(allow_null=True)
+    origin_label_es = serializers.CharField(allow_blank=True)
+    origin_label_en = serializers.CharField(allow_blank=True)
     collected_at = serializers.DateTimeField()
 
 

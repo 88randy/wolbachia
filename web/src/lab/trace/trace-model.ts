@@ -9,9 +9,23 @@ interface VoidFact {
   reason: string;
 }
 
+/** Install, collect, receive, count, sample received, result, PCR: the order of the real process. */
+export const STEP_RANK = {
+  installed: 0,
+  collected: 1,
+  received: 2,
+  count: 3,
+  sample: 4,
+  result: 5,
+  pcr: 6,
+} as const;
+type StepRank = (typeof STEP_RANK)[keyof typeof STEP_RANK];
+
 /** One line of the paddle's story. `at === null` means it has not happened yet. */
 export interface TimelineStep {
   id: string;
+  /** Logical order, used only to break ties between steps with the same timestamp. */
+  rank: StepRank;
   label: string;
   at: string | null;
   by: string | null;
@@ -28,6 +42,7 @@ function fieldSteps(trace: BagTrace, t: Translate): TimelineStep[] {
   return [
     {
       id: "installed",
+      rank: STEP_RANK.installed,
       label: t("labTrace.step.installed"),
       at: installed.at,
       by: nameOf(installed.by),
@@ -39,6 +54,7 @@ function fieldSteps(trace: BagTrace, t: Translate): TimelineStep[] {
     },
     {
       id: "collected",
+      rank: STEP_RANK.collected,
       label: t("labTrace.step.collected"),
       at: reading.device_time,
       by: nameOf(reading.courier),
@@ -51,26 +67,35 @@ function resultText(t: Translate, status: string, result: string | null) {
   return t(`labTrace.result.${key}` as MessageKey);
 }
 
+type Sample = NonNullable<BagTrace["lab"]>["wolbachia"][number];
+
+function receivedStep(sample: Sample, t: Translate): TimelineStep[] {
+  return sample.received_at
+    ? [
+        {
+          id: `sample-${sample.sample_code}`,
+          rank: STEP_RANK.sample,
+          label: t("labTrace.step.sampleReceived", { code: sample.sample_code }),
+          at: sample.received_at,
+          by: null,
+        },
+      ]
+    : [];
+}
+
 function sampleSteps(lab: NonNullable<BagTrace["lab"]>, t: Translate): TimelineStep[] {
   return lab.wolbachia.flatMap((sample) => [
-    ...(sample.received_at
-      ? [
-          {
-            id: `sample-${sample.sample_code}`,
-            label: t("labTrace.step.sampleReceived", { code: sample.sample_code }),
-            at: sample.received_at,
-            by: null,
-          },
-        ]
-      : []),
+    ...receivedStep(sample, t),
     ...sample.results.map((row) => ({
       id: `result-${sample.sample_code}-${String(row.revision)}`,
+      rank: STEP_RANK.result,
       label: t("labTrace.step.result", { result: resultText(t, row.status, row.result) }),
       at: row.at,
       by: nameOf(row.by),
     })),
     ...sample.pcr.map((row) => ({
       id: `pcr-${sample.sample_code}-${row.target}-${row.at}`,
+      rank: STEP_RANK.pcr,
       label: t("labTrace.step.pcr", {
         target: t(`labTrace.target.${row.target}` as MessageKey),
         outcome: t(`labTrace.outcome.${row.outcome}` as MessageKey),
@@ -85,6 +110,7 @@ function resultSteps(lab: NonNullable<BagTrace["lab"]>, t: Translate): TimelineS
   const steps: TimelineStep[] = [
     ...lab.counts.map((row) => ({
       id: `count-${row.id}`,
+      rank: STEP_RANK.count,
       label: t("labTrace.step.count", { n: row.ordinal }),
       at: row.at,
       by: nameOf(row.by),
@@ -92,6 +118,7 @@ function resultSteps(lab: NonNullable<BagTrace["lab"]>, t: Translate): TimelineS
     })),
     ...lab.rejections.map((row) => ({
       id: `rejection-${row.id}`,
+      rank: STEP_RANK.count,
       label: t("labTrace.step.rejected"),
       at: row.at,
       by: nameOf(row.by),
@@ -100,19 +127,21 @@ function resultSteps(lab: NonNullable<BagTrace["lab"]>, t: Translate): TimelineS
     })),
     ...lab.recounts.map((row) => ({
       id: `recount-${row.role}-${row.at}`,
+      rank: STEP_RANK.count,
       label: t("labTrace.step.recount", { role: t(`labTrace.role.${row.role}` as MessageKey) }),
       at: row.at,
       by: nameOf(row.by),
     })),
     ...sampleSteps(lab, t),
   ];
-  return steps.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  return steps;
 }
 
 function labSteps(lab: BagTrace["lab"], t: Translate): TimelineStep[] {
   if (!lab) return [];
   const received: TimelineStep = {
     id: "received",
+    rank: STEP_RANK.received,
     label: t("labTrace.step.received"),
     at: lab.receipt?.at ?? null,
     by: nameOf(lab.receipt?.by ?? null),
@@ -121,6 +150,7 @@ function labSteps(lab: BagTrace["lab"], t: Translate): TimelineStep[] {
   const needsCount = lab.receipt !== null && results.length === 0;
   const pending: TimelineStep = {
     id: "count-pending",
+    rank: STEP_RANK.count,
     label: t("labTrace.step.count", { n: 1 }),
     at: null,
     by: null,
@@ -128,9 +158,20 @@ function labSteps(lab: BagTrace["lab"], t: Translate): TimelineStep[] {
   return [received, ...results, ...(needsCount ? [pending] : [])];
 }
 
-/** Installed, collected, received, counted, recounted, results: each with its date and author. */
+function byTime(a: TimelineStep, b: TimelineStep): number {
+  const gap = Date.parse(a.at ?? "") - Date.parse(b.at ?? "");
+  return gap !== 0 && !Number.isNaN(gap) ? gap : a.rank - b.rank;
+}
+
+/**
+ * Installed, collected, received, counted, recounted, results: each with its date and author,
+ * oldest first. Equal timestamps keep the real process order; a step that has not happened yet
+ * goes last. A voided step stays where its own date puts it.
+ */
 export function buildTimeline(trace: BagTrace, t: Translate): TimelineStep[] {
-  return [...fieldSteps(trace, t), ...labSteps(trace.lab, t)];
+  const all = [...fieldSteps(trace, t), ...labSteps(trace.lab, t)];
+  const done = all.filter((step) => step.at !== null).sort(byTime);
+  return [...done, ...all.filter((step) => step.at === null)];
 }
 
 export interface CoordinateRow {

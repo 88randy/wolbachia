@@ -8,6 +8,8 @@ import { StatusPill } from "../ui/StatusPill";
 import type { Tone } from "../ui/tone";
 import { LabName } from "./LabName";
 import { BagCodeLink } from "./trace/BagCodeLink";
+import { SampleOrigin } from "./trace/SampleOrigin";
+import { otherOriginKey } from "./trace/sample-origin";
 import type { MaterialRow, PaddleRow, RecountRow, SampleRow, ShipmentRow } from "./lab-lists";
 
 export const RECOUNT_TONE: Record<RecountRow["state"], Tone> = {
@@ -128,11 +130,23 @@ function useSampleTailColumns(): DataTableColumn<SampleRow>[] {
   ];
 }
 
+function originColumn(t: (key: MessageKey) => string): DataTableColumn<SampleRow> {
+  return {
+    id: "origin",
+    headerKey: "lab.col.origin",
+    cell: (row) => {
+      const key = otherOriginKey(row);
+      return <SampleOrigin bagCode={row.bag_code} otherOrigin={key ? t(key) : ""} />;
+    },
+  };
+}
+
 export function useSampleColumns(): DataTableColumn<SampleRow>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const base: DataTableColumn<SampleRow>[] = [
     { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
+    originColumn(t),
     {
       id: "quadrant",
       headerKey: "lab.col.quadrant",

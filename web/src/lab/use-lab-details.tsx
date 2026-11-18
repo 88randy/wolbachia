@@ -7,6 +7,8 @@ import { LabFacts } from "./LabFacts";
 import type { LabFact } from "./LabFacts";
 import { LabName } from "./LabName";
 import { BagCodeLink } from "./trace/BagCodeLink";
+import { SampleOrigin } from "./trace/SampleOrigin";
+import { otherOriginKey } from "./trace/sample-origin";
 import type { LabDetail } from "./LabDetailSheet";
 import type { MaterialRow, PaddleRow, RecountRow, SampleRow, ShipmentRow } from "./lab-lists";
 import {
@@ -98,6 +100,15 @@ function sampleFacts(t: Translate, format: Format, row: SampleRow, showCenter: b
     ...(showCenter
       ? [{ label: t("lab.col.center"), value: <LabName kind="center" id={row.center_id} /> }]
       : []),
+    {
+      label: t("lab.col.origin"),
+      value: (
+        <SampleOrigin
+          bagCode={row.bag_code}
+          otherOrigin={otherOriginKey(row) ? t(otherOriginKey(row) as MessageKey) : ""}
+        />
+      ),
+    },
     { label: t("lab.col.quadrant"), value: <LabName kind="quadrant" id={row.quadrant_id} /> },
     { label: t("lab.detail.collector"), value: <LabName kind="user" id={row.collector_id} /> },
     { label: t("lab.detail.collectedAt"), value: format(row.device_time) },
