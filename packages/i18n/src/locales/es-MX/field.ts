@@ -360,6 +360,7 @@ export const field = {
     "Esta captura del {date} ya no se puede guardar porque {reason}. Empieza una nueva.",
   "field.stale.reason.assignment": "tu ruta cambió",
   "field.stale.reason.point": "el punto ya no está en tu ruta",
+  "field.stale.reason.scope": "ya no tienes permiso sobre ese punto o su cuadrante cambió",
   "field.stale.reason.retired": "ese punto o esa ovitrampa ya está dada de baja",
   "field.stale.reason.placed": "esa ovitrampa ya está colocada",
   "field.stale.pending": "Tienes {count} capturas sin terminar.",

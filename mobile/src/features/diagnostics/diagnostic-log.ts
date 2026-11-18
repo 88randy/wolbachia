@@ -27,6 +27,9 @@ function classify(message: string): { code: string; detail: string } {
     const match = pattern.exec(message);
     if (match) return { code, detail: (match[1] ?? "").trim() };
   }
+  // op-sqlite: "statement execution error: <our RAISE text> (code 19, ..."; the text is ours, never data.
+  const raisedByUs = /error:\s*([A-Za-z][A-Za-z0-9 ,.'-]{8,120}?)\s*\(code 19/.exec(message);
+  if (raisedByUs?.[1]) return { code: "SQLITE_CONSTRAINT_TRIGGER", detail: raisedByUs[1] };
   const named = /SQLITE_[A-Z_]+/.exec(message);
   if (named) return { code: named[0], detail: "" };
   // A trigger's RAISE(ABORT, 'fixed text'): the text is written by us, never data.

@@ -177,6 +177,7 @@ export class OvitrapService {
         draft?.mode === "place" && draft.labelScanned === true
           ? await this.#isIdentityTaken(draft.ovitrapId, { ...draft, labelScanned: false })
           : false,
+      isLateScopeAvailable: draft ? await this.#deps.store.isLateScopeAvailable(draft) : true,
       isRetired: draft
         ? (await this.#deps.store.lifecycleSource(draft.ovitrapId, draft.point)).isRetired
         : false,
@@ -195,7 +196,14 @@ export class OvitrapService {
         if (stale?.invalidReason) throw new CaptureBlockedError("scope");
         const snapshots = await this.#deps.store.snapshots();
         await this.#updateDraft(
-          { ...draft, ...snapshots, isLate: true, reviewAcknowledged: false },
+          {
+            ...draft,
+            ...snapshots,
+            // The scope it was started with is the one that counts for a late capture.
+            assignment: draft.assignment ?? snapshots.assignment,
+            isLate: true,
+            reviewAcknowledged: false,
+          },
           draftVersion,
         );
         return this.read();

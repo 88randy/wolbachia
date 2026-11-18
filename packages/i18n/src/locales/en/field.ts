@@ -361,6 +361,7 @@ export const field = {
     "This capture from {date} can no longer be saved because {reason}. Start a new one.",
   "field.stale.reason.assignment": "your route changed",
   "field.stale.reason.point": "the point is no longer on your route",
+  "field.stale.reason.scope": "you no longer have access to that point or its quadrant changed",
   "field.stale.reason.retired": "that point or ovitrap has been retired",
   "field.stale.reason.placed": "that ovitrap is already placed",
   "field.stale.pending": "You have {count} unfinished captures.",

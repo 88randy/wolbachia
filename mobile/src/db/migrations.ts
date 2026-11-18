@@ -1,4 +1,6 @@
 import { currentPointScopeSql } from "../features/ovitrap-lifecycle/current-scope.ts";
+import { capturePointScopeSql } from "../features/ovitrap-lifecycle/context-sql.ts";
+import { lateCaptureScopeSql } from "../features/ovitrap-check/late-scope.ts";
 import { INCIDENT_SCHEMA } from "../features/incidents/schema.ts";
 import {
   IDENTITY_EFFECTS,
@@ -314,6 +316,14 @@ const MIGRATIONS: readonly (readonly string[])[] = [
         (SELECT 1 FROM outbox_event o WHERE o.id = OLD.opening_event_id AND (o.local_status = 'rejected'
           OR EXISTS (SELECT 1 FROM outbox_event c WHERE c.type = 'shift.close' AND c.shift_id = o.shift_id))))
       BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected or closed'); END`,
+  ],
+  [
+    "DROP TRIGGER ovitrap_capture_current_scope",
+    `CREATE TRIGGER ovitrap_capture_current_scope BEFORE INSERT ON ovitrap_capture
+    WHEN (NOT EXISTS(${currentPointScopeSql("json_extract(NEW.draft,'$.point.id')")})
+      OR NOT EXISTS(${capturePointScopeSql("json_extract(NEW.draft,'$.point.id')")}))
+      AND NOT EXISTS(${lateCaptureScopeSql("NEW.draft")})
+    BEGIN SELECT RAISE(ABORT,'current M08 assignment, capture scope or epoch is unavailable'); END`,
   ],
 ];
 

@@ -11,6 +11,7 @@ import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identit
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
 import { captureWeek } from "./capture-week.ts";
+import { lateScopeQuery } from "./late-scope.ts";
 import { CaptureBlockedError } from "./ports.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readInteger, readText } from "../../db/sql.ts";
@@ -194,6 +195,12 @@ export class OvitrapStore {
     const state =
       physical ?? (await readPhysicalIdentityState(this.#db, { id, pointId: point?.id ?? null }));
     return { physical, evidence: lifecycle?.evidence ?? [], isRetired: state.isRetired };
+  }
+  /** Would the save trigger let this old draft through as a late capture? */
+  async isLateScopeAvailable(draft: Draft): Promise<boolean> {
+    if (draft.point === null) return true; // No point chosen yet: the point page decides.
+    const [row] = await this.#db.query(lateScopeQuery(), [JSON.stringify(draft)]);
+    return row ? readInteger(row, "ok") === 1 : false;
   }
   async lifecycleTargetId(id: string): Promise<string | null> {
     const visited = new Set<string>();

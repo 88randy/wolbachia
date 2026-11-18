@@ -77,7 +77,7 @@ void test("a draft whose point left the route says so and cannot be finished", a
     },
   });
   const snapshot = await later.read();
-  assert.equal(snapshot.staleDraft?.invalidReason, "point");
+  assert.equal(snapshot.staleDraft?.invalidReason, "scope");
   await assert.rejects(later.continueStale(eventId));
   // The only way out is to start again.
   await later.discardStale(eventId);

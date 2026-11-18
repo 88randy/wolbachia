@@ -33,14 +33,17 @@ export interface OutboxTransition {
 export type OutboxCounts = Readonly<Record<OutboxStatus, number>>;
 
 /** Why a write failed: a full phone is the only case the courier can fix by freeing space. */
-export type OutboxWriteReason = "storage_full" | "shift_closed" | "other";
+export type OutboxWriteReason = "storage_full" | "shift_closed" | "scope_unavailable" | "other";
 
 const STORAGE_FULL = /SQLITE_FULL|disk is full|disk full|ENOSPC|no space left/i;
+const SCOPE_UNAVAILABLE =
+  /assignment, capture scope or epoch is unavailable|capture scope or epoch is unavailable/i;
 const SHIFT_CLOSED = /NOT NULL constraint failed: outbox_event\.id/i;
 
 function writeReason(cause: unknown): OutboxWriteReason {
   const text = cause instanceof Error ? `${cause.name} ${cause.message}` : String(cause);
   if (STORAGE_FULL.test(text)) return "storage_full";
+  if (SCOPE_UNAVAILABLE.test(text)) return "scope_unavailable";
   return SHIFT_CLOSED.test(text) ? "shift_closed" : "other";
 }
 

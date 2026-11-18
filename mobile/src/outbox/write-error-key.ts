@@ -11,6 +11,7 @@ export function writeErrorKey(error: unknown): MessageKey {
   if (error instanceof OutboxWriteError) {
     if (error.reason === "storage_full") return "mobile.storage.saveFailed";
     if (error.reason === "shift_closed") return "mobile.storage.shiftClosed";
+    if (error.reason === "scope_unavailable") return "mobile.storage.scopeUnavailable";
     return "mobile.storage.unexpected";
   }
   // Not a failed write: keep what it was, in technical words, for Ayuda > Información técnica.

@@ -741,6 +741,8 @@ export const mobile: Record<keyof typeof source, string> = {
 
   "mobile.storage.unexpected":
     "It could not be saved this time. Close and open the app and try again; your data is still on the phone.",
+  "mobile.storage.scopeUnavailable":
+    "You can no longer save at that point: your route or permissions changed. Discard the capture.",
   "mobile.storage.shiftClosed":
     "That capture is from after the shift closed and cannot be saved. Start a new capture.",
 

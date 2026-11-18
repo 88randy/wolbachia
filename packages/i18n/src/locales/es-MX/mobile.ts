@@ -760,6 +760,8 @@ export const mobile = {
 
   "mobile.storage.unexpected":
     "No se pudo guardar esta vez. Cierra y abre la app e inténtalo de nuevo; tus datos siguen en el teléfono.",
+  "mobile.storage.scopeUnavailable":
+    "Ya no puedes guardar en ese punto: cambió tu ruta o tus permisos. Descarta la captura.",
   "mobile.storage.shiftClosed":
     "Esa captura es de después de cerrar el turno y no se puede guardar. Empieza una captura nueva.",
 
