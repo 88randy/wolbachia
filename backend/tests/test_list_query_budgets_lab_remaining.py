@@ -1,8 +1,10 @@
 """Recount-bearing bag pages keep exact QA state without a query per obligation."""
 
+import json
 from itertools import count
 
 import pytest
+from rest_framework.renderers import JSONRenderer
 
 from lab.access import LabTarget
 from lab.commands import execute_lab_command
@@ -92,11 +94,14 @@ def test_bags_with_pending_and_resolved_recounts_have_constant_queries(
 
 
 def test_lab_reception_discrepancies_have_constant_queries_and_keep_pending_cases(
-    monkeypatch, api_client
+    monkeypatch, make_member, api_client
 ):
     context = lab_context(monkeypatch)
+    # The field user collected the bags and reads the list; reception is a separate lab actor.
+    reader = context.actor
+    context.actor = actor_with_codes(context, make_member, ("bag.receive",))
     sequence = count(1)
-    api_client.force_authenticate(context.actor.user)
+    api_client.force_authenticate(reader.user)
 
     def add_rows(rows):
         for _ in range(rows):
@@ -186,14 +191,25 @@ def test_lab_method_version_queries_are_constant_with_exact_current_verification
     add_rows(8)
     large, large_rows = count_queries(api_client, url)
     assert (small_rows, large_rows) == (2, 10)
-    assert len(large) == len(small), (len(small), len(large))
+    from tests.query_budget import _shapes
+
+    assert len(large) == len(small), (
+        len(small),
+        len(large),
+        dict(_shapes(large) - _shapes(small)),
+    )
 
     body = api_client.get(url).json()["results"]
     assert [row["revision"] for row in body] == list(range(10, 0, -1))
     assert body[0]["availability"] == "not_current"  # Future revision ten is not active.
     assert body[1]["availability"] == "withdrawn"  # Current revision nine's latest decision.
     for row in body:
-        canonical = LabMethodVersionSerializer(LabMethodVersion.objects.get(pk=row["id"])).data
+        # The canonical per-row path, rendered to JSON like the page response.
+        canonical = json.loads(
+            JSONRenderer().render(
+                LabMethodVersionSerializer(LabMethodVersion.objects.get(pk=row["id"])).data
+            )
+        )
         assert (row["availability"], row["verification"]) == (
             canonical["availability"],
             canonical["verification"],

@@ -37,6 +37,7 @@ from lab.models import (
 )
 from lab.permissions import BAG_RECEIVE, COUNT_READ, COUNT_VOID
 from lab.rejections import rejection_projection
+from organizations.scope import EffectiveScope
 from ovitraps.models import Bag
 from reviews.effect_receipts import effective_effects
 from uploads.access import UploadActor, current_scope
@@ -135,10 +136,12 @@ def discrepancy_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[Rec
     ).order_by(values.get("ordering", "-created_at"), "id")
 
 
-def discrepancy_projection(actor: UploadActor, discrepancy: ReceptionDiscrepancy) -> dict[str, Any]:
+def discrepancy_projection(
+    actor: UploadActor, discrepancy: ReceptionDiscrepancy, scope: EffectiveScope | None = None
+) -> dict[str, Any]:
     link = getattr(discrepancy, "incident_link", None)
     quadrant = discrepancy.bag.reading.ovitrap.sampling_point.block.quadrant
-    can_read = current_scope(actor).allows(
+    can_read = (scope or current_scope(actor)).allows(
         "incident.read", center=str(quadrant.center_id), quadrant=str(quadrant.pk)
     )
     return {

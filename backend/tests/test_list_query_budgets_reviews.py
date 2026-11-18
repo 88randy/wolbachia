@@ -118,6 +118,7 @@ def test_release_review_batch_keeps_unknown_foreign_and_mismatched_references_hi
     )
     other_lot = Lot.objects.create(
         organization=context.organization,
+        created_by=context.stock.actor.user,
         supply=context.stock.supply,
         center=context.stock.center,
         code="REV-OTHER-LOT",

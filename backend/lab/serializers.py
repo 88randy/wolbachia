@@ -232,7 +232,10 @@ class LabMethodVersionSerializer(OrgScopedModelSerializer):
     @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_verification(self, version: LabMethodVersion) -> dict[str, Any] | None:
         current = _method_verification(version)
-        return None if current is None else dict(LabMethodVerificationSerializer(current).data)
+        if current is None:
+            return None
+        # Sharing the context keeps one author-name cache for the whole page.
+        return dict(LabMethodVerificationSerializer(current, context=self.context).data)
 
     @extend_schema_field(serializers.CharField())
     def get_availability(self, version: LabMethodVersion) -> str:
