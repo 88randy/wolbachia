@@ -13,10 +13,10 @@ from field_sync.models import FieldEvent
 from organizations.scope import EffectiveScope
 from reviews.effect_receipts import is_effective
 from reviews.exceptions import ReviewBlockedError, ReviewConflictError
-from reviews.inspection import original_source_envelope
 from reviews.models import ReviewDecision, ReviewEffectReceipt, ReviewItem, ShiftDecision
 from reviews.safety import has_pending_severe
-from reviews.scope import subject_facts, unresolved_scope_allows, vector_allows
+from reviews.scope import unresolved_scope_allows, vector_allows
+from reviews.subject_batches import source_subject_facts
 from reviews.transactions import review_transaction
 from shifts.models import Motorcycle, Shift
 from shifts.permissions import SHIFT_VALIDATE
@@ -46,12 +46,10 @@ def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:
         }
     ]
     resolved = True
-    for source in shift_sources(shift):
-        try:
-            facts = subject_facts(shift.organization, original_source_envelope(source))
-        except ValueError:
-            resolved = False
-            continue
+    sources = list(shift_sources(shift))
+    subjects = source_subject_facts(shift.organization, sources)
+    for source in sources:
+        facts = subjects[source.pk]
         resolved &= facts.resolved
         for context in facts.contexts:
             if context not in contexts:

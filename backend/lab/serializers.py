@@ -1,6 +1,6 @@
 """Structural input validation never consults today's mutable method or result state."""
 
-from typing import Any
+from typing import Any, cast
 
 from drf_spectacular.extensions import OpenApiSerializerExtension
 from drf_spectacular.utils import extend_schema_field
@@ -218,27 +218,38 @@ class LabMethodSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+def _method_verification(version: LabMethodVersion) -> LabMethodVerification | None:
+    prefetched = getattr(version, "read_verifications", None)
+    if prefetched is not None:
+        return None if not prefetched else cast(LabMethodVerification, prefetched[0])
+    return version.verifications.first()
+
+
 class LabMethodVersionSerializer(OrgScopedModelSerializer):
     verification = serializers.SerializerMethodField()
     availability = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_verification(self, version: LabMethodVersion) -> dict[str, Any] | None:
-        current = version.verifications.first()
+        current = _method_verification(version)
         return None if current is None else dict(LabMethodVerificationSerializer(current).data)
 
     @extend_schema_field(serializers.CharField())
     def get_availability(self, version: LabMethodVersion) -> str:
         from core.time import server_now
 
-        current = (
-            version.method.versions.filter(effective_from__lte=server_now())
-            .order_by("-effective_from", "-revision")
-            .first()
-        )
-        if current is None or current.pk != version.pk:
+        if hasattr(version, "read_current_method_version_id"):
+            current_id = getattr(version, "read_current_method_version_id", None)
+        else:
+            current_id = (
+                version.method.versions.filter(effective_from__lte=server_now())
+                .order_by("-effective_from", "-revision")
+                .values_list("pk", flat=True)
+                .first()
+            )
+        if current_id != version.pk:
             return "not_current"
-        verification = version.verifications.first()
+        verification = _method_verification(version)
         if verification is None:
             return "unverified"
         return (

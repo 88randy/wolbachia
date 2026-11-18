@@ -59,7 +59,7 @@ def lock_inbox_member(member: Membership) -> Membership:
     return locked
 
 
-def wait_for_pending_inbox_writers(member: Membership) -> None:
+def wait_for_pending_inbox_writers(member: Membership) -> Membership:
     """Block a first-page read until writers holding the recipient row commit (FOR SHARE).
 
     A reader needs the same guarantee as `lock_inbox_member` (its cutoff never precedes a
@@ -71,6 +71,14 @@ def wait_for_pending_inbox_writers(member: Membership) -> None:
     pk = quote("id")
     with connection.cursor() as cursor:
         cursor.execute(f"SELECT 1 FROM {table} WHERE {pk} = %s FOR SHARE", [member.pk])  # noqa: S608
+    # Authorization may have changed while waiting. Reload without the request scope cache,
+    # just as the old exclusive inbox lock did before constructing the first-page cutoff.
+    current = Membership.objects.select_related("organization", "user").get(
+        pk=member.pk, user_id=member.user_id, organization_id=member.organization_id
+    )
+    if not current.is_active or not current.user.is_active or not current.organization.is_active:
+        raise Http404
+    return current
 
 
 def _append_read(member: Membership, row: Notification) -> None:

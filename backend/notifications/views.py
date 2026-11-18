@@ -15,6 +15,7 @@ from core.views import OrgScopedViewSetMixin
 from notifications import serializers as wire
 from notifications.cursors import PageRequest, cursor_page
 from notifications.permissions import NOTIFICATION_READ, PREFERENCE_UPDATE
+from notifications.references import safe_references
 from notifications.selectors import inbox_rows, preference_rows, usable_grants
 from notifications.services import (
     mark_all_read,
@@ -46,13 +47,15 @@ class NotificationViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         query.is_valid(raise_exception=True)
         member = self.member()
         if "cursor" not in query.validated_data:
-            wait_for_pending_inbox_writers(member)
+            member = wait_for_pending_inbox_writers(member)
         rows = inbox_rows(member)
         page, token = cursor_page(rows, PageRequest(member, query.validated_data))
         return Response(
             {
                 "results": wire.NotificationSerializer(
-                    page, many=True, context={"member": member}
+                    page,
+                    many=True,
+                    context={"member": member, "object_references": safe_references(page, member)},
                 ).data,
                 "next": replace_query_param(request.build_absolute_uri(), "cursor", token)
                 if token

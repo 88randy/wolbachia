@@ -45,6 +45,7 @@ from reviews.scope import (
     SubjectFacts,
     subject_allows,
     subject_facts,
+    subject_facts_many,
     unresolved_scope_allows,
 )
 from reviews.transactions import review_transaction
@@ -100,11 +101,23 @@ def visible_review_ids(
             source_event_id__in=[item.field_event_id for item in rows]
         )
     }
-    return [
-        item.pk
-        for item in rows
-        if _review_allowed(actor, (item, snapshots.get(item.field_event_id)), check)
-    ]
+    envelopes = []
+    for item in rows:
+        try:
+            envelopes.append(
+                envelope_of_source(item.field_event, snapshots.get(item.field_event_id))
+            )
+        except ValueError:
+            continue
+    facts = subject_facts_many(actor.organization, envelopes)
+    return [item.pk for item in rows if _subject_allowed(check, facts.get(item.field_event_id))]
+
+
+def _subject_allowed(check: tuple[EffectiveScope, str], facts: SubjectFacts | None) -> bool:
+    scope, permission = check
+    if facts is not None and facts.resolved:
+        return subject_allows(scope, permission, facts)
+    return unresolved_scope_allows(scope, permission)
 
 
 def _review_allowed(
@@ -113,14 +126,11 @@ def _review_allowed(
     check: tuple[EffectiveScope, str],
 ) -> bool:
     item, snapshot = found
-    scope, permission = check
     try:
         facts = subject_facts(actor.organization, envelope_of_source(item.field_event, snapshot))
     except ValueError:
         facts = SubjectFacts()
-    if facts.resolved:
-        return subject_allows(scope, permission, facts)
-    return unresolved_scope_allows(scope, permission)
+    return _subject_allowed(check, facts)
 
 
 def reference_sources(source: FieldEvent) -> set[UUID]:

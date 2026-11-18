@@ -287,7 +287,7 @@ class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveMod
     def versions(self, request: Request, pk: str | None = None) -> Response:
         method = get_object_or_404(self.get_queryset(), pk=pk)
         return self.page_response(
-            method.versions.all(), lambda row: LabMethodVersionSerializer(row).data
+            selectors.method_version_rows(method), lambda row: LabMethodVersionSerializer(row).data
         )
 
     @extend_schema(request=LabMethodWriteSerializer, responses={201: LabMethodVersionSerializer})

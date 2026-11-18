@@ -738,8 +738,10 @@ class MovementSerializer(OrgScopedModelSerializer):
     def get_source_transfer(self, movement: StockMovement) -> dict[str, str] | None:
         from inventory.transfers.scope import allows_transfer_vector, transfer_contexts
 
+        if "request" not in self.context:
+            return None
         event = movement.operation.transfer_event
-        if event is None or "request" not in self.context:
+        if event is None:
             return None
         actor = actor_from_request(self.context["request"])
         if not allows_transfer_vector(

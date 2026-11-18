@@ -8,10 +8,9 @@ from geography.models import Quadrant
 from incidents.selectors import active_blockers
 from ovitraps.lifecycle.models import RelocationProposal, RemovalAttempt
 from ovitraps.models import Ovitrap
-from reviews.effect_receipts import is_effective
-from reviews.inspection import original_source_envelope
-from reviews.scope import subject_facts
-from uploads.access import UploadActor
+from reviews.effect_receipts import effective_effects
+from reviews.subject_batches import source_subject_facts
+from uploads.access import UploadActor, current_scope
 
 
 def _cause(reason: str, permissions: tuple[str, str], identifier: object) -> dict[str, Any]:
@@ -41,16 +40,18 @@ def domain_blockers(quadrant: Quadrant, active: list[Ovitrap]) -> list[dict[str,
         event__voided_at__isnull=True,
     ):
         rows.append(_cause("removal_unrecovered", ("removal.resolve", "ovitrap.read"), removal.pk))
-    for proposal in RelocationProposal.objects.filter(
-        organization=quadrant.organization,
-        ovitrap__sampling_point__block__quadrant=quadrant,
-        decisions__isnull=True,
-        event__voided_at__isnull=True,
-    ).select_related("event"):
-        if is_effective(proposal.event):
-            rows.append(
-                _cause("relocation_pending", ("relocation.decide", "relocation.read"), proposal.pk)
-            )
+    for proposal in effective_effects(
+        RelocationProposal.objects.filter(
+            organization=quadrant.organization,
+            ovitrap__sampling_point__block__quadrant=quadrant,
+            decisions__isnull=True,
+            event__voided_at__isnull=True,
+        ),
+        "event",
+    ):
+        rows.append(
+            _cause("relocation_pending", ("relocation.decide", "relocation.read"), proposal.pk)
+        )
     return rows
 
 
@@ -67,13 +68,11 @@ def pending_review_blockers(quadrant: Quadrant) -> list[dict[str, Any]]:
         voided_at__isnull=True,
     ).exclude(pk__in=terminal)
     rows = []
-    for source in pending:
-        if is_effective(source):
-            continue
-        try:
-            facts = subject_facts(quadrant.organization, original_source_envelope(source))
-        except ValueError:
-            continue  # An unresolved/foreign identity cannot authorize or reveal this quadrant.
+    pending = pending.exclude(pk__in=effective_effects(pending).values("pk"))
+    sources = list(pending)
+    subjects = source_subject_facts(quadrant.organization, sources)
+    for source in sources:
+        facts = subjects[source.pk]
         if facts.resolved and context(quadrant) in facts.contexts:
             rows.append(
                 _cause(
@@ -99,6 +98,9 @@ def closure_blockers(
                 "incident_quadrant_closure", ("incident.close", "incident.read"), hold.incident_id
             )
         )
-    visible = [blocker(actor, quadrant, row) for row in rows]
+    if not rows:
+        return []
+    scope = current_scope(actor)
+    visible = [blocker(scope, quadrant, row) for row in rows]
     # Hidden references coalesce, preserving existence opacity and all distinct visible holds.
     return list({tuple(sorted(row.items())): row for row in visible}.values())

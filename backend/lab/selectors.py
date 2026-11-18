@@ -19,15 +19,21 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 from django.http import Http404
 
+from core.time import server_now
 from lab.access import scoped_bags, scoped_readings
 from lab.counting import count_projection
 from lab.models import (
     BagReceipt,
     EggCountAttempt,
+    LabMethod,
+    LabMethodVerification,
+    LabMethodVersion,
     LabRejection,
     LabResultRevision,
     ReceptionDiscrepancy,
     RecountRequest,
+    RecountRequestCause,
+    RecountResolution,
 )
 from lab.permissions import BAG_RECEIVE, COUNT_READ, COUNT_VOID
 from lab.rejections import rejection_projection
@@ -124,7 +130,9 @@ def discrepancy_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[Rec
         rows = rows.filter(kind=values["kind"])
     if "configuration_pending" in values:
         rows = rows.filter(incident_link__isnull=values["configuration_pending"])
-    return rows.order_by(values.get("ordering", "-created_at"), "id")
+    return rows.select_related(
+        "bag__reading__ovitrap__sampling_point__block__quadrant", "incident_link"
+    ).order_by(values.get("ordering", "-created_at"), "id")
 
 
 def discrepancy_projection(actor: UploadActor, discrepancy: ReceptionDiscrepancy) -> dict[str, Any]:
@@ -186,6 +194,30 @@ def void_context(actor: UploadActor, identity: tuple[str, UUID]) -> dict[str, An
         if current
         else [{"reason": "lab_state_conflict", "unblocked_by_role": "entomologist", "link": ""}],
     }
+
+
+def method_version_rows(method: LabMethod) -> QuerySet[Any]:
+    """Retain the effective-current version and latest exact verification for each page row."""
+    current = LabMethodVersion.objects.filter(
+        method_id=OuterRef("method_id"), effective_from__lte=server_now()
+    ).order_by("-effective_from", "-revision")
+    latest_verification = LabMethodVerification.objects.filter(
+        method_version_id=OuterRef("method_version_id")
+    ).order_by("-revision")
+    return cast(
+        QuerySet[Any],
+        method.versions.annotate(
+            read_current_method_version_id=Subquery(current.values("pk")[:1])
+        ).prefetch_related(
+            Prefetch(
+                "verifications",
+                queryset=LabMethodVerification.objects.filter(
+                    pk=Subquery(latest_verification.values("pk")[:1])
+                ),
+                to_attr="read_verifications",
+            )
+        ),
+    )
 
 
 def recount_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[RecountRequest]:
@@ -372,9 +404,43 @@ class BagLabFacts:
     effective: set[UUID]
     missing: set[UUID]
     material: dict[UUID, dict[str, Any]]
+    pending_recounts: set[UUID]
 
 
-def bag_lab_facts(bags: Sequence[Bag]) -> BagLabFacts:
+def _pending_recount_bags(latest: Sequence[LabResultRevision]) -> set[UUID]:
+    """Apply obligation_resolution's exact current-result/cause frame once for the page."""
+    requests = {
+        request.pk: (request, revision)
+        for revision in latest
+        if revision.count is not None
+        and (request := getattr(revision.count, "recount_request", None)) is not None
+    }
+    if not requests:
+        return set()
+    causes: dict[UUID, list[str]] = {}
+    for request_id, cause_id in (
+        RecountRequestCause.objects.filter(request_id__in=requests)
+        .order_by("pk")
+        .values_list("request_id", "pk")
+    ):
+        causes.setdefault(request_id, []).append(str(cause_id))
+    resolutions: dict[UUID, RecountResolution] = {}
+    for resolution in RecountResolution.objects.filter(
+        request_id__in=requests,
+        first_result_id__in=[revision.pk for _, revision in requests.values()],
+    ).order_by("-qa_revision__revision"):
+        if resolution.first_result_id == requests[resolution.request_id][1].pk:
+            resolutions.setdefault(resolution.request_id, resolution)
+    return {
+        revision.bag_id
+        for request_id, (request, revision) in requests.items()
+        if hasattr(request, "supersession")
+        or (resolution := resolutions.get(request_id)) is None
+        or resolution.comparison_proof.get("cause_ids") != causes.get(request_id, [])
+    }
+
+
+def bag_lab_facts(bags: Sequence[Bag], *, include_recount_status: bool = True) -> BagLabFacts:
     from inventory.allocations.models import BagDisposition
     from lab.models import PaddleReuse
 
@@ -382,7 +448,7 @@ def bag_lab_facts(bags: Sequence[Bag]) -> BagLabFacts:
     latest: dict[UUID, LabResultRevision] = {}
     revisions = (
         LabResultRevision.objects.filter(bag_id__in=ids)
-        .select_related("count__recount_request")
+        .select_related("count__recount_request__supersession")
         .order_by("bag_id", "-revision")
     )
     for revision in revisions:
@@ -413,6 +479,9 @@ def bag_lab_facts(bags: Sequence[Bag]) -> BagLabFacts:
             identifier: _material(dispositions.get(identifier), identifier in reused)
             for identifier in ids
         },
+        pending_recounts=_pending_recount_bags(list(latest.values()))
+        if include_recount_status
+        else set(),
     )
 
 
@@ -436,14 +505,7 @@ def bag_lab_projection(bag: Bag, facts: BagLabFacts | None = None) -> dict[str, 
     if bag.pk not in facts.effective:
         status = "no_effective_reading"
     elif latest is not None and latest.count is not None:
-        from lab.independent_qa.selectors import obligation_resolution
-
-        request = getattr(latest.count, "recount_request", None)
-        status = (
-            "awaiting_independent_qa"
-            if request is not None and obligation_resolution(request, latest) is None
-            else "counted"
-        )
+        status = "awaiting_independent_qa" if bag.pk in facts.pending_recounts else "counted"
     elif latest is not None and latest.rejection_id is not None:
         status = "rejected"
     elif receipt is not None:
@@ -518,7 +580,7 @@ def result_projection(
     result: EggCountAttempt | LabRejection, facts: BagLabFacts | None = None
 ) -> dict[str, Any]:
     """`facts` (from `result_page_facts`) spares the per-result lookups when listing a page."""
-    facts = facts or bag_lab_facts([result.bag])
+    facts = facts or bag_lab_facts([result.bag], include_recount_status=False)
     projection = (
         count_projection(result)
         if isinstance(result, EggCountAttempt)
@@ -534,7 +596,7 @@ def result_projection(
 
 
 def result_page_facts(results: Sequence[EggCountAttempt | LabRejection]) -> BagLabFacts:
-    return bag_lab_facts([result.bag for result in results])
+    return bag_lab_facts([result.bag for result in results], include_recount_status=False)
 
 
 def published_result_projection(

@@ -355,3 +355,97 @@ def _observe_reader_or_membership_lock(reader, identifier):
             if cursor.fetchone()[0]:
                 return
     assert reader.done(), "Reader neither completed nor reached the inbox membership lock."
+
+
+@pytest.mark.parametrize("changed", ["membership", "user", "organization", "scope"])
+def test_first_page_rechecks_authority_after_request_scope_was_cached(inbox, monkeypatch, changed):
+    from notifications.services import wait_for_pending_inbox_writers
+    from organizations.models import Membership, default_scope
+
+    client, member, _profile = inbox
+    notice(member)
+
+    def change_before_wait(request_member):
+        # Deterministically interleave a committed revocation after initial permission checks.
+        if changed == "scope":
+            Membership.objects.filter(pk=member.pk).update(scope=default_scope())
+        else:
+            target = member if changed == "membership" else getattr(member, changed)
+            type(target).objects.filter(pk=target.pk).update(is_active=False)
+        return wait_for_pending_inbox_writers(request_member)
+
+    monkeypatch.setattr("notifications.views.wait_for_pending_inbox_writers", change_before_wait)
+    response = client.get(BASE)
+    assert response.status_code == (403 if changed == "scope" else 404)
+
+
+@pytest.mark.parametrize("object_kind", ["motorcycle", "review_item"])
+def test_notification_reference_queries_do_not_grow_with_rows(inbox, object_kind):
+    from field_sync.envelope import describe_payload
+    from shifts.models import Motorcycle
+    from tests.factories import ReviewItemFactory
+    from tests.query_budget import assert_constant_queries
+
+    client, member, profile = inbox
+    permission = "motorcycle.read" if object_kind == "motorcycle" else "review_item.read"
+    profile.permission_codes.append(permission)
+    profile.save(update_fields=["permission_codes"])
+    identifiers = []
+
+    def add_rows(count):
+        for _ in range(count):
+            if object_kind == "motorcycle":
+                target = Motorcycle.objects.create(
+                    organization=member.organization, code=f"N-REF-{len(identifiers)}"
+                )
+                code, params = "incident.severe_fault", {}
+            else:
+                payload = {"text": "synthetic review"}
+                target = ReviewItemFactory(
+                    field_event__organization=member.organization,
+                    field_event__payload=payload,
+                    field_event__payload_sha256=describe_payload(payload).sha256,
+                )
+                code = "incident.critical_review"
+                params = {"review_item_id": str(target.pk)}
+            identifiers.append(str(target.pk))
+            notice(member, code=code, params=params, object_kind=object_kind, object_id=target.pk)
+
+    assert_constant_queries(client, BASE, add_rows)
+    rows = client.get(BASE).data["results"]
+    assert {row["object_ref"]["id"] for row in rows} == set(identifiers)
+    assert all(row["object_ref"]["available"] for row in rows)
+
+
+def test_incident_notification_reference_queries_do_not_grow_with_rows(monkeypatch):
+    from incidents.services import report
+    from tests.ovitrap_support import setup_field
+    from tests.query_budget import assert_constant_queries
+    from tests.test_incidents_b_06 import configured
+
+    monkeypatch.setattr("incidents.tasks.publish_incident_notices.delay", lambda *_args: None)
+    case = configured(setup_field())
+    profile = case.field.profile
+    profile.permission_codes.append("notification.read")
+    profile.save(update_fields=["permission_codes"])
+    member = case.field.membership
+    client = APIClient()
+    client.force_authenticate(member.user)
+    identifiers = []
+
+    def add_rows(count):
+        for _ in range(count):
+            incident = report(case.actor, case.data)
+            identifiers.append(str(incident.pk))
+            notice(
+                member,
+                code="incident.created",
+                params={"incident_id": str(incident.pk)},
+                object_kind="incident",
+                object_id=incident.pk,
+            )
+
+    assert_constant_queries(client, BASE, add_rows)
+    rows = client.get(BASE).data["results"]
+    assert {row["object_ref"]["id"] for row in rows} == set(identifiers)
+    assert all(row["params"] == {"incident_id": row["object_ref"]["id"]} for row in rows)

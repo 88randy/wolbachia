@@ -43,10 +43,10 @@ def quadrant_for(actor: UploadActor, identifier: UUID, permission: str) -> Quadr
     return row
 
 
-def blocker(actor: UploadActor, quadrant: Quadrant, facts: dict[str, Any]) -> dict[str, Any]:
+def blocker(scope: EffectiveScope, quadrant: Quadrant, facts: dict[str, Any]) -> dict[str, Any]:
     """Opaque hidden causes coalesce; a closure reader gains no unrelated read grant."""
     facts = dict(facts)
     permission = facts.pop("read_permission")
-    if allows(current_scope(actor), permission, quadrant):
+    if allows(scope, permission, quadrant):
         return facts
     return {"reason": facts["reason"], "permission": facts["permission"], "link": ""}
