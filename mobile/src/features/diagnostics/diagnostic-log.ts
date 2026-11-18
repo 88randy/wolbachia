@@ -8,9 +8,9 @@ interface StatementLike {
 }
 
 const MAX_ENTRIES = 20;
-const MAX_LINE = 160;
+const MAX_LINE = 240;
 const SAFE_DETAIL = /^[A-Za-z0-9_.,' :-]+$/;
-const MAX_MESSAGE = 90;
+const MAX_MESSAGE = 120;
 
 const KINDS: readonly (readonly [RegExp, string])[] = [
   [/NOT NULL constraint failed:\s*([\w.,\s]+)/i, "SQLITE_CONSTRAINT_NOTNULL"],
@@ -60,11 +60,7 @@ export function describeWriteFailure(
   const { code, detail } = classify(message);
   const safeDetail = SAFE_DETAIL.test(detail) ? detail : "";
   const statement = statementName(safeDetail, statements);
-  // Our own fixed messages (and TypeError property names) say where it broke; JSON errors can quote data.
-  const own =
-    code === "UNKNOWN" && name !== "SyntaxError" && SAFE_DETAIL.test(message)
-      ? message.slice(0, MAX_MESSAGE)
-      : "";
+  const own = code === "UNKNOWN" || safeDetail === "" ? sanitizeMessage(name, message) : "";
   const parts = [
     `Código: ${code}`,
     safeDetail,
@@ -75,11 +71,32 @@ export function describeWriteFailure(
   return parts.filter(Boolean).join(" ").slice(0, MAX_LINE);
 }
 
-/** The function that threw, from the stack: identifiers only. */
+/**
+ * Our own errors carry fixed English messages, not data. Anything that can quote data (JSON parse
+ * errors) is dropped; ids, long numbers and quoted text are masked; unusual characters become "?".
+ */
+function sanitizeMessage(name: string, message: string): string {
+  if (name === "SyntaxError" || message === "") return "";
+  return message
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "<id>")
+    .replace(/(["'`]).*?\1/g, "<text>")
+    .replace(/\d{5,}/g, "<n>")
+    .replace(/[^A-Za-z0-9 .:,<>_()[\]=/-]/g, "?")
+    .slice(0, MAX_MESSAGE);
+}
+
+/** Up to three function names from the top of the stack (identifiers only), skipping constructors. */
 function throwSite(cause: unknown): string {
   const stack = cause instanceof Error ? cause.stack : undefined;
-  const match = stack === undefined ? null : /\n\s*at\s+([\w#.$<>]+)/.exec(stack);
-  return match?.[1] ? ` @${match[1]}` : "";
+  if (stack === undefined) return "";
+  const names: string[] = [];
+  for (const line of stack.split("\n")) {
+    const match = /^\s*(?:at\s+)?([\w#.$<>]+)(?:@|\s*\()/.exec(line);
+    const frame = match?.[1];
+    if (frame !== undefined && frame !== "new" && !frame.startsWith("Error")) names.push(frame);
+    if (names.length === 3) break;
+  }
+  return names.length === 0 ? "" : ` @${names.join("<")}`;
 }
 
 export interface DiagnosticEntry {

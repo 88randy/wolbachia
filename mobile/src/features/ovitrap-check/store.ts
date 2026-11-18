@@ -11,6 +11,7 @@ import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identit
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
 import { captureWeek } from "./capture-week.ts";
+import { CaptureBlockedError } from "./ports.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readInteger, readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
@@ -236,7 +237,7 @@ export class OvitrapStore {
   }
   commitStatements(draft: Draft, expectedVersion: string | null): readonly SqlStatement[] {
     const week = captureWeek(draft);
-    if (!week) throw new Error("Capture blocked: weekContext");
+    if (!week) throw new CaptureBlockedError("weekContext");
     return [
       ...this.#lineage(draft),
       {

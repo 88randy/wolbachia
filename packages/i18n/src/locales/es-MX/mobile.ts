@@ -543,6 +543,10 @@ export const mobile = {
   "mobile.ovitrap.retryGps": "Intentar GPS de nuevo",
   "mobile.ovitrap.blockedReview": "Marca que la oficina lo va a revisar para poder guardar.",
   "mobile.ovitrap.blockedPhoto": "Falta una foto para poder guardar.",
+  "mobile.ovitrap.blockedRetired":
+    "Este punto o esta ovitrampa ya está dada de baja, así que no se puede guardar. Descarta la captura.",
+  "mobile.ovitrap.blockedBagReserved":
+    "Esa bolsa ya está usada en otra captura. Escribe o escanea otra.",
   "mobile.ovitrap.blockedPrepare": "Falta marcar la preparación de la ovitrampa.",
   "mobile.ovitrap.blockedOutdated":
     "Los datos de este punto son de otro día. Vuelve a la ruta y entra de nuevo al punto.",

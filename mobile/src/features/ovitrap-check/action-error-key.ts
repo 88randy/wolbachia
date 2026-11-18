@@ -33,6 +33,8 @@ const BLOCKED_KEYS: Readonly<Record<string, MessageKey>> = {
   review: "mobile.ovitrap.blockedReview",
   evidence: "mobile.ovitrap.blockedPhoto",
   prepare: "mobile.ovitrap.blockedPrepare",
+  retired: "mobile.ovitrap.blockedRetired",
+  bagReserved: "mobile.ovitrap.blockedBagReserved",
 };
 const OUTDATED_GATES = ["scope", "assignment", "point", "catalog", "rules", "weekContext"];
 function blockedKey(gate: string): MessageKey {

@@ -536,6 +536,10 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.ovitrap.retryGps": "Retry GPS",
   "mobile.ovitrap.blockedReview": "Tick that the office will review it to be able to save.",
   "mobile.ovitrap.blockedPhoto": "A photo is missing to be able to save.",
+  "mobile.ovitrap.blockedRetired":
+    "This point or ovitrap has been retired, so it cannot be saved. Discard the capture.",
+  "mobile.ovitrap.blockedBagReserved":
+    "That bag is already used in another capture. Type or scan another one.",
   "mobile.ovitrap.blockedPrepare": "The ovitrap preparation is not ticked yet.",
   "mobile.ovitrap.blockedOutdated":
     "The data of this point is from another day. Go back to the route and open the point again.",

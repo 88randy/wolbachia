@@ -177,6 +177,9 @@ export class OvitrapService {
         draft?.mode === "place" && draft.labelScanned === true
           ? await this.#isIdentityTaken(draft.ovitrapId, { ...draft, labelScanned: false })
           : false,
+      isRetired: draft
+        ? (await this.#deps.store.lifecycleSource(draft.ovitrapId, draft.point)).isRetired
+        : false,
     });
   }
   /** "Yes, I did it that day": finish the old draft, saved with its original time and context. */
@@ -573,7 +576,7 @@ export class OvitrapService {
       const state = await this.#readExpected(eventId);
       if (state.event) return state;
       if (!state.draft) throw new Error("No capture draft.");
-      const draft = normalizePaddle(state.draft);
+      const draft = await this.#withCurrentOrganization(normalizePaddle(state.draft));
       const validationDraft = draft.assignment
         ? { ...draft, assignment: { ...draft.assignment, reuse: state.reuse } }
         : draft;
@@ -581,15 +584,26 @@ export class OvitrapService {
       if (gate || (state.repeat && draft.replacesEventId !== state.repeat.envelope.id))
         throw new CaptureBlockedError(gate ?? "repeat");
       if (state.isScopeBlocked) throw new CaptureBlockedError("scope");
-      if (state.isBagReserved) throw new Error("Bag code is reserved.");
+      if (state.isBagReserved) throw new CaptureBlockedError("bagReserved");
       await this.#commit(draft, state.draftVersion);
       return this.read();
     }, eventId);
   }
+  /**
+   * A draft saved by an older bundle can lack the organization settings (time zone, epi-week
+   * rule). They do not change per draft, so the current downloaded ones fill the gap.
+   */
+  async #withCurrentOrganization(draft: Draft): Promise<Draft> {
+    if (!draft.assignment || draft.assignment.organization) return draft;
+    const { assignment } = await this.#deps.store.snapshots();
+    return assignment?.organization
+      ? { ...draft, assignment: { ...draft.assignment, organization: assignment.organization } }
+      : draft;
+  }
   async #commit(draft: Draft, version: string | null): Promise<void> {
     if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
     const source = await this.#deps.store.lifecycleSource(draft.ovitrapId, draft.point);
-    if (source.isRetired) throw new Error("The physical ovitrap is retired.");
+    if (source.isRetired) throw new CaptureBlockedError("retired");
     const event = captureEvent(draft);
     const statements = [
       ...this.#deps.store.commitStatements(draft, version),
