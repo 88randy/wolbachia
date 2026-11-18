@@ -8,6 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { WizardPage } from "../../components/templates/WizardPage";
 import { SearchField } from "../../forms/SearchField";
 import { useFormatDate } from "../../format/use-formatters";
+import { useLanguage } from "../../i18n/use-language";
+import { SampleOrigin } from "../trace/SampleOrigin";
+import { pcrOriginLabel } from "../trace/sample-origin";
 import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { useToast } from "../../ui/toast-context";
@@ -200,6 +203,7 @@ function SampleChooser({
   onChange: (next: Map<string, PcrSample>) => void;
 }) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const scope = useLabScope();
   const formatDate = useFormatDate();
   const [quadrant, setQuadrant] = useState(ALL);
@@ -284,6 +288,7 @@ function SampleChooser({
                 />
               </th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.code")}</th>
+              <th className="px-3 py-2 font-semibold">{t("pcr.col.origin")}</th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.quadrant")}</th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.center")}</th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.week")}</th>
@@ -312,6 +317,12 @@ function SampleChooser({
                   />
                 </td>
                 <td className="px-3 py-2 font-semibold">{row.code}</td>
+                <td className="px-3 py-2">
+                  <SampleOrigin
+                    bagCode={row.bag_code}
+                    otherOrigin={pcrOriginLabel(row, language)}
+                  />
+                </td>
                 <td className="px-3 py-2">{row.quadrant_code ?? "—"}</td>
                 <td className="px-3 py-2">{row.center_name}</td>
                 <td className="px-3 py-2">{row.epi_week ?? "—"}</td>
@@ -320,7 +331,7 @@ function SampleChooser({
             ))}
             {visible.length === 0 && !rows.isFetching && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-ink-3">
+                <td colSpan={7} className="px-3 py-6 text-center text-ink-3">
                   {t("pcr.wizard.noSamples")}
                 </td>
               </tr>

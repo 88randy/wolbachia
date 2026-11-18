@@ -237,7 +237,7 @@ class PcrBatchViewSet(
         query.is_valid(raise_exception=True)
         values = query.validated_data
         rows = eligible_samples(actor_from_request(request)).select_related(
-            "quadrant", "center", "reading"
+            "quadrant", "center", "reading__bag"
         )
         if "quadrant" in values:
             rows = rows.filter(quadrant_id=values["quadrant"])

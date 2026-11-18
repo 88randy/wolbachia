@@ -13855,6 +13855,9 @@ export interface components {
             quadrant_code: string | null;
             center_name: string;
             epi_week: string | null;
+            bag_code: string | null;
+            origin_label_es: string;
+            origin_label_en: string;
             /** Format: date-time */
             collected_at: string;
         };
@@ -16263,6 +16266,7 @@ export interface components {
             quadrant_id: string | null;
             /** Format: uuid */
             reading_id: string | null;
+            bag_code: string | null;
             /** Format: uuid */
             lot_id: string | null;
             /** Format: uuid */

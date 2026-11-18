@@ -28,6 +28,9 @@ import { DescriptionGrid } from "../../components/templates/DescriptionGrid";
 import { DetailSection } from "../../components/templates/DetailSection";
 import type { OverflowAction } from "../../components/templates/OverflowMenu";
 import { EmptyValue } from "../../ui/EmptyValue";
+import { useLanguage } from "../../i18n/use-language";
+import { SampleOrigin } from "../trace/SampleOrigin";
+import { pcrOriginLabel } from "../trace/sample-origin";
 import { ErrorState } from "../../ui/ErrorState";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { StatusPill } from "../../ui/StatusPill";
@@ -286,6 +289,7 @@ function SamplesCard({
   formatDateTime: (iso: string) => string;
 }) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const current = new Map(
     batch.results
       .filter((row) => row.current)
@@ -299,6 +303,7 @@ function SamplesCard({
           <thead className="text-left text-xs text-ink-2">
             <tr className="border-b border-line">
               <th className="px-3 py-2 font-semibold">{t("pcr.col.code")}</th>
+              <th className="px-3 py-2 font-semibold">{t("pcr.col.origin")}</th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.quadrant")}</th>
               <th className="px-3 py-2 font-semibold">{t("pcr.col.week")}</th>
               {batch.targets.map((target) => (
@@ -312,6 +317,12 @@ function SamplesCard({
             {batch.samples.map((sample) => (
               <tr key={sample.id} className="border-b border-line last:border-0">
                 <td className="px-3 py-2 font-semibold">{sample.code}</td>
+                <td className="px-3 py-2">
+                  <SampleOrigin
+                    bagCode={sample.bag_code}
+                    otherOrigin={pcrOriginLabel(sample, language)}
+                  />
+                </td>
                 <td className="px-3 py-2">{sample.quadrant_code ?? <EmptyValue />}</td>
                 <td className="px-3 py-2">{sample.epi_week ?? <EmptyValue />}</td>
                 {batch.targets.map((target) => {

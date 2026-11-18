@@ -11,13 +11,14 @@ import { useGeographyCodes } from "./use-point-codes";
 export interface PointsTableOptions {
   scope: GeographyScope;
   quadrant: string;
+  quadrantCode: string;
   controller: TableController;
 }
-export function usePointsTable({ scope, quadrant, controller }: PointsTableOptions) {
+export function usePointsTable({ scope, quadrant, quadrantCode, controller }: PointsTableOptions) {
   const [point, setPoint] = useState<Schemas["SamplingPoint"] | null>(null);
   const query = useQuery(pointsOptions(scope, quadrant, controller.state));
   const codes = useGeographyCodes(scope, quadrant);
-  const columns = usePointColumns(setPoint, codes.block);
+  const columns = usePointColumns(setPoint, codes.block, quadrantCode);
   const voidOf = usePointRetirement(scope, quadrant);
   return {
     point,

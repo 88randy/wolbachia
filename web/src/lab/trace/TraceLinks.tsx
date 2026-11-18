@@ -13,7 +13,11 @@ export function TraceLinks({ trace }: { trace: BagTrace }) {
   const className = buttonVariants({ variant: "secondary", size: "sm" });
   return (
     <div className="flex flex-wrap gap-2">
-      <Link to="/quadrants/$code/versions" params={params} className={className}>
+      <Link
+        to="/quadrants/$code/points/$pointCode"
+        params={{ ...params, pointCode: trace.location.point.code }}
+        className={className}
+      >
         {t("labTrace.map.viewPoint")} · {trace.location.point.code}
       </Link>
       <Link to="/quadrants/$code/versions" params={params} className={className}>

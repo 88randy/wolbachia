@@ -12,13 +12,13 @@ import type { MapSource } from "../../quadrants/geography/map-source";
 import { MapAttribution } from "../../quadrants/geography/MapAttribution";
 import { useMapTheme } from "../../quadrants/geography/use-map-theme";
 import { boundsOf, circleRing } from "./trace-geometry";
-import type { BagTrace } from "./trace-query";
+import type { MapPlace } from "./map-place";
 
 const POINT_ZOOM = 18;
 const PADDING = 48;
 
 interface Props {
-  trace: BagTrace;
+  place: MapPlace;
   source: MapSource;
   onFailure: () => void;
 }
@@ -34,23 +34,23 @@ function outline(kind: string, geometry: unknown) {
     : [{ type: "Feature" as const, properties: { kind }, geometry: geometry as never }];
 }
 
-function initialView(trace: BagTrace) {
-  const [lng = 0, lat = 0] = trace.location.point.location;
-  const { capture } = trace.reading;
+function initialView(place: MapPlace) {
+  const [lng = 0, lat = 0] = place.point;
+  const { capture } = place;
   const positions = [
     [lng, lat],
     ...(capture ? [[capture.lng, capture.lat]] : []),
-    ...ringOf(trace.location.block.geometry),
+    ...ringOf(place.block),
   ];
   const bounds = boundsOf(positions);
   const isSingle = bounds && bounds[0][0] === bounds[1][0] && bounds[0][1] === bounds[1][1];
-  return isSingle || !bounds
+  return isSingle || !bounds || place.isCentered
     ? { longitude: lng, latitude: lat, zoom: POINT_ZOOM }
     : { bounds, fitBoundsOptions: { padding: PADDING, maxZoom: POINT_ZOOM } };
 }
 
 /** The sampling point (pin), the courier's GPS reading (crosshair, with its accuracy circle) and the outlines. */
-export default function TraceMapView({ trace, source, onFailure }: Props) {
+export default function TraceMapView({ place, source, onFailure }: Props) {
   const { t } = useTranslation();
   const colors = useMapTheme();
   const style = useMemo(
@@ -58,14 +58,11 @@ export default function TraceMapView({ trace, source, onFailure }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the url and kind define the style.
     [source.url, source.isRaster],
   );
-  const [lng = 0, lat = 0] = trace.location.point.location;
-  const { capture } = trace.reading;
+  const [lng = 0, lat = 0] = place.point;
+  const { capture } = place;
   const areas = {
     type: "FeatureCollection" as const,
-    features: [
-      ...outline("quadrant", trace.location.quadrant.geometry),
-      ...outline("block", trace.location.block.geometry),
-    ],
+    features: [...outline("quadrant", place.quadrant), ...outline("block", place.block)],
   };
   const accuracy = {
     type: "FeatureCollection" as const,
@@ -86,7 +83,7 @@ export default function TraceMapView({ trace, source, onFailure }: Props) {
   return (
     <div className="relative h-80 w-full overflow-hidden rounded-xl border border-line">
       <Map
-        initialViewState={initialView(trace)}
+        initialViewState={initialView(place)}
         mapStyle={style}
         maxZoom={MAX_MAP_ZOOM}
         workerUrl={workerUrl}
@@ -131,10 +128,7 @@ export default function TraceMapView({ trace, source, onFailure }: Props) {
           />
         </Source>
         <Marker longitude={lng} latitude={lat} anchor="bottom">
-          <span
-            role="img"
-            aria-label={t("labTrace.map.pointMarker", { code: trace.location.point.code })}
-          >
+          <span role="img" aria-label={t("labTrace.map.pointMarker", { code: place.pointCode })}>
             <MapPin
               aria-hidden="true"
               className="size-8 fill-action text-surface drop-shadow"

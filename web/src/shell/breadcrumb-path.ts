@@ -18,6 +18,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "incident-types": "incidentTypes.page.title",
   motorcycles: "fleet.page.title",
   versions: "geography.history.title",
+  points: "geography.points.title",
   bags: "labReception.page.title",
   "permit-types": "permits.types.title",
   permits: "permits.list.title",

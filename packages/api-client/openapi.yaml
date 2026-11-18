@@ -33663,15 +33663,25 @@ components:
         epi_week:
           type: string
           nullable: true
+        bag_code:
+          type: string
+          nullable: true
+        origin_label_es:
+          type: string
+        origin_label_en:
+          type: string
         collected_at:
           type: string
           format: date-time
       required:
+      - bag_code
       - center_name
       - code
       - collected_at
       - epi_week
       - id
+      - origin_label_en
+      - origin_label_es
       - quadrant_code
     PcrShipRequest:
       type: object
@@ -39549,6 +39559,9 @@ components:
           type: string
           format: uuid
           nullable: true
+        bag_code:
+          type: string
+          nullable: true
         lot_id:
           type: string
           format: uuid
@@ -39598,6 +39611,7 @@ components:
           type: boolean
       required:
       - attempts
+      - bag_code
       - center_id
       - code
       - collector_id

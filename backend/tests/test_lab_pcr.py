@@ -93,6 +93,8 @@ def test_full_flow_records_wolbachia_attempt_and_dengue_result(pcr):
         "close",
     ]
     assert detail["samples"][0]["code"] == sample.code
+    assert detail["samples"][0]["bag_code"] == "B-111"
+    assert detail["samples"][0]["origin_label_es"] != ""
 
 
 @pytest.mark.django_db

@@ -27,7 +27,12 @@ export function W24Page({ scope, quadrant }: Props) {
         <BlocksTable scope={scope} quadrant={quadrant.id} controller={controller} />
       )}
       {view === "points" && (
-        <PointsTable scope={scope} quadrant={quadrant.id} controller={controller} />
+        <PointsTable
+          scope={scope}
+          quadrant={quadrant.id}
+          quadrantCode={quadrant.code}
+          controller={controller}
+        />
       )}
       <BlockTools scope={scope} quadrant={quadrant} />
     </section>
