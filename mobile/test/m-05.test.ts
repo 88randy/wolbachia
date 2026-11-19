@@ -571,3 +571,52 @@ void test("M05 lock before native invocation denies capture while an already lau
   assert.equal(finished.event, null);
   assert.equal((await h.db.query("SELECT id FROM outbox_event")).length, 0);
 });
+
+function releaseOnly(releaseId: string) {
+  const assignment = supplyAssignment();
+  const first = required(assignment.releases[0]);
+  return { ...assignment, releases: [{ ...first, id: releaseId }] };
+}
+async function signAndSave(h: Awaited<ReturnType<typeof receiptHarness>>, releaseId: string) {
+  await h.service.begin(receiptId(1), releaseId);
+  const draft = required((await h.service.read()).draft);
+  await h.service.quantity(required(draft.lines[0]).id, "2.000000");
+  await h.service.signature(h.photo);
+  await h.service.save();
+}
+
+void test("M05 a saved receipt hides only its own release: a release with no receipt is offered and a receipt for a release gone from the bundle never blocks", async (t) => {
+  const h = await receiptHarness(t);
+  await signAndSave(h, receiptId(8));
+  assert.ok((await h.service.read()).event);
+  h.setAssignment(releaseOnly(receiptId(81)));
+  await h.bundle.refresh(true);
+  const offered = await h.service.read();
+  assert.equal(offered.draft, null);
+  assert.equal(offered.event, null);
+  assert.deepEqual(
+    offered.assignments.flatMap((row) => row.releases.map((release) => release.id)),
+    [receiptId(81)],
+  );
+  await h.service.begin(receiptId(1), receiptId(81));
+  const started = required((await h.service.read()).draft);
+  assert.equal(started.releaseId, receiptId(81));
+  assert.equal((await h.db.query("SELECT 1 FROM outbox_event")).length, 1);
+  assert.equal((await h.db.query("SELECT 1 FROM supply_receipt_draft")).length, 2);
+});
+
+void test("M05 a saved receipt for the release in the bundle shows the saved screen, and leaving it offers a pending release", async (t) => {
+  const h = await receiptHarness(t);
+  h.setAssignment(releaseOnly(receiptId(81)));
+  await h.bundle.refresh(true);
+  await signAndSave(h, receiptId(81));
+  assert.equal((await h.service.read()).event?.envelope.type, "supplies.receive");
+  const first = required(supplyAssignment().releases[0]);
+  h.setAssignment({ ...supplyAssignment(), releases: [{ ...first, id: receiptId(81) }, first] });
+  await h.bundle.refresh(true);
+  assert.ok((await h.service.read()).event);
+  h.service.dismissSaved();
+  const next = await h.service.read();
+  assert.equal(next.draft, null);
+  assert.equal(next.event, null);
+});

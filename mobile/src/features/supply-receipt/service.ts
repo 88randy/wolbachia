@@ -116,6 +116,11 @@ export class SupplyReceiptService {
       this.#feedback = null;
     });
   };
+  /** Leaves the saved-receipt confirmation so the next visit offers any delivery still pending. */
+  dismissSaved = (): void => {
+    this.#selected = null;
+    this.#publish();
+  };
   begin = (assignmentId: string, releaseId: string): Promise<void> =>
     this.#queue(async (identity) => {
       const fence = await this.deps.attachments.session.capture();

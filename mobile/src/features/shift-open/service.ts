@@ -92,6 +92,7 @@ export class ShiftOpenService {
         hasOdometerWarning:
           lastOdometer !== null &&
           state.draft !== null &&
+          state.draft.odometer_km.trim() !== "" &&
           Number(state.draft.odometer_km) < lastOdometer,
       },
       guard,
