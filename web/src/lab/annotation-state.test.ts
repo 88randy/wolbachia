@@ -2,6 +2,25 @@ import { describe, expect, test } from "vitest";
 import { annotationReducer, createAnnotationState } from "./annotation-state";
 
 describe("immutable annotation edit history", () => {
+  test("field-equal edits preserve redo and do not add an undo step", () => {
+    const box = { kind: "box", x: 100, y: 100, w: 12, h: 24 } as const;
+    const moved = annotationReducer(createAnnotationState([box]), {
+      type: "update",
+      index: 0,
+      mark: { ...box, x: 110 },
+    });
+    const undone = annotationReducer(moved, { type: "undo" });
+    expect(annotationReducer(undone, { type: "replace", marks: [{ ...box }] })).toBe(undone);
+    expect(annotationReducer(undone, { type: "update", index: 0, mark: { ...box } })).toBe(undone);
+  });
+
+  test("recovery seeds history rather than allowing undo to erase the draft", () => {
+    const mark = { kind: "point", x: 3, y: 5 } as const;
+    const recovered = annotationReducer(createAnnotationState(), { type: "reset", marks: [mark] });
+    expect(annotationReducer(recovered, { type: "undo" }).marks).toEqual([mark]);
+    expect(annotationReducer(recovered, { type: "redo" })).toBe(recovered);
+  });
+
   test("undoes and redoes adding, moving and deleting mixed marks", () => {
     const box = { kind: "box", x: 5, y: 8, w: 12, h: 6 } as const;
     const point = { kind: "point", x: 25, y: 31 } as const;

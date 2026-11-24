@@ -8,12 +8,13 @@ type Surface = ReturnType<typeof useAnnotationSurface>;
 const ZOOM_STEP = 1.25;
 const WHEEL_SENSITIVITY = 0.002;
 
-export function useAnnotationView(
+function annotationViewActions(
   props: AnnotationCanvasProps,
   surface: Surface,
 ): AnnotationCanvasHandle {
   const center = { x: surface.size.width / 2, y: surface.size.height / 2 };
   const zoom = (factor: number) => {
+    surface.canvasRef.current?.focus();
     surface.setViewport((viewport) =>
       zoomViewport({ viewport, anchor: center, scale: viewport.scale * factor }),
     );
@@ -26,13 +27,23 @@ export function useAnnotationView(
       zoom(1 / ZOOM_STEP);
     },
     fit: () => {
+      surface.canvasRef.current?.focus();
       surface.setViewport(fitViewport({ image: props.image, size: surface.size }));
     },
     actualSize: () => {
+      surface.canvasRef.current?.focus();
       surface.setViewport((viewport) => zoomViewport({ viewport, anchor: center, scale: 1 }));
     },
     focus: () => surface.canvasRef.current?.focus(),
   };
+  return view;
+}
+
+export function useAnnotationView(
+  props: AnnotationCanvasProps,
+  surface: Surface,
+): AnnotationCanvasHandle {
+  const view = annotationViewActions(props, surface);
   useImperativeHandle(props.ref, () => view);
   useWheelZoom(surface);
   return view;

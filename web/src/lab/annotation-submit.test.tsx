@@ -9,6 +9,9 @@ import { uploadAnnotationPhoto } from "./annotation-upload";
 vi.mock("./annotation-draft", () => ({
   readAnnotationDraft: () => Promise.resolve(undefined),
   writeAnnotationDraft: () => Promise.resolve(),
+  writeAnnotationDraftMarks: () => Promise.resolve(),
+  annotationDraftGeneration: () => 0,
+  purgeAnnotationDrafts: () => Promise.resolve(),
 }));
 vi.mock("./annotation-upload", async (original) => ({
   ...(await original<typeof import("./annotation-upload")>()),
@@ -106,6 +109,11 @@ test("submits mixed marks as the official value and confirms only after the serv
   });
   expect(posts[1]?.body).toMatchObject({ value: 2, confirmed_implausible: true });
   expect(posts[0]?.body).not.toEqual(posts[1]?.body);
+  expect(
+    Object.keys(sessionStorage).filter(
+      (key) => key.startsWith("aedesvision:annotation:") && key.endsWith("command"),
+    ),
+  ).toEqual([]);
 });
 
 test("explicit retry replays the complete annotation command after an ambiguous response", async () => {
@@ -182,6 +190,11 @@ test("replacement annotation uses the atomic void command with the retained cano
       .filter((request) => request.method === "POST")
       .every((request) => request.path.includes("/void/")),
   ).toBe(true);
+  expect(
+    Object.keys(sessionStorage).filter(
+      (key) => key.startsWith("aedesvision:annotation:") && key.endsWith("command"),
+    ),
+  ).toEqual([]);
 });
 
 test("disables photo upload and explains missing upload permission without authorizing a file", async () => {

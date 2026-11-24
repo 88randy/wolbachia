@@ -17,7 +17,7 @@ export function AnnotationToolbarExtras(props: AnnotationToolbarProps) {
         <CardMenu label={t("labAnnotation.editor.actions")} items={downloads} />
       </span>
       <span className={styles.compactTools}>
-        <CardMenu label={t("labAnnotation.editor.actions")} items={compact} />
+        <CardMenu label={t("labAnnotation.editor.actions")} {...compact} />
       </span>
     </>
   );

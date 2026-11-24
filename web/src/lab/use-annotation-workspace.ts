@@ -26,8 +26,8 @@ export function useAnnotationWorkspace(props: AnnotationWorkspaceProps) {
     ...props,
     target,
     storageKey,
-    onSaved: (outcome) => {
-      void editor.draft.save(null);
+    onSaved: async (outcome) => {
+      await editor.draft.save(null);
       props.onSaved(outcome);
     },
   });
@@ -49,6 +49,7 @@ export function useAnnotationSummary(workspace: AnnotationWorkspaceState) {
           context: workspace.context,
           uploadId: photo.uploadId,
           marks: workspace.editor.state.marks,
+          elapsedSeconds: workspace.editor.activeTime.read(),
         },
         confirmed,
       );

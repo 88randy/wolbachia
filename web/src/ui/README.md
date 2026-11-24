@@ -14,6 +14,7 @@ here. Import the component from its own file.
   `className`, `titleId`, and `headingLevel` (1/2/3, default 2). The header keeps
   the title, actions and trailing period selector on one row.
   `CardMenu` accepts translated `items: { label, onSelect, disabled? }[]`.
+  Its optional `onCloseAutoFocus` supports workflows that explicitly move focus to their editor after an action.
 - `FolderTabs`: `label`, `items: { value, label, content }[]`, optional controlled
   `value`/`onValueChange`, or `defaultValue`. Screens own URL state.
 - `StatusPill`, `InlineNotice` and `Banner`: `tone` is `success`, `warning`,

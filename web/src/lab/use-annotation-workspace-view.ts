@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import type { AnnotationCanvasHandle, AnnotationTool } from "./EggAnnotationCanvas";
 import type { AnnotationColor } from "./AnnotationSettings";
 function useAnnotationPreferences() {
@@ -8,7 +8,7 @@ function useAnnotationPreferences() {
 }
 export function useAnnotationWorkspaceView() {
   const canvas = useRef<AnnotationCanvasHandle>(null);
-  const [tool, onToolChange] = useState<AnnotationTool>("box");
+  const tools = useAnnotationTool(canvas);
   const [zoom, onZoomChange] = useState(1);
   const [showGrid, setGrid] = useState(false);
   const [showSettings, setSettings] = useState(false);
@@ -16,6 +16,7 @@ export function useAnnotationWorkspaceView() {
   const preferences = useAnnotationPreferences();
   const onGrid = () => {
     setGrid((value) => !value);
+    canvas.current?.focus();
   };
   const onSettings = () => {
     setSettings((value) => !value);
@@ -23,8 +24,7 @@ export function useAnnotationWorkspaceView() {
   return {
     ...preferences,
     canvas,
-    tool,
-    onToolChange,
+    ...tools,
     zoom,
     onZoomChange,
     showGrid,
@@ -34,5 +34,13 @@ export function useAnnotationWorkspaceView() {
     showHelp,
     onHelpChange,
   };
+}
+function useAnnotationTool(canvas: RefObject<AnnotationCanvasHandle | null>) {
+  const [tool, setTool] = useState<AnnotationTool>("box");
+  const onToolChange = (next: AnnotationTool) => {
+    setTool(next);
+    canvas.current?.focus();
+  };
+  return { tool, onToolChange };
 }
 export type AnnotationWorkspaceView = ReturnType<typeof useAnnotationWorkspaceView>;

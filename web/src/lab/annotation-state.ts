@@ -17,6 +17,7 @@ export type AnnotationAction =
   | { type: "update"; index: number; mark: AnnotationMark }
   | { type: "delete"; index: number }
   | { type: "replace"; marks: AnnotationMark[] }
+  | { type: "reset"; marks: AnnotationMark[] }
   | { type: "undo" }
   | { type: "redo" };
 
@@ -24,8 +25,23 @@ export function createAnnotationState(marks: AnnotationMark[] = []): AnnotationS
   return { marks, past: [], future: [] };
 }
 
+export function areMarksEqual(first: AnnotationMark[], second: AnnotationMark[]): boolean {
+  return (
+    first.length === second.length &&
+    first.every((mark, index) => {
+      const other = second[index];
+      return (
+        other?.kind === mark.kind &&
+        other.x === mark.x &&
+        other.y === mark.y &&
+        (mark.kind !== "box" || (other.kind === "box" && other.w === mark.w && other.h === mark.h))
+      );
+    })
+  );
+}
+
 function commitMarks(state: AnnotationState, marks: AnnotationMark[]): AnnotationState {
-  if (marks === state.marks || marks.length > MAX_ANNOTATION_MARKS) return state;
+  if (areMarksEqual(marks, state.marks) || marks.length > MAX_ANNOTATION_MARKS) return state;
   return { marks, past: [...state.past, state.marks].slice(-MAX_UNDO_STEPS), future: [] };
 }
 
@@ -43,6 +59,7 @@ export function annotationReducer(
   state: AnnotationState,
   action: AnnotationAction,
 ): AnnotationState {
+  if (action.type === "reset") return createAnnotationState(action.marks);
   if (action.type === "undo") {
     const previous = state.past.at(-1);
     return previous

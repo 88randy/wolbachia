@@ -6,6 +6,7 @@ import { AnnotationToolPicker } from "./AnnotationToolPicker";
 import { AnnotationToolbarExtras } from "./AnnotationToolbarExtras";
 import type { AnnotationCanvasHandle, AnnotationTool } from "./EggAnnotationCanvas";
 import styles from "./annotation.module.css";
+import { useAnnotationCounter } from "./use-annotation-format";
 
 export interface AnnotationToolbarProps {
   canvas: RefObject<AnnotationCanvasHandle | null>;
@@ -29,6 +30,7 @@ export { AnnotationViewTools } from "./AnnotationViewTools";
 
 export function AnnotationToolbar(props: AnnotationToolbarProps) {
   const { t } = useTranslation();
+  const counter = useAnnotationCounter(props.count);
   return (
     <div className={styles.toolbar} role="group" aria-label={t("labAnnotation.editor.title")}>
       <Link to="/lab/egg-counts" search={{}}>
@@ -36,7 +38,7 @@ export function AnnotationToolbar(props: AnnotationToolbarProps) {
       </Link>
       <AnnotationToolPicker {...props} />
       <output aria-live="polite" aria-atomic="true">
-        {t("labAnnotation.editor.counter", { count: props.count })}
+        {counter}
       </output>
       <AnnotationToolbarExtras {...props} />
       <Button aria-disabled={props.isLocked} onClick={props.onFinish}>

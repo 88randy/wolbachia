@@ -18,7 +18,7 @@ interface Options {
   scope: LabScope;
   target: AnnotationTarget;
   storageKey: string;
-  onSaved: (outcome: Schemas["LabCountOutcome"]) => void;
+  onSaved: (outcome: Schemas["LabCountOutcome"]) => void | Promise<void>;
 }
 interface Submission {
   options: Options;
@@ -60,7 +60,9 @@ async function submitAnnotation(
   if (!result?.count) return;
   for (const suffix of [":code", ":reason", ":value", ":command"])
     writeLabStored(draft.key + suffix, null);
-  options.onSaved({
+  for (const suffix of [":command", ":replacement-command"])
+    writeLabStored(options.storageKey + suffix, null);
+  await options.onSaved({
     count: result.count,
     next_bag: result.next_bag,
     queue_snapshot: result.queue_snapshot,

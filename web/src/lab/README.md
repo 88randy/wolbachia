@@ -146,22 +146,28 @@ The native Canvas 2D workspace uses separate image/mark layers, batched paths
 and animation-frame rendering. It adds no React peer dependency to the locked
 React 19.3.1. See [decision 175](../../../docs/decisions.md) and the
 [API mark contract](../../../docs/api-conventions.md#manual-egg-annotations-w35).
-One completed gesture is one undo step; history is bounded to 100 steps and
+One changed gesture is one undo step; selection clicks preserve undo/redo and
+recovery seeds a fresh history. History is bounded to 100 steps and
 annotations to 5,000 marks. Canvas size follows the viewport, not the source
 image's pixel dimensions. Boxes and points may be mixed; every mark counts once.
 
 V/B/D/H select the tools; Space temporarily pans. Wheel/pinch zoom about the
 cursor; +/− zoom, 0/R fit and 1 restores actual size. Select moves/resizes marks;
-Delete or right click removes a draft mark. Ctrl/Cmd+Z and Shift+Z undo/redo.
+Delete or mouse right click removes a draft mark; touch long press does not.
+Ctrl/Cmd+Z and Shift+Z undo/redo.
 On the focused canvas, Enter adds at the visible keyboard cursor, arrows move
 the cursor/selection, Shift+arrows resize a selected box, and PageUp/PageDown
 or brackets cycle selection. Tab leaves the canvas. G/S/? control the grid,
 settings and help. The HTML controls and live counter/selection descriptions
 provide keyboard and assistive-technology access alongside the canvas.
 
-IndexedDB stores only the authored photo, client UUID and marks, scoped to
-user, organization, Bag and correction target. Reopening explicitly asks to
-recover or discard; recovery reuploads/reverifies the same photo before saving.
+IndexedDB stores the authored photo once, with separately debounced marks and
+a pagehide flush, scoped to user, organization, Bag and correction target.
+Successful submission removes the draft; session end and organization changes
+purge the database, and opening it purges drafts older than 72 hours.
+Reopening explicitly asks to recover or discard; recovery reuploads/reverifies
+the same photo before saving. Active elapsed time excludes hidden tabs and time
+more than 60 seconds after the last interaction.
 API responses and image download URLs are not persisted. Tips are remembered
 per user in localStorage and remain accessible through help. Save freezes the
 mark-derived value and annotation into the existing command writer: CAS,
@@ -172,12 +178,18 @@ offers an authorized read-only viewer, including retained voided annotations.
 | Criterion or edge | Test |
 | --- | --- |
 | Add/move/delete/undo/redo and bounded mark history | `annotation-state.test.ts` |
+| Nearest corners, click threshold, unchanged edits and resize viewport preservation | `annotation-canvas.test.tsx`, `annotation-coordinates.test.ts`, `annotation-state.test.ts` |
+| Toolbar/compact-menu focus, touch context menu, max-mark announcements, plurals and download lifetime | `annotation-tools.test.tsx`, `annotation-canvas.test.tsx` |
+| One photo write, debounced marks, pagehide flush, terminal clear and retired-session write fence | `use-annotation-draft.test.ts`, `annotation-draft.test.ts` |
+| Active visible/idle time and side-effect-free replacement command identity | `annotation-active-time.test.ts`, `annotation-command.test.ts` |
 | Zoom/pan transforms, cursor anchor, integer clamping and resizing | `annotation-coordinates.test.ts` |
 | Mark-derived payload, summary, confirmation and explicit replay | `annotation-submit.test.tsx` |
 | Photo upload, mixed keyboard marks, grid/settings and save; light/dark, es-MX/en, 320/1280 px, +30% text, axe | `e2e/egg-annotation.spec.ts` |
 | Missing upload permission and actionable field errors with server limits | `annotation-submit.test.tsx`, `annotation-upload-error.test.ts` |
 | Explicit draft recovery with 1,000 marks on a 4096 px image, preserved dismissal, zoom/pan and further editing | `e2e/egg-annotation.spec.ts` |
 | Authorized history viewer with zoom and no editing tools | `e2e/egg-annotation.spec.ts` |
+| Real IndexedDB expiry/session purge/finish cleanup and reserved status-line layout | `e2e/egg-annotation.spec.ts` |
+| Localized annotation-route breadcrumb | `shell/breadcrumb-path.test.ts` |
 | Validation, immutable count/annotation transaction, UUID replay, correction retention and current scope/permissions | `backend/tests/test_egg_annotations.py` |
 
 Browser fixtures are synthetic. Physical phone/tablet pinch, camera capture,

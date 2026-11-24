@@ -1,10 +1,12 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnnotationSettingsProps } from "./AnnotationSettings";
+import { useAnnotationZoom } from "./use-annotation-format";
 
 type StatsProps = Pick<AnnotationSettingsProps, "marks" | "width" | "height" | "zoom">;
 function useStats(props: StatsProps) {
   const { t, i18n } = useTranslation();
+  const zoom = useAnnotationZoom(props.zoom);
   const boxes = props.marks.filter((mark) => mark.kind === "box").length;
   const density = props.marks.length / ((props.width * props.height) / 1_000_000);
   const number = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 });
@@ -17,10 +19,7 @@ function useStats(props: StatsProps) {
       t("labAnnotation.editor.resolution"),
       `${number.format(props.width)} × ${number.format(props.height)}`,
     ],
-    [
-      t("labAnnotation.editor.zoom", { percent: Math.round(props.zoom * 100) }),
-      number.format(props.zoom * 100) + " %",
-    ],
+    [t("labAnnotation.editor.zoomLabel"), zoom],
   ];
 }
 

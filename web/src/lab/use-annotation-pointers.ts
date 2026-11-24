@@ -14,7 +14,7 @@ import {
   type ImagePoint,
 } from "./annotation-coordinates";
 import type { AnnotationCanvasProps } from "./annotation-canvas-types";
-import { MAX_ANNOTATION_MARKS, type AnnotationMark } from "./annotation-state";
+import { areMarksEqual, MAX_ANNOTATION_MARKS, type AnnotationMark } from "./annotation-state";
 import type { useAnnotationSurface } from "./use-annotation-surface";
 
 const POINTER_HIT_RADIUS = 12;
@@ -27,6 +27,7 @@ type Gesture =
   | {
       kind: "move" | "resize";
       start: ImagePoint;
+      screenStart: ImagePoint;
       index: number;
       mark: AnnotationMark;
       corner?: BoxCorner;
@@ -48,18 +49,23 @@ export function pointerPosition(
   return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
 }
 
-function selectionGesture(options: PointerOptions, point: ImagePoint): Gesture | undefined {
+function selectionGesture(
+  options: PointerOptions,
+  point: ImagePoint,
+  screenStart: ImagePoint,
+): Gesture | undefined {
   const { props, surface, selected, setSelected } = options;
   const mark = props.marks[selected];
   const corner =
     mark?.kind === "box"
       ? hitResizeCorner(mark, point, POINTER_HIT_RADIUS / surface.viewport.scale)
       : undefined;
-  if (mark && corner) return { kind: "resize", start: point, index: selected, mark, corner };
+  if (mark && corner)
+    return { kind: "resize", start: point, screenStart, index: selected, mark, corner };
   const index = hitMark(props.marks, point, POINTER_HIT_RADIUS / surface.viewport.scale);
   setSelected(index);
   const target = props.marks[index];
-  return target ? { kind: "move", start: point, index, mark: target } : undefined;
+  return target ? { kind: "move", start: point, screenStart, index, mark: target } : undefined;
 }
 
 function beginGesture(options: PointerOptions, screen: ImagePoint): Gesture | undefined {
@@ -68,7 +74,7 @@ function beginGesture(options: PointerOptions, screen: ImagePoint): Gesture | un
     return { kind: "pan", start: screen, viewport: surface.viewport };
   }
   const point = screenToImage(screen, surface.viewport);
-  if (props.tool === "select") return selectionGesture(options, point);
+  if (props.tool === "select") return selectionGesture(options, point, screen);
   if (!isInsideImage(point, props.image)) return;
   return { kind: props.tool, start: point, screenStart: screen };
 }
@@ -115,14 +121,13 @@ function commitGesture(options: PointerOptions, gesture: Gesture, screen: ImageP
   if (!props.onMarksChange || gesture.kind === "pan") return;
   const point = screenToImage(screen, surface.viewport);
   const isClick =
-    "screenStart" in gesture &&
     Math.hypot(screen.x - gesture.screenStart.x, screen.y - gesture.screenStart.y) < CLICK_DISTANCE;
+  if (isClick && "index" in gesture) return;
   const mark = isClick ? clickMark(gesture, props) : previewMark(gesture, point, props);
   if (!mark) return;
   if ("index" in gesture) {
-    props.onMarksChange(
-      props.marks.map((previous, index) => (index === gesture.index ? mark : previous)),
-    );
+    const marks = props.marks.map((previous, index) => (index === gesture.index ? mark : previous));
+    if (!areMarksEqual(marks, props.marks)) props.onMarksChange(marks);
     return;
   }
   if (props.marks.length >= MAX_ANNOTATION_MARKS) return;
@@ -210,6 +215,7 @@ function handlePointerUp(options: PointerController, event: PointerInput): void 
 
 /** Transient pointer geometry never enters the audit payload or undo history. */
 export function useAnnotationPointers(options: PointerOptions) {
+  const lastPointerType = useRef("");
   const gesture = useRef<Gesture | undefined>(undefined);
   const pointers = useRef(new Map<number, ImagePoint>());
   const [preview, setPreview] = useState<AnnotationMark>();
@@ -222,6 +228,7 @@ export function useAnnotationPointers(options: PointerOptions) {
   const previewIndex = gesture.current && "index" in gesture.current ? gesture.current.index : -1;
   return {
     onPointerDown: (event: PointerInput) => {
+      lastPointerType.current = event.pointerType;
       handlePointerDown(controller, event);
     },
     onPointerMove: (event: PointerInput) => {
@@ -233,5 +240,6 @@ export function useAnnotationPointers(options: PointerOptions) {
     onPointerCancel,
     preview,
     previewIndex,
+    lastPointerType,
   };
 }

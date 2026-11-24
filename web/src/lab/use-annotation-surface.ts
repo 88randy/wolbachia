@@ -24,26 +24,41 @@ export function useAnnotationImage(source: string) {
   return { image, hasError };
 }
 
-function useSurfaceSize(image: ImageSize) {
-  const { width, height } = image;
+function recenterViewport(current: AnnotationViewport, previous: ImageSize, next: ImageSize) {
+  return {
+    ...current,
+    x: current.x + (next.width - previous.width) / 2,
+    y: current.y + (next.height - previous.height) / 2,
+  };
+}
+
+function useSurfaceSize(image: AnnotationCanvasProps["image"]) {
+  const { width, height, src } = image;
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<ImageSize>({ width: 1, height: 1 });
   const [viewport, setViewport] = useState<AnnotationViewport>({ scale: 1, x: 0, y: 0 });
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    let previousSize: ImageSize | undefined;
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
       const nextSize = { width: entry.contentRect.width, height: entry.contentRect.height };
       if (nextSize.width < 1 || nextSize.height < 1) return;
+      const priorSize = previousSize;
       setSize(nextSize);
-      setViewport(fitViewport({ image: { width, height }, size: nextSize }));
+      setViewport((current) =>
+        priorSize
+          ? recenterViewport(current, priorSize, nextSize)
+          : fitViewport({ image: { width, height }, size: nextSize }),
+      );
+      previousSize = nextSize;
     });
     observer.observe(container);
     return () => {
       observer.disconnect();
     };
-  }, [width, height]);
+  }, [width, height, src]);
   return { containerRef, size, viewport, setViewport };
 }
 

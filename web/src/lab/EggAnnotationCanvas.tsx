@@ -4,6 +4,7 @@ import type { AnnotationCanvasProps } from "./annotation-canvas-types";
 import { EggAnnotationSurface } from "./EggAnnotationSurface";
 import { useAnnotationCanvas } from "./use-annotation-canvas";
 import styles from "./annotation-canvas.module.css";
+import { MAX_ANNOTATION_MARKS } from "./annotation-state";
 
 export type {
   AnnotationCanvasHandle,
@@ -33,7 +34,8 @@ export function EggAnnotationCanvas(props: AnnotationCanvasProps) {
         {t("labAnnotation.canvas.instructions")}
       </p>
       <p className={styles.selection} aria-live="polite" aria-atomic="true">
-        {selectedText}
+        {selectedText}{" "}
+        {props.marks.length >= MAX_ANNOTATION_MARKS && t("labAnnotation.editor.maxMarks")}
       </p>
     </div>
   );

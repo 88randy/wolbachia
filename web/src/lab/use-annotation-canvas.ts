@@ -22,7 +22,7 @@ export function useAnnotationCanvas(props: AnnotationCanvasProps) {
   useAnnotationDrawing({ props, surface, pointer, selected, cursor: keyboard.cursor });
   const onContextMenu = (event: MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
-    if (!props.onMarksChange) return;
+    if (!props.onMarksChange || pointer.lastPointerType.current === "touch") return;
     const point = screenToImage(pointerPosition(event, event.currentTarget), surface.viewport);
     const index = hitMark(props.marks, point, 12 / surface.viewport.scale);
     if (index < 0) return;

@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { useRef } from "react";
 import type { AnnotationToolbarProps } from "./AnnotationToolbar";
+import { useAnnotationZoom } from "./use-annotation-format";
 export function useAnnotationDownloadMenu(props: AnnotationToolbarProps) {
   const { t } = useTranslation();
   return [
@@ -9,6 +11,7 @@ export function useAnnotationDownloadMenu(props: AnnotationToolbarProps) {
 }
 function useAnnotationZoomMenu(props: AnnotationToolbarProps) {
   const { t } = useTranslation();
+  const zoom = useAnnotationZoom(props.zoom);
   return [
     {
       label: t("labAnnotation.editor.zoomOut"),
@@ -17,7 +20,7 @@ function useAnnotationZoomMenu(props: AnnotationToolbarProps) {
       },
     },
     {
-      label: t("labAnnotation.editor.zoom", { percent: Math.round(props.zoom * 100) }),
+      label: t("labAnnotation.editor.zoom", { percent: zoom }),
       onSelect: () => {
         props.canvas.current?.focus();
       },
@@ -54,12 +57,30 @@ function useAnnotationViewMenu(props: AnnotationToolbarProps) {
     },
   ];
 }
+function useAnnotationCompactView(props: AnnotationToolbarProps) {
+  const view = useAnnotationViewMenu(props);
+  const shouldFocusCanvas = useRef(false);
+  const onCloseAutoFocus = (event: Event) => {
+    if (!shouldFocusCanvas.current) return;
+    shouldFocusCanvas.current = false;
+    event.preventDefault();
+    props.canvas.current?.focus();
+  };
+  const items = view.map((item) => ({
+    ...item,
+    onSelect: () => {
+      shouldFocusCanvas.current = true;
+      item.onSelect();
+    },
+  }));
+  return { items, onCloseAutoFocus };
+}
 export function useAnnotationCompactMenu(props: AnnotationToolbarProps) {
   const { t } = useTranslation();
-  const view = useAnnotationViewMenu(props);
+  const view = useAnnotationCompactView(props);
   const downloads = useAnnotationDownloadMenu(props);
-  return [
-    ...view,
+  const items = [
+    ...view.items,
     {
       label: t("labAnnotation.editor.undo"),
       onSelect: props.onUndo,
@@ -73,4 +94,5 @@ export function useAnnotationCompactMenu(props: AnnotationToolbarProps) {
     { label: t("labAnnotation.editor.settings"), onSelect: props.onSettings },
     ...downloads,
   ];
+  return { items, onCloseAutoFocus: view.onCloseAutoFocus };
 }

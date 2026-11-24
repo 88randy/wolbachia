@@ -9,7 +9,7 @@ import {
   rememberPreferences,
 } from "./fixtures/a11y";
 import { mockApi } from "./fixtures/mock-api";
-import { makeMe } from "../src/test/fake-api";
+import { makeMe, makeOrganization } from "../src/test/fake-api";
 
 const UPLOAD_ID = "40000000-0000-4000-8000-000000000001";
 const ANNOTATION_ID = "40000000-0000-4000-8000-000000000002";
@@ -20,6 +20,7 @@ const BAG_ID = "40000000-0000-4000-8000-000000000003";
 const COUNTER = "output[aria-live='polite']";
 const DRAFT_DATABASE = "aedesvision-egg-drafts";
 const DRAFT_STORE = "drafts";
+const DRAFT_IMAGES = "images";
 const DRAFT_KEY =
   "aedesvision:annotation:" +
   JSON.stringify(["5f5c4c3e-4a0e-4a64-9a60-1a2b3c4d5e6f", "norte", BAG_CODE, "new"]);
@@ -28,6 +29,132 @@ const VIEWPORTS = [COMPACT_VIEWPORT, { width: 1280, height: 900 }];
 
 function pageOf(results: readonly unknown[]) {
   return { count: results.length, next: null, previous: null, results };
+}
+
+async function seedPrivateDrafts(page: Page, ageHours = 0) {
+  await page.evaluate(
+    async ({ databaseName, key, age }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(databaseName, 2);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore("drafts");
+          request.result.createObjectStore("images");
+        };
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Unable to open fixture database", { cause: request.error }));
+        };
+      });
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(["drafts", "images"], "readwrite");
+        for (const draftKey of [key, "another-user-org-bag"]) {
+          transaction.objectStore("drafts").put(
+            {
+              version: 2,
+              clientId: crypto.randomUUID(),
+              marks: [],
+              updatedAt: Date.now() - age * 60 * 60 * 1000,
+            },
+            draftKey,
+          );
+          transaction
+            .objectStore("images")
+            .put(new File(["private photo"], "private.png"), draftKey);
+        }
+        transaction.oncomplete = () => {
+          resolve();
+        };
+        transaction.onerror = () => {
+          reject(new Error("Unable to seed fixture database", { cause: transaction.error }));
+        };
+      });
+      database.close();
+    },
+    { databaseName: DRAFT_DATABASE, key: DRAFT_KEY, age: ageHours },
+  );
+}
+
+async function storedDraftKeys(page: Page) {
+  return page.evaluate(
+    async ({ name, images }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name, 2);
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Unable to open fixture database", { cause: request.error }));
+        };
+      });
+      const result = await new Promise<IDBValidKey[]>((resolve, reject) => {
+        const request = database.transaction(images).objectStore(images).getAllKeys();
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Unable to read fixture database", { cause: request.error }));
+        };
+      });
+      database.close();
+      return result;
+    },
+    { name: DRAFT_DATABASE, images: DRAFT_IMAGES },
+  );
+}
+
+test("W35 opening purges photos and marks older than 72 hours across draft identities", async ({
+  page,
+}) => {
+  await mockAnnotation(page);
+  await page.goto("/lab/egg-counts");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await seedPrivateDrafts(page, 73);
+  await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
+  await expect(
+    page.getByLabel(messages["es-MX"]["labAnnotation.upload.picker"], { exact: true }),
+  ).toBeVisible();
+  await expect.poll(() => storedDraftKeys(page)).toEqual([]);
+  await expect(
+    page.getByRole("dialog", { name: messages["es-MX"]["labAnnotation.recover.title"] }),
+  ).toHaveCount(0);
+});
+
+for (const transition of ["logout", "session end", "organization change"] as const) {
+  test(`W35 ${transition} purges the complete private draft database`, async ({ page }) => {
+    await mockAnnotation(page);
+    await page.goto("/lab/egg-counts");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await seedPrivateDrafts(page);
+    if (transition === "logout") {
+      await page.getByRole("button", { name: /Menú de usuario/ }).click();
+      await page.getByRole("button", { name: "Cerrar sesión", exact: true }).click();
+      await expect(page).toHaveURL(/\/login$/);
+    } else {
+      const next = makeMe({ organization: makeOrganization("sur", "South") });
+      await page.route("**/api/v1/me/", (route) =>
+        route.fulfill(
+          transition === "session end"
+            ? { status: 401, json: { code: "not_authenticated" } }
+            : { json: next },
+        ),
+      );
+      await page.evaluate(() => {
+        const channel = new BroadcastChannel("wolbachia.session");
+        channel.postMessage("changed");
+        channel.close();
+      });
+    }
+    await expect
+      .poll(() =>
+        page.evaluate(
+          async (name) => (await indexedDB.databases()).some((database) => database.name === name),
+          DRAFT_DATABASE,
+        ),
+      )
+      .toBe(false);
+  });
 }
 
 test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive", async ({
@@ -49,8 +176,11 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
         }, "image/png");
       });
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open(databaseName, 1);
-        request.onupgradeneeded = () => request.result.createObjectStore(storeName);
+        const request = indexedDB.open(databaseName, 2);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore(storeName);
+          request.result.createObjectStore("images");
+        };
         request.onsuccess = () => {
           resolve(request.result);
         };
@@ -59,8 +189,8 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
         };
       });
       const draft = {
-        version: 1,
-        file: new File([blob], "synthetic-paddle.png", { type: "image/png" }),
+        version: 2,
+        updatedAt: Date.now(),
         clientId: crypto.randomUUID(),
         marks: Array.from({ length: 1000 }, (_, index) => ({
           kind: "point",
@@ -69,7 +199,10 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
         })),
       };
       await new Promise<void>((resolve, reject) => {
-        const transaction = database.transaction(storeName, "readwrite");
+        const transaction = database.transaction([storeName, "images"], "readwrite");
+        transaction
+          .objectStore("images")
+          .put(new File([blob], "synthetic-paddle.png", { type: "image/png" }), key);
         transaction.objectStore(storeName).put(draft, key);
         transaction.oncomplete = () => {
           resolve();
@@ -105,6 +238,8 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
   await expect(page.locator(COUNTER)).toContainText("1000");
   await canvas.focus();
   await expect(canvas).toBeFocused();
+  await page.keyboard.press("Control+z");
+  await expect(page.locator(COUNTER)).toContainText("1000");
   await page.keyboard.press("+");
   await page.keyboard.press("h");
   await page.keyboard.press("ArrowRight");
@@ -174,7 +309,6 @@ test("W35 history opens an authorized annotation with view-only tools", async ({
     route.fulfill({
       json: {
         id: ANNOTATION_ID,
-        public_id: ANNOTATION_ID,
         count: counted(2).id,
         bag: BAG_ID,
         bag_code: BAG_CODE,
@@ -324,6 +458,25 @@ async function expectUncoveredCanvas(canvas: ReturnType<Page["locator"]>) {
     .toBe(true);
 }
 
+async function expectStableDraftStatus(page: Page, canvas: ReturnType<Page["locator"]>) {
+  const status = page.locator("p[role='status']");
+  await expect(status).not.toBeEmpty();
+  const saved = await status.textContent();
+  await status.evaluate((element) => {
+    element.textContent = "";
+  });
+  const size = () =>
+    canvas.evaluate((element) => {
+      const { width, height } = element.getBoundingClientRect();
+      return { width, height };
+    });
+  const emptySize = await size();
+  await status.evaluate((element, text) => {
+    element.textContent = text;
+  }, saved);
+  await expect.poll(size).toEqual(emptySize);
+}
+
 for (const theme of ["light", "dark"] as const) {
   for (const language of ["es-MX", "en"] as const) {
     test(`W35 photo annotation keyboard and reflow: ${theme}, ${language}`, async ({
@@ -387,6 +540,7 @@ for (const theme of ["light", "dark"] as const) {
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
         await expectNoHorizontalScroll(page);
+        await expectStableDraftStatus(page, canvas);
         await expectUncoveredCanvas(canvas);
         await expectNoAxeViolations(page);
         await page.screenshot({
@@ -407,6 +561,7 @@ for (const theme of ["light", "dark"] as const) {
       expect(commands[0]?.value).toBe(2);
       expect(commands[0]?.annotation?.marks.map((mark) => mark.kind)).toEqual(["box", "point"]);
       await expect(page).toHaveURL(/\/lab\/egg-counts(?:\?|$)/);
+      await expect.poll(() => storedDraftKeys(page)).toEqual([]);
     });
   }
 }

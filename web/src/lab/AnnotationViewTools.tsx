@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import type { AnnotationToolbarProps } from "./AnnotationToolbar";
+import { useAnnotationZoom } from "./use-annotation-format";
 
 type Props = Pick<AnnotationToolbarProps, "canvas" | "zoom" | "showGrid" | "onGrid">;
 
@@ -31,6 +32,7 @@ function useViewActions(props: Props) {
 export function AnnotationViewTools(props: Props) {
   const { t } = useTranslation();
   const actions = useViewActions(props);
+  const zoom = useAnnotationZoom(props.zoom);
   return (
     <>
       <Button
@@ -42,7 +44,7 @@ export function AnnotationViewTools(props: Props) {
       >
         {t("labAnnotation.editor.zoomOut")}
       </Button>
-      <output>{t("labAnnotation.editor.zoom", { percent: Math.round(props.zoom * 100) })}</output>
+      <output>{t("labAnnotation.editor.zoom", { percent: zoom })}</output>
       {actions.map((action) => (
         <Button key={action.label} variant="ghost" size="sm" onClick={action.run}>
           {action.label}

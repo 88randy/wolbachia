@@ -7,8 +7,10 @@ import styles from "./ui.module.css";
 interface CardMenuProps {
   label?: string;
   items: readonly { label: string; onSelect: () => void; disabled?: boolean }[];
+  onCloseAutoFocus?: (event: Event) => void;
 }
-export function CardMenu({ label, items }: CardMenuProps) {
+const MENU_CONTENT_PROPS = { className: styles.menu, align: "end", sideOffset: 4 } as const;
+export function CardMenu({ label, items, onCloseAutoFocus }: CardMenuProps) {
   const { t } = useTranslation();
   return (
     <DropdownMenu.Root>
@@ -18,7 +20,7 @@ export function CardMenu({ label, items }: CardMenuProps) {
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content className={styles.menu} align="end" sideOffset={4}>
+        <DropdownMenu.Content {...MENU_CONTENT_PROPS} onCloseAutoFocus={onCloseAutoFocus}>
           {items.map((item) => (
             <DropdownMenu.Item
               key={item.label}

@@ -57,6 +57,7 @@ const eggCountHistoryRoute = createRoute({
 const eggAnnotationRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/lab/egg-counts/$bagCode/annotate",
+  staticData: { crumb: "labAnnotation.editor.title" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context, search }) => {
     requirePermission("lab", context.me, "egg_count.create");

@@ -144,9 +144,15 @@ export function hitResizeCorner(
   point: ImagePoint,
   tolerance: number,
 ): BoxCorner | undefined {
-  return (Object.entries(boxCorners(box)) as [BoxCorner, ImagePoint][]).find(
-    ([, corner]) => Math.hypot(corner.x - point.x, corner.y - point.y) <= tolerance,
-  )?.[0];
+  let nearest: BoxCorner | undefined;
+  let distance = tolerance;
+  for (const [name, corner] of Object.entries(boxCorners(box)) as [BoxCorner, ImagePoint][]) {
+    const candidate = Math.hypot(corner.x - point.x, corner.y - point.y);
+    if (candidate > distance) continue;
+    nearest = name;
+    distance = candidate;
+  }
+  return nearest;
 }
 
 function containsMark(mark: AnnotationMark, point: ImagePoint, tolerance: number): boolean {

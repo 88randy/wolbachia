@@ -3,6 +3,8 @@ import {
   clampMark,
   createBox,
   fitViewport,
+  boxCorners,
+  hitResizeCorner,
   imageToScreen,
   moveMark,
   resizeBox,
@@ -11,6 +13,14 @@ import {
 } from "./annotation-coordinates";
 
 describe("annotation image coordinates", () => {
+  test.each([1, 0.25])("chooses the nearest small-box corner at scale %s", (scale) => {
+    const box = { kind: "box", x: 100, y: 100, w: 12, h: 24 } as const;
+    for (const [corner, point] of Object.entries(boxCorners(box))) {
+      expect(hitResizeCorner(box, point, 12 / scale)).toBe(corner);
+    }
+    expect(hitResizeCorner(box, { x: 200, y: 200 }, 12 / scale)).toBeUndefined();
+  });
+
   test("round trips image pixels through zoom and pan", () => {
     const viewport = { scale: 2.5, x: -250, y: 44 };
     const pixel = { x: 1430, y: 540 };
