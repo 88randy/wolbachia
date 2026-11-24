@@ -97,6 +97,7 @@ void test("M07 local resources retain actual supply pins and exclude foreign or 
   const scanner = new ScannerService({
     read: () => fixture.bundle.captureLifecycleSource(),
     resources: (turn) => readScannerResources(fixture.db, turn),
+    bag: () => Promise.reject(new Error("Supply routing cannot resolve a bag.")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Supply routing cannot edit a capture.")),
@@ -207,6 +208,7 @@ void test("M10 release-device QR and exact manual code route only downloaded pai
   const scanner = new ScannerService({
     read: () => fixture.bundle.captureLifecycleSource(),
     resources: (turn) => readScannerResources(fixture.db, turn),
+    bag: () => Promise.reject(new Error("Unrelated bag")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Unrelated draft write")),
@@ -250,6 +252,7 @@ function sampleScanner(admit: Parameters<typeof sampleScannerRoute>[1]["admit"])
     sample: (input, current) => sampleScannerRoute(input, { admit }, current),
     read: () => () => Promise.reject(new Error("Sample QR borrowed ovitrap authority")),
     resources: () => Promise.reject(new Error("Sample QR manufactured a downloaded resource")),
+    bag: () => Promise.reject(new Error("Sample QR bound a bag")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Unrelated draft write")),

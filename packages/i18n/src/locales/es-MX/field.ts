@@ -27,6 +27,9 @@ export const field = {
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",
   "field.scan.labelUnknown":
     "No encontramos esa etiqueta. Revisa el número que está escrito en grande o usa una etiqueta nueva.",
+  "field.scan.bagCode":
+    "No pudimos leer el código de esta bolsa. Escribe el código que trae impreso.",
+  "field.scan.bagUsed": "Esa bolsa ya se usó. Usa una bolsa nueva.",
   "field.gps.searching": "Buscando tu ubicación…",
   "field.gps.searchingAccuracy": "Buscando tu ubicación… ± {meters} m",
   "field.gps.ready": "Ubicación lista.",

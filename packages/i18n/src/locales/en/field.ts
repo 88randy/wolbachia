@@ -26,6 +26,8 @@ export const field = {
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",
   "field.scan.labelUnknown":
     "We could not find that label. Check the number printed large on it or use a new label.",
+  "field.scan.bagCode": "We could not read this bag's code. Type the code printed on it.",
+  "field.scan.bagUsed": "That bag was already used. Use a new bag.",
   "field.gps.searching": "Looking for your location…",
   "field.gps.searchingAccuracy": "Looking for your location… ± {meters} m",
   "field.gps.ready": "Location ready.",
