@@ -53,6 +53,8 @@ interface Dependencies {
   readonly labelPool?: () => Promise<readonly PoolLabel[]>;
   /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
   readonly publishAssignment?: () => Promise<void>;
+  /** Re-downloads the day bundle only when the capture context is not current; background only. */
+  readonly recoverCapture?: () => Promise<void>;
 }
 interface StartInput {
   readonly mode: Draft["mode"];
@@ -269,6 +271,8 @@ export class OvitrapService {
    * a capture in progress never has its options swapped underneath it.
    */
   async refreshInBackground(): Promise<void> {
+    // Offline keeps the phone copy; a save outside a current context stays refused by the trigger.
+    await this.#deps.recoverCapture?.().catch(() => undefined);
     if ((await this.#deps.store.read()).draft) return this.#deps.refreshLabels?.();
     await this.refresh(null);
   }

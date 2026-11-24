@@ -28,6 +28,7 @@ interface Dependencies {
   readonly evidence: EvidencePort;
   readonly attachments?: Attachments;
   readonly assignments?: { read(): Promise<Assignment | null> };
+  readonly recoverCapture?: () => Promise<void>;
 }
 async function download(
   deps: Dependencies,
@@ -102,5 +103,6 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     refreshLabels: () => downloadLabelsOnly(deps, labels),
     labelPool: () => labels.read(),
     publishAssignment: () => publishAssignment(deps.assignments, store),
+    recoverCapture: deps.recoverCapture,
   });
 }
