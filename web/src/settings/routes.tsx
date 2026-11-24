@@ -4,6 +4,7 @@ import { tableSearchSchema } from "../data-table/table-search-schema";
 import { PHONES_PERMISSION } from "../devices/permissions";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
+import { withPreload } from "../router/with-preload";
 import { requirePermission } from "../router/guards";
 import { RULE_VERSION_READ } from "../rules/permissions";
 import { AreaErrorState } from "../states/AreaErrorState";
@@ -91,10 +92,10 @@ const centerRoute = createRoute({
   beforeLoad: ({ context }) => {
     requirePermission("settings", context.me, "center.read");
   },
-  component: function CenterRoute() {
+  component: withPreload(function CenterRoute() {
     const { code } = centerRoute.useParams();
     return <CenterDetailPage key={code} code={code} />;
-  },
+  }, CenterDetailPage),
   errorComponent: AreaErrorState,
 });
 
@@ -105,10 +106,10 @@ const centerCloseRoute = createRoute({
   beforeLoad: ({ context }) => {
     requirePermission("settings", context.me, "center.deactivate");
   },
-  component: function CenterCloseRoute() {
+  component: withPreload(function CenterCloseRoute() {
     const { code } = centerCloseRoute.useParams();
     return <CenterClosePage key={code} code={code} />;
-  },
+  }, CenterClosePage),
   errorComponent: AreaErrorState,
 });
 
@@ -118,10 +119,10 @@ const personRoute = createRoute({
   beforeLoad: ({ context }) => {
     requirePermission("settings", context.me, "user.read");
   },
-  component: function PersonRoute() {
+  component: withPreload(function PersonRoute() {
     const { id } = personRoute.useParams();
     return <W49PersonPage key={id} id={id} />;
-  },
+  }, W49PersonPage),
   errorComponent: AreaErrorState,
 });
 

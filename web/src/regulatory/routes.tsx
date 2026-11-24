@@ -3,6 +3,7 @@ import type { RouteComponent } from "@tanstack/react-router";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
+import { withPreload } from "../router/with-preload";
 import { ForbiddenError } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
 
@@ -47,10 +48,16 @@ export const regulatoryRoutes = [
   screen("/regulatory/data-transfers", "transfer_authorization.read", DataTransfersPage),
   screen("/regulatory/exports", "export.run", ExportsPage),
   screen("/regulatory/arco-requests", "arco_request.read", ArcoPage),
-  screen("/regulatory/access-log", "access_log.read", () => <AccessLogPage tab="access" />),
-  screen("/regulatory/access-log/export-receipts", "access_log.read", () => (
-    <AccessLogPage tab="exports" />
-  )),
+  screen(
+    "/regulatory/access-log",
+    "access_log.read",
+    withPreload(() => <AccessLogPage tab="access" />, AccessLogPage),
+  ),
+  screen(
+    "/regulatory/access-log/export-receipts",
+    "access_log.read",
+    withPreload(() => <AccessLogPage tab="exports" />, AccessLogPage),
+  ),
   screen("/regulatory/retention", "access_log.read", RetentionPage),
   screen("/regulatory/portal-settings", "portal.manage", PortalSettingsPage),
 ];

@@ -3,6 +3,7 @@ import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaListHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
+import { withPreload } from "../router/with-preload";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
 
@@ -42,10 +43,10 @@ const mapEditorRoute = createRoute({
   beforeLoad: ({ context }) => {
     requirePermission("quadrants", context.me, "quadrant.read");
   },
-  component: function MapEditorRoute() {
+  component: withPreload(function MapEditorRoute() {
     const { tool } = mapEditorRoute.useSearch();
     return <W23MapEditorPage startTool={tool} />;
-  },
+  }, W23MapEditorPage),
   errorComponent: AreaErrorState,
 });
 const quadrantClosureRoute = createRoute({
@@ -56,10 +57,10 @@ const quadrantClosureRoute = createRoute({
     requirePermission("quadrants", context.me, "quadrant.read");
     requirePermission("quadrants", context.me, "quadrant.close");
   },
-  component: function QuadrantClosureRoute() {
+  component: withPreload(function QuadrantClosureRoute() {
     const { code } = quadrantClosureRoute.useParams();
     return <W33Page code={code} />;
-  },
+  }, W33Page),
   errorComponent: AreaErrorState,
 });
 // Old address shared in demo notes: quadrants live under their own area, not under Operations.
