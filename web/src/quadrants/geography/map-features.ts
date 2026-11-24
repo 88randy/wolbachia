@@ -64,9 +64,11 @@ export function baseMapStyle(source: MapSource): string | StyleSpecification {
   };
 }
 export function initialMapView(props: MapProps) {
-  const vertices = props.quadrants.flatMap(
-    (item) => item.current_version?.geometry.coordinates[0] ?? [],
-  );
+  const vertices = [
+    ...props.quadrants.flatMap((item) => item.current_version?.geometry.coordinates[0] ?? []),
+    ...(props.couriers ?? []).map((courier) => courier.at),
+    ...(props.track ?? []).flat(),
+  ];
   if (!vertices.length) return { longitude: 0, latitude: 0, zoom: 1 };
   const longitudes = vertices.map((point) => Number(point[0]));
   const latitudes = vertices.map((point) => Number(point[1]));
@@ -75,4 +77,13 @@ export function initialMapView(props: MapProps) {
     [Math.max(...longitudes), Math.max(...latitudes)],
   ];
   return { bounds, fitBoundsOptions: { padding: spacing[3] } };
+}
+/** Refit when areas, couriers or the track change, never on a 30-second position refresh. */
+export function mapViewKey(props: MapProps): string {
+  const areas = initialMapView({ quadrants: props.quadrants });
+  return JSON.stringify([
+    "bounds" in areas ? areas.bounds : "world",
+    props.couriers?.map((courier) => courier.id),
+    props.track?.[0]?.[0],
+  ]);
 }

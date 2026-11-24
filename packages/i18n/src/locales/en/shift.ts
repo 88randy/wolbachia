@@ -39,6 +39,19 @@ export const shift: Record<keyof typeof source, string> = {
     "The summary of points, readings, egg paddle presence and Yes/No eggs, incidents, distance and flags with thresholds and versions is not available yet. Review field information before deciding.",
   "shift.gap.track":
     "GPS track unavailable. The shift provides no coordinates or visit events to display a map. This list contains only the available opening and closing.",
+  "shift.filter.courier": "Courier",
+  "shift.filter.dateFrom": "Opened from",
+  "shift.filter.dateTo": "Opened until",
+  "shift.track.title": "Shift track",
+  "shift.track.start": "Start",
+  "shift.track.end": "End",
+  "shift.track.table": "Track segments (phone time)",
+  "shift.track.segmentStart": "Segment start",
+  "shift.track.segmentEnd": "Segment end",
+  "shift.track.positions": "Positions",
+  "shift.track.empty": "This shift has no received positions yet.",
+  "shift.track.inReview":
+    "Segments in review: {count}. They are not drawn until supervision resolves their review.",
   "shift.gap.points":
     "Point history (W4) is not available in this application yet. Saved shift decisions are shown here.",
   "shift.history.empty":

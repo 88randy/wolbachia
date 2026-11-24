@@ -83,6 +83,28 @@ Compared with design/web/screens/W29-validate-shift.png and B17-Operacion.dc.htm
 
 No backend changes, API generation, new dependencies or grants are included.
 
+## Courier track (W28, W29, #370)
+
+Everything here needs `courier_track.read` from `/me/`; without it nothing is
+requested or shown and W29 keeps the GPS gap notice above.
+
+- W28 (`live/`) polls `GET /api/v1/shifts/positions/` with the list (30 s). Each
+  card shows the last position's age (`<time>` with the phone time on hover); the
+  map draws one dot per courier (icon + name). A position older than 2 ×
+  `track_upload_interval_seconds` (default 300 s, a constant until supervisors can
+  read `/rule-parameters/`) is hollow and dashed and its label carries
+  "hace N min". `?courier=` loads that shift's track once and refreshes it every
+  2 minutes. The courier is a UUID: the name comes from the people lookup.
+- W29 (`track/ShiftTrackCard.tsx`) draws `GET /api/v1/shifts/{id}/track/` as one
+  line per segment (a gap is never a straight jump) with start/end markers, plus
+  the equivalent segment table (start, end, positions) and "Tramos en revisión:
+  N" when `pending_review_count > 0`.
+- History by day is the existing list filter
+  `/operations/shifts?courier=&date_from=&date_to=` plus W29.
+
+Tests: `live/W28Page.test.tsx`, `track/shift-track.test.tsx`,
+`track/track-model.test.ts`, `../quadrants/geography/courier-layers.test.tsx`.
+
 ### Criterion and regression tests
 
 | Requirement                   | Test in W29Page.test.tsx / shift-validation.test.ts                                                             | Limit                           |

@@ -36,7 +36,7 @@ export function shiftOptions(client: ApiClient, identity: SessionIdentity, id: s
 }
 /** Only server-supported filtering and paging; no client table scans or invented ordering. */
 export function shiftsOptions(client: ApiClient, identity: SessionIdentity, state: TableState) {
-  const status = state.filters["status"];
+  const { status, courier, date_from, date_to } = state.filters;
   return orgScopedQueryOptions(identity, {
     key: ["shifts", "list", state],
     queryFn: async ({ signal }) =>
@@ -47,6 +47,9 @@ export function shiftsOptions(client: ApiClient, identity: SessionIdentity, stat
               page: state.page,
               page_size: SHIFT_PAGE_SIZE,
               ...(status === "open" || status === "closed" ? { status } : {}),
+              ...(courier ? { courier } : {}),
+              ...(date_from ? { date_from } : {}),
+              ...(date_to ? { date_to } : {}),
             },
           },
           signal,
