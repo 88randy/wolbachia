@@ -1,15 +1,19 @@
-import { createRoute, redirect } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
-import { W33Page } from "../operations/closure/W33Page";
 import { areaListHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { W22Page } from "./geography/W22Page";
-import { W23Page } from "./geography/W23Page";
-import { W23MapEditorPage } from "./editor/W23MapEditorPage";
-import { PointPage } from "./point/PointPage";
+
+const W33Page = lazyRouteComponent(() => import("../operations/closure/W33Page"), "W33Page");
+const W23MapEditorPage = lazyRouteComponent(
+  () => import("./editor/W23MapEditorPage"),
+  "W23MapEditorPage",
+);
+const W22Page = lazyRouteComponent(() => import("./geography/W22Page"), "W22Page");
+const W23Page = lazyRouteComponent(() => import("./geography/W23Page"), "W23Page");
+const PointPage = lazyRouteComponent(() => import("./point/PointPage"), "PointPage");
 
 const quadrantVersionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,

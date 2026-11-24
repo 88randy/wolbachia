@@ -1,16 +1,17 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { RiskImportPage } from "./RiskImportPage";
-import { SchedulingHome } from "./SchedulingHome";
-import { W25Page } from "./W25Page";
-import { W26Page } from "./W26Page";
-import { W27Page } from "./W27Page";
-import { W32Page } from "./W32Page";
+
+const RiskImportPage = lazyRouteComponent(() => import("./RiskImportPage"), "RiskImportPage");
+const SchedulingHome = lazyRouteComponent(() => import("./SchedulingHome"), "SchedulingHome");
+const W25Page = lazyRouteComponent(() => import("./W25Page"), "W25Page");
+const W26Page = lazyRouteComponent(() => import("./W26Page"), "W26Page");
+const W27Page = lazyRouteComponent(() => import("./W27Page"), "W27Page");
+const W32Page = lazyRouteComponent(() => import("./W32Page"), "W32Page");
 
 const planRoute = createRoute({
   getParentRoute: () => authenticatedRoute,

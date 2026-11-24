@@ -1,28 +1,50 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { RouteComponent } from "@tanstack/react-router";
-import { CatalogsPage } from "../catalogs/CatalogsPage";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { PHONES_PERMISSION } from "../devices/permissions";
-import { PhonesPage } from "../devices/PhonesPage";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { RULE_VERSION_READ } from "../rules/permissions";
-import { RuleParameterPage } from "../rules/RuleParameterPage";
-import { RuleParametersPage } from "../rules/RuleParametersPage";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { API_KEY_READ } from "./api-keys/api-keys-queries";
-import { ApiKeysPage } from "./api-keys/ApiKeysPage";
-import { W64Page } from "./incident-types/W64Page";
 import { ORGANIZATION_READ, ROLE_READ } from "./organization/permissions";
-import { W65Page } from "./organization/W65Page";
-import { W68Page } from "./organization/W68Page";
-import { CenterClosePage } from "./organization/centers/CenterClosePage";
-import { CenterDetailPage } from "./organization/centers/CenterDetailPage";
-import { CentersListPage } from "./organization/centers/CentersListPage";
-import { SettingsPage } from "./SettingsPage";
-import { W48UsersPage } from "../people-admin/W48UsersPage";
-import { W49PersonPage } from "../people-admin/W49PersonPage";
+
+const CenterClosePage = lazyRouteComponent(
+  () => import("./organization/centers/CenterClosePage"),
+  "CenterClosePage",
+);
+const CenterDetailPage = lazyRouteComponent(
+  () => import("./organization/centers/CenterDetailPage"),
+  "CenterDetailPage",
+);
+const W49PersonPage = lazyRouteComponent(
+  () => import("../people-admin/W49PersonPage"),
+  "W49PersonPage",
+);
+const CatalogsPage = lazyRouteComponent(() => import("../catalogs/CatalogsPage"), "CatalogsPage");
+const PhonesPage = lazyRouteComponent(() => import("../devices/PhonesPage"), "PhonesPage");
+const RuleParameterPage = lazyRouteComponent(
+  () => import("../rules/RuleParameterPage"),
+  "RuleParameterPage",
+);
+const RuleParametersPage = lazyRouteComponent(
+  () => import("../rules/RuleParametersPage"),
+  "RuleParametersPage",
+);
+const ApiKeysPage = lazyRouteComponent(() => import("./api-keys/ApiKeysPage"), "ApiKeysPage");
+const W64Page = lazyRouteComponent(() => import("./incident-types/W64Page"), "W64Page");
+const W65Page = lazyRouteComponent(() => import("./organization/W65Page"), "W65Page");
+const W68Page = lazyRouteComponent(() => import("./organization/W68Page"), "W68Page");
+const CentersListPage = lazyRouteComponent(
+  () => import("./organization/centers/CentersListPage"),
+  "CentersListPage",
+);
+const SettingsPage = lazyRouteComponent(() => import("./SettingsPage"), "SettingsPage");
+const W48UsersPage = lazyRouteComponent(
+  () => import("../people-admin/W48UsersPage"),
+  "W48UsersPage",
+);
 
 /** A Settings screen at `/settings/<resource>` that needs one permission code. */
 function settingsListRoute<const Path extends string>(
