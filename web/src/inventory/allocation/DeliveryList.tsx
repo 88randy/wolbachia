@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -32,10 +32,9 @@ const COUNTED = ["", "planned", "released", "received", "cancelled"] as const;
 
 function useDeliveryCounts() {
   const scope = useInventoryContext();
-  const counts = COUNTED.map(
-    // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed list, fixed order
-    (status) => useQuery(deliveryCountOptions(scope, status)).data,
-  );
+  const counts = useQueries({
+    queries: COUNTED.map((status) => deliveryCountOptions(scope, status)),
+  }).map((result) => result.data);
   if (counts.some((value) => value === undefined)) return undefined;
   return Object.fromEntries(COUNTED.map((status, index) => [status, counts[index] ?? 0]));
 }

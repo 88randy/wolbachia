@@ -6,18 +6,21 @@ import { useInventoryContext } from "../use-inventory-context";
 
 export type Scope = ReturnType<typeof useInventoryContext>;
 
-/** One-row read: only the total is used, so the hub never downloads records. */
-export function useTotal(
-  scope: Scope,
-  target: { key: string; enabled: boolean },
-  read: (client: Scope["client"]) => Promise<{ count: number }>,
-) {
-  const { key, enabled } = target;
+type TotalTarget = { key: string; enabled: boolean };
+type TotalRead = (client: Scope["client"]) => Promise<{ count: number }>;
+
+/** Query options of a one-row read; usable with `useQueries` for a list of totals. */
+export function totalOptions(scope: Scope, target: TotalTarget, read: TotalRead) {
   const options = inventoryScopedOptions(scope, {
-    key: ["inventory", "hub", key],
+    key: ["inventory", "hub", target.key],
     queryFn: () => read(scope.client),
   });
-  return useQuery({ ...options, enabled: options.enabled && enabled }).data?.count;
+  return { ...options, enabled: options.enabled && target.enabled };
+}
+
+/** One-row read: only the total is used, so the hub never downloads records. */
+export function useTotal(scope: Scope, target: TotalTarget, read: TotalRead) {
+  return useQuery(totalOptions(scope, target, read)).data?.count;
 }
 
 /** The live numbers on the hub cards. */
