@@ -22,7 +22,7 @@ export function OvitrapScreen({ pointId }: { readonly pointId?: string }) {
     // Lists and rules download by themselves; offline, the copy on the phone is used.
     void service
       .syncAssignment()
-      .then(() => service.refresh(null))
+      .then(() => service.refreshInBackground())
       .catch(() => undefined)
       .then(() => refresh().catch(() => undefined))
       .then(() => {
