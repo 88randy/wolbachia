@@ -164,11 +164,14 @@ void test("M07 failed durable writes and cancelled continuations cannot return a
   assert.deepEqual(await local.db.query("SELECT id FROM outbox_event"), []);
 });
 
-/** The day bundle carries no bags (production): the bag only exists once the check sends its code. */
+/**
+ * Production shape: the day bundle carries no bags (the bag only exists once the check sends its
+ * code) and maps an ovitrap only for tasks that name one.
+ */
 async function openCheckWithoutBagMappings() {
   const local = await scannerHarness();
   await local.store.publishSnapshots(
-    { assignment: { ...ASSIGNMENT, bags: [] }, catalog: CATALOG, rules: RULES },
+    { assignment: { ...ASSIGNMENT, bags: [], ovitraps: [] }, catalog: CATALOG, rules: RULES },
     await local.store.assignmentAuthority(),
   );
   await local.bundle.refresh(true);
@@ -192,10 +195,12 @@ async function openCheckWithoutBagMappings() {
 
 void test("M07 bag step binds the typed printed code without a downloaded bag list", async () => {
   const local = await openCheckWithoutBagMappings();
-  assert.deepEqual(await local.enterBag(" B-0042 ", true), { route: { name: "ovitrapCapture" } });
+  assert.deepEqual(await local.enterBag(" B-MER-100 ", true), {
+    route: { name: "ovitrapCapture" },
+  });
   const draft = (await local.store.read()).draft;
   assert.ok(draft);
-  assert.equal(draft.bagCode, "B-0042");
+  assert.equal(draft.bagCode, "B-MER-100");
   assert.equal(draft.bagUuid, null);
   assert.equal(draft.manualCapture, true);
   assert.deepEqual(await local.db.query("SELECT id FROM outbox_event"), []);
