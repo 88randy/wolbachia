@@ -1,18 +1,17 @@
-/* eslint-disable max-lines-per-function -- already over the limit on develop (35 lines); the track adds one layer line. */
-import { Camera, Map, UserLocation } from "@maplibre/maplibre-react-native";
+import { Camera, Map } from "@maplibre/maplibre-react-native";
 import type { StyleSpecification } from "@maplibre/maplibre-react-native";
 import { useMemo, useState } from "react";
 import { useT } from "../i18n/I18nProvider.tsx";
 import { useStyles } from "../theme/ThemeProvider.tsx";
 import { MapPointDots } from "./MapPointDots.tsx";
-import { MapPointMarker } from "./MapPointMarker.tsx";
+import { MapPointMarkers } from "./MapPointMarkers.tsx";
 import { MapTrackLine } from "./MapTrackLine.tsx";
-import { MapZoneLayer } from "./MapZoneLayer.tsx";
+import { MapZoneLayers } from "./MapZoneLayers.tsx";
 import { initialViewFor } from "./map-geo.ts";
 import { createMapStyles } from "./map-styles.ts";
 import type { LngLatPair, MapPoint, MapZone } from "./map-types.ts";
-import { OVERVIEW_ZOOM, POINT_LABEL_ZOOM, ZONE_LABEL_ZOOM } from "./map-zoom.ts";
-import { useLocationGranted } from "./use-location-granted.ts";
+import { OVERVIEW_ZOOM } from "./map-zoom.ts";
+import { MapUserLocation } from "./MapUserLocation.tsx";
 
 interface Props {
   readonly mapStyle: StyleSpecification;
@@ -30,10 +29,8 @@ interface Props {
 export function MapCanvas({ mapStyle, points, zones, track, selectedId, onSelectPoint }: Props) {
   const styles = useStyles(createMapStyles);
   const t = useT();
-  const hasLocation = useLocationGranted();
   const view = useMemo(() => initialViewFor(points, zones), [points, zones]);
   const [zoom, setZoom] = useState(OVERVIEW_ZOOM);
-  const markers = points.filter((point) => zoom >= POINT_LABEL_ZOOM || point.id === selectedId);
   return (
     <Map
       style={styles.map}
@@ -46,20 +43,16 @@ export function MapCanvas({ mapStyle, points, zones, track, selectedId, onSelect
       }}
     >
       <Camera initialViewState={view} />
-      {zones.map((zone) => (
-        <MapZoneLayer key={zone.id} zone={zone} showLabel={zoom >= ZONE_LABEL_ZOOM} />
-      ))}
+      <MapZoneLayers zones={zones} zoom={zoom} />
       <MapTrackLine line={track} />
       <MapPointDots points={points} />
-      {hasLocation ? <UserLocation accuracy /> : null}
-      {markers.map((point) => (
-        <MapPointMarker
-          key={point.id}
-          point={point}
-          isSelected={point.id === selectedId}
-          onSelect={onSelectPoint}
-        />
-      ))}
+      <MapUserLocation />
+      <MapPointMarkers
+        points={points}
+        zoom={zoom}
+        selectedId={selectedId}
+        onSelect={onSelectPoint}
+      />
     </Map>
   );
 }

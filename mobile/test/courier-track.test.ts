@@ -7,7 +7,7 @@ import { simplifyTrack, metersBetween } from "../src/features/track/simplify-tra
 import type { TrackFix } from "../src/features/track/simplify-track.ts";
 import { keepFix } from "../src/features/track/track-filter.ts";
 import type { RawFix } from "../src/features/track/track-filter.ts";
-import { TrackRecorder } from "../src/features/track/track-recorder.ts";
+import { reconcileOnChange, TrackRecorder } from "../src/features/track/track-recorder.ts";
 import type { NativeTrackApi, TrackStartOptions } from "../src/features/track/track-recorder.ts";
 import { readTrackRules } from "../src/features/track/track-rules.ts";
 import {
@@ -65,7 +65,10 @@ async function segments(db: SqlExecutor) {
 }
 
 /** Native task, permissions and clock under the test's control; nothing waits on real time. */
-function fixture(db: SqlExecutor, options: { isLocationGranted?: boolean } = {}) {
+function fixture(
+  db: SqlExecutor,
+  options: { isLocationGranted?: boolean; store?: TrackStore; startGate?: Deferred } = {},
+) {
   const calls: string[] = [];
   const starts: TrackStartOptions[] = [];
   const state = { running: false, owner: OWNER as string | null, now: T0, startError: false };
@@ -75,12 +78,15 @@ function fixture(db: SqlExecutor, options: { isLocationGranted?: boolean } = {})
         isLocationGranted: options.isLocationGranted ?? true,
         isNotificationGranted: true,
       }),
-    start: (startOptions) => {
+    start: async (startOptions) => {
       calls.push("start");
-      if (state.startError) return Promise.reject(new Error("ForegroundServiceStartNotAllowed"));
+      if (options.startGate) {
+        options.startGate.entered.resolve();
+        await options.startGate.release.promise;
+      }
+      if (state.startError) throw new Error("ForegroundServiceStartNotAllowed");
       starts.push(startOptions);
       state.running = true;
-      return Promise.resolve();
     },
     stop: () => {
       calls.push("stop");
@@ -92,7 +98,7 @@ function fixture(db: SqlExecutor, options: { isLocationGranted?: boolean } = {})
   let syncs = 0;
   const reports: string[] = [];
   const recorder = new TrackRecorder({
-    store: new TrackStore(db),
+    store: options.store ?? new TrackStore(db),
     native,
     identity: () => state.owner,
     rules: () => Promise.resolve(RULES),
@@ -111,6 +117,37 @@ function fixture(db: SqlExecutor, options: { isLocationGranted?: boolean } = {})
 }
 
 const raw = (fix: TrackFix): RawFix => fix;
+
+function deferred() {
+  let resolve: () => void = () => undefined;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+/** A barrier: `entered` resolves when the blocked call starts, `release` lets it finish. */
+interface Deferred {
+  readonly entered: ReturnType<typeof deferred>;
+  readonly release: ReturnType<typeof deferred>;
+}
+const barrier = (): Deferred => ({ entered: deferred(), release: deferred() });
+
+/** A real store whose next append waits on a barrier. */
+class BlockingStore extends TrackStore {
+  readonly gate = barrier();
+  override async append(owner: string, shiftId: string, fixes: readonly TrackFix[]) {
+    this.gate.entered.resolve();
+    await this.gate.release.promise;
+    await super.append(owner, shiftId, fixes);
+  }
+}
+
+const unsentOf = async (db: SqlExecutor, owner: string) =>
+  (
+    await db.query("SELECT 1 FROM track_point WHERE owner_user_id=? AND segment_event_id IS NULL", [
+      owner,
+    ])
+  ).length;
 
 void test("Douglas-Peucker keeps first and last and every point beyond the tolerance", () => {
   const east = (fix: TrackFix, meters: number): TrackFix => ({
@@ -368,5 +405,153 @@ void test("pruning never deletes unsent points or points newer than 30 days", as
   assert.deepEqual(
     left.map((row) => row.owner_user_id),
     ["pending-old", "sent-new", "unsent-old"],
+  );
+});
+
+void test("a deferred batch delivered after the close keeps its fixes up to the close", async () => {
+  const db = await createTestDatabase();
+  const { recorder } = fixture(db);
+  await insertShiftEvent(db, "shift.open", T0);
+  await recorder.reconcile();
+  await recorder.onFixes([raw(north(0, T0 + 1000))]);
+  await insertShiftEvent(db, "shift.close", T0 + 20_000);
+  await recorder.reconcile(); // local close: first cut and stop
+  await recorder.onFixes([raw(north(80, T0 + 18_000)), raw(north(160, T0 + 25_000))]);
+  const points = await db.query("SELECT recorded_at FROM track_point ORDER BY recorded_at");
+  assert.deepEqual(
+    points.map((row) => row.recorded_at),
+    [T0 + 1000, T0 + 18_000],
+    "the fix after the close is never stored",
+  );
+  assert.equal(await unsentOf(db, OWNER), 0, "the late fix was cut at once");
+  assert.deepEqual(
+    (await segments(db)).map((segment) => segment.payload.positions.length),
+    [1, 1],
+  );
+});
+
+void test("close, logout or revocation queued behind a blocked append leaves nothing unsent", async () => {
+  const db = await createTestDatabase();
+  const store = new BlockingStore(db);
+  const { recorder, calls, state } = fixture(db, { store });
+  await insertShiftEvent(db, "shift.open", T0);
+  await recorder.reconcile();
+  const fixes = recorder.onFixes([raw(north(0, T0 + 1000)), raw(north(80, T0 + 16_000))]);
+  await store.gate.entered.promise; // the batch passed its shift and owner checks
+  await insertShiftEvent(db, "shift.close", T0 + 20_000);
+  const close = recorder.reconcile();
+  state.owner = null; // logout or remote revocation, queued behind the append
+  const logout = recorder.reconcile();
+  store.gate.release.resolve();
+  await Promise.all([fixes, close, logout]);
+  assert.equal(await unsentOf(db, OWNER), 0, "the departed owner's points were all cut");
+  assert.equal((await segments(db)).length, 1);
+  assert.deepEqual(calls, ["start", "stop"]);
+  assert.equal(state.running, false);
+});
+
+void test("a stop queued behind a blocked start runs after it, never the other way round", async () => {
+  const db = await createTestDatabase();
+  const startGate = barrier();
+  const { recorder, calls, state } = fixture(db, { startGate });
+  await insertShiftEvent(db, "shift.open", T0);
+  const opening = recorder.reconcile();
+  await startGate.entered.promise;
+  state.owner = null;
+  const revoked = recorder.reconcile();
+  startGate.release.resolve();
+  await Promise.all([opening, revoked]);
+  assert.deepEqual(calls, ["start", "stop"]);
+  assert.equal(state.running, false);
+});
+
+void test("an open shift tracked by one owner is never tracked by another", async () => {
+  const db = await createTestDatabase();
+  const { recorder, calls, state } = fixture(db);
+  await insertShiftEvent(db, "shift.open", T0);
+  await recorder.reconcile();
+  state.owner = "owner-b";
+  await recorder.reconcile();
+  await recorder.onFixes([raw(north(0, T0 + 1000))]);
+  assert.deepEqual(calls, ["start", "stop"]);
+  assert.equal((await db.query("SELECT 1 FROM track_point")).length, 0);
+  state.owner = OWNER;
+  await recorder.reconcile();
+  assert.deepEqual(calls, ["start", "stop", "start"], "the claiming owner resumes");
+});
+
+void test("unlock, late profile hydration and logout each reconcile once", () => {
+  const listeners = new Set<() => void>();
+  let key = "locked|";
+  let reconciles = 0;
+  reconcileOnChange({
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    key: () => key,
+    reconcile: () => {
+      reconciles += 1;
+      return Promise.resolve();
+    },
+  });
+  const emit = (next: string) => {
+    key = next;
+    for (const listener of listeners) listener();
+  };
+  emit("locked|"); // unrelated auth change (clock skew, connectivity)
+  emit("locked|owner-a"); // cold start: profile hydrated
+  emit("unlocked|owner-a");
+  emit("unlocked|owner-a");
+  emit("login|");
+  assert.equal(reconciles, 3);
+});
+
+void test("after 30 days final segments are compacted; the envelope stays immutable otherwise", async () => {
+  const db = await createTestDatabase();
+  const store = new TrackStore(db);
+  await insertShiftEvent(db, "shift.open", T0);
+  const input = {
+    owner: OWNER,
+    rules: RULES,
+    uuid: () => crypto.randomUUID(),
+    now: () => T0,
+    versions: { rules: "r1", catalog: "c1" },
+  };
+  await store.append(OWNER, SHIFT, [north(0, T0 + 1000)]);
+  await store.cut(input);
+  await store.append(OWNER, SHIFT, [north(80, T0 + 16_000)]);
+  await store.cut(input);
+  const [sentId, pendingId] = (await segments(db)).map((segment) => segment.id);
+  const update = (sql: string, id: unknown) => db.runAtomically([{ sql, params: [String(id)] }]);
+  await update("UPDATE outbox_event SET local_status='sent' WHERE id=?", sentId);
+  await store.prune(T0 + LOCAL_RETENTION_MS - 60_000);
+  const before = await segments(db);
+  assert.equal(before[0]?.payload.positions.length, 1, "not yet 30 days old");
+  await store.prune(T0 + LOCAL_RETENTION_MS + 60_000);
+  const [compacted, kept] = (await segments(db)).map((segment) => segment.payload);
+  assert.deepEqual(compacted, {
+    started_at: new Date(T0 + 1000).toISOString(),
+    positions: [],
+    compacted: true,
+  });
+  assert.equal(kept?.positions.length, 1, "a pending segment keeps its positions");
+  const immutable = /the event envelope never changes/;
+  await assert.rejects(
+    update("UPDATE outbox_event SET payload='{}' WHERE id=?", sentId),
+    immutable,
+  );
+  await assert.rejects(
+    update(
+      `UPDATE outbox_event SET payload=json_set(payload,'$.positions',json('[]'),'$.compacted',json('true'))
+        WHERE id=?`,
+      pendingId,
+    ),
+    immutable,
+    "a pending segment cannot be compacted",
+  );
+  await assert.rejects(
+    update("UPDATE outbox_event SET shift_id='x' WHERE id=?", sentId),
+    immutable,
   );
 });

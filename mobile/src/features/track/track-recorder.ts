@@ -47,6 +47,24 @@ export interface TrackRecorderDeps {
   readonly report: (event: string, error: unknown) => void;
 }
 
+/**
+ * Runs `reconcile` whenever `key()` changes. With key = auth phase + owner this covers login,
+ * unlock, late profile hydration on a cold start, logout, revocation and owner change.
+ */
+export function reconcileOnChange(input: {
+  readonly subscribe: (listener: () => void) => () => void;
+  readonly key: () => string;
+  readonly reconcile: () => Promise<void>;
+}): () => void {
+  let last = input.key();
+  return input.subscribe(() => {
+    const next = input.key();
+    if (next === last) return;
+    last = next;
+    void input.reconcile();
+  });
+}
+
 interface Active {
   readonly owner: string;
   readonly shiftId: string;
@@ -89,29 +107,64 @@ export class TrackRecorder {
 
   reconcile = (): Promise<void> => this.#serial(() => this.#reconcile());
 
-  /** Background task callback. Fixes outside an open shift of the same owner are discarded. */
+  /**
+   * Background task callback. A deferred batch can arrive after the close: its fixes up to the
+   * close still belong to the owner's last shift; everything else outside an open shift of the
+   * same owner is discarded.
+   */
   onFixes(fixes: readonly RawFix[]): Promise<void> {
     return this.#serial(async () => {
-      const active = this.#active;
-      if (active === null) return;
       const owner = this.#deps.identity();
-      const shiftId = await this.#deps.store.openShiftId();
-      if (owner !== active.owner || shiftId !== active.shiftId) {
-        await this.#reconcile();
-        return;
+      const active = this.#active;
+      if (active !== null && owner !== null) {
+        const shiftId = await this.#deps.store.openShiftId(owner);
+        if (owner === active.owner && shiftId === active.shiftId) {
+          await this.#record(active, fixes);
+          return;
+        }
       }
-      const rules = await this.#deps.rules();
-      const kept: TrackFix[] = [];
-      for (const fix of [...fixes].sort((a, b) => a.at - b.at)) {
-        if (!keepFix(active.last, fix, rules)) continue;
-        kept.push(fix);
-        active.last = fix;
-      }
-      await this.#deps.store.append(active.owner, active.shiftId, kept);
-      if (kept.length > 0) this.#publish({ revision: this.#snapshot.revision + 1 });
-      if (this.#deps.now() - active.lastCutAt >= rules.uploadIntervalSeconds * 1000)
-        await this.#cut(active.owner);
+      if (active !== null) await this.#reconcile();
+      if (owner !== null) await this.#recordLate(owner, fixes);
     });
+  }
+
+  async #record(active: Active, fixes: readonly RawFix[]): Promise<void> {
+    const rules = await this.#deps.rules();
+    const kept = this.#filter(active, fixes, rules);
+    await this.#deps.store.append(active.owner, active.shiftId, kept);
+    if (kept.length > 0) this.#publish({ revision: this.#snapshot.revision + 1 });
+    if (this.#deps.now() - active.lastCutAt >= rules.uploadIntervalSeconds * 1000)
+      await this.#cut(active.owner);
+  }
+
+  /** Fixes up to the close of the owner's last (closed) shift, then cut at once. */
+  async #recordLate(owner: string, fixes: readonly RawFix[]): Promise<void> {
+    const { store } = this.#deps;
+    const shiftId = await store.lastShiftOf(owner);
+    if (shiftId === null) return;
+    const closedAt = await store.closedAt(shiftId);
+    if (!Number.isFinite(closedAt)) return;
+    const late: Active = {
+      owner,
+      shiftId,
+      last: await store.lastKept(owner, shiftId),
+      lastCutAt: 0,
+    };
+    const inShift = fixes.filter((fix) => fix.at <= closedAt);
+    const kept = this.#filter(late, inShift, await this.#deps.rules());
+    if (kept.length === 0) return;
+    await store.append(owner, shiftId, kept);
+    await this.#cut(owner);
+  }
+
+  #filter(active: Active, fixes: readonly RawFix[], rules: TrackRules): TrackFix[] {
+    const kept: TrackFix[] = [];
+    for (const fix of [...fixes].sort((a, b) => a.at - b.at)) {
+      if (!keepFix(active.last, fix, rules)) continue;
+      kept.push(fix);
+      active.last = fix;
+    }
+    return kept;
   }
 
   #serial(action: () => Promise<void>): Promise<void> {
@@ -126,7 +179,7 @@ export class TrackRecorder {
     const { store } = this.#deps;
     await store.prune(this.#deps.now());
     const owner = this.#deps.identity();
-    const shiftId = owner === null ? null : await store.openShiftId();
+    const shiftId = owner === null ? null : await store.openShiftId(owner);
     const previous = this.#active;
     if (previous !== null && (previous.owner !== owner || previous.shiftId !== shiftId)) {
       this.#active = null;

@@ -10,7 +10,7 @@ import { parseLocale } from "../../app/preferences.ts";
 import { translate } from "../../i18n/translate.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { ShiftOpenStore } from "../shift-open/store.ts";
-import { TrackRecorder } from "./track-recorder.ts";
+import { reconcileOnChange, TrackRecorder } from "./track-recorder.ts";
 import type { TrackRecorderDeps } from "./track-recorder.ts";
 import { readTrackRules } from "./track-rules.ts";
 import { TrackStore } from "./track-store.ts";
@@ -78,12 +78,10 @@ function recorderDeps(deps: Dependencies): TrackRecorderDeps {
 export function createTrack(deps: Dependencies): TrackRecorder {
   const recorder = new TrackRecorder(recorderDeps(deps));
   setTrackHandler((fixes) => recorder.onFixes(fixes));
-  let isSignedIn = deps.auth.getSnapshot().phase !== "login";
-  deps.auth.subscribe(() => {
-    const next = deps.auth.getSnapshot().phase !== "login";
-    if (next === isSignedIn) return;
-    isSignedIn = next;
-    void recorder.reconcile();
+  reconcileOnChange({
+    subscribe: deps.auth.subscribe,
+    key: () => `${deps.auth.getSnapshot().phase}|${ownerOf(deps) ?? ""}`,
+    reconcile: recorder.reconcile,
   });
   // Android starts a foreground service only from the foreground: a refused start retries here.
   AppState.addEventListener("change", (state) => {

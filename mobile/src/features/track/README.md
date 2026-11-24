@@ -20,8 +20,11 @@ it as `track.segment` schema 1 events through the existing outbox (contract: `do
 - One queue (`TrackRecorder.#serial`) runs every append, cut, start and stop: a cut never races an append.
 - A cut inserts its events and stamps `segment_event_id` in ONE transaction; a point is unsent or carried by exactly one event.
 - Segments are inserted as late captures (`isLateCapture`): a cut after the local close is valid when its last position is not after the close. Points after the close are deleted, never sent.
-- The task callback re-reads the open shift and owner; fixes of another owner or outside a shift are discarded.
-- Pruning deletes only points older than 30 days whose event has a final answer (`sent`, `in_review`, `rejected`). Unsent points also count as local records for owner binding.
+- The first owner that tracks a shift claims it (`kv` `track_shift_owner:<shift>`); the open-shift read filters by that claim, so points never carry another owner's shift.
+- The task callback re-reads the open shift and owner. A deferred batch (up to 60 s) that arrives after the local close still records its fixes up to the close into the owner's last claimed shift and cuts them; anything else outside an open shift of the same owner is discarded.
+- Retention (decision 175): after 30 days the phone deletes points whose event has a final answer (`sent`, `in_review`, `rejected`) and compacts those `track.segment` payloads to `{started_at, positions: [], compacted: true}`. The envelope trigger allows only that change on a final segment; a final event is never resent. Unsent points and pending events stay whole and also count as local records for owner binding.
+- Session changes (login, unlock, profile hydration, logout, revocation, owner change) and every foreground run `reconcile`, so a cold start that hydrates late still resumes tracking.
+- The notification text is read when the service starts; a language change shows in it from the next start (restarting a foreground service from a settings change is not worth the risk).
 
 ## Parameters (rule snapshot `auth_rules_snapshot`, seed defaults and bounds)
 

@@ -1,5 +1,8 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import { MapPinOff } from "lucide-react-native";
+import { useSyncExternalStore } from "react";
+import { Linking } from "react-native";
+import { useServices } from "../../app/services-context.ts";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import type { TrackNotice } from "./track-recorder.ts";
@@ -11,9 +14,21 @@ const KEYS: Readonly<Record<Exclude<TrackNotice, null>, MessageKey>> = {
 };
 
 /** Calm note when the track is not (fully) recorded; it never blocks work. */
-export function TrackNoticeBanner({ notice }: { readonly notice: TrackNotice }) {
+export function TrackNoticeBanner() {
   const t = useT();
-  return notice === null ? null : (
-    <InfoNotice tone="info" icon={MapPinOff} message={t(KEYS[notice])} />
+  const { track } = useServices();
+  const { notice } = useSyncExternalStore(track.subscribe, track.getSnapshot);
+  if (notice === null) return null;
+  const openSettings = {
+    label: t("mobile.track.openSettings"),
+    onPress: () => void Linking.openSettings(),
+  };
+  return (
+    <InfoNotice
+      tone="info"
+      icon={MapPinOff}
+      message={t(KEYS[notice])}
+      {...(notice === "unavailable" ? {} : { action: openSettings })}
+    />
   );
 }

@@ -2,6 +2,7 @@ import type { SqlExecutor, SqlRow, SqlStatement } from "../../db/sql.ts";
 import { readInteger, readOptionalText, readText } from "../../db/sql.ts";
 import type { FieldEventEnvelope } from "../../outbox/outbox-event.ts";
 import { eventInsertStatement } from "../../outbox/outbox-repository.ts";
+import { compactSegmentPayload } from "./schema.ts";
 import { simplifyTrack } from "./simplify-track.ts";
 import type { TrackFix } from "./simplify-track.ts";
 import type { TrackRules } from "./track-rules.ts";
@@ -13,9 +14,12 @@ const MAX_ACCURACY_M = 5000;
 /** Owner decision: the phone keeps its own track for 30 days. */
 export const LOCAL_RETENTION_MS = 30 * 86_400_000;
 
+/** kv key prefix: the owner that first tracked a shift; another owner never records into it. */
+const SHIFT_OWNER_KEY = "track_shift_owner:";
 const OPEN_SHIFT_SQL = `SELECT shift_id FROM outbox_event opening WHERE type='shift.open'
   AND local_status!='rejected' AND shift_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM outbox_event
   closing WHERE closing.type='shift.close' AND closing.shift_id=opening.shift_id)
+  AND COALESCE((SELECT value FROM kv WHERE key='${SHIFT_OWNER_KEY}'||opening.shift_id), ?)=?
   ORDER BY seq DESC LIMIT 1`;
 const POINT_COLUMNS = "recorded_at, lat, lng, accuracy_m";
 
@@ -126,10 +130,31 @@ export class TrackStore {
     this.#db = db;
   }
 
-  /** The newest local shift that is open (opening not rejected, no local close). */
-  async openShiftId(): Promise<string | null> {
-    const [row] = await this.#db.query(OPEN_SHIFT_SQL);
-    return row === undefined ? null : readOptionalText(row, "shift_id");
+  /**
+   * The newest open local shift (opening not rejected, no local close) that `owner` may track.
+   * The first owner to track a shift claims it, so points never carry another owner's shift.
+   */
+  async openShiftId(owner: string): Promise<string | null> {
+    const [row] = await this.#db.query(OPEN_SHIFT_SQL, [owner, owner]);
+    const shiftId = row === undefined ? null : readOptionalText(row, "shift_id");
+    if (shiftId !== null)
+      await this.#db.runAtomically([
+        {
+          sql: "INSERT OR IGNORE INTO kv(key, value) VALUES (?, ?)",
+          params: [SHIFT_OWNER_KEY + shiftId, owner],
+        },
+      ]);
+    return shiftId;
+  }
+
+  /** The newest shift `owner` claimed, open or closed (a late batch may still belong to it). */
+  async lastShiftOf(owner: string): Promise<string | null> {
+    const [row] = await this.#db.query(
+      `SELECT o.shift_id FROM outbox_event o JOIN kv ON kv.key='${SHIFT_OWNER_KEY}'||o.shift_id
+       AND kv.value=? WHERE o.type='shift.open' ORDER BY o.seq DESC LIMIT 1`,
+      [owner],
+    );
+    return row === undefined ? null : readText(row, "shift_id");
   }
 
   async lastKept(owner: string, shiftId: string): Promise<TrackFix | null> {
@@ -176,7 +201,8 @@ export class TrackStore {
     return total;
   }
 
-  async #closedAt(shiftId: string): Promise<number> {
+  /** Device time of the local close of shiftId; Infinity while it is open. */
+  async closedAt(shiftId: string): Promise<number> {
     const [closing] = await this.#db.query(
       "SELECT device_time FROM outbox_event WHERE type='shift.close' AND shift_id=? ORDER BY seq LIMIT 1",
       [shiftId],
@@ -185,7 +211,7 @@ export class TrackStore {
   }
 
   async #cutShift(input: CutInput, shiftId: string): Promise<number> {
-    const closedAt = await this.#closedAt(shiftId);
+    const closedAt = await this.closedAt(shiftId);
     const rows = await this.#db.query(
       `SELECT ${POINT_COLUMNS} FROM track_point WHERE owner_user_id=? AND shift_id=?
        AND segment_event_id IS NULL ORDER BY recorded_at, id`,
@@ -210,13 +236,24 @@ export class TrackStore {
     return segments.length;
   }
 
-  /** Drops points older than 30 days whose event has a final server answer; unsent points stay. */
+  /**
+   * After 30 days, drops points whose event has a final answer and compacts those events'
+   * positions (the server keeps the track). Unsent points and pending events stay whole.
+   */
   async prune(nowMs: number): Promise<void> {
+    const final = "local_status IN ('sent','in_review','rejected')";
+    const cutoff = nowMs - LOCAL_RETENTION_MS;
     await this.#db.runAtomically([
       {
         sql: `DELETE FROM track_point WHERE recorded_at<? AND segment_event_id IN
-          (SELECT id FROM outbox_event WHERE local_status IN ('sent','in_review','rejected'))`,
-        params: [nowMs - LOCAL_RETENTION_MS],
+          (SELECT id FROM outbox_event WHERE ${final})`,
+        params: [cutoff],
+      },
+      {
+        sql: `UPDATE outbox_event SET payload=${compactSegmentPayload("payload")}
+          WHERE type='track.segment' AND ${final} AND julianday(device_time)<julianday(?)
+          AND json_extract(payload,'$.compacted') IS NULL`,
+        params: [new Date(cutoff).toISOString()],
       },
     ]);
   }
