@@ -67,9 +67,14 @@ export class OvitrapStore {
   }
   /** A truly authoritative provider must publish using the token captured before its asynchronous work. */
   async publishSnapshots(snapshots: Snapshots, authority: AssignmentAuthority): Promise<void> {
-    const statement = assignmentPublication(snapshots, authority);
-    const rows = await this.#db.query(statement.sql, statement.params);
-    if (rows.length === 0) throw new StaleAssignmentAuthorityError();
+    try {
+      await this.#db.runAtomically(assignmentPublication(snapshots, authority));
+    } catch (error) {
+      // The revision guards abort through lifecycle_guard's CHECK; anything else is a real failure.
+      if (error instanceof Error && /CHECK constraint failed/i.test(error.message))
+        throw new StaleAssignmentAuthorityError();
+      throw error;
+    }
   }
   /** Why a guarded publication wrote nothing; diagnostic only. */
   async publishBlockReason(assignment: Assignment | null): Promise<AssignmentNullReason> {

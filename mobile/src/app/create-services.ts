@@ -153,6 +153,7 @@ function createCaptures(
       ...deps,
       gps: createForegroundGps(day.location),
       assignments: createDayAssignments({ bundle, auth: deps.auth }),
+      recoverCapture: bundle.recoverCaptureContext,
     }),
     ovitrapLifecycle: createOvitrapLifecycle({
       ...deps,

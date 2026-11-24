@@ -252,7 +252,7 @@ export default function EditorMap({
             <span
               className={
                 item.isRuler
-                  ? "pointer-events-none rounded border border-dashed border-ink-2 bg-surface/90 px-1 text-[11px] font-semibold text-ink-2 tabular-nums"
+                  ? "pointer-events-none rounded border border-dashed border-ink-2 bg-surface/90 px-1 text-xs font-semibold text-ink-2 tabular-nums"
                   : item.isLive
                     ? "pointer-events-none rounded-md border border-action bg-surface px-1.5 py-px text-xs font-bold text-action-strong tabular-nums shadow-card"
                     : "pointer-events-none rounded-md border border-line bg-surface/95 px-1.5 py-px text-xs font-semibold text-ink tabular-nums shadow-card"

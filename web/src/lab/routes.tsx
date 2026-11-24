@@ -1,5 +1,5 @@
-import type { ReactElement } from "react";
-import { createRoute } from "@tanstack/react-router";
+import type { RouteComponent } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
@@ -8,16 +8,17 @@ import { authenticatedRoute } from "../router/base-routes";
 import { ForbiddenError, requirePermission } from "../router/guards";
 import { can } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { LabHome } from "./LabHome";
-import { W34Page } from "./W34Page";
-import { W35HistoryPage } from "./W35HistoryPage";
-import { W35Page } from "./W35Page";
-import { W36Page } from "./W36Page";
-import { W37Page } from "./W37Page";
-import { W38Page } from "./W38Page";
-import { W40Page } from "./W40Page";
-import { W41Page } from "./W41Page";
 import { pcrRoutes } from "./pcr/routes";
+
+const LabHome = lazyRouteComponent(() => import("./LabHome"), "LabHome");
+const W34Page = lazyRouteComponent(() => import("./W34Page"), "W34Page");
+const W35HistoryPage = lazyRouteComponent(() => import("./W35HistoryPage"), "W35HistoryPage");
+const W35Page = lazyRouteComponent(() => import("./W35Page"), "W35Page");
+const W36Page = lazyRouteComponent(() => import("./W36Page"), "W36Page");
+const W37Page = lazyRouteComponent(() => import("./W37Page"), "W37Page");
+const W38Page = lazyRouteComponent(() => import("./W38Page"), "W38Page");
+const W40Page = lazyRouteComponent(() => import("./W40Page"), "W40Page");
+const W41Page = lazyRouteComponent(() => import("./W41Page"), "W41Page");
 
 const labReceptionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -53,7 +54,7 @@ const eggCountHistoryRoute = createRoute({
 function listRoute<const Path extends string>(
   path: Path,
   permission: string,
-  component: () => ReactElement,
+  component: RouteComponent,
   crumb: MessageKey,
 ) {
   return createRoute({

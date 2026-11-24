@@ -1,15 +1,20 @@
-import { createRoute, redirect } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
-import { W33Page } from "../operations/closure/W33Page";
 import { areaListHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
+import { withPreload } from "../router/with-preload";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { W22Page } from "./geography/W22Page";
-import { W23Page } from "./geography/W23Page";
-import { W23MapEditorPage } from "./editor/W23MapEditorPage";
-import { PointPage } from "./point/PointPage";
+
+const W33Page = lazyRouteComponent(() => import("../operations/closure/W33Page"), "W33Page");
+const W23MapEditorPage = lazyRouteComponent(
+  () => import("./editor/W23MapEditorPage"),
+  "W23MapEditorPage",
+);
+const W22Page = lazyRouteComponent(() => import("./geography/W22Page"), "W22Page");
+const W23Page = lazyRouteComponent(() => import("./geography/W23Page"), "W23Page");
+const PointPage = lazyRouteComponent(() => import("./point/PointPage"), "PointPage");
 
 const quadrantVersionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -38,10 +43,10 @@ const mapEditorRoute = createRoute({
   beforeLoad: ({ context }) => {
     requirePermission("quadrants", context.me, "quadrant.read");
   },
-  component: function MapEditorRoute() {
+  component: withPreload(function MapEditorRoute() {
     const { tool } = mapEditorRoute.useSearch();
     return <W23MapEditorPage startTool={tool} />;
-  },
+  }, W23MapEditorPage),
   errorComponent: AreaErrorState,
 });
 const quadrantClosureRoute = createRoute({
@@ -52,10 +57,10 @@ const quadrantClosureRoute = createRoute({
     requirePermission("quadrants", context.me, "quadrant.read");
     requirePermission("quadrants", context.me, "quadrant.close");
   },
-  component: function QuadrantClosureRoute() {
+  component: withPreload(function QuadrantClosureRoute() {
     const { code } = quadrantClosureRoute.useParams();
     return <W33Page code={code} />;
-  },
+  }, W33Page),
   errorComponent: AreaErrorState,
 });
 // Old address shared in demo notes: quadrants live under their own area, not under Operations.

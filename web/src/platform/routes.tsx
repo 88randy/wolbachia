@@ -1,12 +1,23 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaListHomeRoute, areaOf } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
+import { withPreload } from "../router/with-preload";
 import { requireAreaAccess } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { OrganizationDetailPage } from "./OrganizationDetailPage";
-import { OrganizationsPage } from "./OrganizationsPage";
-import { NewOrganizationWizard } from "./wizard/NewOrganizationWizard";
+
+const OrganizationDetailPage = lazyRouteComponent(
+  () => import("./OrganizationDetailPage"),
+  "OrganizationDetailPage",
+);
+const OrganizationsPage = lazyRouteComponent(
+  () => import("./OrganizationsPage"),
+  "OrganizationsPage",
+);
+const NewOrganizationWizard = lazyRouteComponent(
+  () => import("./wizard/NewOrganizationWizard"),
+  "NewOrganizationWizard",
+);
 
 const area = areaOf("platform");
 
@@ -28,11 +39,11 @@ const organizationRoute = createRoute({
   beforeLoad: ({ context }) => {
     requireAreaAccess(area, context.me);
   },
-  component: function OrganizationRoute() {
+  component: withPreload(function OrganizationRoute() {
     const { slug } = organizationRoute.useParams();
     const search = organizationRoute.useSearch();
     return <OrganizationDetailPage slug={slug} highlightLogo={search["logo"] === "1"} />;
-  },
+  }, OrganizationDetailPage),
   errorComponent: AreaErrorState,
 });
 

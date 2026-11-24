@@ -1,13 +1,14 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { FleetHome } from "./FleetHome";
 import { MOTORCYCLE_READ } from "./permissions";
-import { W20Page } from "./W20Page";
-import { W21Page } from "./W21Page";
+
+const FleetHome = lazyRouteComponent(() => import("./FleetHome"), "FleetHome");
+const W20Page = lazyRouteComponent(() => import("./W20Page"), "W20Page");
+const W21Page = lazyRouteComponent(() => import("./W21Page"), "W21Page");
 
 // W20-W21: the fleet area and both motorcycle routes require motorcycle.read.
 const motorcyclesRoute = createRoute({

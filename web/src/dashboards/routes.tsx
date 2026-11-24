@@ -1,4 +1,5 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import type { RouteComponent } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
@@ -7,15 +8,21 @@ import { authenticatedRoute } from "../router/base-routes";
 import { ForbiddenError, requirePermission } from "../router/guards";
 import { canAny } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { ComparisonPage } from "./comparison/ComparisonPage";
-import { DashboardsHome } from "./DashboardsHome";
-import { W53Page, W54Page, W55Page } from "./dashboard-pages";
 import { ENTOMOLOGY_READ, OPERATIONS_READ, WOLBACHIA_READ } from "./permissions";
+
+const ComparisonPage = lazyRouteComponent(
+  () => import("./comparison/ComparisonPage"),
+  "ComparisonPage",
+);
+const DashboardsHome = lazyRouteComponent(() => import("./DashboardsHome"), "DashboardsHome");
+const W53Page = lazyRouteComponent(() => import("./dashboard-pages"), "W53Page");
+const W54Page = lazyRouteComponent(() => import("./dashboard-pages"), "W54Page");
+const W55Page = lazyRouteComponent(() => import("./dashboard-pages"), "W55Page");
 
 function dashboardRoute<const Path extends string>(
   path: Path,
   permission: string,
-  component: () => React.JSX.Element,
+  component: RouteComponent,
   crumb: MessageKey,
 ) {
   return createRoute({

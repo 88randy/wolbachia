@@ -1,12 +1,13 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { ForbiddenError } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { W51Page } from "./evaluations/W51Page";
-import { PeopleHome } from "./PeopleHome";
-import { W50Page } from "./trainings/W50Page";
+
+const W51Page = lazyRouteComponent(() => import("./evaluations/W51Page"), "W51Page");
+const PeopleHome = lazyRouteComponent(() => import("./PeopleHome"), "PeopleHome");
+const W50Page = lazyRouteComponent(() => import("./trainings/W50Page"), "W50Page");
 
 const trainingsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,

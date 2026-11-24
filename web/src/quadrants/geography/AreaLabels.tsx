@@ -83,7 +83,7 @@ export function AreaLabels({ quadrants = [], blocks = [], hiddenIds, hasCodeLabe
           style={{ pointerEvents: "none" }}
         >
           <span
-            className="pointer-events-none text-[11px] leading-none whitespace-nowrap text-ink-2 tabular-nums"
+            className="pointer-events-none text-xs leading-none whitespace-nowrap text-ink-2 tabular-nums"
             style={{
               textShadow:
                 "0 0 2px var(--color-surface), 0 0 2px var(--color-surface), 0 0 3px var(--color-surface)",
