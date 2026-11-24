@@ -594,6 +594,8 @@ void test("M05 a saved receipt hides only its own release: a release with no rec
   const offered = await h.service.read();
   assert.equal(offered.draft, null);
   assert.equal(offered.event, null);
+  assert.equal(offered.drafts.length, 1);
+  assert.deepEqual(offered.openDrafts, []);
   assert.deepEqual(
     offered.assignments.flatMap((row) => row.releases.map((release) => release.id)),
     [receiptId(81)],
@@ -601,6 +603,10 @@ void test("M05 a saved receipt hides only its own release: a release with no rec
   await h.service.begin(receiptId(1), receiptId(81));
   const started = required((await h.service.read()).draft);
   assert.equal(started.releaseId, receiptId(81));
+  assert.deepEqual(
+    (await h.service.read()).openDrafts.map((row) => row.releaseId),
+    [receiptId(81)],
+  );
   assert.equal((await h.db.query("SELECT 1 FROM outbox_event")).length, 1);
   assert.equal((await h.db.query("SELECT 1 FROM supply_receipt_draft")).length, 2);
 });

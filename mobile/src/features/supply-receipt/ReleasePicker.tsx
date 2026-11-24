@@ -32,7 +32,7 @@ export function ReleasePicker({ model }: { readonly model: M05Model }) {
     state.shiftId,
     state.drafts.map((draft) => draft.releaseId),
   );
-  const isEmpty = releases.length === 0 && state.drafts.length === 0;
+  const isEmpty = releases.length === 0 && state.openDrafts.length === 0;
   return (
     <ReceiptFrame model={model}>
       <StepQuestion title={t("field.receipt.pickQuestion")} hint={t("field.receipt.pickHint")} />
@@ -44,7 +44,7 @@ export function ReleasePicker({ model }: { readonly model: M05Model }) {
         />
       ) : null}
       <View className="gap-3">
-        {state.drafts.map((draft) => (
+        {state.openDrafts.map((draft) => (
           <ChoiceRow
             key={draft.eventId}
             icon={Truck}

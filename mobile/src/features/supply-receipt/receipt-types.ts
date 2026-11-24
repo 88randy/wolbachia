@@ -41,7 +41,10 @@ export interface ReceiptState {
   /** The open shift, so the list only offers deliveries that can be received now. */
   readonly shiftId: string | null;
   readonly assignments: readonly Schemas["SupplyBundle"][];
+  /** Every receipt on this phone, saved or not: its releases are "started" for the pending rule. */
   readonly drafts: readonly ReceiptDraft[];
+  /** Only the unsaved ones: the "Continuar entrega" rows. A saved receipt is never actionable there. */
+  readonly openDrafts: readonly ReceiptDraft[];
   readonly draft: ReceiptDraft | null;
   readonly event: OutboxEvent | null;
   readonly feedback: "duplicate" | "added" | "invalid" | null;

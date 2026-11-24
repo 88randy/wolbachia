@@ -1,4 +1,4 @@
-import { ownerKey } from "../../attachments/types.ts";
+﻿import { ownerKey } from "../../attachments/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
 import type { ReceiptStore } from "./store.ts";
@@ -13,6 +13,7 @@ export const EMPTY_RECEIPT: ReceiptState = {
   shiftId: null,
   assignments: [],
   drafts: [],
+  openDrafts: [],
   draft: null,
   event: null,
   feedback: null,
@@ -116,14 +117,16 @@ export async function readReceiptState(input: {
     drafts,
     shiftId: input.shiftId ?? null,
     feedback: input.feedback,
-    ...(await receiptDetails(stored, input.store)),
+    ...(await receiptDetails(stored, input.store, owner)),
   };
 }
 async function receiptDetails(
   stored: Awaited<ReturnType<ReceiptStore["read"]>>,
   store: ReceiptStore,
+  owner: string,
 ) {
   return {
+    openDrafts: await store.list(owner, true),
     draft: stored?.draft ?? null,
     event: stored?.event ?? null,
     signaturePending: await store.signaturePending(stored?.draft.signature?.id ?? null),
