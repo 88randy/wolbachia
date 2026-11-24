@@ -4,7 +4,9 @@ import { ReceiptProblemStep } from "./ReceiptProblemStep.tsx";
 import { ReceiptSaved } from "./ReceiptSaved.tsx";
 import { ReceiptSignStep } from "./ReceiptSignStep.tsx";
 import { ReleasePicker } from "./ReleasePicker.tsx";
+import type { ReceiptDraft } from "./receipt-types.ts";
 import { useM05 } from "./use-m-05.ts";
+import type { M05Model } from "./use-m-05.ts";
 import { useReceiptStep } from "./use-receipt-step.ts";
 
 /** Supplies receipt wizard: pick the delivery, count it, say if all is fine, sign. */
@@ -20,7 +22,18 @@ export function P8Screen() {
   const draft = model.state?.draft ?? null;
   const event = model.state?.event ?? null;
   if (draft === null) return <ReleasePicker model={model} />;
-  if (event !== null) return <ReceiptSaved event={event} />;
+  if (event !== null) return <ReceiptSaved event={event} onDone={service.dismissSaved} />;
+  return <ReceiptSteps model={model} draft={draft} step={step} next={next} back={back} />;
+}
+
+function ReceiptSteps(props: {
+  readonly model: M05Model;
+  readonly draft: ReceiptDraft;
+  readonly step: number;
+  readonly next: () => void;
+  readonly back: () => void;
+}) {
+  const { model, draft, step, next, back } = props;
   if (step === 1) return <ReceiptCountStep model={model} draft={draft} onNext={next} />;
   if (step === 2)
     return <ReceiptProblemStep model={model} draft={draft} onNext={next} onBack={back} />;

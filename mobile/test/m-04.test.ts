@@ -565,3 +565,16 @@ void test("Regression: refresh cannot publish after an edit or unmount invalidat
     assert.equal(published.length, 0, guard);
   }
 });
+void test("AC odometer: no warning while the field is empty or not lower than the last value", async () => {
+  const { service, outbox } = await harness();
+  await outbox.enqueue(
+    makeEnvelope({ type: "shift.open", payload: { motorcycle_code: "M-03", odometer_km: 13000 } }),
+  );
+  await prepare(service);
+  await service.update({ odometer_km: "" });
+  assert.equal((await service.read()).hasOdometerWarning, false);
+  await service.update({ odometer_km: "13000" });
+  assert.equal((await service.read()).hasOdometerWarning, false);
+  await service.update({ odometer_km: "12999" });
+  assert.equal((await service.read()).hasOdometerWarning, true);
+});

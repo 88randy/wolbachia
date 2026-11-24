@@ -27,9 +27,10 @@ export class ReceiptStore {
     );
     return rows.length > 0;
   }
-  async list(owner: string): Promise<readonly ReceiptDraft[]> {
+  /** Every receipt of the owner, newest first; `openOnly` leaves out the ones already saved. */
+  async list(owner: string, openOnly = false): Promise<readonly ReceiptDraft[]> {
     const rows = await this.db.query(
-      "SELECT draft FROM supply_receipt_draft WHERE owner_key=? ORDER BY rowid DESC",
+      `SELECT draft FROM supply_receipt_draft WHERE owner_key=?${openOnly ? " AND event_id IS NULL" : ""} ORDER BY rowid DESC`,
       [owner],
     );
     return rows.map((row) => JSON.parse(readText(row, "draft")) as ReceiptDraft);

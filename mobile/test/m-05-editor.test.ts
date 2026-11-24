@@ -30,6 +30,7 @@ function state(): ReceiptState {
     ready: true,
     assignments: [],
     drafts: [draft],
+    openDrafts: [draft],
     draft,
     event: null,
     feedback: null,

@@ -15,13 +15,23 @@ function bodyKey(status: OutboxEvent["status"]) {
 }
 
 /** The receipt is kept on the phone and goes out by itself. One button returns to Mi día. */
-export function ReceiptSaved({ event }: { readonly event: OutboxEvent }) {
+export function ReceiptSaved({
+  event,
+  onDone,
+}: {
+  readonly event: OutboxEvent;
+  readonly onDone: () => void;
+}) {
   const t = useT();
   const { popToRoot } = useNavigation();
+  const finish = () => {
+    onDone();
+    popToRoot();
+  };
   return (
     <ScreenScaffold
       header={<AppHeader title={t("field.receipt.title")} onBack={null} />}
-      footer={<PrimaryButton icon={Home} label={t("field.action.done")} onPress={popToRoot} />}
+      footer={<PrimaryButton icon={Home} label={t("field.action.done")} onPress={finish} />}
     >
       <BigActionCard
         eyebrow={t("field.receipt.savedEyebrow")}
