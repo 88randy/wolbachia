@@ -80,3 +80,75 @@ function state(cause: GlobalCause, level: BlockingLevel, nextAction: NextAction)
 export function deriveGlobalStates(input: GlobalInputs): readonly GlobalState[] {
   return RULES.filter(([applies]) => applies(input)).map(([, found]) => found);
 }
+
+/** Informational GPS causes: the ones that come and go with each fix. */
+export const GPS_INFO_CAUSES: readonly GlobalCause[] = [
+  "gpsSearching",
+  "gpsNoFix",
+  "gpsUnreliable",
+];
+
+/**
+ * [ASSUMPTION] Technical hysteresis, not a business rule: "searching"/"unreliable" must hold this
+ * long (two 3 s fixes) before it shows, and "ok" this long before it clears.
+ */
+export const GPS_CALM_MS = 5000;
+const SLOW_GPS: readonly GpsLevel[] = ["searching", "unreliable"];
+
+interface CalmGpsDeps {
+  readonly schedule: (run: () => void, ms: number) => () => void;
+  readonly publish: (level: GpsLevel) => void;
+}
+
+/**
+ * The GPS level the banner shows. One bad fix never shows "approximate" and one good fix never
+ * clears it: a change to or from searching/unreliable only lands if it holds for GPS_CALM_MS.
+ * Other levels (off, denied, noFix, ok after off) land at once.
+ */
+export class CalmGps {
+  readonly #deps: CalmGpsDeps;
+  #shown: GpsLevel = "ok";
+  #target: GpsLevel = "ok";
+  #cancel: (() => void) | null = null;
+  constructor(deps: CalmGpsDeps) {
+    this.#deps = deps;
+  }
+  set(level: GpsLevel): void {
+    if (level === this.#target) return;
+    this.#target = level;
+    this.#cancel?.();
+    this.#cancel = null;
+    if (level === this.#shown) return;
+    const isSlow = SLOW_GPS.includes(level) || (SLOW_GPS.includes(this.#shown) && level === "ok");
+    if (!isSlow) {
+      this.#show(level);
+      return;
+    }
+    this.#cancel = this.#deps.schedule(() => {
+      this.#cancel = null;
+      this.#show(level);
+    }, GPS_CALM_MS);
+  }
+  /** Drops a pending change; the next `set` arms it again (effects can unmount and remount). */
+  stop(): void {
+    this.#cancel?.();
+    this.#cancel = null;
+    this.#target = this.#shown;
+  }
+  #show(level: GpsLevel): void {
+    this.#shown = level;
+    this.#deps.publish(level);
+  }
+}
+
+/**
+ * Once a GPS banner has shown while location is watched, its slot stays reserved until the watch
+ * ends, so the banner coming and going never moves the buttons under the courier's finger.
+ */
+export function keepsGpsSlot(
+  wasReserved: boolean,
+  hasGpsBanner: boolean,
+  isWatching: boolean,
+): boolean {
+  return isWatching && (wasReserved || hasGpsBanner);
+}

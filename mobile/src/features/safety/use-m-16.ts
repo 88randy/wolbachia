@@ -10,7 +10,7 @@ import { maxGpsAccuracy } from "../day/location.ts";
 import { useDayLocation } from "../day/use-day-location.ts";
 import { INITIAL_SAFETY, isSameSafety, observeSafety, readSafetyRules } from "./domain.ts";
 import type { SafetyRules, SafetySample, SafetyState } from "./domain.ts";
-import { deriveGlobalStates } from "./global-state.ts";
+import { CalmGps, deriveGlobalStates } from "./global-state.ts";
 import type { GlobalState, GpsLevel, StorageLevel } from "./global-state.ts";
 import { deriveStorageLevel } from "./storage-level.ts";
 
@@ -81,22 +81,30 @@ export function useM16(): M16Model {
   };
 }
 
-/** "Looking for your location" only shows after a few seconds without a fix, never at startup. */
-const SEARCH_GRACE_MS = 5000;
+/** "Searching" and "approximate" only show, and clear, after holding a few seconds (CalmGps). */
 function useCalmGps(level: GpsLevel): GpsLevel {
   const [shown, setShown] = useState<GpsLevel>("ok");
+  const [calm] = useState(
+    () =>
+      new CalmGps({
+        schedule: (run, ms) => {
+          const timer = setTimeout(run, ms);
+          return () => {
+            clearTimeout(timer);
+          };
+        },
+        publish: setShown,
+      }),
+  );
   useEffect(() => {
-    if (level !== "searching" && level !== "unreliable") {
-      setShown(level);
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      setShown(level);
-    }, SEARCH_GRACE_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [level]);
+    calm.set(level);
+  }, [calm, level]);
+  useEffect(
+    () => () => {
+      calm.stop();
+    },
+    [calm],
+  );
   return shown;
 }
 

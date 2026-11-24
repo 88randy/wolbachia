@@ -24,7 +24,11 @@ const FIX: LocationObject = {
 function fixture(overrides: { readonly isServiceOn?: boolean; readonly isGranted?: boolean } = {}) {
   const watchers: { accuracy: number; emit: (fix: LocationObject) => void; removed: boolean }[] =
     [];
-  const current: { resolve: (fix: LocationObject) => void; reject: () => void }[] = [];
+  const current: {
+    accuracy: number;
+    resolve: (fix: LocationObject) => void;
+    reject: () => void;
+  }[] = [];
   const timers: { run: () => void; cancelled: boolean }[] = [];
   const states: LocationState[] = [];
   const source = createAndroidLocation({
@@ -34,9 +38,10 @@ function fixture(overrides: { readonly isServiceOn?: boolean; readonly isGranted
       requestForegroundPermissionsAsync: () =>
         Promise.resolve({ granted: overrides.isGranted ?? true }),
       getLastKnownPositionAsync: () => Promise.resolve(null),
-      getCurrentPositionAsync: () =>
+      getCurrentPositionAsync: (options: { accuracy?: number }) =>
         new Promise<LocationObject>((resolve, reject) => {
           current.push({
+            accuracy: options.accuracy ?? 0,
             resolve,
             reject: () => {
               reject(new Error("no fix"));
@@ -80,10 +85,14 @@ void test("no fix before the wait ends: one calm noFix, and the step and the ban
   const f = fixture();
   await f.source.start(f.publish);
   assert.deepEqual(f.states, [{ kind: "searching" }]);
-  // One Balanced watch only (it works indoors).
+  // One High (GPS) watch only: Balanced gave ~100 m fixes on a phone with good GPS.
   assert.deepEqual(
     f.watchers.map((watcher) => watcher.accuracy),
-    [ACCURACY.Balanced],
+    [ACCURACY.High],
+  );
+  assert.deepEqual(
+    f.current.map((read) => read.accuracy),
+    [ACCURACY.High],
   );
   f.timers[0]?.run();
   assert.deepEqual(f.states.at(-1), { kind: "noFix" });

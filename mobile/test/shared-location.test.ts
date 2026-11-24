@@ -83,13 +83,16 @@ void test("flapping subscribers (re-renders, store emissions, shift flag) keep O
   assert.equal(seen.at(-1)?.kind, "granted");
 });
 
-void test("the native watch uses a real interval, never as fast as possible and never High", async () => {
+void test("the native watch is High (GPS) at a 3 s interval, never as fast as possible", async () => {
   const f = fixture();
   await f.shared.start(() => undefined);
   await settle();
-  const [options] = f.calls.watchOptions;
-  assert.equal(options?.accuracy, 3);
-  assert.ok(typeof options?.timeInterval === "number" && options.timeInterval >= 1000);
+  const { accuracy, timeInterval, distanceInterval } = f.calls.watchOptions[0] ?? {};
+  // distanceInterval 0: a still phone keeps reporting, so the speed lock can end.
+  assert.deepEqual(
+    { accuracy, timeInterval, distanceInterval },
+    { accuracy: 4, timeInterval: 3000, distanceInterval: 0 },
+  );
 });
 
 void test("the watch is removed only after the last viewer leaves and the grace passes", async () => {

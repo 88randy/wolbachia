@@ -3,7 +3,11 @@ import type { LocationSource, LocationState } from "./location.ts";
 
 /** [ASSUMPTION] Technical wait before the phone says it has no exact location; not a business rule. */
 export const NO_FIX_WAIT_MS = 20_000;
-/** Fresh enough for the speed lock without keeping the GPS chip at full speed. */
+/**
+ * Fresh enough for the speed lock (unlock needs fixes for >= 3 s, rules floor) without asking the
+ * GPS chip for a fix every second. distanceInterval stays 0: a still phone must keep reporting so
+ * the lock can end.
+ */
 const WATCH_INTERVAL_MS = 3000;
 /** A last known position older than this is not shown as the start point. */
 const LAST_KNOWN_MAX_AGE_MS = 5 * 60_000;
@@ -86,13 +90,16 @@ async function follow(api: Api, watch: Watch): Promise<void> {
       if (last !== null && !watch.hasFix) watch.publish(fromNative(last));
     })
     .catch(() => undefined);
+  // High = Android PRIORITY_HIGH_ACCURACY (GPS, a few metres). Balanced is Wi-Fi/cell (~100 m) and
+  // left every capture and the banner rule (max_gps_accuracy_m) with coarse fixes. Indoors the fused
+  // provider still answers from Wi-Fi/cell.
   void api
-    .getCurrentPositionAsync({ accuracy: api.Accuracy.Balanced })
+    .getCurrentPositionAsync({ accuracy: api.Accuracy.High })
     .then(watch.onFix)
     .catch(() => undefined);
   // One watch only, with a real interval: an interval of 0 asks the chip for fixes as fast as it can.
   const subscription = await api.watchPositionAsync(
-    { accuracy: api.Accuracy.Balanced, timeInterval: WATCH_INTERVAL_MS, distanceInterval: 0 },
+    { accuracy: api.Accuracy.High, timeInterval: WATCH_INTERVAL_MS, distanceInterval: 0 },
     watch.onFix,
     () => undefined,
   );
@@ -104,8 +111,8 @@ async function follow(api: Api, watch: Watch): Promise<void> {
 /**
  * Foreground fixes only; the caller stops this on screen exit, background or closed shift. No pings.
  * It says "searching" as it starts and arms the no-fix wait at once, so a native call that never
- * answers still ends in noFix (never a search that goes on forever). One Balanced read and one
- * Balanced watch, which work indoors.
+ * answers still ends in noFix (never a search that goes on forever). One High read and one High
+ * watch; the shared source stops the watch when no screen needs it.
  */
 export function createAndroidLocation(deps: LocationDeps): LocationSource {
   return {
