@@ -56,6 +56,16 @@ MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
 | revisit_interval_days | 7 | day | 1 | 28 |
 | departure_requires_offline_map | 0 | count | 0 | 1 |
 | delivery_signature_mode | 0 | count | 0 | 2 |
+| track_sample_interval_seconds | 15 | s | 5 | 300 |
+| track_min_move_m | 15 | m | 1 | 200 |
+| track_still_heartbeat_seconds | 300 | s | 60 | 3600 |
+| track_upload_interval_seconds | 300 | s | 60 | 3600 |
+| track_simplify_tolerance_m | 5 | m | 0 | 50 |
+| track_high_accuracy | 0 | count | 0 | 1 |
+
+The `track_*` keys tune the courier track capture on the phone (#370, `docs/sync.md` "Courier
+track"); the server never reads them. `track_high_accuracy` is a boolean stored as 0/1 (1 = high
+accuracy instead of balanced for the background capture). Bounds are [ASSUMPTION].
 
 `delivery_signature_mode` says where the courier signs a supply delivery: 0 = either (default,
 whichever happens first completes it), 1 = on the warehouse screen, 2 = on the courier's phone.

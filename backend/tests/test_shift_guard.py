@@ -142,6 +142,7 @@ def test_only_documented_shift_independent_events_opt_out_of_the_shift_check() -
         "record.void",
         "transfer.dispatch",
         "transfer.receive",
+        "track.segment",
     }
 
 

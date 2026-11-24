@@ -31,9 +31,15 @@ class ShiftDecisionRequest:
 
 
 def shift_sources(shift: Shift) -> QuerySet[FieldEvent]:
-    return FieldEvent.objects.filter(
-        organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
-    ).order_by("pk")
+    """The work events of the shift. Courier track segments (#370) are observations, not work:
+    they neither scope, block nor change the fingerprint of a shift decision."""
+    return (
+        FieldEvent.objects.filter(
+            organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
+        )
+        .exclude(type="track.segment")
+        .order_by("pk")
+    )
 
 
 def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:
