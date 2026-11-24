@@ -36,9 +36,7 @@ export function AnnotationCanvasSurface({ workspace, view, photo, url }: Props) 
         onMarksChange={onMarksChange}
         markerColor={ANNOTATION_COLORS[view.color]}
         onToggleGrid={view.onGrid}
-        onHelp={() => {
-          view.onHelpChange(true);
-        }}
+        onHelp={view.onHelp}
       />
     </div>
   );

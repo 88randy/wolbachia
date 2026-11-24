@@ -1,39 +1,100 @@
+/* The annotation route fills the shell's remaining content area, including breadcrumbs. */
+:global(main):has(> .workspace) {
+  display: flex;
+  flex-direction: column;
+}
 .workspace {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   min-inline-size: 0;
-  padding: var(--space-2);
-  padding-block-end: calc(var(--space-6) * 2);
-  min-block-size: calc(100dvh - var(--web-layout-top-bar-height));
-}
-.draftStatus {
-  position: absolute;
-  inset-inline: var(--space-2);
-  inset-block-end: var(--space-1);
-  min-block-size: var(--space-4);
+  min-block-size: 0;
+  padding: var(--space-1);
 }
 .workspace h1,
 .workspace h2,
 .workspace p {
   margin: 0;
 }
-.toolbar {
+.title h1 {
+  font-size: var(--web-type-label-font-size);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.loaded {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex: 1;
+  min-block-size: calc(var(--space-6) * 8.75);
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+.draftStatus {
+  position: absolute;
+  inset-inline-end: var(--space-1);
+  inset-block-end: var(--space-1);
+  z-index: 1;
+  max-inline-size: min(45%, calc(var(--space-6) * 6));
+  padding: var(--space-0-5) var(--space-1);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  font-size: var(--web-type-caption-font-size);
+  pointer-events: none;
+}
+.draftStatus:empty {
+  visibility: hidden;
+}
+.toolbar {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: var(--space-1);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  display: flex;
   align-items: center;
   gap: var(--space-0-5);
-  padding: var(--space-1);
+  inline-size: max-content;
+  max-inline-size: calc(100% - var(--space-2));
+  padding: var(--space-0-5);
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-overlay);
 }
 .toolbar button {
-  white-space: normal;
-  min-inline-size: var(--space-3);
+  white-space: nowrap;
+}
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--web-control-sm);
+  min-block-size: var(--web-control-sm);
+  padding: var(--space-0-5);
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+}
+.iconButton svg {
+  inline-size: var(--web-icon-sm);
+  block-size: var(--web-icon-sm);
+}
+.iconButton[aria-pressed="true"] {
+  color: var(--color-action-strong);
+  background: var(--color-tint);
+  border-color: var(--color-action);
+}
+.toolPicker {
+  display: flex;
+  gap: var(--space-0-5);
+}
+.divider {
+  align-self: stretch;
+  border-inline-start: 1px solid var(--color-border-soft);
+  margin: var(--space-0-5);
 }
 .wideTools {
   display: contents;
@@ -41,47 +102,49 @@
 .compactTools {
   display: none;
 }
-.toolbar output {
-  font-family: var(--font-family-mono);
+.toolbar output,
+.zoomButton {
   font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+}
+.toolbar output {
+  color: var(--color-text-primary);
   background: var(--color-tint);
   border-radius: var(--radius-full);
   padding: var(--space-0-5) var(--space-1);
+  font-size: var(--web-type-caption-font-size);
+  text-align: center;
 }
-.toolbar a,
-.title a {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--space-3);
-  padding: var(--space-0-5);
+.zoomButton {
+  padding-inline: var(--space-0-5);
+}
+.finish {
+  flex-shrink: 0;
 }
 .body {
   display: flex;
   flex: 1;
-  gap: var(--space-2);
-  min-block-size: 0;
   min-inline-size: 0;
+  min-block-size: 0;
 }
 .canvas {
+  display: flex;
   flex: 1;
   min-inline-size: 0;
-  min-block-size: 60dvh;
+  min-block-size: 0;
 }
 .settings {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  inline-size: min(100%, 22rem);
-  padding: var(--space-2);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  min-inline-size: 0;
 }
-.settings label {
+.settings label:not(:has([role="switch"])) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
-.settings input,
+.settings input[type="range"],
 .settings select {
   min-block-size: var(--web-control-md);
   accent-color: var(--color-action);
@@ -100,25 +163,6 @@
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
 }
-.upload {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  overflow-wrap: anywhere;
-}
-.upload progress {
-  inline-size: 100%;
-  accent-color: var(--color-action);
-}
-.upload input {
-  max-inline-size: 100%;
-  min-block-size: var(--web-control-md);
-}
 .title {
   display: flex;
   align-items: center;
@@ -136,27 +180,61 @@
   min-block-size: var(--space-3);
   padding: var(--space-0-5);
 }
-.viewer {
-  min-block-size: 60dvh;
-}
-@media (max-width: 768px) {
+@container (max-width: 960px) {
   .wideTools {
     display: none;
   }
   .compactTools {
     display: contents;
   }
-  .workspace {
-    padding: var(--space-1);
-    padding-block-end: calc(var(--space-6) * 2);
+}
+@container (max-width: 380px) {
+  .toolbar {
+    flex-wrap: wrap;
   }
-  .body {
-    flex-direction: column;
+  .finish {
+    margin-inline-start: auto;
   }
-  .settings {
-    inline-size: 100%;
+}
+@media (max-width: 767px) {
+  .wideTools {
+    display: none;
+  }
+  .compactTools {
+    display: contents;
   }
   .toolbar {
     gap: var(--space-0-5);
+    max-inline-size: calc(100% - var(--space-1));
   }
+  .toolbar .iconButton {
+    min-inline-size: var(--space-3);
+    inline-size: var(--space-3);
+    padding: 0;
+  }
+  .toolPicker {
+    gap: 0;
+  }
+  .toolbar output {
+    padding-inline: var(--space-0-5);
+    min-inline-size: 0;
+  }
+  .finish {
+    padding-inline: var(--space-0-5);
+  }
+  .finish > span {
+    gap: var(--space-0-5);
+  }
+  .compactTools button {
+    min-inline-size: var(--space-3);
+    padding-inline: var(--space-0-5);
+  }
+  .draftStatus {
+    inset-block-end: var(--space-6);
+  }
+}
+.viewer {
+  position: relative;
+  display: flex;
+  min-block-size: 60dvh;
 }

@@ -8,6 +8,8 @@ import type { AnnotationMark } from "./annotation-state";
 
 const GRID_CELLS = 8;
 const MARK_LINE_WIDTH = 2;
+const MARK_OUTLINE_WIDTH = 4;
+const MARK_OUTLINE_COLOR = "var(--color-on-action)";
 const POINT_RADIUS = 4;
 const HANDLE_SIZE = 8;
 const CSS_VARIABLE = /^var\((--[\w-]+)\)$/;
@@ -89,19 +91,49 @@ function drawSelection(
   scale: number,
 ): void {
   context.save();
-  context.lineWidth = (MARK_LINE_WIDTH + 1) / scale;
   context.setLineDash([4 / scale, 3 / scale]);
   context.beginPath();
   traceMark(context, mark, scale);
-  context.stroke();
+  const outline = canvasColor(context.canvas, MARK_OUTLINE_COLOR);
+  strokeOutlinedPath(context, scale, outline);
   context.setLineDash([]);
   if (mark.kind === "box") {
+    context.strokeStyle = outline;
+    context.lineWidth = 1 / scale;
     const size = HANDLE_SIZE / scale;
     Object.values(boxCorners(mark)).forEach((corner) => {
       context.fillRect(corner.x - size / 2, corner.y - size / 2, size, size);
+      context.strokeRect(corner.x - size / 2, corner.y - size / 2, size, size);
     });
   }
   context.restore();
+}
+
+function strokeOutlinedPath(
+  context: CanvasRenderingContext2D,
+  scale: number,
+  outline: string,
+): void {
+  const color = context.strokeStyle;
+  context.strokeStyle = outline;
+  context.lineWidth = MARK_OUTLINE_WIDTH / scale;
+  context.stroke();
+  context.strokeStyle = color;
+  context.lineWidth = MARK_LINE_WIDTH / scale;
+  context.stroke();
+}
+
+function drawMarkPaths(context: CanvasRenderingContext2D, layer: MarksLayer): void {
+  const scale = layer.viewport.scale;
+  const outline = canvasColor(layer.canvas, MARK_OUTLINE_COLOR);
+  for (const kind of ["box", "point"] as const) {
+    context.beginPath();
+    layer.marks.forEach((mark) => {
+      if (mark.kind === kind) traceMark(context, mark, scale);
+    });
+    strokeOutlinedPath(context, scale, outline);
+    if (kind === "point") context.fill();
+  }
 }
 
 function drawCursor(context: CanvasRenderingContext2D, cursor: ImagePoint, scale: number): void {
@@ -127,7 +159,7 @@ export interface MarksLayer {
   preview?: AnnotationMark;
 }
 
-/** One batched path for all marks; no DOM node or React component per egg. */
+/** Batched geometry keeps thousands of eggs independent of the DOM node count. */
 export function drawMarksLayer(layer: MarksLayer): void {
   const context = prepareCanvas(layer.canvas, layer.size);
   if (!context) return;
@@ -136,11 +168,7 @@ export function drawMarksLayer(layer: MarksLayer): void {
   context.fillStyle = context.strokeStyle;
   context.lineWidth = MARK_LINE_WIDTH / layer.viewport.scale;
   if (layer.showGrid) drawGrid(context, layer.image, layer.viewport.scale);
-  context.beginPath();
-  layer.marks.forEach((mark) => {
-    traceMark(context, mark, layer.viewport.scale);
-  });
-  context.stroke();
+  drawMarkPaths(context, layer);
   const selected = layer.marks[layer.selected];
   if (selected) drawSelection(context, selected, layer.viewport.scale);
   if (layer.preview) drawSelection(context, layer.preview, layer.viewport.scale);

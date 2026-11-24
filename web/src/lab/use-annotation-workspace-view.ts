@@ -11,28 +11,47 @@ export function useAnnotationWorkspaceView() {
   const tools = useAnnotationTool(canvas);
   const [zoom, onZoomChange] = useState(1);
   const [showGrid, setGrid] = useState(false);
-  const [showSettings, setSettings] = useState(false);
-  const [showHelp, onHelpChange] = useState(false);
+  const dialogs = useAnnotationDialogs();
   const preferences = useAnnotationPreferences();
+  const onCloseAutoFocus = (event: Event) => {
+    event.preventDefault();
+    canvas.current?.focus();
+  };
   const onGrid = () => {
     setGrid((value) => !value);
     canvas.current?.focus();
   };
-  const onSettings = () => {
-    setSettings((value) => !value);
-  };
   return {
     ...preferences,
+    onCloseAutoFocus,
     canvas,
     ...tools,
     zoom,
     onZoomChange,
     showGrid,
     onGrid,
+    ...dialogs,
+  };
+}
+function useAnnotationDialogs() {
+  const [showSettings, setSettings] = useState(false);
+  const [showHelp, onHelpChange] = useState(false);
+  const [showShortcuts, onShortcutsChange] = useState(false);
+  return {
     showSettings,
-    onSettings,
+    onSettings: () => {
+      setSettings((value) => !value);
+    },
     showHelp,
     onHelpChange,
+    showShortcuts,
+    onShortcutsChange,
+    onHelp: () => {
+      onShortcutsChange(true);
+    },
+    onTips: () => {
+      onHelpChange(true);
+    },
   };
 }
 function useAnnotationTool(canvas: RefObject<AnnotationCanvasHandle | null>) {

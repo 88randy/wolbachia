@@ -1,29 +1,43 @@
 import { useTranslation } from "react-i18next";
+import { spacing } from "@wolbachia/tokens";
 import { Button } from "../ui/Button";
 import { isAnnotationPhoto } from "./annotation-upload";
+import { useBlobUrl } from "./use-blob-url";
+import styles from "./annotation-upload.module.css";
 interface Props {
   selected?: { file: File; clientId: string };
   isBusy: boolean;
   isAllowed: boolean;
+  hasFailed: boolean;
   onChoose: (file: File, clientId: string) => void;
 }
-export function AnnotationUploadChoice({ selected, isBusy, isAllowed, onChoose }: Props) {
+export function AnnotationUploadChoice(props: Props) {
+  const { selected, isBusy, isAllowed, hasFailed, onChoose } = props;
   const { t } = useTranslation();
+  const url = useBlobUrl(selected?.file);
+  if (!selected) return null;
   return (
-    <>
-      {selected && <p>{selected.file.name}</p>}
-      {selected && !isAnnotationPhoto(selected.file) && (
-        <p role="alert">{t("labAnnotation.upload.invalid")}</p>
+    <div className={styles.preview}>
+      {url && (
+        <img
+          src={url}
+          alt={t("labAnnotation.upload.preview")}
+          width={spacing[6] * 2}
+          height={spacing[6] * 2}
+        />
       )}
-      <Button
-        loading={isBusy}
-        aria-disabled={!isAllowed || !selected || !isAnnotationPhoto(selected.file)}
-        onClick={() => {
-          if (selected) onChoose(selected.file, selected.clientId);
-        }}
-      >
-        {t("labAnnotation.upload.start")}
-      </Button>
-    </>
+      <p>{selected.file.name}</p>
+      {hasFailed && (
+        <Button
+          loading={isBusy}
+          aria-disabled={!isAllowed || !isAnnotationPhoto(selected.file)}
+          onClick={() => {
+            onChoose(selected.file, selected.clientId);
+          }}
+        >
+          {t("common.actions.retry")}
+        </Button>
+      )}
+    </div>
   );
 }

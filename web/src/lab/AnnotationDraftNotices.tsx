@@ -1,10 +1,7 @@
-import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import type { AnnotationWorkspaceState } from "./use-annotation-workspace";
 import { AnnotationRecoverDialog } from "./AnnotationRecoverDialog";
-import styles from "./annotation.module.css";
 export function AnnotationDraftNotices({ workspace }: { workspace: AnnotationWorkspaceState }) {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const draft = workspace.editor.draft;
   return (
@@ -21,10 +18,6 @@ export function AnnotationDraftNotices({ workspace }: { workspace: AnnotationWor
           }}
         />
       )}
-      <p role="status" className={styles.draftStatus}>
-        {draft.status &&
-          t(draft.status === "saved" ? "labAnnotation.draft.saved" : "labAnnotation.draft.failed")}
-      </p>
     </>
   );
 }

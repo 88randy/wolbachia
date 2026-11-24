@@ -135,6 +135,16 @@ additionally requires the existing read/void/catalog grants and current
 void-context. It submits one void command with a same-Bag annotated replacement.
 No saved annotation is edited or deleted.
 
+The W35 numeric field and secondary photo-count button share a row when space
+allows. Moving to photo counting skips numeric blur validation so an empty
+focused field cannot shift the button before its first click.
+
+The upload dropzone starts immediately after choosing or dropping a valid file.
+Native file inputs stay hidden: Choose file permits gallery selection without
+`capture`; a separate Take photo input uses `capture="environment"` only on
+touch/coarse-pointer devices. A thumbnail and stage progress accompany upload;
+an explicit retry retains the chosen file and client UUID.
+
 Upload uses the generated private-upload client with the dedicated
 `egg_annotation` purpose, SHA-256, raw PUT and verification. JPEG, PNG and WebP
 keep the existing 10 MiB/25 megapixel limits. Progress reports the completed
@@ -149,7 +159,18 @@ React 19.3.1. See [decision 175](../../../docs/decisions.md) and the
 One changed gesture is one undo step; selection clicks preserve undo/redo and
 recovery seeds a fresh history. History is bounded to 100 steps and
 annotations to 5,000 marks. Canvas size follows the viewport, not the source
-image's pixel dimensions. Boxes and points may be mixed; every mark counts once.
+image's pixel dimensions. The workspace fills the shell content area, with a
+420 px canvas minimum. One floating icon toolbar remains over the canvas;
+secondary controls move into Actions when the viewport or content column is
+narrow. Below 380 px of canvas width the compact toolbar can wrap to keep Finish
+and every tool visible. A modal settings SideSheet overlays the canvas without
+resizing it. Dialogs sit above the toolbar and return focus to the canvas when
+closed. A muted bottom-left pill announces the tool and selection; local draft
+status stays inside the workspace without changing its geometry.
+
+Boxes use a 2 screen-pixel color stroke with a contrasting outline. Selected
+boxes have handles; filled points and handles keep their screen size at every
+zoom. Boxes and points may be mixed; every mark counts once.
 
 V/B/D/H select the tools; Space temporarily pans. Wheel/pinch zoom about the
 cursor; +/− zoom, 0/R fit and 1 restores actual size. Select moves/resizes marks;
@@ -158,7 +179,9 @@ Ctrl/Cmd+Z and Shift+Z undo/redo.
 On the focused canvas, Enter adds at the visible keyboard cursor, arrows move
 the cursor/selection, Shift+arrows resize a selected box, and PageUp/PageDown
 or brackets cycle selection. Tab leaves the canvas. G/S/? control the grid,
-settings and help. The HTML controls and live counter/selection descriptions
+settings and the separate shortcut table. Actions also opens the table or the
+three-step recognition/tools/method guide, whose recognition illustration is
+inline SVG. The HTML controls and live counter/selection descriptions
 provide keyboard and assistive-technology access alongside the canvas.
 
 IndexedDB stores the authored photo once, with separately debounced marks and
@@ -169,7 +192,7 @@ Reopening explicitly asks to recover or discard; recovery reuploads/reverifies
 the same photo before saving. Active elapsed time excludes hidden tabs and time
 more than 60 seconds after the last interaction.
 API responses and image download URLs are not persisted. Tips are remembered
-per user in localStorage and remain accessible through help. Save freezes the
+per user in localStorage and remain accessible through Actions. Save freezes the
 mark-derived value and annotation into the existing command writer: CAS,
 plausibility confirmation, explicit identical replay of uncertain responses,
 conflict handling and the server's `next_bag` remain authoritative. Count history
@@ -178,6 +201,10 @@ offers an authorized read-only viewer, including retained voided annotations.
 | Criterion or edge | Test |
 | --- | --- |
 | Add/move/delete/undo/redo and bounded mark history | `annotation-state.test.ts` |
+| First-click/keyboard navigation from an empty focused numeric field | `count-a11y.test.tsx`, W35 browser journey |
+| Outlined boxes, filled points and constant screen-sized points/handles | `annotation-canvas-draw.test.ts` |
+| Automatic selection/drop, invalid files, upload locks, gallery/camera split and identical retry | `annotation-upload-choice.test.tsx` |
+| Three-step navigation, shortcut table, remembered tips and nested dialog focus return | `annotation-help.test.tsx` |
 | Nearest corners, click threshold, unchanged edits and resize viewport preservation | `annotation-canvas.test.tsx`, `annotation-coordinates.test.ts`, `annotation-state.test.ts` |
 | Toolbar/compact-menu focus, touch context menu, max-mark announcements, plurals and download lifetime | `annotation-tools.test.tsx`, `annotation-canvas.test.tsx` |
 | One photo write, debounced marks, pagehide flush, terminal clear and retired-session write fence | `use-annotation-draft.test.ts`, `annotation-draft.test.ts` |
@@ -188,7 +215,7 @@ offers an authorized read-only viewer, including retained voided annotations.
 | Missing upload permission and actionable field errors with server limits | `annotation-submit.test.tsx`, `annotation-upload-error.test.ts` |
 | Explicit draft recovery with 1,000 marks on a 4096 px image, preserved dismissal, zoom/pan and further editing | `e2e/egg-annotation.spec.ts` |
 | Authorized history viewer with zoom and no editing tools | `e2e/egg-annotation.spec.ts` |
-| Real IndexedDB expiry/session purge/finish cleanup and reserved status-line layout | `e2e/egg-annotation.spec.ts` |
+| Real IndexedDB expiry/session purge/finish cleanup, full-height canvas, visible toolbar, overlay focus and stable draft status | `e2e/egg-annotation.spec.ts` |
 | Localized annotation-route breadcrumb | `shell/breadcrumb-path.test.ts` |
 | Validation, immutable count/annotation transaction, UUID replay, correction retention and current scope/permissions | `backend/tests/test_egg_annotations.py` |
 

@@ -69,8 +69,7 @@ async function prepareAnnotation() {
     type: "image/png",
   });
   await userEvent.upload(await screen.findByLabelText("Foto de la papeleta"), photo);
-  await userEvent.click(screen.getByRole("button", { name: "Subir foto" }));
-  await userEvent.click(await screen.findByRole("button", { name: "Entendido" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
   return screen.findByRole("button", { name: "Add egg" });
 }
 
@@ -204,11 +203,10 @@ test("disables photo upload and explains missing upload permission without autho
   });
   const picker = await screen.findByLabelText<HTMLInputElement>("Foto de la papeleta");
   expect(picker.disabled).toBe(true);
-  expect(screen.getByRole("button", { name: "Subir foto" }).getAttribute("aria-disabled")).toBe(
+  expect(screen.getByRole("button", { name: "Elegir archivo" }).getAttribute("aria-disabled")).toBe(
     "true",
   );
   expect(screen.getByText(/Necesitas permiso para subir fotos/)).toBeDefined();
-  await userEvent.click(screen.getByRole("button", { name: "Subir foto" }));
   expect(uploadAnnotationPhoto).not.toHaveBeenCalled();
   expect(api.requests.some((request) => request.method === "POST")).toBe(false);
 });

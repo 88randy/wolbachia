@@ -15,6 +15,7 @@ export interface DialogFrameProps {
   isSheet?: boolean;
   open?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 export function DialogFrame({
   trigger,
@@ -24,13 +25,17 @@ export function DialogFrame({
   isSheet = false,
   open,
   onOpenChange,
+  onCloseAutoFocus,
 }: DialogFrameProps) {
   return (
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
       <Primitive.Trigger asChild>{trigger}</Primitive.Trigger>
       <Primitive.Portal>
         <Primitive.Overlay className={OVERLAY_CLASS} />
-        <Primitive.Content className={isSheet ? SHEET_CLASS : DIALOG_CLASS}>
+        <Primitive.Content
+          className={isSheet ? SHEET_CLASS : DIALOG_CLASS}
+          onCloseAutoFocus={onCloseAutoFocus}
+        >
           <DialogHeader title={title} />
           <Primitive.Description className={DIALOG_DESCRIPTION_CLASS}>
             {description}

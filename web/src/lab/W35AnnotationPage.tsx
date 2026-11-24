@@ -13,7 +13,7 @@ export function W35AnnotationPage() {
   const { bagCode } = useParams({ strict: false });
   const search = useSearch({ strict: false });
   const { t } = useTranslation();
-  useDocumentTitle(t("labAnnotation.editor.title"));
+  useDocumentTitle(t("labAnnotation.editor.heading", { code: bagCode ?? "" }));
   if (!bagCode) return null;
   return search.correction === "true" ? (
     <AnnotationCorrectionTarget key={scope.key + bagCode} scope={scope} code={bagCode} />

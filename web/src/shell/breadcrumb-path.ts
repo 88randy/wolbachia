@@ -30,6 +30,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   closure: "closure.crumb",
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
+  annotate: "labAnnotation.editor.action",
   "count-history": "lab.history.title",
   "data-transfers": "regulatory.page.transfers",
   exports: "regulatory.page.exports",

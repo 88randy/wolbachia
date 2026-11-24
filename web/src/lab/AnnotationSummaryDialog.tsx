@@ -13,6 +13,7 @@ export interface AnnotationSummaryProps {
   scope: LabScope;
   write: ReturnType<typeof useLabWrite>;
   onSubmit: (confirmed: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 function useSummaryDialog(props: AnnotationSummaryProps) {
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ function useSummaryDialog(props: AnnotationSummaryProps) {
 export function AnnotationSummaryDialog(props: AnnotationSummaryProps) {
   const dialog = useSummaryDialog(props);
   return (
-    <Dialog {...dialog}>
+    <Dialog {...dialog} onCloseAutoFocus={props.onCloseAutoFocus}>
       <CountFeedback scope={props.scope} code={props.code} failure={props.write.failure} />
       <AnnotationSummaryActions {...props} />
     </Dialog>

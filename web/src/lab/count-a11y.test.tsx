@@ -1,10 +1,30 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { BAG, candidate, count, openCount, outcome, pageOf } from "./count-test-helpers";
 
 beforeEach(() => {
   window.sessionStorage.clear();
+});
+
+test("opens photo counting on the first pointer click without validating an empty numeric count", async () => {
+  const { app } = await openCount();
+  const input = await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" });
+  await waitFor(() => {
+    expect(document.activeElement).toBe(input);
+  });
+  const photo = screen.getByRole("button", { name: "Contar en foto" });
+  const user = userEvent.setup();
+  await user.tab();
+  expect(document.activeElement).toBe(photo);
+  expect(screen.queryByText("Escribe un entero de cero o más, sin decimales.")).toBeNull();
+  await user.tab({ shift: true });
+  await user.pointer({ target: photo, keys: "[MouseLeft>]" });
+  expect(screen.queryByText("Escribe un entero de cero o más, sin decimales.")).toBeNull();
+  await user.pointer({ target: photo, keys: "[/MouseLeft]" });
+  await waitFor(() => {
+    expect(app.router.state.location.pathname).toBe("/lab/egg-counts/B-031/annotate");
+  });
 });
 
 test("identifies the selected bag in global history and its correction dialog", async () => {

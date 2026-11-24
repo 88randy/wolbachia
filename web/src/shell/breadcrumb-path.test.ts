@@ -33,6 +33,12 @@ test("permit segments are translated and the record code stays literal", () => {
   expect(record?.key).toBeUndefined();
 });
 
+test("photo counting translates its last segment and preserves the bag code", () => {
+  const entries = breadcrumbsOf("/lab/egg-counts/B-031/annotate");
+  expect(entries[2]).toMatchObject({ label: "B-031", isLinked: false });
+  expect(entries[3]).toMatchObject({ key: "labAnnotation.editor.action", isCurrent: true });
+});
+
 test("every static segment of a registered route has a breadcrumb label", () => {
   const router = createAppRouter({
     client: {} as ApiClient,

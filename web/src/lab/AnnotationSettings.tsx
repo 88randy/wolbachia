@@ -3,6 +3,7 @@ import type { AnnotationMark } from "./annotation-state";
 import { AnnotationBoxSettings } from "./AnnotationBoxSettings";
 import { AnnotationMarkerSettings } from "./AnnotationMarkerSettings";
 import { AnnotationStats } from "./AnnotationStats";
+import { SideSheet } from "../ui/SideSheet";
 import styles from "./annotation.module.css";
 
 export type AnnotationColor = "action" | "success" | "critical";
@@ -22,16 +23,28 @@ export interface AnnotationSettingsProps {
   width: number;
   height: number;
   zoom: number;
+  onClose?: () => void;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function AnnotationSettings(props: AnnotationSettingsProps) {
   const { t } = useTranslation();
   return (
-    <aside className={styles.settings} aria-label={t("labAnnotation.editor.settings")}>
-      <h2>{t("labAnnotation.editor.settings")}</h2>
-      <AnnotationBoxSettings {...props} />
-      <AnnotationMarkerSettings {...props} />
-      <AnnotationStats {...props} />
-    </aside>
+    <SideSheet
+      trigger={null}
+      open
+      onOpenChange={(open) => {
+        if (!open) props.onClose?.();
+      }}
+      title={t("labAnnotation.editor.settings")}
+      description={t("labAnnotation.editor.settingsDescription")}
+      onCloseAutoFocus={props.onCloseAutoFocus}
+    >
+      <div className={styles.settings}>
+        <AnnotationBoxSettings {...props} />
+        <AnnotationMarkerSettings {...props} />
+        <AnnotationStats {...props} />
+      </div>
+    </SideSheet>
   );
 }

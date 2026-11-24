@@ -1,16 +1,16 @@
 .frame {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  min-height: 0;
-  gap: var(--space-1);
+  min-height: calc(var(--space-6) * 8.75);
 }
 
 .surface {
   position: relative;
   flex: 1;
-  min-height: calc(var(--space-6) * 6);
+  min-height: 0;
   overflow: hidden;
   background: var(--color-surface-muted);
   border: 1px solid var(--color-border-default);
@@ -61,7 +61,14 @@
   pointer-events: none;
 }
 
-.instructions,
+.instructions {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 .selection {
   margin: 0;
   color: var(--color-text-secondary);
@@ -70,6 +77,14 @@
 }
 
 .selection {
-  font-family: var(--font-family-mono);
+  position: absolute;
+  inset-inline-start: var(--space-1);
+  inset-block-end: var(--space-1);
+  max-inline-size: calc(100% - var(--space-2));
+  padding: var(--space-0-5) var(--space-1);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-full);
+  pointer-events: none;
   font-variant-numeric: tabular-nums;
 }

@@ -12,9 +12,10 @@ export function AnnotationToolbarExtras(props: AnnotationToolbarProps) {
   return (
     <>
       <span className={styles.wideTools}>
+        <span className={styles.divider} role="separator" aria-orientation="vertical" />
         <AnnotationViewTools {...props} />
         <AnnotationEditActions {...props} />
-        <CardMenu label={t("labAnnotation.editor.actions")} items={downloads} />
+        <CardMenu label={t("labAnnotation.editor.actions")} {...downloads} />
       </span>
       <span className={styles.compactTools}>
         <CardMenu label={t("labAnnotation.editor.actions")} {...compact} />

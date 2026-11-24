@@ -75,14 +75,7 @@ test("tool, zoom and grid actions return keyboard focus, while settings inputs k
   const canvas = screen.getByLabelText("Foto de la papeleta y marcas de huevos", {
     selector: "canvas",
   });
-  for (const name of [
-    "Punto (D)",
-    "Acercar",
-    "Alejar",
-    "Ajustar imagen (R)",
-    "Tamaño real (1)",
-    "Cuadrícula (G)",
-  ]) {
+  for (const name of ["Punto (D)", "Acercar", "Alejar", "Ajustar imagen (R)", "Cuadrícula (G)"]) {
     await userEvent.click(screen.getByRole("button", { name }));
     expect(document.activeElement).toBe(canvas);
     fireEvent.keyDown(canvas, { key: "b" });
@@ -108,7 +101,7 @@ test("compact menu close keeps canvas focus after zoom and grid commands", async
   const canvas = screen.getByLabelText("Foto de la papeleta y marcas de huevos", {
     selector: "canvas",
   });
-  for (const name of ["Acercar", "Cuadrícula desactivada (G)"]) {
+  for (const name of ["Acercar", "Cuadrícula desactivada (G)", "Tamaño real (1)"]) {
     const compact = screen.getAllByRole("button", { name: "Acciones" }).at(-1);
     if (!compact) throw new Error("Compact menu trigger is missing");
     await userEvent.click(compact);

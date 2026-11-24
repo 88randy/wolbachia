@@ -113,7 +113,10 @@ test("W35 opening purges photos and marks older than 72 hours across draft ident
   await seedPrivateDrafts(page, 73);
   await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
   await expect(
-    page.getByLabel(messages["es-MX"]["labAnnotation.upload.picker"], { exact: true }),
+    page.getByRole("button", {
+      name: messages["es-MX"]["labAnnotation.upload.choose"],
+      exact: true,
+    }),
   ).toBeVisible();
   await expect.poll(() => storedDraftKeys(page)).toEqual([]);
   await expect(
@@ -230,7 +233,7 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
   await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
   await expect(recovery).toBeVisible();
   await recovery.getByRole("button", { name: text("labAnnotation.recover.accept") }).click();
-  await page.getByRole("button", { name: text("labAnnotation.tips.close") }).click();
+  await page.getByRole("button", { name: text("labAnnotation.tips.skip") }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const canvas = page
     .getByRole("application", { name: text("labAnnotation.canvas.label") })
@@ -353,10 +356,11 @@ test("W35 history opens an authorized annotation with view-only tools", async ({
   await expect(viewer.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
     0,
   );
-  const zoom = await viewer.locator("output").textContent();
+  const zoomButton = viewer.getByRole("button", { name: /^Zoom / });
+  const zoom = await zoomButton.textContent();
   await canvas.focus();
   await page.keyboard.press("+");
-  await expect(viewer.locator("output")).not.toHaveText(zoom ?? "");
+  await expect(zoomButton).not.toHaveText(zoom ?? "");
   await page.keyboard.press("d");
   await page.keyboard.press("Enter");
   await expect(
@@ -477,6 +481,21 @@ async function expectStableDraftStatus(page: Page, canvas: ReturnType<Page["loca
   await expect.poll(size).toEqual(emptySize);
 }
 
+async function expectWorkspaceLayout(page: Page, canvas: ReturnType<Page["locator"]>) {
+  const bounds = await canvas.boundingBox();
+  if (!bounds) throw new Error("Canvas geometry unavailable");
+  expect(bounds.height).toBeGreaterThanOrEqual(420);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual((page.viewportSize()?.height ?? 0) + 1);
+  const toolbar = page.getByRole("group", { name: /^(Contar en foto|Count on photo)$/ });
+  for (const element of [toolbar, toolbar.getByRole("button").last()]) {
+    const control = await element.boundingBox();
+    if (!control) throw new Error("Toolbar control geometry unavailable");
+    expect(control.x).toBeGreaterThanOrEqual(bounds.x);
+    expect(control.x + control.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    expect(control.y).toBeGreaterThanOrEqual(bounds.y);
+  }
+}
+
 for (const theme of ["light", "dark"] as const) {
   for (const language of ["es-MX", "en"] as const) {
     test(`W35 photo annotation keyboard and reflow: ${theme}, ${language}`, async ({
@@ -486,16 +505,21 @@ for (const theme of ["light", "dark"] as const) {
       await rememberPreferences(page, theme, language);
       const commands = await mockAnnotation(page);
       await page.setViewportSize(COMPACT_VIEWPORT);
-      await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
+      await page.goto("/lab/egg-counts");
+      await page
+        .getByRole("button", { name: text("labAnnotation.editor.action"), exact: true })
+        .click();
+      await expect(page).toHaveURL(new RegExp(`/lab/egg-counts/${BAG_CODE}/annotate`));
+      await expect(page).toHaveTitle(
+        `${text("labAnnotation.editor.action")} · ${BAG_CODE} · AedesVision`,
+      );
       const picker = page.getByLabel(text("labAnnotation.upload.picker"), { exact: true });
-      await expect(picker).toHaveAttribute("accept", "image/*");
-      await expect(picker).toHaveAttribute("capture", "environment");
+      await expect(picker).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+      await expect(picker).not.toHaveAttribute("capture");
+      await expect(picker).toBeHidden();
       await picker.setInputFiles(await syntheticPhoto(page));
       await page
-        .getByRole("button", { name: text("labAnnotation.upload.start"), exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: text("labAnnotation.tips.close"), exact: true })
+        .getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true })
         .click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
       const canvas = page
@@ -524,8 +548,30 @@ for (const theme of ["light", "dark"] as const) {
       await page.keyboard.press("s");
       await expect(page.getByLabel(text("labAnnotation.editor.defaultWidth"))).toBeVisible();
       await expect(
-        page.getByRole("checkbox", { name: text("labAnnotation.editor.grid"), exact: true }),
+        page.getByRole("switch", { name: text("labAnnotation.editor.grid"), exact: true }),
       ).toBeChecked();
+      const beforeSettings = await canvas.boundingBox();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(canvas).toBeFocused();
+      expect(await canvas.boundingBox()).toEqual(beforeSettings);
+      await page.keyboard.press("?");
+      const shortcuts = page.getByRole("dialog", {
+        name: text("labAnnotation.shortcuts.title"),
+        exact: true,
+      });
+      await expect(shortcuts.getByRole("table")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(canvas).toBeFocused();
+      await page
+        .getByRole("button", { name: text("labAnnotation.editor.actions"), exact: true })
+        .click();
+      await page
+        .getByRole("menuitem", { name: text("labAnnotation.editor.help"), exact: true })
+        .click();
+      await expect(shortcuts).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(canvas).toBeFocused();
       await page.evaluate(() => {
         const root = document.documentElement;
         const computed = getComputedStyle(root);
@@ -539,10 +585,28 @@ for (const theme of ["light", "dark"] as const) {
       });
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
+        await canvas.focus();
+        await page.keyboard.press("r");
         await expectNoHorizontalScroll(page);
+        await expectWorkspaceLayout(page, canvas);
         await expectStableDraftStatus(page, canvas);
         await expectUncoveredCanvas(canvas);
         await expectNoAxeViolations(page);
+        await page
+          .getByRole("button", { name: text("labAnnotation.editor.finish"), exact: true })
+          .click();
+        const confirmation = page.getByRole("dialog");
+        await expect(confirmation).toBeVisible();
+        expect(
+          await confirmation.evaluate((element) => {
+            const bounds = element.getBoundingClientRect();
+            return element.contains(
+              document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2),
+            );
+          }),
+        ).toBe(true);
+        await page.keyboard.press("Escape");
+        await expect(canvas).toBeFocused();
         await page.screenshot({
           path: testInfo.outputPath(`W35-annotation-${String(viewport.width)}.png`),
           fullPage: true,

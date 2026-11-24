@@ -20,6 +20,7 @@ export function AnnotationLoadedBody({ workspace, view, photo, url }: Props) {
           marks={workspace.editor.state.marks}
           width={photo.width}
           height={photo.height}
+          onClose={view.onSettings}
         />
       )}
     </div>

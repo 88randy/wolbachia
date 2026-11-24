@@ -22,9 +22,7 @@ export function EggAnnotationCanvas(props: AnnotationCanvasProps) {
     ? t("labAnnotation.canvas.selected", {
         index: control.selected + 1,
         count: props.marks.length,
-        kind: t(`labAnnotation.editor.${mark.kind}`),
-        x: mark.x,
-        y: mark.y,
+        kind: t(`labAnnotation.canvas.${mark.kind}`),
       })
     : t("labAnnotation.canvas.empty");
   return (
@@ -34,6 +32,8 @@ export function EggAnnotationCanvas(props: AnnotationCanvasProps) {
         {t("labAnnotation.canvas.instructions")}
       </p>
       <p className={styles.selection} aria-live="polite" aria-atomic="true">
+        {t(`labAnnotation.canvas.${props.tool}`)}
+        {t("labAnnotation.canvas.statusSeparator")}
         {selectedText}{" "}
         {props.marks.length >= MAX_ANNOTATION_MARKS && t("labAnnotation.editor.maxMarks")}
       </p>

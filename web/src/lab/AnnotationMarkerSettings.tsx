@@ -1,5 +1,7 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { SelectMenu } from "../ui/SelectMenu";
+import { Switch } from "../ui/Switch";
 import type { AnnotationSettingsProps } from "./AnnotationSettings";
 
 const COLORS = ["action", "success", "critical"] as const;
@@ -8,26 +10,29 @@ type MarkerProps = Pick<AnnotationSettingsProps, "color" | "setColor" | "showGri
 export function AnnotationMarkerSettings(props: MarkerProps) {
   const { t } = useTranslation();
   const id = useId();
-  const onChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const color = event.target.value;
+  const onChange = (color: string) => {
     if (color === "action" || color === "success" || color === "critical") props.setColor(color);
   };
   return (
     <>
-      <label htmlFor={id}>
-        {t("labAnnotation.editor.markerColor")}
-        <select id={id} name="marker-color" value={props.color} onChange={onChange}>
-          {COLORS.map((color) => (
-            <option key={color} value={color}>
-              {t(`labAnnotation.color.${color}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <input type="checkbox" checked={props.showGrid} onChange={props.onGrid} />
-        {t("labAnnotation.editor.grid")}
-      </label>
+      <div className="grid gap-2">
+        <label htmlFor={id}>{t("labAnnotation.editor.markerColor")}</label>
+        <SelectMenu
+          id={id}
+          name="marker-color"
+          value={props.color}
+          onValueChange={onChange}
+          options={COLORS.map((color) => ({
+            value: color,
+            label: t(`labAnnotation.color.${color}`),
+          }))}
+        />
+      </div>
+      <Switch
+        label={t("labAnnotation.editor.grid")}
+        isOn={props.showGrid}
+        onChange={props.onGrid}
+      />
     </>
   );
 }

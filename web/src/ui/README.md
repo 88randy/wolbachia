@@ -24,7 +24,8 @@ here. Import the component from its own file.
 - `Dialog` and `SideSheet`: `trigger`, `title`, `description`, `children`.
   Optional controlled `open`/`onOpenChange` props let screens bind the overlay to
   URL state and browser Back. Radix manages focus trapping, Escape and restoring
-  the trigger. Use sheets for
+  the trigger. Controlled overlays opened without a trigger can supply
+  `onCloseAutoFocus` to restore their editor or invoking control. Use sheets for
   supplementary detail; screens own shareable URL state.
 - `ConfirmDialog`: `trigger`, `title`, `consequence`, `actionLabel`, `onConfirm`.
   Use only for irreversible/high-impact actions; Cancel receives initial focus.
