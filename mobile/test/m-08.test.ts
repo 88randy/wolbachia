@@ -1359,3 +1359,27 @@ void test("round 5: Edit on A cannot flush B's failed buffered input after readi
   assert.equal((await h.store.read()).draft?.temperature, "37");
   await h.engine.requestSync();
 });
+
+void test("screen-open refresh downloads the label pool while a draft exists, without a full refresh", async () => {
+  const calls: string[] = [];
+  const h = await harness(undefined, {
+    refresh: () => {
+      calls.push("full");
+      return Promise.resolve();
+    },
+    refreshLabels: () => {
+      calls.push("labels");
+      return Promise.resolve();
+    },
+  });
+  await h.service.refreshInBackground();
+  assert.deepEqual(calls, ["full"], "no draft: catalog, rules and labels refresh together");
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
+  calls.length = 0;
+  await h.service.refreshInBackground();
+  assert.deepEqual(calls, ["labels"], "draft in progress: only the label pool, no swap of rules");
+});

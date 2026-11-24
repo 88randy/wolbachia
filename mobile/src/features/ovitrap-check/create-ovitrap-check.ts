@@ -51,6 +51,12 @@ async function download(
   await store.saveSnapshots({ catalog, rules });
   await downloadLabels(deps, client, labels);
 }
+/** Label pool only: it never touches the catalog, rules or any draft. */
+async function downloadLabelsOnly(deps: Dependencies, labels: LabelPoolStore): Promise<void> {
+  const baseUrl = deps.tokens.getOrigin();
+  if (baseUrl === null || deps.tokens.getAccessToken() === undefined) return;
+  await downloadLabels(deps, createMobileApiClient({ baseUrl, tokens: deps.tokens }), labels);
+}
 /** The pool is a convenience for typed codes: a failed download keeps the previous pool and never blocks the rest. */
 async function downloadLabels(
   deps: Dependencies,
@@ -93,6 +99,7 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     evidenceShift: () => readCaptureShift(deps.shiftOpen),
     refresh: () => download(deps, store, labels),
+    refreshLabels: () => downloadLabelsOnly(deps, labels),
     labelPool: () => labels.read(),
     publishAssignment: () => publishAssignment(deps.assignments, store),
   });

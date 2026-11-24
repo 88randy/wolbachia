@@ -47,6 +47,8 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly evidenceShift: () => Promise<CaptureShiftAuthorization>;
   readonly refresh?: () => Promise<void>;
+  /** Downloads only the label pool; safe while a draft exists. */
+  readonly refreshLabels?: () => Promise<void>;
   /** The downloaded pool of unplaced labels; lets a typed `OVT-0001` resolve without a network. */
   readonly labelPool?: () => Promise<readonly PoolLabel[]>;
   /** Builds the assignment from the local day bundle and publishes it; never touches the network. */
@@ -261,6 +263,14 @@ export class OvitrapService {
   async refresh(eventId: string | null): Promise<void> {
     assertCaptureIdentity(await this.#deps.store.read(), eventId);
     await this.#deps.refresh?.();
+  }
+  /**
+   * Screen-open refresh. The label pool always downloads; catalog and rules only with no draft, so
+   * a capture in progress never has its options swapped underneath it.
+   */
+  async refreshInBackground(): Promise<void> {
+    if ((await this.#deps.store.read()).draft) return this.#deps.refreshLabels?.();
+    await this.refresh(null);
   }
   startPlace(eventId: string | null): Promise<Snapshot> {
     return this.#write(() => this.#start({ mode: "place", eventId }), eventId, true);
