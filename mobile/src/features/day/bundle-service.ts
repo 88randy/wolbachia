@@ -163,6 +163,17 @@ export class DayBundleService {
       await this.#refresh(force);
     });
   }
+  /**
+   * Screen-open recovery: when the capture context does not match the current authority (stale
+   * revision, not ready or bootstrap pending), ask for one full body. The server's context is the
+   * only source of grants; nothing is widened locally. No request when the context is current.
+   */
+  recoverCaptureContext = (): Promise<void> =>
+    this.#network.run(async () => {
+      await this.retryCleanup();
+      if (this.#deps.getCaptureIdentity === undefined) return;
+      if (await this.#deps.store.needsBootstrap(true)) await this.#refresh(false);
+    });
   async #refresh(force: boolean, original?: ProjectionTurn): Promise<ProjectionTurn | null> {
     const turn = original ?? (await this.#captureTurn());
     const { write, handle } = turn;
