@@ -1,4 +1,4 @@
-﻿import { ownerKey } from "../../attachments/types.ts";
+import { ownerKey } from "../../attachments/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
 import type { ReceiptStore } from "./store.ts";
