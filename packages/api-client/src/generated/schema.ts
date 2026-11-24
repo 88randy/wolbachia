@@ -1393,6 +1393,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/egg-annotations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_annotations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-annotations/{public_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_annotations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/egg-counts/": {
         parameters: {
             query?: never;
@@ -1437,6 +1489,32 @@ export interface paths {
          *     `APIView`s do not have.
          */
         get: operations["egg_counts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/{id}/annotation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_counts_annotation_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8084,9 +8162,10 @@ export interface components {
          *     * `certification` - certification
          *     * `lab_paddle_command` - lab_paddle_command
          *     * `material_request` - material_request
+         *     * `egg_annotation` - egg_annotation
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "certification" | "lab_paddle_command" | "material_request";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "certification" | "lab_paddle_command" | "material_request" | "egg_annotation";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -9062,7 +9141,7 @@ export interface components {
         CountReplacementKindEnum: "count";
         CountReplacementRequest: {
             /** Format: int64 */
-            value: number;
+            value?: number;
             /** @default false */
             confirmed_implausible: boolean;
             /** Format: int64 */
@@ -9071,6 +9150,7 @@ export interface components {
             total_examined?: number;
             /** Format: uuid */
             method_version?: string;
+            annotation?: components["schemas"]["EggAnnotationPayloadRequest"];
             measurement_kind?: components["schemas"]["MeasurementKindEnum"];
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -9082,7 +9162,7 @@ export interface components {
             /** Format: uuid */
             command_id: string;
             /** Format: int64 */
-            value: number;
+            value?: number;
             /** @default false */
             confirmed_implausible: boolean;
             /** Format: int64 */
@@ -9091,6 +9171,7 @@ export interface components {
             total_examined?: number;
             /** Format: uuid */
             method_version?: string;
+            annotation?: components["schemas"]["EggAnnotationPayloadRequest"];
             /** @default 0 */
             expected_revision: number;
             queue_context?: components["schemas"]["LabQueueQueryRequest"];
@@ -9345,6 +9426,90 @@ export interface components {
          * @enum {string}
          */
         EfficiencyStatusEnum: "unavailable" | "ok" | "review";
+        EggAnnotation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            public_id: string;
+            /** Format: uuid */
+            count: string;
+            /** Format: uuid */
+            bag: string;
+            bag_code: string;
+            /** Format: uuid */
+            upload_id: string;
+            image_url: string;
+            image_width: number;
+            image_height: number;
+            marks: components["schemas"]["EggMark"][];
+            box_count: number;
+            point_count: number;
+            tool_version: string;
+            elapsed_seconds: number | null;
+            /** Format: uuid */
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        EggAnnotationPayloadRequest: {
+            /** Format: uuid */
+            upload_id: string;
+            marks: components["schemas"]["EggMarkRequest"][];
+            tool_version: string;
+            elapsed_seconds?: number;
+        };
+        EggBoxMark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "box";
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+        };
+        /**
+         * @description * `box` - box
+         * @enum {string}
+         */
+        EggBoxMarkKindEnum: "box";
+        EggBoxMarkRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "box";
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+        };
+        EggMark: components["schemas"]["EggBoxMark"] | components["schemas"]["EggPointMark"];
+        EggMarkRequest: components["schemas"]["EggBoxMarkRequest"] | components["schemas"]["EggPointMarkRequest"];
+        EggPointMark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "point";
+            x: number;
+            y: number;
+        };
+        /**
+         * @description * `point` - point
+         * @enum {string}
+         */
+        EggPointMarkKindEnum: "point";
+        EggPointMarkRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "point";
+            x: number;
+            y: number;
+        };
         EligibilityBundle: {
             /** Format: uuid */
             subject_id: string;
@@ -9603,7 +9768,13 @@ export interface components {
             upload_id: string;
             role: components["schemas"]["SupplyEvidenceRoleEnum"];
         };
+        /**
+         * @description * `egg_annotation` - egg_annotation
+         * @enum {string}
+         */
+        EvidenceUploadRequestPurposeEnum: "egg_annotation";
         EvidenceUploadRequestRequest: {
+            purpose?: components["schemas"]["EvidenceUploadRequestPurposeEnum"];
             content_type: string;
             size_bytes: number;
             sha256: string;
@@ -10464,6 +10635,8 @@ export interface components {
             material?: components["schemas"]["LabMaterial"];
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            annotation_id?: string | null;
             /** Format: uuid */
             bag_id: string;
             bag_code?: string;
@@ -12352,6 +12525,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Discrepancy"][];
+        };
+        PaginatedEggAnnotationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["EggAnnotation"][];
         };
         PaginatedEvaluationAttemptReadList: {
             /** @example 123 */
@@ -14430,11 +14618,6 @@ export interface components {
         };
         /** @enum {string} */
         PublicationStateEnum: "outboxed" | "pending_outbox";
-        /**
-         * @description * `uieb_shipment` - uieb_shipment
-         * @enum {string}
-         */
-        PurposeEnum: "uieb_shipment";
         /**
          * @description * `not_requested` - not_requested
          *     * `awaiting_independent_qa` - awaiting_independent_qa
@@ -17410,7 +17593,7 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly recipient_institution: string;
-            readonly purpose: components["schemas"]["PurposeEnum"];
+            readonly purpose: components["schemas"]["TransferAuthorizationPurposeEnum"];
             readonly fields: unknown;
             /** Format: uuid */
             readonly center_id: string;
@@ -17443,6 +17626,11 @@ export interface components {
             reference: string;
             fields?: string[];
         };
+        /**
+         * @description * `uieb_shipment` - uieb_shipment
+         * @enum {string}
+         */
+        TransferAuthorizationPurposeEnum: "uieb_shipment";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -17706,6 +17894,8 @@ export interface components {
             state: components["schemas"]["StateEnum"];
             /** Format: date-time */
             verified_at: string | null;
+            image_width?: number | null;
+            image_height?: number | null;
             /** Format: uuid */
             upload_id: string;
             url: string;
@@ -17732,6 +17922,8 @@ export interface components {
             state: components["schemas"]["StateEnum"];
             /** Format: date-time */
             verified_at: string | null;
+            image_width?: number | null;
+            image_height?: number | null;
         };
         UserLookup: {
             /** Format: uuid */
@@ -18410,6 +18602,7 @@ export interface operations {
                 content: {
                     "image/jpeg": string;
                     "image/png": string;
+                    "image/webp": string;
                     "application/pdf": string;
                 };
             };
@@ -20684,6 +20877,79 @@ export interface operations {
             };
         };
     };
+    egg_annotations_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                code?: string;
+                created_before?: string;
+                created_from?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEggAnnotationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_annotations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                public_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EggAnnotation"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     egg_counts_list: {
         parameters: {
             query?: {
@@ -20768,6 +21034,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabCount"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_counts_annotation_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EggAnnotation"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -22019,6 +22318,7 @@ export interface operations {
             content: {
                 "image/jpeg": string;
                 "image/png": string;
+                "image/webp": string;
                 "application/pdf": string;
             };
         };

@@ -54,6 +54,7 @@ EXPECTED_COHORTS = {
         "tests/test_lab_api_114.py",
         "tests/test_lab_concurrency_114.py",
         "tests/test_lab_counts_114.py",
+        "tests/test_egg_annotations.py",
         "tests/test_lab_history_114.py",
         "tests/test_lab_policy_114.py",
         "tests/test_lab_reception_114.py",
@@ -172,8 +173,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 47
-        )  # Residual regular, ten migration owners and thirty-six complete ordinary modules.
+            validate_fragments(bundles, expected) == 48
+        )  # Residual regular, ten migration owners and thirty-seven complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)

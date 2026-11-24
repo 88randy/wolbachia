@@ -40,6 +40,7 @@ class UploadRequest:
     sha256: str
     client_id: UUID | None = None
     context: AttachmentTarget | None = None
+    purpose: str = ""
 
 
 @contextmanager
@@ -107,6 +108,7 @@ def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
         ("certification", getattr(link, "certification_id", None)),
         ("lab_paddle_command", link.lab_paddle_command_id),
         ("material_request", link.material_request_id),
+        ("egg_annotation", link.egg_annotation_id),
     )
     targets = [
         AttachmentTarget(kind, identifier)
@@ -121,6 +123,8 @@ def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
 def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -> None:
     if target is None:
         return
+    if upload.purpose == "egg_annotation" and target.kind != "egg_annotation":
+        raise FieldValidationError("file", "upload_type_not_allowed")
     if upload.content_type == PDF_CONTENT_TYPE:
         raise FieldValidationError("file", "upload_type_not_allowed")
     parent = authorize_target(actor, target, upload)
@@ -155,6 +159,13 @@ def _lease_response(upload: Upload, lease: UploadLease) -> dict[str, Any]:
 
 
 def authorize_upload(actor: UploadActor, request: UploadRequest) -> dict[str, Any]:
+    if request.content_type == "image/webp" and request.purpose != "egg_annotation":
+        raise FieldValidationError("file", "upload_type_not_allowed")
+    if request.purpose == "egg_annotation" and (
+        request.content_type == PDF_CONTENT_TYPE
+        or (request.context is not None and request.context.kind != "egg_annotation")
+    ):
+        raise FieldValidationError("purpose", "invalid")
     identifier = request.client_id or uuid4()
     require_upload_permission(actor)
     existing = Upload.objects.filter(organization=actor.organization, public_id=identifier).first()
@@ -197,6 +208,7 @@ def _insert_upload(actor: UploadActor, request: UploadRequest, identifier: UUID)
                 content_type=request.content_type,
                 size_bytes=request.size_bytes,
                 sha256=request.sha256,
+                purpose=request.purpose,
             )
     except IntegrityError as error:
         if (
@@ -214,10 +226,11 @@ def _insert_upload(actor: UploadActor, request: UploadRequest, identifier: UUID)
 def _check_metadata(actor: UploadActor, upload: Upload, request: UploadRequest) -> None:
     if upload.uploader_id != actor.user.pk or upload.device_id != actor.device_id:
         raise Http404
-    if (upload.content_type, upload.size_bytes, upload.sha256) != (
+    if (upload.content_type, upload.size_bytes, upload.sha256, upload.purpose) != (
         request.content_type,
         request.size_bytes,
         request.sha256,
+        request.purpose,
     ):
         raise UploadConflictError("upload_identity_conflict")
 
@@ -233,6 +246,8 @@ def upload_state(upload: Upload) -> dict[str, Any]:
         "id": str(upload.public_id),
         "state": state,
         "verified_at": None if verified is None else verified.created_at,
+        "image_width": None if verified is None or verified.width == 0 else verified.width,
+        "image_height": None if verified is None or verified.height == 0 else verified.height,
     }
 
 
@@ -308,7 +323,9 @@ def finalize_upload(
     cleaned = (
         verify_pdf(original)
         if upload.content_type == PDF_CONTENT_TYPE
-        else sanitize_image(original, upload.content_type)
+        else sanitize_image(
+            original, upload.content_type, allow_webp=upload.purpose == "egg_annotation"
+        )
     )
     candidate = store_verified(cleaned.content)
     retained = False

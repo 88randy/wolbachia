@@ -10,6 +10,7 @@ from rest_framework.exceptions import ErrorDetail
 from core.author_names import AuthorNamesMixin
 from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
+from lab.annotation_serializers import EggAnnotationPayloadSerializer
 from lab.models import (
     LabMethod,
     LabMethodVerification,
@@ -99,7 +100,17 @@ class CountValuesSerializer(StrictPayloadSerializer):
         return attrs
 
 
-class CountWriteSerializer(LabCommandSerializer, CountValuesSerializer):
+class AnnotatedCountValuesSerializer(CountValuesSerializer):
+    value = ObservationIntegerField(required=False)
+    annotation = EggAnnotationPayloadSerializer(required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        from lab.annotations import annotation_count_values
+
+        return super().validate(annotation_count_values(attrs))
+
+
+class CountWriteSerializer(LabCommandSerializer, AnnotatedCountValuesSerializer):
     expected_revision = serializers.IntegerField(min_value=0, required=False, default=0)
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
@@ -122,7 +133,7 @@ class RejectionWriteSerializer(LabCommandSerializer, RejectionValuesSerializer):
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
 
-class CountCorrectionValuesSerializer(CountValuesSerializer):
+class CountCorrectionValuesSerializer(AnnotatedCountValuesSerializer):
     measurement_kind = serializers.ChoiceField(
         choices=["physical_measurement", "data_correction"], required=False
     )
@@ -369,6 +380,7 @@ class LabMaterialSerializer(serializers.Serializer[Any]):
 class LabCountSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
+    annotation_id = serializers.UUIDField(allow_null=True, required=False)
     bag_id = serializers.UUIDField()
     bag_code = serializers.CharField(required=False)
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)

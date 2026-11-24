@@ -169,6 +169,10 @@ SHIPMENT_ADDITIVE_TRIGGERS = {
     ("uploads_attachmentlink", "uploads_material_request_parent_guard"),
 }
 
+ANNOTATION_ADDITIVE_TRIGGERS = {
+    ("uploads_attachmentlink", "egg_annotation_attachment"),
+}
+
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
@@ -247,9 +251,13 @@ def insert_genuine_legacy_lab_observation(apps, context, bag):
             **shared, command=counted, bag_id=bag.pk, revision=1, count=first
         )
         actual = EggCountAttempt.objects.get(pk=first.pk)
+        # This released114 wire predates annotation storage and must not query its future table.
+        actual._state.fields_cache["annotation"] = None
+        legacy_count = count_projection(actual)
+        legacy_count.pop("annotation_id")
         body = canonical_values(
             {
-                "count": count_projection(actual),
+                "count": legacy_count,
                 **next_queue_snapshot(context.actor, bag, request.values),
             }
         )
@@ -267,9 +275,9 @@ def insert_genuine_legacy_lab_observation(apps, context, bag):
 def assert_lab_sql_dependencies_precede_empty_plan_guard(loader):
     plan = loader.graph.forwards_plan(("lab", "0002_append_only_guards"))
     rules = ("rules", "0004_void_reason_code")
-    assert (
-        rules in plan
-    ), "Lab SQL rule functions require Rules tables and void columns on an empty database"
+    assert rules in plan, (
+        "Lab SQL rule functions require Rules tables and void columns on an empty database"
+    )
     assert plan.index(rules) < plan.index(("lab", "0002_append_only_guards"))
 
 
@@ -490,6 +498,7 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             | PEOPLE_ADDITIVE_TRIGGERS
             | RELEASE_ADDITIVE_TRIGGERS
             | SHIPMENT_ADDITIVE_TRIGGERS
+            | ANNOTATION_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy

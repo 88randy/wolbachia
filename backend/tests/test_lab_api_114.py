@@ -185,7 +185,10 @@ def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(
     variants = schema["components"]["schemas"][replacement]
     assert set(variants["discriminator"]["mapping"]) == {"count", "rejection"}
     count_variant = variants["discriminator"]["mapping"]["count"].split("/")[-1]
-    assert {"kind", "value"} <= set(schema["components"]["schemas"][count_variant]["required"])
+    assert "kind" in schema["components"]["schemas"][count_variant]["required"]
+    assert {"value", "annotation"} <= set(
+        schema["components"]["schemas"][count_variant]["properties"]
+    )
 
 
 @pytest.mark.django_db

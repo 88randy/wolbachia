@@ -149,6 +149,7 @@ def authorize_target(
         "certification",
         "lab_paddle_command",
         "material_request",
+        "egg_annotation",
     }:
         return _domain_attachment_target(actor, target, upload)
     if target.kind == "review_item":
@@ -202,6 +203,10 @@ def authorize_target(
 def _domain_attachment_target(
     actor: UploadActor, target: AttachmentTarget, upload: Upload
 ) -> dict[str, object]:
+    if target.kind == "egg_annotation":
+        from lab.annotations import authorize_annotation_attachment
+
+        return authorize_annotation_attachment(actor, target.identifier, upload)
     if target.kind == "material_request":
         from lab.shipments.evidence import authorize_request_attachment
 
@@ -279,6 +284,11 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     from uploads.services import _resolve_link_target
 
     parent = _resolve_link_target(link)
+    if parent.kind == "egg_annotation":
+        from lab.annotations import authorize_annotation_download
+
+        authorize_annotation_download(actor, parent.identifier)
+        return
     if parent.kind == "material_request":
         from lab.shipments.evidence import authorize_request_download
 

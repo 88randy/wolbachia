@@ -71,6 +71,40 @@ No bytes are read beneath Lab locks. A void-only supervisor can read the minimal
 exact-target context and its bound evidence without receiving list/history/queue,
 count-create or general upload authority.
 
+## Manual egg annotation (W35)
+
+The existing count and count-replacement commands accept an optional `annotation`
+with `upload_id`, `marks`, `tool_version` and optional active `elapsed_seconds`.
+The value is the number of marks, including mixed boxes and points; an explicitly
+different numeric value is rejected. Empty marks are an authored zero. Numeric
+commands retain their prior canonical input and behavior. The same UUID replay,
+CAS revision, implausible-count confirmation, queue response and transaction apply.
+There is no separate counting command or mobile transport.
+
+`EggAnnotation` retains the exact count, Bag, actor and verified image dimensions.
+Pixel coordinates have a top-left origin and must be strict JSON integers. Points
+require `0 <= x < width`, `0 <= y < height`; boxes additionally require positive
+`w`/`h` and `x+w <= width`, `y+h <= height`. The server rejects out-of-bounds marks;
+the UI clamps its gestures to the image before submitting. There are at most 5000
+marks per annotation. The upload must be verified, owned by the current actor and
+device, and unbound. No storage or image decoding occurs under Lab locks.
+
+Count, annotation and the `egg_annotation` attachment parent commit atomically.
+Same-organization/source/image/count guards and insert-only triggers protect SQL
+writes. A correction creates a new annotation and keeps the voided predecessor.
+`GET /egg-counts/{id}/annotation/` and paged `/egg-annotations/` (exact `code`,
+`author`, `created_from`, exclusive `created_before`) use current `egg_count.read`,
+paired scope and independent-QA blindness before filtering/page. Images use the
+existing authorized attachment download with before/after-I/O access checks.
+Numeric disclosure is recorded even when only the image is downloaded.
+
+`tests/test_egg_annotations.py` covers mark validation, count equality/mismatch,
+atomic rollback, explicit confirmation/replay, correction retention, permissions,
+organization isolation and immutable persistence; the module belongs once to
+`regular-lab`. Migrations `0015`/`0016` retain facts; uploads `0012`/`0013` add a
+nullable parent, metadata default and separately validated constraints.
+Reversal refuses populated annotations or their upload purpose.
+
 ## Corrections and independent QA
 
 `corrections.py` appends a canonical-catalog reason plus a normalized note of at

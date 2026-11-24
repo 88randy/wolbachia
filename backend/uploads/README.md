@@ -1,5 +1,21 @@
 # Private evidence (B-04 / #102)
 
+## Egg annotation images (W35)
+
+The existing staged upload transport accepts optional `purpose: egg_annotation`.
+That purpose permits JPEG, PNG and WebP and can bind only to the immutable
+`egg_annotation` parent created by the existing count command. All prior parents
+retain their JPEG/PNG policy. No byte or pixel limit is raised: 10 MiB and
+25 million pixels already accommodate an ordinary 4096-pixel paddle JPEG.
+WebP uses the installed Pillow decoder, EXIF orientation and lossless metadata-free
+reencoding; animation remains forbidden. Finalize/renew include the verified
+`image_width`/`image_height` so image coordinates refer to the oriented pixels.
+The count transaction consumes only already verified owned unbound uploads.
+Downloads follow current `egg_count.read`, paired source scope and QA blindness,
+including retained voided count annotations. No anonymous or unbound download is
+introduced. Uploads with the annotation purpose cannot become another parent's
+evidence, including through raw SQL. Tests live in `test_egg_annotations.py`.
+
 ## PDF official documents (#350)
 
 `application/pdf` joins JPEG/PNG. A PDF is verified structurally, with no new

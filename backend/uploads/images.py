@@ -23,7 +23,9 @@ class SanitizedImage:
 
 
 def _check_image(image: Image.Image, declared: str) -> None:
-    if {"JPEG": "image/jpeg", "PNG": "image/png"}.get(image.format or "") != declared:
+    if {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}.get(
+        image.format or ""
+    ) != declared:
         raise FieldValidationError("file", "upload_type_mismatch")
     if image.width * image.height > MAX_IMAGE_PIXELS:
         raise FieldValidationError("file", "upload_pixel_limit", {"max": MAX_IMAGE_PIXELS})
@@ -31,14 +33,18 @@ def _check_image(image: Image.Image, declared: str) -> None:
         raise FieldValidationError("file", "upload_animation_not_supported")
 
 
-def sanitize_image(original: bytes, content_type: str) -> SanitizedImage:
-    """Only JPEG/PNG, fully decoded, oriented and saved into a metadata-free new image."""
+def sanitize_image(
+    original: bytes, content_type: str, *, allow_webp: bool = False
+) -> SanitizedImage:
+    """Fully decode, orient and save into a metadata-free new image."""
+    if content_type == "image/webp" and not allow_webp:
+        raise FieldValidationError("file", "upload_type_not_allowed")
     if len(original) > max_upload_bytes():
         raise FieldValidationError("file", "upload_too_large", {"max_bytes": max_upload_bytes()})
     if original.startswith(b"%PDF-"):
         raise FieldValidationError("file", "upload_content_mismatch")
     try:
-        with Image.open(BytesIO(original), formats=["JPEG", "PNG"]) as probe:
+        with Image.open(BytesIO(original), formats=["JPEG", "PNG", "WEBP"]) as probe:
             _check_image(probe, content_type)
             probe.verify()
         return _reencode(original, content_type)
@@ -51,16 +57,18 @@ def sanitize_image(original: bytes, content_type: str) -> SanitizedImage:
 
 
 def _reencode(original: bytes, content_type: str) -> SanitizedImage:
-    with Image.open(BytesIO(original), formats=["JPEG", "PNG"]) as source:
+    with Image.open(BytesIO(original), formats=["JPEG", "PNG", "WEBP"]) as source:
         source.load()
         oriented = ImageOps.exif_transpose(source)
         # PNG tRNS can carry alpha without an A band (palette or color-key transparency).
-        mode = "RGBA" if content_type == "image/png" else "RGB"
+        mode = "RGB" if content_type == "image/jpeg" else "RGBA"
         pixels = Image.new(mode, oriented.size)
         pixels.paste(oriented.convert(mode))
         output = BytesIO()
         if content_type == "image/jpeg":
             pixels.save(output, format="JPEG", quality=JPEG_QUALITY)
+        elif content_type == "image/webp":
+            pixels.save(output, format="WEBP", lossless=True)
         else:
             pixels.save(output, format="PNG")
         content = output.getvalue()

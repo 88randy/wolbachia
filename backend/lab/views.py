@@ -20,6 +20,7 @@ from core.views import OrgScopedViewSetMixin
 from incidents.permissions import INCIDENT_MANAGE_TYPE
 from lab import selectors
 from lab.access import LabTarget
+from lab.annotation_serializers import EggAnnotationSerializer
 from lab.facade import run_command
 from lab.incidents import policy_availability, write_reception_policy
 from lab.methods import decide_method, write_method
@@ -164,6 +165,26 @@ class LabResultViewSet(LabReadViewSet):
 
 
 class EggCountViewSet(LabResultViewSet):
+    required_permissions = {**LabResultViewSet.required_permissions, "annotation": COUNT_READ}
+
+    @extend_schema(responses=EggAnnotationSerializer)
+    @action(detail=True, methods=["get"])
+    def annotation(self, request: Request, pk: str | None = None) -> Response:
+        from lab.annotations import annotation_projection
+        from lab.independent_qa.services import numeric_read_transaction
+        from lab.models import EggAnnotation
+
+        actor = actor_from_request(request)
+        with numeric_read_transaction(actor):
+            count = get_object_or_404(self.get_queryset(), pk=pk)
+            annotation = get_object_or_404(
+                EggAnnotation.objects.select_related("bag", "image_upload"),
+                count=count,
+                organization=actor.organization,
+            )
+            selectors.publish_result_page(actor, [count])
+            return Response(annotation_projection(annotation))
+
     @extend_schema(
         parameters=[LabQueueQuerySerializer], responses=LabQueueCandidateSerializer(many=True)
     )

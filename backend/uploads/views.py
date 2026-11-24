@@ -78,6 +78,7 @@ class UploadViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
             values["sha256"],
             values.get("client_id"),
             _context(values),
+            values.get("purpose", ""),
         )
         return Response(authorize_upload(actor_from_request(request), command), status=201)
 
@@ -101,6 +102,7 @@ class UploadViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         request={
             "image/jpeg": OpenApiTypes.BINARY,
             "image/png": OpenApiTypes.BINARY,
+            "image/webp": OpenApiTypes.BINARY,
             "application/pdf": OpenApiTypes.BINARY,
         },
         parameters=[
@@ -135,6 +137,7 @@ class AttachmentViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         responses={
             (200, "image/jpeg"): OpenApiTypes.BINARY,
             (200, "image/png"): OpenApiTypes.BINARY,
+            (200, "image/webp"): OpenApiTypes.BINARY,
             (200, "application/pdf"): OpenApiTypes.BINARY,
         }
     )

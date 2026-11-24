@@ -1,5 +1,8 @@
 # Backend CI partitions
 
+Manual egg annotation adds `tests/test_egg_annotations.py` once to `regular-lab`;
+its current complete-module membership is authoritative in `contract.py`.
+
 This package belongs only to `.github/workflows/backend.yml`; application code does
 not import it. No new Python dependency, application behavior or migration is involved.
 

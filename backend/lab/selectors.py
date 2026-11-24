@@ -72,6 +72,7 @@ def result_rows(
         organization=actor.organization, bag__in=filter_bags(scoped_bags(actor, COUNT_READ), values)
     )
     if model is EggCountAttempt:
+        rows = rows.select_related("annotation")
         from lab.independent_qa.selectors import blind_visible_counts
 
         rows = blind_visible_counts(actor, rows)

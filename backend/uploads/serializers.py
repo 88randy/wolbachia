@@ -21,12 +21,14 @@ class AttachmentTargetSerializer(StrictPayloadSerializer):
             "certification",
             "lab_paddle_command",
             "material_request",
+            "egg_annotation",
         ]
     )
     id = serializers.UUIDField()
 
 
 class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
+    purpose = serializers.ChoiceField(choices=["egg_annotation"], required=False)
     content_type = serializers.CharField()
     size_bytes = serializers.IntegerField(min_value=1)
     sha256 = serializers.RegexField(r"^[0-9a-fA-F]{64}$")
@@ -35,7 +37,7 @@ class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
     context = AttachmentTargetSerializer(required=False)  # type: ignore[assignment]
 
     def validate_content_type(self, value: str) -> str:
-        if value not in CONTENT_TYPES:
+        if value not in (*CONTENT_TYPES, "image/webp"):
             raise serializers.ValidationError("Type not allowed.", code="upload_type_not_allowed")
         return value
 
@@ -48,6 +50,19 @@ class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
         return value.lower()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs["content_type"] == "image/webp" and attrs.get("purpose") != "egg_annotation":
+            raise serializers.ValidationError(
+                {
+                    "content_type": [
+                        serializers.ErrorDetail("Type not allowed.", code="upload_type_not_allowed")
+                    ]
+                }
+            )
+        if attrs.get("purpose") == "egg_annotation" and (
+            attrs["content_type"] == "application/pdf"
+            or attrs.get("context", {}).get("kind", "egg_annotation") != "egg_annotation"
+        ):
+            raise serializers.ValidationError({"purpose": ["invalid"]})
         if (
             attrs.get("context", {}).get("kind") in {"field_event", "inventory_intent"}
             and "client_id" not in attrs
@@ -78,6 +93,8 @@ class UploadStatusSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     state = serializers.ChoiceField(choices=["authorized", "received", "verified"])
     verified_at = serializers.DateTimeField(allow_null=True)
+    image_width = serializers.IntegerField(allow_null=True, required=False)
+    image_height = serializers.IntegerField(allow_null=True, required=False)
 
 
 class UploadRenewalSerializer(UploadStatusSerializer, UploadAuthorizationSerializer):

@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
+from lab.annotation_views import EggAnnotationViewSet
 from lab.independent_qa.views import EggPaddleViewSet, LabQAPolicyViewSet, RecountViewSet
 from lab.pcr.views import ExternalLabViewSet, PcrBatchViewSet
 from lab.shipments.views import MaterialRequestViewSet, UiebShipmentViewSet
@@ -15,6 +16,7 @@ from lab.views import (
 )
 
 router = SimpleRouter()
+router.register("egg-annotations", EggAnnotationViewSet, basename="egg-annotation")
 router.register("uieb-shipments", UiebShipmentViewSet, basename="uieb-shipment")
 router.register("material-requests", MaterialRequestViewSet, basename="material-request")
 router.register("recounts", RecountViewSet, basename="recount")

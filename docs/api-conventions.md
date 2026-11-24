@@ -1,5 +1,46 @@
 # API conventions (mobile + web)
 
+## Manual egg annotations (W35)
+
+The existing `POST /api/v1/bags/{id}/counts/` command accepts optional
+`annotation: {upload_id, marks, tool_version, elapsed_seconds?}`. The existing
+same-Bag count replacement in `POST /egg-counts/{id}/void/` accepts the same
+payload. The server derives `value = len(marks)`; an explicitly different value
+returns `validation_error` with field code `lab_annotation_value_mismatch`.
+Numeric-only commands retain their existing behavior. All commands retain the
+original UUID idempotency, CAS revision, plausibility confirmation and saved
+`next_bag` result. Count, annotation and private attachment commit atomically.
+
+Use the existing private upload flow with `purpose: "egg_annotation"` on
+authorization. This purpose permits JPEG, PNG and single-frame WebP, up to the
+existing 10 MiB and 25 megapixel ceilings; other parent types keep their existing
+formats. Finalization exposes verified oriented `image_width`/`image_height`.
+Creation requires `egg_count.create` plus `field.upload` over the actual Bag
+scope. Verification and storage I/O finish before the count transaction.
+
+`marks` is a list of at most 5,000 entries, mixing
+`{kind:"box", x:int, y:int, w:int, h:int}` and
+`{kind:"point", x:int, y:int}`. Coordinates use verified, EXIF-oriented image
+pixels with top-left origin. Points require `0 <= x < image_width` and
+`0 <= y < image_height`. Boxes additionally require positive `w,h`,
+`x+w <= image_width` and `y+h <= image_height`. Boolean, fractional, unknown-kind,
+extra-field and outside-image inputs are rejected; the server never clamps
+training coordinates. The UI rounds/clamps gestures before submission.
+`tool_version` is nonempty and at most 64 characters; optional
+`elapsed_seconds` is a client-measured integer from 0 through 2,147,483,647.
+
+`GET /egg-counts/{id}/annotation/` reads the retained annotation for a count.
+`GET /egg-annotations/` uses server paging and accepts exact Bag `code`, `author`
+(User UUID), `created_from` (inclusive timestamp) and `created_before` (exclusive
+timestamp). `GET /egg-annotations/{id}/` uses the annotation public UUID.
+All reads require current `egg_count.read`, including the existing paired scope
+and independent-count visibility policy, before filtering/counting/paging.
+Foreign or inaccessible objects are opaque 404s. `annotation_id` on count
+projections is optional/nullable for compatibility with previously saved replies.
+The annotation supplies `image_url` through the existing authorized attachment
+download; private source bytes are never exposed. Voiding a count retains its
+annotation and image. A photo-backed correction creates a new annotation.
+
 ## UIEB shipment source and material delivery (#118)
 
 `GET/POST /uieb-shipments/` and `GET /uieb-shipments/{id}/` expose the versioned
@@ -1881,4 +1922,3 @@ no endpoint returns organization business data. `X-Organization` is never used t
   `platform_admin.revoke`.
 - Suspending an organization also revokes its device sessions (`membership_inactive`) and ends
   its members' web sessions right away; the acting platform admin keeps their session.
-

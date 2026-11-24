@@ -1,5 +1,6 @@
 """Immutable lab facts; current disposition is derived from a retained revision chain."""
 
+import uuid
 from typing import ClassVar
 
 from django.db import models
@@ -184,6 +185,42 @@ class LabMethodVerification(LabFact):
             *LabFact.Meta.constraints,
             models.UniqueConstraint(
                 fields=["method_version", "revision"], name="lab_method_verification_revision"
+            ),
+        ]
+
+
+class EggAnnotation(LabFact):
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    bag = models.ForeignKey(
+        "ovitraps.Bag", on_delete=models.PROTECT, related_name="egg_annotations"
+    )
+    count = models.OneToOneField(
+        "EggCountAttempt", on_delete=models.PROTECT, related_name="annotation"
+    )
+    image_upload = models.OneToOneField(
+        "uploads.Upload", on_delete=models.PROTECT, related_name="egg_annotation"
+    )
+    image_width = models.PositiveIntegerField()
+    image_height = models.PositiveIntegerField()
+    marks = models.JSONField()
+    box_count = models.PositiveIntegerField()
+    point_count = models.PositiveIntegerField()
+    tool_version = models.CharField(max_length=64)
+    elapsed_seconds = models.PositiveIntegerField(null=True)
+
+    class Meta(LabFact.Meta):
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_eggannotation_org_id_uniq"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(image_width__gt=0, image_height__gt=0),
+                name="egg_annotation_image_dimensions",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(box_count__lte=5000, point_count__lte=5000),
+                name="egg_annotation_mark_limit",
             ),
         ]
 

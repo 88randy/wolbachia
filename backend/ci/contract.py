@@ -44,6 +44,7 @@ MODULE_PARTITIONS = {
             "tests/test_lab_api_114.py",
             "tests/test_lab_concurrency_114.py",
             "tests/test_lab_counts_114.py",
+            "tests/test_egg_annotations.py",
             "tests/test_lab_history_114.py",
             "tests/test_lab_policy_114.py",
             "tests/test_lab_reception_114.py",

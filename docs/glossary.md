@@ -2,6 +2,15 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## Manual egg annotation (W35)
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| anotación de huevos | egg annotation (`EggAnnotation`) | Immutable verified egg paddle image and marks linked to the single `EggCountAttempt` they produced. Correction appends a new annotation through void + replacement. |
+| marca | mark (`marks`) | One manually identified egg in image pixels, origin top-left. The total number of boxes and points is the official count. |
+| recuadro | box (`kind: "box"`) | Integer `x`, `y`, `w`, `h`; positive width/height and a rectangle fully inside the verified oriented image. |
+| punto | point (`kind: "point"`) | Integer `x`, `y` inside the verified oriented image. A quick-count mark, retained alongside boxes. |
+
 ## PCR tests at external laboratories
 
 | Spanish | English name in code | Notes |

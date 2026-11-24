@@ -118,10 +118,14 @@ def record_count(actor: UploadActor, command: LabCommand, request: LabCommandInp
 
 
 def create_count(creation: CountCreation) -> tuple[EggCountAttempt, tuple[str, ...]]:
-    actor, bag, values = creation.actor, creation.bag, creation.values
+    from lab.annotations import annotation_count_values, create_count_annotation, prepare_annotation
+
+    actor, bag = creation.actor, creation.bag
+    values = annotation_count_values(creation.values)
     from lab.dependencies import require_historical_correction
 
     measurement_proof = require_historical_correction(bag, creation.replacement_of, values)
+    annotation = prepare_annotation(actor, (bag, values))
     rules = capture_lab_rules(actor.organization)
     try:
         evaluation = evaluate_count(
@@ -151,6 +155,7 @@ def create_count(creation: CountCreation) -> tuple[EggCountAttempt, tuple[str, .
         replacement_of=creation.replacement_of,
         **method_values,
     )
+    create_count_annotation(count, annotation)
     return count, evaluation.recount_causes
 
 
@@ -190,8 +195,10 @@ def count_method_values(actor: UploadActor, values: dict[str, Any]) -> dict[str,
 
 
 def count_projection(count: EggCountAttempt) -> dict[str, Any]:
+    annotation = getattr(count, "annotation", None)
     return {
         "id": str(count.pk),
+        "annotation_id": None if annotation is None else str(annotation.public_id),
         "bag_id": str(count.bag_id),
         "bag_code": count.bag.code,
         "value": count.value,
