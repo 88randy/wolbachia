@@ -4,6 +4,8 @@ import { newReceiptDraft } from "../src/features/supply-receipt/new-draft.ts";
 import { readSupplyAssignment } from "../src/features/supply-receipt/projection-contract.ts";
 import {
   isMeaningfulSignature,
+  SIGNATURE_HEIGHT,
+  SIGNATURE_WIDTH,
   signaturePoint,
 } from "../src/features/supply-receipt/signature-path.ts";
 import { supplyName } from "../src/features/supply-receipt/supply-name.ts";
@@ -37,6 +39,20 @@ void test("a finger stroke keeps every distinct point under the finger, scaled i
     [352, 176],
   ]);
   assert.equal(path, "M0,0 L80,40 L160,80 L240,120 L320,160");
+});
+
+void test("on a pad that is not 2:1, the per-axis (preserveAspectRatio none) render lands under the finger", () => {
+  const pad = { width: 343, height: 160 };
+  for (const [locationX, locationY] of [
+    [10, 150],
+    [171, 80],
+    [333, 7],
+  ] as const) {
+    const [x, y] = signaturePoint({ locationX, locationY }, pad).split(",").map(Number);
+    // Rendering a viewBox point stretched per axis; rounding keeps it within 1 px of the touch.
+    assert.ok(Math.abs(((x ?? 0) * pad.width) / SIGNATURE_WIDTH - locationX) <= 1);
+    assert.ok(Math.abs(((y ?? 0) * pad.height) / SIGNATURE_HEIGHT - locationY) <= 1);
+  }
 });
 
 void test("a tap (a dot or a few jittered points) never enables saving", () => {

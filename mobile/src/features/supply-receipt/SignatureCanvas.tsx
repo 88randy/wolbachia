@@ -15,6 +15,8 @@ const createStyles = (theme: Theme) =>
       borderWidth: 2,
       borderColor: theme.color.border.strong,
       backgroundColor: theme.color.surface,
+      // box-only: the pad, not the Svg inside it, is the touch target, so locationX/Y are pad-relative.
+      pointerEvents: "box-only",
     },
   });
 interface Props {
@@ -30,8 +32,6 @@ export function SignatureCanvas({ svg, capture, strokes, disabled }: Props) {
     <View
       style={styles.pad}
       accessibilityLabel={t("mobile.supplyReceipt.signatureHint")}
-      // box-only: the pad, not the Svg inside it, is the touch target, so locationX/Y are pad-relative.
-      pointerEvents="box-only"
       onLayout={({ nativeEvent: { layout } }) => {
         capture.dimensions.current = { width: layout.width, height: layout.height };
       }}

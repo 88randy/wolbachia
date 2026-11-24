@@ -345,6 +345,7 @@ export const field = {
   "field.receipt.signClear": "Erase",
   "field.receipt.signHint": "Sign with your finger in the box.",
   "field.receipt.signKeep": "Keep signature",
+  "field.receipt.signIncomplete": "Draw your full signature.",
   "field.receipt.signQuestion": "Sign for it",
   "field.receipt.signSaved": "Signature saved.",
   "field.receipt.supply": "Supply {number} (should be {expected})",

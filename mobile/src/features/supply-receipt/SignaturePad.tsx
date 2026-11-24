@@ -22,13 +22,17 @@ export function SignaturePad(props: Props) {
   const svg = useRef<Svg>(null);
   const t = useT();
   const capture = useSignature(props);
+  const isComplete = isMeaningfulSignature(props.strokes);
   return (
     <View className="gap-3">
       <AppText tone="secondary">{t("field.receipt.signHint")}</AppText>
       <SignatureCanvas {...props} svg={svg} capture={capture} />
+      {props.strokes.length > 0 && !isComplete ? (
+        <AppText tone="secondary">{t("field.receipt.signIncomplete")}</AppText>
+      ) : null}
       <SignatureActions
         canClear={!props.disabled && props.strokes.length > 0}
-        canKeep={!props.disabled && !capture.path && isMeaningfulSignature(props.strokes)}
+        canKeep={!props.disabled && !capture.path && isComplete}
         onClear={() => {
           props.onChange(props.strokes.slice(0, -1));
         }}
