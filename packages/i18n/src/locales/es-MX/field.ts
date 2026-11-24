@@ -343,6 +343,7 @@ export const field = {
   "field.receipt.signClear": "Borrar",
   "field.receipt.signHint": "Firma con tu dedo en el recuadro.",
   "field.receipt.signKeep": "Guardar firma",
+  "field.receipt.signIncomplete": "Dibuja tu firma completa.",
   "field.receipt.signQuestion": "Firma de recibido",
   "field.receipt.signSaved": "Firma guardada.",
   "field.receipt.supply": "Insumo {number} (deben ser {expected})",

@@ -14,8 +14,7 @@ export function useSignature(input: Input) {
   const points = useRef<string[]>([]);
   const add = (event: GestureResponderEvent) => {
     if (input.disabled || points.current.length >= MAX_SIGNATURE_POINTS) return;
-    const { locationX: x, locationY: y } = event.nativeEvent;
-    points.current.push(signaturePoint({ x, y, ...dimensions.current }));
+    points.current.push(signaturePoint(event.nativeEvent, dimensions.current));
     setPath(`M${points.current.join(" L")}`);
   };
   const finish = () => {

@@ -1,30 +1,16 @@
-import type { Schemas } from "@wolbachia/api-client";
 import { ArrowRight } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Counter } from "../../ui/Counter.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { StepQuestion } from "../field-ui/StepQuestion.tsx";
-import { ShiftField } from "../shift-open/ShiftField.tsx";
 import { isReceiptReadOnly } from "./editing.ts";
+import { ReceiptCountLine } from "./ReceiptCountLine.tsx";
 import { ReceiptFrame } from "./ReceiptFrame.tsx";
-import { plainQuantity } from "./plain-quantity.ts";
 import { ReceiptScanButton } from "./ReceiptScanButton.tsx";
 import type { ReceiptDraft } from "./receipt-types.ts";
+import { supplyName } from "./supply-name.ts";
 import type { M05Model } from "./use-m-05.ts";
 
 type Line = ReceiptDraft["lines"][number];
-
-/** The supply name the server sent with the delivery; null for a delivery downloaded before names existed. */
-function supplyName(
-  assignments: readonly Schemas["SupplyBundle"][],
-  assignmentId: string,
-  line: Line,
-): string | null {
-  const found = assignments
-    .find((assignment) => assignment.id === assignmentId)
-    ?.lines.find((row) => row.lot_id === line.lotId && row.unit_version_id === line.unitVersionId);
-  return found?.name?.trim() || null;
-}
 
 function useLineEdit(model: M05Model) {
   return (line: Line, value: string) => {
@@ -52,7 +38,6 @@ interface Props {
 export function ReceiptCountStep({ model, draft, onNext }: Props) {
   const t = useT();
   const edit = useLineEdit(model);
-  const isLocked = isReceiptReadOnly(model);
   return (
     <ReceiptFrame
       model={model}
@@ -61,36 +46,18 @@ export function ReceiptCountStep({ model, draft, onNext }: Props) {
     >
       <StepQuestion title={t("field.receipt.countQuestion")} hint={t("field.receipt.countHint")} />
       <ReceiptScanButton model={model} />
-      {draft.lines.map((line, index) => {
-        const expected = plainQuantity(line.expected);
-        const name = supplyName(model.state?.assignments ?? [], draft.assignmentId, line);
-        const label = name
-          ? t("field.receipt.supplyNamed", { name, expected })
-          : t("field.receipt.supply", { number: index + 1, expected });
-        const current = Number(line.quantity);
-        return Number.isInteger(Number(line.expected)) && Number.isInteger(current) ? (
-          <Counter
-            key={line.id}
-            label={label}
-            value={current}
-            max={line.pieceId === null ? Number(line.expected) : 1}
-            onChange={(value) => {
-              if (!isLocked) edit(line, String(value));
-            }}
-          />
-        ) : (
-          <ShiftField
-            key={line.id}
-            label={label}
-            value={line.quantity}
-            decimal
-            disabled={isLocked}
-            onChange={(value) => {
-              edit(line, value);
-            }}
-          />
-        );
-      })}
+      {draft.lines.map((line, index) => (
+        <ReceiptCountLine
+          key={line.id}
+          line={line}
+          name={supplyName(model.state?.assignments ?? [], draft.assignmentId, line)}
+          number={index + 1}
+          isLocked={isReceiptReadOnly(model)}
+          onChange={(value) => {
+            edit(line, value);
+          }}
+        />
+      ))}
     </ReceiptFrame>
   );
 }

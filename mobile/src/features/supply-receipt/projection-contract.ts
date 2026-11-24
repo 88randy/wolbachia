@@ -29,7 +29,7 @@ function distinct(rows: readonly { readonly id: string }[]): void {
   if (new Set(rows.map(({ id }) => id.toLowerCase())).size !== rows.length)
     throw new CourierContractError();
 }
-function line(value: unknown): Schemas["AssignmentLine"] {
+function line(value: unknown): Schemas["SupplyBundleLine"] {
   const row = readRecord(value);
   return {
     id: readUuid(row.id),
@@ -37,6 +37,8 @@ function line(value: unknown): Schemas["AssignmentLine"] {
     piece_id: nullable(readUuid)(row.piece_id),
     unit_version_id: readUuid(row.unit_version_id),
     quantity: readSupplyQuantity(row.quantity),
+    // The bundle's optional supply label; dropping it here made the count step show "Insumo 1".
+    ...(typeof row.name === "string" && row.name.trim() ? { name: row.name } : {}),
   };
 }
 function assignment(value: unknown): Schemas["SupplyAssignmentRead"] {
