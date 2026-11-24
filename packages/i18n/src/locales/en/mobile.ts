@@ -810,6 +810,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.eventType.shiftOpen": "Shift openings",
   "mobile.eventType.shiftClose": "Shift closings",
   "mobile.eventType.locationPing": "Locations",
+  "mobile.eventType.trackSegment": "Track segments",
   "mobile.eventType.suppliesReceive": "Supply receipts",
   "mobile.eventType.suppliesReconcile": "Supply reconciliations",
   "mobile.eventType.ovitrapPlace": "Ovitraps placed",
@@ -1284,6 +1285,14 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.speedLock.limit": "Configured limit: {limit} km/h",
   "mobile.speedLock.emergencyOnly": "Only the emergency call is available while you are moving.",
   "mobile.map.label": "Map of your points and zones",
+  "mobile.track.notificationTitle": "Shift open",
+  "mobile.track.notificationBody": "Recording your track until you close the shift.",
+  "mobile.track.locationDenied":
+    "Without location permission your track is not recorded. You can keep working; turn it on in the phone settings.",
+  "mobile.track.notificationsDenied":
+    "Notifications are off: your track is recorded, but you will not see the open-shift notice.",
+  "mobile.track.unavailable":
+    "Track recording could not start. It will try again when you return to the app.",
   "mobile.map.loading": "Getting the map ready...",
   "mobile.map.unavailable": "The map is not available right now",
   "mobile.map.unavailableHint": "Connect once to save it on the phone.",

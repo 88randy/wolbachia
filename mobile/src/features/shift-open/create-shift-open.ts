@@ -18,6 +18,7 @@ interface Dependencies {
   readonly requests: SessionRequests;
   readonly uuid: () => string;
   readonly fetch?: (request: Request) => Promise<Response>;
+  readonly onOpened?: () => Promise<void>;
 }
 async function downloadCatalog(deps: Dependencies, store: ShiftOpenStore): Promise<void> {
   const baseUrl = deps.tokens.getOrigin();
@@ -62,5 +63,6 @@ export function createShiftOpen(deps: Dependencies): ShiftOpenService {
     maps: createMapPreparation(() => deps.tokens.getOrigin()),
     photos: cameraPhotoPort,
     refreshCatalog: () => downloadCatalog(deps, store),
+    ...(deps.onOpened === undefined ? {} : { onOpened: deps.onOpened }),
   });
 }

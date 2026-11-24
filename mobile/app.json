@@ -27,7 +27,7 @@
       "./plugins/with-secure-store-commit",
       "./plugins/with-debug-lan-cleartext",
       "@maplibre/maplibre-react-native",
-      "expo-location",
+      ["expo-location", { "isAndroidForegroundServiceEnabled": true }],
       ["expo-image-picker", { "microphonePermission": false, "photosPermission": false }],
       ["expo-camera", { "microphonePermission": false, "recordAudioAndroid": false }],
       [

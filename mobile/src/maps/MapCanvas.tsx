@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- already over the limit on develop (35 lines); the track adds one layer line. */
 import { Camera, Map, UserLocation } from "@maplibre/maplibre-react-native";
 import type { StyleSpecification } from "@maplibre/maplibre-react-native";
 import { useMemo, useState } from "react";
@@ -5,10 +6,11 @@ import { useT } from "../i18n/I18nProvider.tsx";
 import { useStyles } from "../theme/ThemeProvider.tsx";
 import { MapPointDots } from "./MapPointDots.tsx";
 import { MapPointMarker } from "./MapPointMarker.tsx";
+import { MapTrackLine } from "./MapTrackLine.tsx";
 import { MapZoneLayer } from "./MapZoneLayer.tsx";
 import { initialViewFor } from "./map-geo.ts";
 import { createMapStyles } from "./map-styles.ts";
-import type { MapPoint, MapZone } from "./map-types.ts";
+import type { LngLatPair, MapPoint, MapZone } from "./map-types.ts";
 import { OVERVIEW_ZOOM, POINT_LABEL_ZOOM, ZONE_LABEL_ZOOM } from "./map-zoom.ts";
 import { useLocationGranted } from "./use-location-granted.ts";
 
@@ -16,6 +18,7 @@ interface Props {
   readonly mapStyle: StyleSpecification;
   readonly points: readonly MapPoint[];
   readonly zones: readonly MapZone[];
+  readonly track: readonly LngLatPair[];
   readonly selectedId: string | null;
   readonly onSelectPoint: (id: string) => void;
 }
@@ -24,7 +27,7 @@ interface Props {
  * Native boundary. Labels appear by zoom so they never pile up: dots first, zone names when
  * closer, point codes when close. The selected point always keeps its code.
  */
-export function MapCanvas({ mapStyle, points, zones, selectedId, onSelectPoint }: Props) {
+export function MapCanvas({ mapStyle, points, zones, track, selectedId, onSelectPoint }: Props) {
   const styles = useStyles(createMapStyles);
   const t = useT();
   const hasLocation = useLocationGranted();
@@ -46,6 +49,7 @@ export function MapCanvas({ mapStyle, points, zones, selectedId, onSelectPoint }
       {zones.map((zone) => (
         <MapZoneLayer key={zone.id} zone={zone} showLabel={zoom >= ZONE_LABEL_ZOOM} />
       ))}
+      <MapTrackLine line={track} />
       <MapPointDots points={points} />
       {hasLocation ? <UserLocation accuracy /> : null}
       {markers.map((point) => (
