@@ -4,6 +4,7 @@ import type { LabScope } from "./lab-query";
 import type { AnnotationTarget } from "./use-annotation-command";
 import { useAnnotationCommand } from "./use-annotation-command";
 import { useAnnotationEditor } from "./use-annotation-editor";
+import { useAnnotationNavigation } from "./use-annotation-navigation";
 export interface AnnotationWorkspaceProps {
   scope: LabScope;
   target: AnnotationTarget;
@@ -12,6 +13,7 @@ export interface AnnotationWorkspaceProps {
 }
 /** Freeze the reviewed CAS target across background refreshes, just like numeric W35. */
 export function useAnnotationWorkspace(props: AnnotationWorkspaceProps) {
+  const { scope, context } = props;
   const [target] = useState(props.target);
   const storageKey =
     "aedesvision:annotation:" +
@@ -22,16 +24,20 @@ export function useAnnotationWorkspace(props: AnnotationWorkspaceProps) {
       target.correctionId ?? "new",
     ]);
   const editor = useAnnotationEditor(props.scope, storageKey);
+  const navigation = useAnnotationNavigation(
+    Boolean(editor.original) || editor.state.marks.length > 0,
+  );
   const command = useAnnotationCommand({
     ...props,
     target,
     storageKey,
     onSaved: async (outcome) => {
       await editor.draft.save(null);
+      navigation.markSaved();
       props.onSaved(outcome);
     },
   });
-  return { scope: props.scope, target, context: props.context, storageKey, editor, command };
+  return { scope, target, context, storageKey, editor, command, navigation };
 }
 export type AnnotationWorkspaceState = ReturnType<typeof useAnnotationWorkspace>;
 export function useAnnotationSummary(workspace: AnnotationWorkspaceState) {

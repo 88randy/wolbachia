@@ -16,6 +16,7 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   touch-action: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -49,7 +50,11 @@
   cursor: grab;
 }
 
-.surface[data-tool="pan"] .canvas:active {
+.surface[data-pan-cursor="grab"] .canvas {
+  cursor: grab;
+}
+
+.surface[data-pan-cursor="grabbing"] .canvas {
   cursor: grabbing;
 }
 

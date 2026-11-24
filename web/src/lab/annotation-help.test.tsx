@@ -24,12 +24,14 @@ test("walks the three-step guide, opens a separate shortcut table and remembers 
   );
   await user.click(screen.getByRole("button", { name: "Siguiente" }));
   expect(screen.getByRole("heading", { name: "Cajas o puntos" })).toBeDefined();
+  expect(screen.getByText(i18n.t("labAnnotation.tips.mouse"))).toBeDefined();
   expect(
     screen.getByRole("list", { name: "Pasos de la guía" }).querySelector('[aria-current="step"]')
       ?.textContent,
   ).toBe("Cajas o puntos");
   await user.click(screen.getByRole("button", { name: "Ver atajos" }));
   const shortcuts = screen.getByRole("dialog", { name: "Atajos" });
+  expect(within(shortcuts).getByText(i18n.t("labAnnotation.tips.mouse"))).toBeDefined();
   expect(
     within(shortcuts).getByRole("table", { name: "Atajos" }).querySelectorAll("kbd"),
   ).toHaveLength(18);

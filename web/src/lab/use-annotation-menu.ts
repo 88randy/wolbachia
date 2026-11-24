@@ -121,15 +121,25 @@ function useAnnotationEditorMenu(props: AnnotationToolbarProps) {
       disabled: props.isLocked || !props.canRedo,
     },
     { label: t("labAnnotation.editor.settings"), onSelect: props.onSettings },
-  ];
+  ] as const;
 }
 export function useAnnotationCompactMenu(props: AnnotationToolbarProps) {
   const view = useAnnotationCompactView(props);
   const downloads = useAnnotationDownloadMenu(props);
-  const editor = useAnnotationEditorMenu(props);
+  const [back, ...editor] = useAnnotationEditorMenu(props);
+  const isNavigating = useRef(false);
+  const onBack = () => {
+    isNavigating.current = true;
+    back.onSelect();
+  };
   return {
-    items: [...editor, ...view.items, ...downloads.items],
+    items: [{ ...back, onSelect: onBack }, ...editor, ...view.items, ...downloads.items],
     onCloseAutoFocus: (event: Event) => {
+      if (isNavigating.current) {
+        // A navigation confirmation owns focus after the menu closes.
+        isNavigating.current = false;
+        event.preventDefault();
+      }
       view.onCloseAutoFocus(event);
       downloads.onCloseAutoFocus(event);
     },

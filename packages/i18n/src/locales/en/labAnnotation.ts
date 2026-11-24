@@ -67,6 +67,12 @@ export const labAnnotation = {
     "{count} marks: {boxes} boxes and {points} points. This becomes the Bag’s official egg count.",
   "labAnnotation.summary.save": "Save count and next",
   "labAnnotation.summary.cancel": "Keep marking",
+  "labAnnotation.leave.title": "Leave without saving the count?",
+  "labAnnotation.leave.description":
+    "The count has not been saved yet. The photo and marks stay as a local draft in this browser and you can recover them when you reopen this bag.",
+  "labAnnotation.leave.accept": "Leave",
+  "labAnnotation.leave.draftFailed":
+    "The local draft could not be saved. If you leave, you could lose the photo and marks. Keep this tab open until you save the count.",
   "labAnnotation.recover.title": "A draft exists for this Bag",
   "labAnnotation.recover.description":
     "Recover your photo and marks. The photo will be verified again before saving.",
@@ -94,6 +100,7 @@ export const labAnnotation = {
   "labAnnotation.tips.boxes": "Use boxes to outline an egg precisely. Click or drag over it.",
   "labAnnotation.tips.points":
     "Use points for quick counts when each egg is clear. You can combine boxes and points.",
+  "labAnnotation.tips.mouse": "Right click: delete mark · Hold right click and drag: pan the view",
   "labAnnotation.tips.edges": "Check the edges last for eggs that are partly cut off.",
   "labAnnotation.tips.edit": "Made a mistake? Undo the last mark or select one and press Delete.",
   "labAnnotation.tips.skip": "Skip",
@@ -126,7 +133,7 @@ export const labAnnotation = {
   "labAnnotation.shortcuts.selectKey": "V",
   "labAnnotation.shortcuts.boxKey": "B",
   "labAnnotation.shortcuts.pointKey": "D",
-  "labAnnotation.shortcuts.panKey": "H / Space",
+  "labAnnotation.shortcuts.panKey": "H / Space / right drag",
   "labAnnotation.shortcuts.zoomKey": "+ / −",
   "labAnnotation.shortcuts.fitKey": "0 / R",
   "labAnnotation.shortcuts.actualSizeKey": "1",
@@ -138,11 +145,11 @@ export const labAnnotation = {
   "labAnnotation.shortcuts.moveKey": "↑ ↓ ← →",
   "labAnnotation.shortcuts.resizeKey": "Shift + ↑ ↓ ← →",
   "labAnnotation.shortcuts.deleteKey": "Delete / Backspace",
-  "labAnnotation.shortcuts.removeAtPointerKey": "Right click",
+  "labAnnotation.shortcuts.removeAtPointerKey": "Right click without dragging",
   "labAnnotation.shortcuts.undoKey": "Ctrl / ⌘ + Z",
   "labAnnotation.shortcuts.redoKey": "Ctrl / ⌘ + Shift + Z",
   "labAnnotation.editor.shortcuts":
-    "V select · B box · D point · H or Space pan · +/− zoom · 0/R fit · 1 actual size · G grid · S settings · Delete remove selection · right click remove mark · Ctrl/⌘ Z undo · Ctrl/⌘ Shift Z redo. On the canvas: Brackets or Page Up/Page Down cycle selected marks, arrows move them and Shift + arrows resize a box; Enter adds a centered mark.",
+    "V select · B box · D point · H or Space pan · +/− zoom · 0/R fit · 1 actual size · G grid · S settings · Delete remove selection · Right click: delete mark · Hold right click and drag: pan the view · Ctrl/⌘ Z undo · Ctrl/⌘ Shift Z redo. On the canvas: Brackets or Page Up/Page Down cycle selected marks, arrows move them and Shift + arrows resize a box; Enter adds a centered mark.",
   "labAnnotation.editor.maxMarks": "You reached the limit of 5,000 marks per photo.",
   "labAnnotation.editor.noBag":
     "This Bag is no longer in the available queue. Return to counting to review its state.",

@@ -3,7 +3,7 @@ import { AnnotationEggGuide } from "./AnnotationEggGuide";
 import styles from "./annotation-help.module.css";
 
 const STEPS = ["recognize", "tools", "method"] as const;
-const TOOL_TIPS = ["boxes", "points"] as const;
+const TOOL_TIPS = ["boxes", "points", "mouse"] as const;
 const METHOD_TIPS = ["sweep", "edges", "edit"] as const;
 export function AnnotationTipsContent({ step }: { step: number }) {
   const { t } = useTranslation();

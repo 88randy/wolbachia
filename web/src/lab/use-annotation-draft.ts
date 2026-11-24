@@ -40,14 +40,17 @@ interface DraftWriter {
   pending?: AnnotationMark[];
   timer?: ReturnType<typeof setTimeout>;
   isCleared: boolean;
+  hasFailedImage: boolean;
   setStatus: (status: "saved" | "failed") => void;
 }
-function finishDraftWrite(writer: DraftWriter, write: Promise<void>) {
+function finishDraftWrite(writer: DraftWriter, write: Promise<void>, isImageWrite = false) {
   return write
     .then(() => {
-      writer.setStatus("saved");
+      if (isImageWrite) writer.hasFailedImage = false;
+      writer.setStatus(writer.hasFailedImage ? "failed" : "saved");
     })
     .catch((error: unknown) => {
+      if (isImageWrite) writer.hasFailedImage = true;
       console.warn("Unable to save annotation draft", error);
       writer.setStatus("failed");
     });
@@ -63,7 +66,7 @@ function saveDraft(writer: DraftWriter, draft: AnnotationDraft | null) {
   clearTimeout(writer.timer);
   writer.pending = undefined;
   writer.isCleared = draft === null;
-  return finishDraftWrite(writer, writeAnnotationDraft(writer.key, draft, writer.generation));
+  return finishDraftWrite(writer, writeAnnotationDraft(writer.key, draft, writer.generation), true);
 }
 function scheduleDraftMarks(writer: DraftWriter, marks: AnnotationMark[]) {
   if (writer.isCleared) return;
@@ -79,6 +82,7 @@ function createDraftWriter(key: string, setStatus: DraftWriter["setStatus"]) {
     generation: annotationDraftGeneration(),
     setStatus,
     isCleared: false,
+    hasFailedImage: false,
   };
   return {
     save: (draft: AnnotationDraft | null) => saveDraft(writer, draft),

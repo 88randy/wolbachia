@@ -19,6 +19,7 @@ export function AnnotationShortcutsDialog(props: Props) {
       onOpenChange={props.onOpenChange}
       onCloseAutoFocus={props.onCloseAutoFocus}
     >
+      <p>{t("labAnnotation.tips.mouse")}</p>
       <AnnotationShortcutTable />
       <Button
         variant="secondary"

@@ -119,14 +119,75 @@ test("resizing the container preserves scale and the centered image pixel; a new
   expect(control.surface.viewport).toEqual({ scale: 0.6, x: 50, y: 0 });
 });
 
-test("a touch long-press context menu preserves marks, while a mouse context menu deletes", async () => {
+test.each(["select", "box", "point", "pan"] as const)(
+  "a right drag pans without deleting marks with the %s tool",
+  async (tool) => {
+    const { canvas, props } = await openCanvas({ tool });
+    sizeCanvas(1000);
+    fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, button: 2 });
+    fireEvent.contextMenu(canvas, { clientX: 105, clientY: 105 });
+    fireEvent.pointerMove(canvas, { clientX: 107, clientY: 105, button: 2 });
+    expect(control.surface.viewport).toEqual({ scale: 1, x: 0, y: 0 });
+    fireEvent.pointerMove(canvas, { clientX: 145, clientY: 130, button: 2 });
+    expect(control.surface.viewport).toEqual({ scale: 1, x: 40, y: 25 });
+    fireEvent.pointerUp(canvas, { clientX: 145, clientY: 130, button: 2 });
+    fireEvent.contextMenu(canvas, { clientX: 145, clientY: 130 });
+    expect(props.onMarksChange).not.toHaveBeenCalled();
+  },
+);
+
+test.each([0, 2])(
+  "a right click with %s px of motion deletes only on release, below the existing click threshold",
+  async (offset) => {
+    const { canvas, props } = await openCanvas();
+    sizeCanvas(1000);
+    fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, button: 2 });
+    fireEvent.contextMenu(canvas, { clientX: 105, clientY: 105 });
+    expect(props.onMarksChange).not.toHaveBeenCalled();
+    fireEvent.pointerUp(canvas, { clientX: 105 + offset, clientY: 105, button: 2 });
+    expect(props.onMarksChange).toHaveBeenCalledExactlyOnceWith([]);
+  },
+);
+
+test("a right drag that returns to its start preserves marks", async () => {
+  const { canvas, props } = await openCanvas();
+  sizeCanvas(1000);
+  fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, button: 2 });
+  fireEvent.pointerMove(canvas, { clientX: 108, clientY: 105, button: 2 });
+  expect(control.surface.viewport.x).toBe(3);
+  fireEvent.pointerMove(canvas, { clientX: 105, clientY: 105, button: 2 });
+  fireEvent.pointerUp(canvas, { clientX: 105, clientY: 105, button: 2 });
+  expect(props.onMarksChange).not.toHaveBeenCalled();
+});
+
+test("context menus are suppressed without changing marks", async () => {
+  const { canvas, props } = await openCanvas();
+  sizeCanvas(1000);
+  const contextMenu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+  fireEvent(canvas, contextMenu);
+  expect(contextMenu.defaultPrevented).toBe(true);
+  expect(props.onMarksChange).not.toHaveBeenCalled();
+});
+
+test.each(["pointercancel", "lostpointercapture"])(
+  "%s retires a right press before any later release can delete",
+  async (eventName) => {
+    const { canvas, props } = await openCanvas();
+    sizeCanvas(1000);
+    fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, button: 2 });
+    fireEvent(canvas, new PointerEvent(eventName, { bubbles: true, pointerId: 1 }));
+    fireEvent.pointerUp(canvas, { clientX: 105, clientY: 105, button: 2 });
+    expect(props.onMarksChange).not.toHaveBeenCalled();
+  },
+);
+
+test("a touch long-press context menu preserves marks", async () => {
   const { canvas, props } = await openCanvas();
   sizeCanvas(1000);
   fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, pointerType: "touch" });
   fireEvent.contextMenu(canvas, { clientX: 105, clientY: 105 });
   expect(props.onMarksChange).not.toHaveBeenCalled();
   fireEvent.pointerUp(canvas, { clientX: 105, clientY: 105, pointerType: "touch" });
-  fireEvent.pointerDown(canvas, { clientX: 105, clientY: 105, button: 2, pointerType: "mouse" });
   fireEvent.contextMenu(canvas, { clientX: 105, clientY: 105 });
-  expect(props.onMarksChange).toHaveBeenCalledWith([]);
+  expect(props.onMarksChange).not.toHaveBeenCalled();
 });

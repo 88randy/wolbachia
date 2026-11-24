@@ -22,7 +22,13 @@ const CLICK_DISTANCE = 3;
 type Surface = ReturnType<typeof useAnnotationSurface>;
 type PointerInput = ReactPointerEvent<HTMLCanvasElement>;
 type Gesture =
-  | { kind: "pan"; start: ImagePoint; viewport: AnnotationViewport }
+  | {
+      kind: "pan";
+      start: ImagePoint;
+      viewport: AnnotationViewport;
+      canDelete: boolean;
+      hasDragged: boolean;
+    }
   | { kind: "box" | "point"; start: ImagePoint; screenStart: ImagePoint }
   | {
       kind: "move" | "resize";
@@ -71,12 +77,35 @@ function selectionGesture(
 function beginGesture(options: PointerOptions, screen: ImagePoint): Gesture | undefined {
   const { props, surface } = options;
   if (!props.onMarksChange || props.tool === "pan" || options.isSpaceHeld) {
-    return { kind: "pan", start: screen, viewport: surface.viewport };
+    return createPanGesture(surface, screen);
   }
   const point = screenToImage(screen, surface.viewport);
   if (props.tool === "select") return selectionGesture(options, point, screen);
   if (!isInsideImage(point, props.image)) return;
   return { kind: props.tool, start: point, screenStart: screen };
+}
+
+function createPanGesture(surface: Surface, start: ImagePoint, canDelete = false): Gesture {
+  return { kind: "pan", start, viewport: surface.viewport, canDelete, hasDragged: false };
+}
+
+function deleteMarkAt(options: PointerOptions, screen: ImagePoint): void {
+  const { props, surface, setSelected } = options;
+  if (!props.onMarksChange) return;
+  const point = screenToImage(screen, surface.viewport);
+  const index = hitMark(props.marks, point, POINTER_HIT_RADIUS / surface.viewport.scale);
+  if (index < 0) return;
+  props.onMarksChange(props.marks.filter((_, markIndex) => markIndex !== index));
+  setSelected(-1);
+}
+
+function commitPanGesture(
+  options: PointerOptions,
+  gesture: Extract<Gesture, { kind: "pan" }>,
+  screen: ImagePoint,
+): void {
+  if (!gesture.canDelete || gesture.hasDragged || hasPointerMoved(gesture.start, screen)) return;
+  deleteMarkAt(options, screen);
 }
 
 function previewMark(
@@ -118,10 +147,13 @@ function clickMark(gesture: Gesture, props: AnnotationCanvasProps): AnnotationMa
 
 function commitGesture(options: PointerOptions, gesture: Gesture, screen: ImagePoint): void {
   const { props, surface, setSelected } = options;
-  if (!props.onMarksChange || gesture.kind === "pan") return;
+  if (!props.onMarksChange) return;
+  if (gesture.kind === "pan") {
+    commitPanGesture(options, gesture, screen);
+    return;
+  }
   const point = screenToImage(screen, surface.viewport);
-  const isClick =
-    Math.hypot(screen.x - gesture.screenStart.x, screen.y - gesture.screenStart.y) < CLICK_DISTANCE;
+  const isClick = !hasPointerMoved(gesture.screenStart, screen);
   if (isClick && "index" in gesture) return;
   const mark = isClick ? clickMark(gesture, props) : previewMark(gesture, point, props);
   if (!mark) return;
@@ -159,10 +191,17 @@ function pinchViewport(
   };
 }
 
-function moveGesture(options: PointerOptions, gesture: Gesture, screen: ImagePoint) {
+function hasPointerMoved(start: ImagePoint, screen: ImagePoint): boolean {
+  return Math.hypot(screen.x - start.x, screen.y - start.y) >= CLICK_DISTANCE;
+}
+
+function moveGesture(options: PointerController, gesture: Gesture, screen: ImagePoint) {
   if (gesture.kind !== "pan") {
     return previewMark(gesture, screenToImage(screen, options.surface.viewport), options.props);
   }
+  if (gesture.canDelete && !gesture.hasDragged && !hasPointerMoved(gesture.start, screen)) return;
+  options.gesture.current = { ...gesture, hasDragged: true };
+  options.setPanCursor("grabbing");
   options.surface.setViewport({
     ...gesture.viewport,
     x: gesture.viewport.x + screen.x - gesture.start.x,
@@ -175,17 +214,25 @@ interface PointerController extends PointerOptions {
   gesture: RefObject<Gesture | undefined>;
   pointers: RefObject<Map<number, ImagePoint>>;
   setPreview: (mark: AnnotationMark | undefined) => void;
+  setPanCursor: (cursor: "grab" | "grabbing" | undefined) => void;
 }
 
 function handlePointerDown(options: PointerController, event: PointerInput): void {
-  const { gesture, pointers, setPreview } = options;
-  if (event.button !== 0) return;
+  const { gesture, pointers, setPreview, setPanCursor } = options;
+  const isRightClick = event.button === 2 && event.pointerType === "mouse";
+  if (event.button !== 0 && !isRightClick) return;
   event.preventDefault();
   event.currentTarget.focus();
   event.currentTarget.setPointerCapture(event.pointerId);
   const screen = pointerPosition(event, event.currentTarget);
   pointers.current.set(event.pointerId, screen);
-  gesture.current = pointers.current.size === 1 ? beginGesture(options, screen) : undefined;
+  gesture.current =
+    pointers.current.size !== 1
+      ? undefined
+      : isRightClick
+        ? createPanGesture(options.surface, screen, true)
+        : beginGesture(options, screen);
+  setPanCursor(gesture.current?.kind === "pan" ? "grab" : undefined);
   setPreview(undefined);
 }
 
@@ -203,32 +250,34 @@ function handlePointerMove(options: PointerController, event: PointerInput): voi
 }
 
 function handlePointerUp(options: PointerController, event: PointerInput): void {
-  const { gesture, pointers, setPreview } = options;
+  const { gesture, pointers, setPreview, setPanCursor } = options;
+  if (!pointers.current.has(event.pointerId)) return;
   if (gesture.current)
     commitGesture(options, gesture.current, pointerPosition(event, event.currentTarget));
   pointers.current.delete(event.pointerId);
   gesture.current = undefined;
   setPreview(undefined);
+  setPanCursor(undefined);
   if (event.currentTarget.hasPointerCapture(event.pointerId))
     event.currentTarget.releasePointerCapture(event.pointerId);
 }
 
 /** Transient pointer geometry never enters the audit payload or undo history. */
 export function useAnnotationPointers(options: PointerOptions) {
-  const lastPointerType = useRef("");
   const gesture = useRef<Gesture | undefined>(undefined);
   const pointers = useRef(new Map<number, ImagePoint>());
   const [preview, setPreview] = useState<AnnotationMark>();
-  const controller = { ...options, gesture, pointers, setPreview };
+  const [panCursor, setPanCursor] = useState<"grab" | "grabbing">();
+  const controller = { ...options, gesture, pointers, setPreview, setPanCursor };
   const onPointerCancel = () => {
     pointers.current.clear();
     gesture.current = undefined;
     setPreview(undefined);
+    setPanCursor(undefined);
   };
   const previewIndex = gesture.current && "index" in gesture.current ? gesture.current.index : -1;
   return {
     onPointerDown: (event: PointerInput) => {
-      lastPointerType.current = event.pointerType;
       handlePointerDown(controller, event);
     },
     onPointerMove: (event: PointerInput) => {
@@ -240,6 +289,6 @@ export function useAnnotationPointers(options: PointerOptions) {
     onPointerCancel,
     preview,
     previewIndex,
-    lastPointerType,
+    panCursor,
   };
 }

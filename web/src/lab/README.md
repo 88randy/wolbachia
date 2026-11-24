@@ -174,7 +174,11 @@ zoom. Boxes and points may be mixed; every mark counts once.
 
 V/B/D/H select the tools; Space temporarily pans. Wheel/pinch zoom about the
 cursor; +/− zoom, 0/R fit and 1 restores actual size. Select moves/resizes marks;
-Delete or mouse right click removes a draft mark; touch long press does not.
+Delete removes the selected draft mark. In every tool, holding the right mouse
+button and dragging beyond the 3 px click threshold pans the view, with grab/grabbing
+cursors. A right press/release without dragging deletes the mark under the cursor.
+Crossing the threshold and returning to the starting point still counts as a drag.
+The canvas always suppresses the browser context menu; touch long press never deletes.
 Ctrl/Cmd+Z and Shift+Z undo/redo.
 On the focused canvas, Enter adds at the visible keyboard cursor, arrows move
 the cursor/selection, Shift+arrows resize a selected box, and PageUp/PageDown
@@ -186,6 +190,7 @@ provide keyboard and assistive-technology access alongside the canvas.
 
 IndexedDB stores the authored photo once, with separately debounced marks and
 a pagehide flush, scoped to user, organization, Bag and correction target.
+Successful metadata writes cannot clear a failed photo write or claim draft recovery.
 Successful submission removes the draft; session end and organization changes
 purge the database, and opening it purges drafts older than 72 hours.
 Reopening explicitly asks to recover or discard; recovery reuploads/reverifies
@@ -198,6 +203,19 @@ plausibility confirmation, explicit identical replay of uncertain responses,
 conflict handling and the server's `next_bag` remain authoritative. Count history
 offers an authorized read-only viewer, including retained voided annotations.
 
+A chosen photo and/or at least one mark is unsaved work until the count is saved.
+The toolbar back action, Return to counting, breadcrumbs, shell/menu links and
+browser Back all use one [TanStack Router navigation blocker](https://tanstack.com/router/latest/docs/framework/react/guide/navigation-blocking)
+(locked version 1.170.46, verified against its installed `useBlocker` source).
+Its custom resolver opens the existing app modal, initially focused on Keep marking;
+Leave resumes the requested destination without clearing the local draft. Reopening
+the same Bag offers draft recovery. Empty editors and successful saves do not block.
+If local draft storage fails, the modal explains the possible loss and asks the user
+to keep the tab open until saving the count instead of promising recovery.
+Only while unsaved, an annotation-owned `beforeunload` listener requests the browser's
+standard confirmation for tab close/reload; browsers only allow their native dialog
+for that event, so no custom in-app copy or modal can replace it.
+
 | Criterion or edge | Test |
 | --- | --- |
 | Add/move/delete/undo/redo and bounded mark history | `annotation-state.test.ts` |
@@ -207,7 +225,10 @@ offers an authorized read-only viewer, including retained voided annotations.
 | Three-step navigation, shortcut table, remembered tips and nested dialog focus return | `annotation-help.test.tsx` |
 | Nearest corners, click threshold, unchanged edits and resize viewport preservation | `annotation-canvas.test.tsx`, `annotation-coordinates.test.ts`, `annotation-state.test.ts` |
 | Toolbar/compact-menu focus, touch context menu, max-mark announcements, plurals and download lifetime | `annotation-tools.test.tsx`, `annotation-canvas.test.tsx` |
-| One photo write, debounced marks, pagehide flush, terminal clear and retired-session write fence | `use-annotation-draft.test.ts`, `annotation-draft.test.ts` |
+| Right-drag pans in every tool without deleting; stationary right-click deletes; context menu/cancel safety | `annotation-canvas.test.tsx`, `e2e/egg-annotation.spec.ts` |
+| Unsaved toolbar/menu/breadcrumb/sidebar exits, keep/leave/default focus, empty/saved exits and conditional beforeunload | `annotation-submit.test.tsx` |
+| Real browser Back rollback and confirmation, mouse pan cursors | `e2e/egg-annotation.spec.ts` |
+| One photo write, debounced marks, pagehide flush, photo-write failure retention, terminal clear and retired-session write fence | `use-annotation-draft.test.ts`, `annotation-draft.test.ts` |
 | Active visible/idle time and side-effect-free replacement command identity | `annotation-active-time.test.ts`, `annotation-command.test.ts` |
 | Zoom/pan transforms, cursor anchor, integer clamping and resizing | `annotation-coordinates.test.ts` |
 | Mark-derived payload, summary, confirmation and explicit replay | `annotation-submit.test.tsx` |

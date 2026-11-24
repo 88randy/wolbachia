@@ -1,14 +1,15 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { apiError, makeVoidReasonItems } from "../test/fake-api";
 import { BAG, COUNT, candidate, count, openCount, outcome, pageOf } from "./count-test-helpers";
 import type { AnnotationCanvasProps } from "./annotation-canvas-types";
 import { uploadAnnotationPhoto } from "./annotation-upload";
+import { writeAnnotationDraft } from "./annotation-draft";
 
 vi.mock("./annotation-draft", () => ({
   readAnnotationDraft: () => Promise.resolve(undefined),
-  writeAnnotationDraft: () => Promise.resolve(),
+  writeAnnotationDraft: vi.fn(() => Promise.resolve()),
   writeAnnotationDraftMarks: () => Promise.resolve(),
   annotationDraftGeneration: () => 0,
   purgeAnnotationDrafts: () => Promise.resolve(),
@@ -209,4 +210,111 @@ test("disables photo upload and explains missing upload permission without autho
   expect(screen.getByText(/Necesitas permiso para subir fotos/)).toBeDefined();
   expect(uploadAnnotationPhoto).not.toHaveBeenCalled();
   expect(api.requests.some((request) => request.method === "POST")).toBe(false);
+});
+
+test.each(["toolbar", "menu", "breadcrumb", "sidebar"])(
+  "unsaved photo blocks %s navigation; keep stays and leave resumes the requested destination",
+  async (exit) => {
+    const { app } = await openAnnotation();
+    await screen.findByRole("heading", { name: "B-031" });
+    await act(() =>
+      app.router.navigate({
+        to: "/lab/egg-counts/$bagCode/annotate",
+        params: { bagCode: "B-031" },
+      }),
+    );
+    await prepareAnnotation();
+    const requestExit = async () => {
+      if (exit === "menu") {
+        const menu = screen.getAllByRole("button", { name: "Acciones" }).at(-1);
+        if (!menu) throw new Error("Missing annotation Actions menu");
+        await userEvent.click(menu);
+        await userEvent.click(await screen.findByRole("menuitem", { name: "Volver al conteo" }));
+      } else {
+        const link =
+          exit === "toolbar"
+            ? screen.getByRole("link", { name: "Volver al conteo" })
+            : exit === "sidebar"
+              ? within(screen.getByRole("navigation", { name: "Navegación principal" })).getByRole(
+                  "link",
+                  { name: "Inicio" },
+                )
+              : within(screen.getByRole("navigation", { name: "Ruta de navegación" })).getByRole(
+                  "link",
+                  { name: "Conteo de huevos" },
+                );
+        await userEvent.click(link);
+      }
+    };
+    await requestExit();
+    const dialog = await screen.findByRole("dialog", { name: "¿Salir sin guardar el conteo?" });
+    expect(document.activeElement).toBe(
+      within(dialog).getByRole("button", { name: "Seguir marcando" }),
+    );
+    expect(dialog.textContent).toMatch(/borrador local.*navegador/);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Seguir marcando" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(app.router.state.location.pathname).toBe("/lab/egg-counts/B-031/annotate");
+    await requestExit();
+    await userEvent.click(
+      within(
+        await screen.findByRole("dialog", { name: "¿Salir sin guardar el conteo?" }),
+      ).getByRole("button", { name: "Salir" }),
+    );
+    await waitFor(() => {
+      expect(app.router.state.location.pathname).toBe(exit === "sidebar" ? "/" : "/lab/egg-counts");
+    });
+  },
+);
+
+test("empty annotation navigation stays unblocked and beforeunload is installed only until a successful save", async () => {
+  const addListener = vi.spyOn(window, "addEventListener");
+  const removeListener = vi.spyOn(window, "removeEventListener");
+  const { app } = await openAnnotation({
+    path: "/lab/egg-counts/B-031/annotate",
+    routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => outcome() },
+  });
+  await screen.findByLabelText("Foto de la papeleta");
+  expect(addListener.mock.calls.filter(([type]) => type === "beforeunload")).toHaveLength(0);
+  await act(() => app.router.navigate({ to: "/lab/egg-counts" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await act(() =>
+    app.router.navigate({ to: "/lab/egg-counts/$bagCode/annotate", params: { bagCode: "B-031" } }),
+  );
+  await prepareAnnotation();
+  const listener = addListener.mock.calls.find(([type]) => type === "beforeunload")?.[1];
+  expect(listener).toBeDefined();
+  const unload = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(unload);
+  expect(unload.defaultPrevented).toBe(true);
+  await userEvent.click(screen.getByRole("button", { name: "Terminar" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Guardar conteo y siguiente" }));
+  await waitFor(() => {
+    expect(app.router.state.location.pathname).toBe("/lab/egg-counts");
+  });
+  expect(screen.queryByRole("dialog", { name: "¿Salir sin guardar el conteo?" })).toBeNull();
+  expect(
+    removeListener.mock.calls.some(
+      ([type, callback]) => type === "beforeunload" && callback === listener,
+    ),
+  ).toBe(true);
+  const savedUnload = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(savedUnload);
+  expect(savedUnload.defaultPrevented).toBe(false);
+  addListener.mockRestore();
+  removeListener.mockRestore();
+});
+
+test("draft storage failure warns that leaving can lose the photo and marks", async () => {
+  vi.mocked(writeAnnotationDraft).mockRejectedValueOnce(new Error("Draft storage unavailable"));
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  await openAnnotation({ path: "/lab/egg-counts/B-031/annotate" });
+  await prepareAnnotation();
+  await userEvent.click(screen.getByRole("link", { name: "Volver al conteo" }));
+  const dialog = await screen.findByRole("dialog", { name: "¿Salir sin guardar el conteo?" });
+  expect(dialog.textContent).toContain("Si sales, podrías perder la foto y las marcas");
+  expect(dialog.textContent).not.toContain("puedes recuperarlas");
+  warning.mockRestore();
 });

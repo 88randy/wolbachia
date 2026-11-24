@@ -58,3 +58,18 @@ test("pagehide flushes marks immediately and finish prevents later resurrection"
   expect(writeAnnotationDraft).toHaveBeenLastCalledWith("draft", null, 0);
   expect(writeAnnotationDraftMarks).toHaveBeenCalledTimes(1);
 });
+
+test("metadata writes cannot claim draft recovery after the photo failed to persist", async () => {
+  vi.mocked(writeAnnotationDraft).mockRejectedValueOnce(new Error("Photo storage unavailable"));
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  const { result } = renderHook(() => useAnnotationDraft("draft"));
+  await act(() => result.current.save(draft));
+  act(() => {
+    result.current.saveMarks([{ kind: "point", x: 1, y: 2 }]);
+  });
+  await act(() => vi.advanceTimersByTimeAsync(500));
+  expect(result.current.status).toBe("failed");
+  await act(() => result.current.save(draft));
+  expect(result.current.status).toBe("saved");
+  warning.mockRestore();
+});

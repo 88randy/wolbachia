@@ -1,6 +1,7 @@
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { useRef } from "react";
 import { AnnotationSummaryDialog } from "./AnnotationSummaryDialog";
+import { AnnotationLeaveDialog } from "./AnnotationLeaveDialog";
 import { AnnotationCorrectionContext } from "./AnnotationCorrectionContext";
 import { AnnotationWorkspaceHeader } from "./AnnotationWorkspaceHeader";
 import { AnnotationDraftNotices } from "./AnnotationDraftNotices";
@@ -19,6 +20,10 @@ export function AnnotationWorkspace(props: AnnotationWorkspaceProps) {
       <AnnotationCorrectionContext workspace={workspace} />
       <AnnotationDraftNotices workspace={workspace} />
       <AnnotationWorkspacePhoto workspace={workspace} onFinish={summary.onFinish} />
+      <AnnotationLeaveDialog
+        blocker={workspace.navigation.blocker}
+        hasDraftFailure={workspace.editor.draft.status === "failed"}
+      />
       <AnnotationSummaryDialog
         {...summary}
         marks={workspace.editor.state.marks}

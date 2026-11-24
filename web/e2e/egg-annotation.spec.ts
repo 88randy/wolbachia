@@ -447,6 +447,116 @@ async function syntheticPhoto(page: Page) {
   };
 }
 
+test("W35 unsaved photo keeps focus in its leave dialog and restores browser history on stay", async ({
+  page,
+}, testInfo) => {
+  const text = (key: MessageKey) => messages["es-MX"][key];
+  await rememberPreferences(page, "dark", "es-MX");
+  await page.setViewportSize(COMPACT_VIEWPORT);
+  const commands = await mockAnnotation(page);
+  await page.goto("/lab/egg-counts");
+  await page
+    .getByRole("button", { name: text("labAnnotation.editor.action"), exact: true })
+    .click();
+  await page
+    .getByLabel(text("labAnnotation.upload.picker"), { exact: true })
+    .setInputFiles(await syntheticPhoto(page));
+  await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
+  await expect(page.locator(COUNTER)).toContainText("0");
+  await page
+    .getByRole("button", { name: text("labAnnotation.editor.actions"), exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: text("labAnnotation.editor.back"), exact: true })
+    .click();
+  const leave = page.getByRole("dialog", { name: text("labAnnotation.leave.title") });
+  const stay = leave.getByRole("button", {
+    name: text("labAnnotation.summary.cancel"),
+    exact: true,
+  });
+  await expect(stay).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    leave.getByRole("button", { name: text("labAnnotation.leave.accept"), exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(stay).toBeFocused();
+  await page.screenshot({ path: testInfo.outputPath("W35-unsaved-photo-dialog-dark.png") });
+  await page.keyboard.press("Escape");
+  await expect(leave).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/lab/egg-counts/${BAG_CODE}/annotate$`));
+  const unloadWarning = page.waitForEvent("dialog");
+  const reload = page.evaluate(() => {
+    window.location.reload();
+  });
+  const warning = await unloadWarning;
+  expect(warning.type()).toBe("beforeunload");
+  await warning.dismiss();
+  await reload;
+
+  await page.goBack();
+  await expect(stay).toBeFocused();
+  await stay.click();
+  await expect(leave).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/lab/egg-counts/${BAG_CODE}/annotate$`));
+  await expect(page.locator(COUNTER)).toContainText("0");
+  await page.goBack();
+  await expect(leave).toBeVisible();
+  await leave
+    .getByRole("button", { name: text("labAnnotation.leave.accept"), exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/lab\/egg-counts(?:\?|$)/);
+  expect(commands).toEqual([]);
+});
+
+test("W35 right mouse drag pans a point without deleting and releases the grabbing cursor", async ({
+  page,
+}) => {
+  const text = (key: MessageKey) => messages["es-MX"][key];
+  await mockAnnotation(page);
+  await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
+  await page
+    .getByLabel(text("labAnnotation.upload.picker"), { exact: true })
+    .setInputFiles(await syntheticPhoto(page));
+  await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
+  const canvas = page.getByRole("application").locator("canvas[tabindex='0']");
+  await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
+    0,
+  );
+  await canvas.focus();
+  await page.keyboard.press("h");
+  await expect(canvas).toHaveCSS("cursor", "grab");
+  await page.keyboard.press("d");
+  const bounds = await canvas.boundingBox();
+  if (!bounds) throw new Error("Canvas geometry unavailable");
+  const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  await page.mouse.click(center.x, center.y);
+  await expect(page.locator(COUNTER)).toContainText("1");
+  const contextMenuPrevented = canvas.evaluate(
+    (element) =>
+      new Promise<boolean>((resolve) => {
+        document.addEventListener(
+          "contextmenu",
+          (event) => {
+            if (event.target === element) resolve(event.defaultPrevented);
+          },
+          { once: true },
+        );
+      }),
+  );
+  await page.mouse.down({ button: "right" });
+  await expect(canvas).toHaveCSS("cursor", "grab");
+  await expect(page.locator(COUNTER)).toContainText("1");
+  await page.mouse.move(center.x + 50, center.y + 30, { steps: 5 });
+  await expect(canvas).toHaveCSS("cursor", "grabbing");
+  await page.mouse.up({ button: "right" });
+  expect(await contextMenuPrevented).toBe(true);
+  await expect(canvas).toHaveCSS("cursor", "crosshair");
+  await expect(page.locator(COUNTER)).toContainText("1");
+  await page.mouse.click(center.x + 50, center.y + 30, { button: "right" });
+  await expect(page.locator(COUNTER)).toContainText("0");
+});
+
 async function expectUncoveredCanvas(canvas: ReturnType<Page["locator"]>) {
   await canvas.scrollIntoViewIfNeeded();
   await expect

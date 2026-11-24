@@ -68,6 +68,12 @@ export const labAnnotation = {
     "{count} marcas: {boxes} cajas y {points} puntos. Este será el conteo oficial de la bolsa.",
   "labAnnotation.summary.save": "Guardar conteo y siguiente",
   "labAnnotation.summary.cancel": "Seguir marcando",
+  "labAnnotation.leave.title": "¿Salir sin guardar el conteo?",
+  "labAnnotation.leave.description":
+    "El conteo aún no se ha guardado. La foto y las marcas quedan como borrador local en este navegador y puedes recuperarlas al volver a abrir esta bolsa.",
+  "labAnnotation.leave.accept": "Salir",
+  "labAnnotation.leave.draftFailed":
+    "No se pudo guardar el borrador local. Si sales, podrías perder la foto y las marcas. Conserva esta pestaña abierta hasta guardar el conteo.",
   "labAnnotation.recover.title": "Hay un borrador para esta bolsa",
   "labAnnotation.recover.description":
     "Puedes recuperar la foto y tus marcas. La foto se verificará de nuevo antes de guardar.",
@@ -98,6 +104,8 @@ export const labAnnotation = {
     "Usa cajas para delimitar un huevo con precisión. Haz clic o arrastra sobre él.",
   "labAnnotation.tips.points":
     "Usa puntos para contar rápido cuando distingues cada huevo. Puedes combinar cajas y puntos.",
+  "labAnnotation.tips.mouse":
+    "Clic derecho: borrar marca · Mantener clic derecho y arrastrar: mover la vista",
   "labAnnotation.tips.edges":
     "Revisa las orillas al final para encontrar huevos que queden cortados.",
   "labAnnotation.tips.edit":
@@ -132,7 +140,7 @@ export const labAnnotation = {
   "labAnnotation.shortcuts.selectKey": "V",
   "labAnnotation.shortcuts.boxKey": "B",
   "labAnnotation.shortcuts.pointKey": "D",
-  "labAnnotation.shortcuts.panKey": "H / Espacio",
+  "labAnnotation.shortcuts.panKey": "H / Espacio / arrastrar con clic derecho",
   "labAnnotation.shortcuts.zoomKey": "+ / −",
   "labAnnotation.shortcuts.fitKey": "0 / R",
   "labAnnotation.shortcuts.actualSizeKey": "1",
@@ -144,11 +152,11 @@ export const labAnnotation = {
   "labAnnotation.shortcuts.moveKey": "↑ ↓ ← →",
   "labAnnotation.shortcuts.resizeKey": "Mayús + ↑ ↓ ← →",
   "labAnnotation.shortcuts.deleteKey": "Supr / Retroceso",
-  "labAnnotation.shortcuts.removeAtPointerKey": "Clic derecho",
+  "labAnnotation.shortcuts.removeAtPointerKey": "Clic derecho sin arrastrar",
   "labAnnotation.shortcuts.undoKey": "Ctrl / ⌘ + Z",
   "labAnnotation.shortcuts.redoKey": "Ctrl / ⌘ + Mayús + Z",
   "labAnnotation.editor.shortcuts":
-    "V seleccionar · B caja · D punto · H o Espacio mover vista · +/− zoom · 0/R ajustar · 1 tamaño real · G cuadrícula · S ajustes · Supr borrar selección · clic derecho borrar marca · Ctrl/⌘ Z deshacer · Ctrl/⌘ Mayús Z rehacer. En el lienzo: Corchetes o PageUp/PageDown cambian la marca seleccionada, flechas la mueven y Mayús + flechas cambia el tamaño de una caja; Enter agrega una marca centrada.",
+    "V seleccionar · B caja · D punto · H o Espacio mover vista · +/− zoom · 0/R ajustar · 1 tamaño real · G cuadrícula · S ajustes · Supr borrar selección · Clic derecho: borrar marca · Mantener clic derecho y arrastrar: mover la vista · Ctrl/⌘ Z deshacer · Ctrl/⌘ Mayús Z rehacer. En el lienzo: Corchetes o PageUp/PageDown cambian la marca seleccionada, flechas la mueven y Mayús + flechas cambia el tamaño de una caja; Enter agrega una marca centrada.",
   "labAnnotation.editor.maxMarks": "Llegaste al límite de 5,000 marcas por foto.",
   "labAnnotation.editor.noBag":
     "Esta bolsa ya no está en la cola disponible. Vuelve al conteo para revisar su estado.",

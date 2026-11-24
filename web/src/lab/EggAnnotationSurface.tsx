@@ -17,6 +17,7 @@ export function EggAnnotationSurface({ control, hintId, tool }: SurfaceProps) {
       ref={surface.containerRef}
       className={styles.surface}
       data-tool={keyboard.isSpaceHeld ? "pan" : tool}
+      data-pan-cursor={control.pointer.panCursor}
     >
       <canvas ref={surface.backgroundRef} className={styles.layer} aria-hidden="true" />
       <canvas

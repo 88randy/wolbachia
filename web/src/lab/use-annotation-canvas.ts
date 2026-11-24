@@ -1,9 +1,8 @@
 import { useState, type MouseEvent } from "react";
-import { hitMark, screenToImage } from "./annotation-coordinates";
 import type { AnnotationCanvasProps } from "./annotation-canvas-types";
 import { useAnnotationDrawing } from "./use-annotation-drawing";
 import { useAnnotationKeyboard } from "./use-annotation-keyboard";
-import { pointerPosition, useAnnotationPointers } from "./use-annotation-pointers";
+import { useAnnotationPointers } from "./use-annotation-pointers";
 import { useAnnotationSurface } from "./use-annotation-surface";
 import { useAnnotationView } from "./use-annotation-view";
 
@@ -22,12 +21,6 @@ export function useAnnotationCanvas(props: AnnotationCanvasProps) {
   useAnnotationDrawing({ props, surface, pointer, selected, cursor: keyboard.cursor });
   const onContextMenu = (event: MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
-    if (!props.onMarksChange || pointer.lastPointerType.current === "touch") return;
-    const point = screenToImage(pointerPosition(event, event.currentTarget), surface.viewport);
-    const index = hitMark(props.marks, point, 12 / surface.viewport.scale);
-    if (index < 0) return;
-    props.onMarksChange(props.marks.filter((_, markIndex) => markIndex !== index));
-    setSelected(-1);
   };
   return { surface, keyboard, pointer, selected, onContextMenu };
 }
@@ -40,6 +33,7 @@ export function annotationCanvasEvents(control: AnnotationCanvasControl) {
     onPointerMove: control.pointer.onPointerMove,
     onPointerUp: control.pointer.onPointerUp,
     onPointerCancel: control.pointer.onPointerCancel,
+    onLostPointerCapture: control.pointer.onPointerCancel,
     onKeyDown: control.keyboard.onKeyDown,
     onKeyUp: control.keyboard.onKeyUp,
     onFocus: control.keyboard.onFocus,
