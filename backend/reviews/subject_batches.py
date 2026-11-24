@@ -19,7 +19,9 @@ from reviews.scope import (
 )
 from shifts.models import Motorcycle, Shift
 
-MOTORCYCLE_TYPES = frozenset({"shift.open", "shift.close", "fuel.load"})
+MOTORCYCLE_TYPES = frozenset({"shift.open", "shift.close", "fuel.load", "track.segment"})
+# Resolved through the shift they name, not a motorcycle code in the payload.
+SHIFT_SUBJECT_TYPES = frozenset({"shift.close", "track.segment"})
 
 
 def source_subject_facts(
@@ -153,7 +155,7 @@ def _motorcycle_subjects_many(
     codes = {
         payloads[row.id].get("motorcycle_code", payloads[row.id].get("motorcycle_id"))
         for row in sources
-        if row.type != "shift.close"
+        if row.type not in SHIFT_SUBJECT_TYPES
     }
     motorcycles = {
         row.code: row
@@ -162,12 +164,14 @@ def _motorcycle_subjects_many(
     shifts = (
         Shift.objects.filter(organization=organization)
         .select_related("motorcycle")
-        .in_bulk({row.shift_id for row in sources if row.type == "shift.close" and row.shift_id})
+        .in_bulk(
+            {row.shift_id for row in sources if row.type in SHIFT_SUBJECT_TYPES and row.shift_id}
+        )
     )
     facts = {}
     for envelope in sources:
         values = payloads[envelope.id]
-        if envelope.type == "shift.close":
+        if envelope.type in SHIFT_SUBJECT_TYPES:
             shift = shifts.get(envelope.shift_id)
             motorcycle = None if shift is None else shift.motorcycle
         else:

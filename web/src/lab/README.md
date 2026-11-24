@@ -144,7 +144,7 @@ authorized, metadata-free image, never the private metadata-bearing source.
 
 The native Canvas 2D workspace uses separate image/mark layers, batched paths
 and animation-frame rendering. It adds no React peer dependency to the locked
-React 19.3.1. See [decision 174](../../../docs/decisions.md) and the
+React 19.3.1. See [decision 175](../../../docs/decisions.md) and the
 [API mark contract](../../../docs/api-conventions.md#manual-egg-annotations-w35).
 One completed gesture is one undo step; history is bounded to 100 steps and
 annotations to 5,000 marks. Canvas size follows the viewport, not the source

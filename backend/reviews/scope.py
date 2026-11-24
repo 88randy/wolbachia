@@ -120,7 +120,7 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
             return _void_subject(organization, envelope)
         if envelope.type in {"incident.report", "emergency.accident"}:
             return _incident_subject(organization, envelope)
-        if envelope.type in {"shift.open", "shift.close", "fuel.load"}:
+        if envelope.type in {"shift.open", "shift.close", "fuel.load", "track.segment"}:
             return _motorcycle_subject(organization, envelope, data)
     except (Http404, ValidationError, ValueError, TypeError):
         return SubjectFacts()

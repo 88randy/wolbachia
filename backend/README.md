@@ -33,6 +33,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `releases/` | Official permit revisions and suspensions, release-device lineage/status, explicit planned release tasks and revalidated single-ledger consumption (B20; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
+| `tracks/` | Courier track (#370): insert-only `TrackSegment` and `TrackViewReceipt`, the `track.segment` sync handler and the reads behind `/shifts/positions/` and `/shifts/{id}/track/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |
 | `core/` | Org-scoped and insert-only base models, snapshots (hash, ETag, `304`), time helpers, base viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |

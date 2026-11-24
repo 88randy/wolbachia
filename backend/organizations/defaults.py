@@ -85,6 +85,7 @@ from shifts.permissions import (
     SHIFT_READ,
     SHIFT_VALIDATE,
 )
+from tracks.permissions import COURIER_TRACK_READ
 from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
@@ -160,6 +161,7 @@ ADMIN_CODES = (
     MOTORCYCLE_MANAGE,
     MOTORCYCLE_UNBLOCK,
     MOTORCYCLE_SERVICE_CLEAR,
+    COURIER_TRACK_READ,
 )
 COURIER_CODES = (
     "sample.collect",
@@ -210,6 +212,7 @@ SUPERVISOR_CODES = (
     MOTORCYCLE_READ,
     MOTORCYCLE_UNBLOCK,
     MOTORCYCLE_SERVICE_CLEAR,
+    COURIER_TRACK_READ,
 )
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
@@ -262,6 +265,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_CREATE,
         INCIDENT_CLOSE,
         INCIDENT_REASSIGN,
+        COURIER_TRACK_READ,  # W28 courier positions (#370)
     ),
     "warehouse": (
         HOME_READ,

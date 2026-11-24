@@ -20,6 +20,7 @@ from reviews.subject_batches import source_subject_facts
 from reviews.transactions import review_transaction
 from shifts.models import Motorcycle, Shift
 from shifts.permissions import SHIFT_VALIDATE
+from tracks.codes import TRACK_SEGMENT_EVENT_TYPE
 from uploads.access import UploadActor, current_scope
 
 
@@ -31,9 +32,15 @@ class ShiftDecisionRequest:
 
 
 def shift_sources(shift: Shift) -> QuerySet[FieldEvent]:
-    return FieldEvent.objects.filter(
-        organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
-    ).order_by("pk")
+    """The work events of the shift. Courier track segments (#370) are observations, not work:
+    they neither scope, block nor change the fingerprint of a shift decision."""
+    return (
+        FieldEvent.objects.filter(
+            organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
+        )
+        .exclude(type=TRACK_SEGMENT_EVENT_TYPE)
+        .order_by("pk")
+    )
 
 
 def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:

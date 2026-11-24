@@ -57,6 +57,8 @@ export const sync: Record<keyof typeof source, string> = {
     "This shift is not open on the server. Tell your supervisor if you still need to work.",
   "sync.result.shiftEventNotVoidable":
     "A shift can't be voided from the phone. Ask your supervisor to correct it.",
+  "sync.result.trackSegmentNotVoidable":
+    "The recorded track can't be voided from the phone.",
   "sync.result.odometerDecreased":
     "The odometer reading is lower than the previous one, so a supervisor will review it. You don't need to do anything meanwhile.",
   "sync.result.severeCheck":

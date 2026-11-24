@@ -64,6 +64,8 @@ Rules:
 | cuadrante | quadrant | `/quadrants/`, `quadrant` | Organization-coded work area belonging to a Center; QuadrantVersion is append-only. Current geometry is the highest revision; captured_at resolves past geometry. |
 | resoluci?n de punto excluido | excluded point resolution | `ExcludedPointResolution`, `point_resolutions` | Authored keep/move/remove decision with evidence for every point outside a proposed quadrant geometry; remove appends a retired PointVersion. |
 | jornada | shift | `/shifts/`, `shift` | Courier's work day, from start to closing. |
+| recorrido | courier track | `TrackSegment`, `track.segment`, `/shifts/{id}/track/` | Positions recorded only while the shift is open, uploaded in segments. Never `location` (inventory) or `route` (P9). |
+| posición actual | last position | `/shifts/positions/` | Last stored position of an open shift (phone clock in `recorded_at`). |
 | lectura desfasada | lagged reading | `is_lagged` | Reading outside the expected interval (rule from rule parameters). |
 | hallazgo | finding | `finding` | Result noted when checking an ovitrap. |
 | casa cerrada | closed house | — (not defined yet) | Visit result: nobody let the courier in. |
