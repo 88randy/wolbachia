@@ -6745,6 +6745,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shifts/{id}/track/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The track of one readable shift (W28 focus, W29): segments of non-voided sources in
+         *     device order, plus how many segments wait in review.
+         */
+        get: operations["shifts_track_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/positions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Last position of every readable open shift that has one (W28). Not paged: bounded by
+         *     the open shifts. Like `track`, it needs `courier_track.read` and leaves a view receipt.
+         */
+        get: operations["shifts_positions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/supply-types/": {
         parameters: {
             query?: never;
@@ -10985,6 +11025,24 @@ export interface components {
          * @enum {string}
          */
         LanguagesEnum: "es-MX" | "en";
+        /** @description The last stored position of an open shift. `recorded_at` is the phone's clock. */
+        LastPosition: {
+            /** Format: uuid */
+            shift_id: string;
+            shift_code: string;
+            /** Format: uuid */
+            courier: string;
+            motorcycle_code: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            accuracy_m: number;
+            /** Format: date-time */
+            recorded_at: string;
+            /** Format: date-time */
+            received_at: string;
+        };
         /**
          * @description * `none` - none
          *     * `complete_owned` - complete_owned
@@ -16575,6 +16633,13 @@ export interface components {
          * @enum {string}
          */
         ShiftStatusEnum: "open" | "closed";
+        ShiftTrack: {
+            /** Format: uuid */
+            shift_id: string;
+            status: components["schemas"]["ShiftStatusEnum"];
+            segments: components["schemas"]["TrackSegmentRead"][];
+            pending_review_count: number;
+        };
         ShiftValidation: {
             revision: number;
             /** Format: uuid */
@@ -17325,6 +17390,17 @@ export interface components {
             by: components["schemas"]["TraceActor"] | null;
             reason_code: string;
             reason: string;
+        };
+        TrackSegmentRead: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            ended_at: string;
+            /** Format: date-time */
+            received_at: string;
+            positions: number[][];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -30352,6 +30428,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShiftDecision"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_track_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftTrack"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_positions_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LastPosition"][];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

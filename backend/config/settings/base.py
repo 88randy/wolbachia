@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "shifts",
     "geography.apps.GeographyConfig",
     "fleet",
+    "tracks",
     "ovitraps",
     "scheduling",
     "incidents.apps.IncidentsConfig",

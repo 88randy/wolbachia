@@ -11,11 +11,16 @@ from rest_framework.response import Response
 
 from core.views import OrgScopedViewSetMixin
 from reviews.serializers import ShiftDecisionRequestSerializer, ShiftDecisionSerializer
-from shifts.models import Shift
+from shifts.models import Shift, ShiftStatus
 from shifts.permissions import SHIFT_READ, SHIFT_VALIDATE
 from shifts.selectors import list_shifts
 from shifts.serializers import ShiftDetailSerializer, ShiftFilterSerializer, ShiftSerializer
 from shifts.validation import ShiftDecisionRequest, decide_shift, readable_shifts
+from tracks.models import TrackViewKind
+from tracks.permissions import COURIER_TRACK_READ
+from tracks.selectors import last_positions, shift_track
+from tracks.serializers import LastPositionSerializer, ShiftTrackSerializer
+from tracks.services import record_track_view
 from uploads.access import actor_from_request
 
 
@@ -36,6 +41,8 @@ class ShiftViewSet(
         "retrieve": SHIFT_READ,
         "approve": SHIFT_VALIDATE,
         "observe": SHIFT_VALIDATE,
+        "positions": COURIER_TRACK_READ,
+        "track": COURIER_TRACK_READ,
     }
     code_lookup_field = "code"
 
@@ -56,13 +63,15 @@ class ShiftViewSet(
             # Narrow by the requested filters first, so the per-row scope check below only
             # runs on the rows that could be returned (same rows, far fewer scope lookups).
             scoped = list_shifts(scoped, query.to_filters())
-        elif self.action == "retrieve":
+        elif self.action in {"retrieve", "track"}:
             try:
                 scoped = scoped.filter(pk=UUID(str(self.kwargs.get("pk"))))
             except ValueError:
                 raise Http404 from None
-        scoped = readable_shifts(actor, scoped, SHIFT_READ)
-        if self.action != "list":
+        elif self.action == "positions":
+            scoped = scoped.filter(status=ShiftStatus.OPEN)
+        scoped = readable_shifts(actor, scoped, self.required_permissions[self.action])
+        if self.action == "retrieve":
             return scoped.select_related(
                 "motorcycle", "organization", "courier", "opened_event", "closed_event"
             ).prefetch_related("checks__item")
@@ -71,6 +80,27 @@ class ShiftViewSet(
     @extend_schema(parameters=[ShiftFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().list(request, *args, **kwargs)
+
+    @extend_schema(responses=LastPositionSerializer(many=True))
+    @action(detail=False, methods=["get"], pagination_class=None, filter_backends=[])
+    def positions(self, request: Request) -> Response:
+        """Last position of every readable open shift that has one (W28). Not paged: bounded by
+        the open shifts. Like `track`, it needs `courier_track.read` and leaves a view receipt."""
+        rows = last_positions(self.get_queryset())
+        record_track_view(actor_from_request(request), TrackViewKind.LIVE)
+        return Response(LastPositionSerializer(rows, many=True).data)
+
+    @extend_schema(responses=ShiftTrackSerializer)
+    @action(detail=True, methods=["get"])
+    def track(self, request: Request, pk: str | None = None) -> Response:
+        """The track of one readable shift (W28 focus, W29): segments of non-voided sources in
+        device order, plus how many segments wait in review."""
+        shift = self.get_queryset().select_related("organization").first()
+        if shift is None:
+            raise Http404
+        body = ShiftTrackSerializer(shift_track(shift)).data
+        record_track_view(actor_from_request(request), TrackViewKind.TRACK, shift)
+        return Response(body)
 
     def _validate_shift(self, request: Request, pk: str | None, kind: str) -> Response:
         try:

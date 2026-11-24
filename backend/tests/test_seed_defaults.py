@@ -42,6 +42,7 @@ from shifts.permissions import (
     SHIFT_VALIDATE,
 )
 from tests.factories import OrganizationFactory
+from tracks.permissions import COURIER_TRACK_READ
 from uploads.limits import FIELD_UPLOAD
 
 pytestmark = pytest.mark.django_db
@@ -344,6 +345,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_READ,
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
+        COURIER_TRACK_READ,
         "analytics.operations.read",
         "analytics.entomology.read",
     }
@@ -436,6 +438,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "pcr.read",
         "pcr.manage",
         REVIEW_ITEM_READ,
+        COURIER_TRACK_READ,
     }
     assert by_slug["regulatory"] == reader | {
         "permit.manage",
@@ -567,6 +570,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_MANAGE,
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
+        COURIER_TRACK_READ,
     }
 
 
@@ -939,3 +943,9 @@ def test_only_supervisor_and_admin_read_shifts_by_default() -> None:
         "admin",
         "supervisor",
     ]
+
+
+def test_the_courier_never_reads_courier_tracks_by_default() -> None:
+    assert sorted(
+        slug for slug, codes in DEFAULT_PROFILE_PERMISSIONS.items() if COURIER_TRACK_READ in codes
+    ) == ["admin", "coordinator", "supervisor"]
