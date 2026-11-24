@@ -8,6 +8,7 @@ from rest_framework import serializers
 from ovitraps.payloads import StrictPayloadSerializer
 
 MAX_ANNOTATION_MARKS = 5000
+MAX_ANNOTATION_BODY_BYTES = 2 * 1024 * 1024
 
 
 class PixelIntegerField(serializers.IntegerField):
@@ -34,7 +35,9 @@ class EggBoxMarkSerializer(StrictPayloadSerializer):
 class EggMarkSerializer(StrictPayloadSerializer):
     def to_internal_value(self, value: Any) -> dict[str, Any]:  # noqa: ANN401 -- DRF boundary
         if not isinstance(value, dict) or value.get("kind") not in ("box", "point"):
-            raise serializers.ValidationError({"kind": ["invalid_choice"]})
+            raise serializers.ValidationError(
+                {"kind": [serializers.ErrorDetail("Invalid mark kind.", code="invalid_choice")]}
+            )
         owner = EggBoxMarkSerializer if value["kind"] == "box" else EggPointMarkSerializer
         parsed = owner(data=value)
         parsed.is_valid(raise_exception=True)
@@ -56,16 +59,24 @@ class EggMarkSchema(OpenApiSerializerExtension):  # type: ignore[no-untyped-call
         }
 
 
+class BoundedMarksField(serializers.ListField):
+    """Reject unbounded work before DRF walks and validates individual marks."""
+
+    def to_internal_value(self, value: Any) -> list[Any]:  # noqa: ANN401 -- DRF boundary
+        if isinstance(value, list) and len(value) > MAX_ANNOTATION_MARKS:
+            self.fail("max_length", max_length=MAX_ANNOTATION_MARKS)
+        return list(super().to_internal_value(value))
+
+
 class EggAnnotationPayloadSerializer(StrictPayloadSerializer):
     upload_id = serializers.UUIDField()
-    marks = serializers.ListField(child=EggMarkSerializer(), max_length=MAX_ANNOTATION_MARKS)
+    marks = BoundedMarksField(child=EggMarkSerializer(), max_length=MAX_ANNOTATION_MARKS)
     tool_version = serializers.CharField(max_length=64)
     elapsed_seconds = PixelIntegerField(min_value=0, max_value=2_147_483_647, required=False)
 
 
 class EggAnnotationSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
-    public_id = serializers.UUIDField()
     count = serializers.UUIDField()
     bag = serializers.UUIDField()
     bag_code = serializers.CharField()

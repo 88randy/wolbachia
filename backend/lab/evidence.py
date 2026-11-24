@@ -67,7 +67,8 @@ def verified_rejection_evidence(actor: UploadActor, identifiers: list[UUID]) -> 
 
 def _owned_verified_unbound(actor: UploadActor, upload: Upload) -> bool:
     return (
-        upload.uploader_id == actor.user.pk
+        not upload.purpose
+        and upload.uploader_id == actor.user.pk
         and upload.device_id == actor.device_id
         and UploadVerification.objects.filter(upload=upload).exists()
         and not AttachmentLink.objects.filter(upload=upload).exists()

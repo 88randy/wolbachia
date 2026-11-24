@@ -55,7 +55,11 @@ def _verified(
 ) -> VerifiedEvidence:
     source = authority.source
     actor_id = authority.actor.user.pk if source is None else source.original_actor_id
-    if upload.uploader_id != actor_id or upload.device_id != authority.actor.device_id:
+    if (
+        upload.purpose
+        or upload.uploader_id != actor_id
+        or upload.device_id != authority.actor.device_id
+    ):
         raise InventoryConflictError("transfer_evidence_required")
     verification = UploadVerification.objects.filter(upload=upload).first()
     link = AttachmentLink.objects.filter(upload=upload).first()

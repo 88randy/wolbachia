@@ -21124,7 +21124,6 @@ components:
       - certification
       - lab_paddle_command
       - material_request
-      - egg_annotation
       type: string
       description: |-
         * `field_event` - field_event
@@ -21137,7 +21136,6 @@ components:
         * `certification` - certification
         * `lab_paddle_command` - lab_paddle_command
         * `material_request` - material_request
-        * `egg_annotation` - egg_annotation
     AttachmentTargetRequest:
       type: object
       properties:
@@ -24225,9 +24223,6 @@ components:
         id:
           type: string
           format: uuid
-        public_id:
-          type: string
-          format: uuid
         count:
           type: string
           format: uuid
@@ -24282,7 +24277,6 @@ components:
       - image_width
       - marks
       - point_count
-      - public_id
       - tool_version
       - upload_id
     EggAnnotationPayloadRequest:
@@ -41148,11 +41142,13 @@ components:
       - authorized
       - received
       - verified
+      - failed
       type: string
       description: |-
         * `authorized` - authorized
         * `received` - received
         * `verified` - verified
+        * `failed` - failed
     StatusEnum:
       enum:
       - scheduled

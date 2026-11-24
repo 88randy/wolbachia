@@ -86,8 +86,10 @@ Pixel coordinates have a top-left origin and must be strict JSON integers. Point
 require `0 <= x < width`, `0 <= y < height`; boxes additionally require positive
 `w`/`h` and `x+w <= width`, `y+h <= height`. The server rejects out-of-bounds marks;
 the UI clamps its gestures to the image before submitting. There are at most 5000
-marks per annotation. The upload must be verified, owned by the current actor and
-device, and unbound. No storage or image decoding occurs under Lab locks.
+marks per annotation, checked before individual mark validation. Facade command
+JSON bodies above 2 MiB return `413 payload_too_large` before JSON parsing.
+The upload must have purpose `egg_annotation`, be verified, owned by the current
+actor and device, and unbound. No storage or image decoding occurs under Lab locks.
 
 Count, annotation and the `egg_annotation` attachment parent commit atomically.
 Same-organization/source/image/count guards and insert-only triggers protect SQL

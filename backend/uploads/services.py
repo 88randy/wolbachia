@@ -22,9 +22,16 @@ from field_sync.services import (
 )
 from uploads.access import UploadActor, lock_actor, require_upload_permission
 from uploads.exceptions import UploadConflictError, UploadInProgressError, UploadStorageError
-from uploads.images import sanitize_image
+from uploads.images import SanitizedImage, sanitize_image
 from uploads.limits import PDF_CONTENT_TYPE, UPLOAD_LEASE_SECONDS
-from uploads.models import AttachmentLink, Upload, UploadLease, UploadSource, UploadVerification
+from uploads.models import (
+    AttachmentLink,
+    Upload,
+    UploadLease,
+    UploadSanitizationFailure,
+    UploadSource,
+    UploadVerification,
+)
 from uploads.pdf import verify_pdf
 from uploads.storage import discard_candidate, read_object, store_source, store_verified
 from uploads.targets import AttachmentTarget, authorize_download, authorize_target
@@ -92,6 +99,11 @@ def upload_transaction(actor: UploadActor, identifier: UUID) -> Iterator[Upload]
 
 def _authorize_existing_link(actor: UploadActor, upload: Upload) -> None:
     if link := AttachmentLink.objects.filter(upload=upload).first():
+        if link.egg_annotation_id is not None:
+            from lab.annotations import authorize_annotation_replay
+
+            authorize_annotation_replay(actor, link.egg_annotation_id, upload)
+            return
         authorize_target(actor, _resolve_link_target(link), upload)
 
 
@@ -123,7 +135,7 @@ def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
 def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -> None:
     if target is None:
         return
-    if upload.purpose == "egg_annotation" and target.kind != "egg_annotation":
+    if upload.purpose:
         raise FieldValidationError("file", "upload_type_not_allowed")
     if upload.content_type == PDF_CONTENT_TYPE:
         raise FieldValidationError("file", "upload_type_not_allowed")
@@ -162,8 +174,7 @@ def authorize_upload(actor: UploadActor, request: UploadRequest) -> dict[str, An
     if request.content_type == "image/webp" and request.purpose != "egg_annotation":
         raise FieldValidationError("file", "upload_type_not_allowed")
     if request.purpose == "egg_annotation" and (
-        request.content_type == PDF_CONTENT_TYPE
-        or (request.context is not None and request.context.kind != "egg_annotation")
+        request.content_type == PDF_CONTENT_TYPE or request.context is not None
     ):
         raise FieldValidationError("purpose", "invalid")
     identifier = request.client_id or uuid4()
@@ -240,7 +251,13 @@ def upload_state(upload: Upload) -> dict[str, Any]:
     state = (
         "verified"
         if verified
-        else ("received" if UploadSource.objects.filter(upload=upload).exists() else "authorized")
+        else (
+            "failed"
+            if UploadSanitizationFailure.objects.filter(upload=upload).exists()
+            else (
+                "received" if UploadSource.objects.filter(upload=upload).exists() else "authorized"
+            )
+        )
     )
     return {
         "id": str(upload.public_id),
@@ -314,19 +331,14 @@ def finalize_upload(
         _bind(actor, upload, target)
         if UploadVerification.objects.filter(upload=upload).exists():
             return upload_state(upload)
+        _raise_sanitization_failure(upload)
         source = UploadSource.objects.filter(upload=upload).first()
         if source is None:
             raise UploadConflictError("upload_incomplete")
     original = read_object(source.object_key)
     if len(original) != source.size_bytes or hashlib.sha256(original).hexdigest() != source.sha256:
         raise FieldValidationError("file", "upload_hash_mismatch")
-    cleaned = (
-        verify_pdf(original)
-        if upload.content_type == PDF_CONTENT_TYPE
-        else sanitize_image(
-            original, upload.content_type, allow_webp=upload.purpose == "egg_annotation"
-        )
-    )
+    cleaned = _sanitize_upload(actor, upload, original)
     candidate = store_verified(cleaned.content)
     retained = False
     try:
@@ -334,6 +346,7 @@ def finalize_upload(
             _bind(actor, upload, target)
             verification = UploadVerification.objects.filter(upload=upload).first()
             if verification is None:
+                _raise_sanitization_failure(upload)
                 verification = UploadVerification.objects.create(
                     organization=actor.organization,
                     created_by=actor.user,
@@ -351,6 +364,37 @@ def finalize_upload(
     finally:
         if not retained:
             discard_candidate(candidate.key)
+
+
+def _raise_sanitization_failure(upload: Upload) -> None:
+    if failure := UploadSanitizationFailure.objects.filter(upload=upload).first():
+        raise FieldValidationError("file", failure.code, failure.params)
+
+
+def _sanitize_upload(actor: UploadActor, upload: Upload, original: bytes) -> SanitizedImage:
+    try:
+        return (
+            verify_pdf(original)
+            if upload.content_type == PDF_CONTENT_TYPE
+            else sanitize_image(
+                original, upload.content_type, allow_webp=upload.purpose == "egg_annotation"
+            )
+        )
+    except FieldValidationError as error:
+        detail = (error.fields or {})["file"][0]
+        with upload_transaction(actor, upload.public_id) as current:
+            if not UploadVerification.objects.filter(upload=current).exists():
+                UploadSanitizationFailure.objects.get_or_create(
+                    upload=current,
+                    defaults={
+                        "organization": actor.organization,
+                        "created_by": actor.user,
+                        "code": detail["code"],
+                        "params": detail["params"],
+                    },
+                )
+        # Raise after the receipt's transaction commits, so rejection remains terminal.
+        raise
 
 
 def download_attachment(actor: UploadActor, identifier: UUID) -> tuple[bytes, str]:

@@ -328,7 +328,7 @@ SPECTACULAR_SETTINGS = {
         "InventoryLocationKindEnum": ["biofactory", "warehouse", "center"],
         "InventoryLotStatusEnum": ["draft", "available", "blocked"],
         "IncidentStateEnum": ["open", "closed", "voided"],
-        "StateEnum": ["authorized", "received", "verified"],
+        "StateEnum": ["authorized", "received", "verified", "failed"],
         "CourierChangeActionEnum": ["upsert", "remove"],
         "ProjectionUpsertActionEnum": ["upsert"],
         "EventStatusEnum": "field_sync.models.EventStatus",

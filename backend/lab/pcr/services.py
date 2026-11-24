@@ -188,7 +188,7 @@ def _verified_upload(
     verification = UploadVerification.objects.filter(
         organization=actor.organization, upload=upload
     ).first()
-    if verification is None:
+    if upload.purpose or verification is None:
         raise FieldValidationError(field, "pcr_file_not_ready")
     if verification.content_type not in allowed:
         raise FieldValidationError(field, "pcr_file_type_invalid")

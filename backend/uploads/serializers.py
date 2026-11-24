@@ -21,7 +21,6 @@ class AttachmentTargetSerializer(StrictPayloadSerializer):
             "certification",
             "lab_paddle_command",
             "material_request",
-            "egg_annotation",
         ]
     )
     id = serializers.UUIDField()
@@ -59,8 +58,7 @@ class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
                 }
             )
         if attrs.get("purpose") == "egg_annotation" and (
-            attrs["content_type"] == "application/pdf"
-            or attrs.get("context", {}).get("kind", "egg_annotation") != "egg_annotation"
+            attrs["content_type"] == "application/pdf" or "context" in attrs
         ):
             raise serializers.ValidationError({"purpose": ["invalid"]})
         if (
@@ -91,7 +89,7 @@ class UploadAuthorizationSerializer(serializers.Serializer[Any]):
 
 class UploadStatusSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
-    state = serializers.ChoiceField(choices=["authorized", "received", "verified"])
+    state = serializers.ChoiceField(choices=["authorized", "received", "verified", "failed"])
     verified_at = serializers.DateTimeField(allow_null=True)
     image_width = serializers.IntegerField(allow_null=True, required=False)
     image_height = serializers.IntegerField(allow_null=True, required=False)

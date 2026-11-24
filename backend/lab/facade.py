@@ -10,7 +10,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.exceptions import PayloadTooLargeError
 from lab.access import LabTarget, prepare_lab_subject, scoped_bags
+from lab.annotation_serializers import MAX_ANNOTATION_BODY_BYTES
 from lab.commands import ACTION_PERMISSION, LabCommandInput, execute_lab_command
 from lab.independent_qa.serializers import (
     IndependentCountOutcomeSerializer,
@@ -34,6 +36,8 @@ from uploads.access import actor_from_request
 def run_command(
     request: Request, target: LabTarget, command: tuple[str, type[serializers.Serializer[Any]]]
 ) -> Response:
+    if int(request.META.get("CONTENT_LENGTH") or 0) > MAX_ANNOTATION_BODY_BYTES:
+        raise PayloadTooLargeError
     operation, owner = command
     actor = actor_from_request(request)
     prepare_lab_subject(actor, target, ACTION_PERMISSION[operation])

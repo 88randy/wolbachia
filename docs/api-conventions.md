@@ -10,11 +10,16 @@ returns `validation_error` with field code `lab_annotation_value_mismatch`.
 Numeric-only commands retain their existing behavior. All commands retain the
 original UUID idempotency, CAS revision, plausibility confirmation and saved
 `next_bag` result. Count, annotation and private attachment commit atomically.
+Lab facade command JSON bodies are limited to 2 MiB: `CONTENT_LENGTH` above
+2,097,152 bytes returns `413 payload_too_large` before JSON parsing. The mark
+list limit is checked before validating any child mark.
 
 Use the existing private upload flow with `purpose: "egg_annotation"` on
 authorization. This purpose permits JPEG, PNG and single-frame WebP, up to the
 existing 10 MiB and 25 megapixel ceilings; other parent types keep their existing
 formats. Finalization exposes verified oriented `image_width`/`image_height`.
+Sanitization failure is terminal for that upload UUID: subsequent finalize calls
+return the retained validation code without decoding again; renewal state is `failed`.
 Creation requires `egg_count.create` plus `field.upload` over the actual Bag
 scope. Verification and storage I/O finish before the count transaction.
 
@@ -40,6 +45,7 @@ projections is optional/nullable for compatibility with previously saved replies
 The annotation supplies `image_url` through the existing authorized attachment
 download; private source bytes are never exposed. Voiding a count retains its
 annotation and image. A photo-backed correction creates a new annotation.
+The annotation's sole public identifier is `id`.
 
 ## UIEB shipment source and material delivery (#118)
 

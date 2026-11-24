@@ -7,14 +7,26 @@ That purpose permits JPEG, PNG and WebP and can bind only to the immutable
 `egg_annotation` parent created by the existing count command. All prior parents
 retain their JPEG/PNG policy. No byte or pixel limit is raised: 10 MiB and
 25 million pixels already accommodate an ordinary 4096-pixel paddle JPEG.
-WebP uses the installed Pillow decoder, EXIF orientation and lossless metadata-free
-reencoding; animation remains forbidden. Finalize/renew include the verified
+WebP uses the installed Pillow decoder, EXIF orientation and metadata-free lossy
+reencoding at the same quality as JPEG, with encoder method 0; animation remains forbidden.
+Finalize/renew include the verified
 `image_width`/`image_height` so image coordinates refer to the oriented pixels.
-The count transaction consumes only already verified owned unbound uploads.
+The count transaction consumes only already verified owned unbound uploads with
+purpose `egg_annotation`. This parent is created only by the count command, never
+an explicit attachment context. The closed resolver retains its read branch for
+downloads; immutable transport replies after binding separately recheck the original
+count-create and upload authority without publishing numbers or taking Lab locks
+below Upload.
 Downloads follow current `egg_count.read`, paired source scope and QA blindness,
 including retained voided count annotations. No anonymous or unbound download is
 introduced. Uploads with the annotation purpose cannot become another parent's
 evidence, including through raw SQL. Tests live in `test_egg_annotations.py`.
+
+A failed image/PDF sanitize appends one immutable `UploadSanitizationFailure` under
+the existing Upload arbiter, then returns the original coded validation error.
+Later finalize requests return that same error before reading/decoding bytes;
+renew reports state `failed`. Storage outages remain retryable. The failure is
+checked again before a competing finalizer can install verified bytes.
 
 ## PDF official documents (#350)
 
@@ -215,6 +227,7 @@ Official references: https://pypi.org/project/pillow/13.0.0/,
 https://pillow.readthedocs.io/en/stable/reference/Image.html,
 https://pillow.readthedocs.io/en/stable/reference/ImageOps.html,
 https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#png,
+https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#webp,
 https://docs.djangoproject.com/en/5.2/topics/signing/,
 https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update.
 

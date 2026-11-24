@@ -80,6 +80,16 @@ class UploadVerification(EvidenceRecord):
     height = models.PositiveIntegerField()
 
 
+class UploadSanitizationFailure(EvidenceRecord):
+    """One immutable rejection prevents repeated decoding of the same source bytes."""
+
+    upload = models.OneToOneField(
+        Upload, on_delete=models.PROTECT, related_name="sanitization_failure"
+    )
+    code = models.CharField(max_length=64)
+    params = models.JSONField(default=dict)
+
+
 class AttachmentLink(EvidenceRecord):
     # Parent resolution and completion already use the upload OneToOne index.
     egg_annotation = models.ForeignKey(

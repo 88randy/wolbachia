@@ -68,7 +68,7 @@ def _reencode(original: bytes, content_type: str) -> SanitizedImage:
         if content_type == "image/jpeg":
             pixels.save(output, format="JPEG", quality=JPEG_QUALITY)
         elif content_type == "image/webp":
-            pixels.save(output, format="WEBP", lossless=True)
+            pixels.save(output, format="WEBP", quality=JPEG_QUALITY, method=0)
         else:
             pixels.save(output, format="PNG")
         content = output.getvalue()

@@ -1,15 +1,15 @@
 """Immutable manual observations share the existing count transaction and private bytes."""
 
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 
 from core.exceptions import FieldValidationError
 from lab.access import scoped_bags
-from lab.annotation_serializers import EggAnnotationPayloadSerializer
 from lab.exceptions import LabConflictError
 from lab.models import EggAnnotation, EggCountAttempt
 from lab.permissions import COUNT_CREATE, COUNT_READ
@@ -36,9 +36,8 @@ def prepare_annotation(
     bag, values = facts
     if "annotation" not in values:
         return None
-    payload = EggAnnotationPayloadSerializer(data=values["annotation"])
-    payload.is_valid(raise_exception=True)
-    annotation = dict(payload.validated_data)
+    # The command boundary already validated every mark before entering the transaction.
+    annotation = values["annotation"]
     if not scoped_bags(actor, FIELD_UPLOAD).filter(pk=bag.pk).exists():
         raise Http404
     upload = (
@@ -51,6 +50,7 @@ def prepare_annotation(
     verified = UploadVerification.objects.filter(upload=upload).first()
     if (
         verified is None
+        or upload.purpose != "egg_annotation"
         or verified.width < 1
         or verified.height < 1
         or AttachmentLink.objects.filter(upload=upload).exists()
@@ -139,12 +139,13 @@ def annotation_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[EggA
 def annotation_projection(annotation: EggAnnotation) -> dict[str, Any]:
     return {
         "id": str(annotation.public_id),
-        "public_id": str(annotation.public_id),
         "count": str(annotation.count_id),
         "bag": str(annotation.bag_id),
         "bag_code": annotation.bag.code,
         "upload_id": str(annotation.image_upload.public_id),
-        "image_url": f"/api/v1/attachments/{annotation.image_upload.public_id}/download/",
+        "image_url": reverse(
+            "attachment-download", kwargs={"pk": annotation.image_upload.public_id}
+        ),
         "image_width": annotation.image_width,
         "image_height": annotation.image_height,
         "marks": annotation.marks,
@@ -164,21 +165,15 @@ def authorize_annotation_download(actor: UploadActor, identifier: UUID) -> None:
     publish_numeric_access(actor, annotation.count, NumericPublication(COUNT_READ, "result"))
 
 
-def authorize_annotation_attachment(
-    actor: UploadActor, identifier: UUID, upload: Upload
-) -> dict[str, object]:
+def authorize_annotation_replay(actor: UploadActor, identifier: UUID, upload: Upload) -> None:
+    """Recheck a committed upload reply without a new parent or locks below Upload."""
     annotation = EggAnnotation.objects.filter(
-        organization=actor.organization, pk=identifier, image_upload=upload
+        organization=actor.organization, pk=identifier, image_upload=upload, created_by=actor.user
     ).first()
-    if (
-        annotation is None
-        or annotation.created_by_id != actor.user.pk
-        or upload.device_id != actor.device_id
-    ):
+    if annotation is None or upload.device_id != actor.device_id:
         raise Http404
     if not all(
         scoped_bags(actor, permission).filter(pk=annotation.bag_id).exists()
         for permission in (COUNT_CREATE, FIELD_UPLOAD)
     ):
         raise Http404
-    return {"egg_annotation": cast(EggAnnotation, annotation)}

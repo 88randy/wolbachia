@@ -8202,10 +8202,9 @@ export interface components {
          *     * `certification` - certification
          *     * `lab_paddle_command` - lab_paddle_command
          *     * `material_request` - material_request
-         *     * `egg_annotation` - egg_annotation
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "certification" | "lab_paddle_command" | "material_request" | "egg_annotation";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "certification" | "lab_paddle_command" | "material_request";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -9469,8 +9468,6 @@ export interface components {
         EggAnnotation: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            public_id: string;
             /** Format: uuid */
             count: string;
             /** Format: uuid */
@@ -16957,9 +16954,10 @@ export interface components {
          * @description * `authorized` - authorized
          *     * `received` - received
          *     * `verified` - verified
+         *     * `failed` - failed
          * @enum {string}
          */
-        StateEnum: "authorized" | "received" | "verified";
+        StateEnum: "authorized" | "received" | "verified" | "failed";
         /**
          * @description * `scheduled` - scheduled
          *     * `in_force` - in_force

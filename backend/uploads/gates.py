@@ -67,7 +67,7 @@ def require_event_evidence(ctx: EventContext, references: list[str]) -> None:
 
 
 def _ready_for_event(upload: Upload, event_id: UUID) -> bool:
-    if upload.content_type == PDF_CONTENT_TYPE:
+    if upload.purpose or upload.content_type == PDF_CONTENT_TYPE:
         return False
     if not UploadVerification.objects.filter(upload=upload).exists():
         return False
@@ -94,6 +94,7 @@ def require_fault_evidence(fault: MotorcycleBlockEvent, identifiers: list[UUID])
 
 def _ready_for_fault(upload: Upload, fault_id: UUID) -> bool:
     return (
-        UploadVerification.objects.filter(upload=upload).exists()
+        not upload.purpose
+        and UploadVerification.objects.filter(upload=upload).exists()
         and AttachmentLink.objects.filter(upload=upload, fault_id=fault_id).exists()
     )

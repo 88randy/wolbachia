@@ -34,7 +34,8 @@ def intent_evidence(
         upload = uploads[declaration["upload_id"]]
         link = AttachmentLink.objects.filter(upload=upload).first()
         if (
-            upload.uploader_id != actor.user.pk
+            upload.purpose
+            or upload.uploader_id != actor.user.pk
             or upload.device_id != actor.device_id
             or not UploadVerification.objects.filter(upload=upload).exists()
             or link is None
@@ -79,7 +80,8 @@ def source_evidence(
     for upload in rows:
         link = AttachmentLink.objects.filter(upload=upload).first()
         if (
-            upload.uploader_id != ctx.user.pk
+            upload.purpose
+            or upload.uploader_id != ctx.user.pk
             or upload.device_id != ctx.device.pk
             or not UploadVerification.objects.filter(upload=upload).exists()
             or (link is not None and link.field_event_id != ctx.envelope.id)

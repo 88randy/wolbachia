@@ -31,7 +31,7 @@ def bind_review_evidence(
     if len(rows) != len(requested):
         raise ReviewBlockedError(("review_evidence_not_ready",))
     for upload in rows:
-        if not UploadVerification.objects.filter(upload=upload).exists():
+        if upload.purpose or not UploadVerification.objects.filter(upload=upload).exists():
             raise ReviewBlockedError(("review_evidence_not_ready",))
         link = AttachmentLink.objects.filter(upload=upload).first()
         if (

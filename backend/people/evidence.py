@@ -57,7 +57,8 @@ def verified_certification_evidence(
         .select_for_update(nowait=True, no_key=True)
     )
     if len(uploads) != len(requested) or any(
-        upload.uploader_id != actor.user.pk
+        upload.purpose
+        or upload.uploader_id != actor.user.pk
         or upload.device_id != actor.device_id
         or not UploadVerification.objects.filter(upload=upload).exists()
         or AttachmentLink.objects.filter(upload=upload).exists()
