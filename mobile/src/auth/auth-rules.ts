@@ -34,7 +34,8 @@ export function readAuthRules(snapshot: Schemas["RulesSnapshot"] | null): AuthRu
   };
 }
 
-function readRule(
+/** One snapshot parameter clamped to its bounds; missing or malformed uses the documented default. */
+export function readRule(
   parameters: Schemas["SnapshotParameter"][],
   rule: { key: string; fallback: number; min: number; max: number },
 ): number {

@@ -1,5 +1,14 @@
 # Database startup and schema lineage (#266)
 
+## Additive courier track schema25 (#370)
+
+`track_point` and two indexes append after unchanged SQL1-24. It is a local cache of the own
+track: rows carry no outbox trigger and are pruned after 30 days once their `track.segment` has a
+final answer. `owner_user_id` holds the owner key (issuer, organization, user, device). The
+structural profiler now also accepts the `REAL` column type used by its coordinates. The same
+migration recreates `outbox_event_envelope_immutable` with one exception: compacting the positions
+of a final `track.segment` after 30 days (decision 175).
+
 ## Additive sample schema21 (#139)
 
 Retained owner-bound sample drafts append after unchanged SQL1-20. The sample UUID

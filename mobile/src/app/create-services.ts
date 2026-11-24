@@ -55,6 +55,8 @@ import type { HistoryService } from "../features/history/service.ts";
 import { createTraining } from "../features/training/create-training.ts";
 import type { TrainingService } from "../features/training/service.ts";
 import { SettingsService } from "../screens/settings/settings-service.ts";
+import { createTrack } from "../features/track/create-track.ts";
+import type { TrackRecorder } from "../features/track/track-recorder.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
@@ -74,6 +76,7 @@ export interface AppServices {
   readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
   readonly shiftClose: ShiftCloseService;
+  readonly track: TrackRecorder;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -110,14 +113,26 @@ export async function createServices(): Promise<AppServices> {
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
-  const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
+  const { track, shiftOpen } = createShift({ db, engine, tokens, requests, auth, deviceId });
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
-  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
+  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId, track });
   const scanner = createScanner(db, bundle, { ovitrap: captures.ovitrapCheck, ...forms });
   const reads = createReadScreens({ db, auth, tokens, requests, bundle, deviceId, attachments });
-  return { ...shared, ...captures, scanner, engine, shiftOpen, day, ...forms, ...reads };
+  return { ...shared, ...captures, scanner, engine, shiftOpen, day, track, ...forms, ...reads };
+}
+/** The opening starts the courier track; the track's reconcile owns every later start or stop. */
+function createShift(
+  deps: Pick<AppServices, "engine" | "tokens" | "auth" | "deviceId"> & {
+    readonly db: SqlExecutor;
+    readonly requests: SessionRequests;
+    readonly tokens: CredentialStore;
+  },
+) {
+  const track = createTrack({ ...deps, credentials: deps.tokens, uuid: randomUUID });
+  const shiftOpen = createShiftOpen({ ...deps, uuid: randomUUID, onOpened: track.reconcile });
+  return { track, shiftOpen };
 }
 function createReadScreens(
   deps: Parameters<typeof createTraining>[0] & { readonly attachments: Attachments },

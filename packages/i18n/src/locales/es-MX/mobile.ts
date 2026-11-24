@@ -831,6 +831,7 @@ export const mobile = {
   "mobile.eventType.shiftOpen": "Aperturas de jornada",
   "mobile.eventType.shiftClose": "Cierres de jornada",
   "mobile.eventType.locationPing": "Ubicaciones",
+  "mobile.eventType.trackSegment": "Tramos de recorrido",
   "mobile.eventType.suppliesReceive": "Recepciones de insumos",
   "mobile.eventType.suppliesReconcile": "Conciliaciones de insumos",
   "mobile.eventType.ovitrapPlace": "Ovitrampas colocadas",
@@ -1317,6 +1318,15 @@ export const mobile = {
   "mobile.speedLock.emergencyOnly":
     "Solo la llamada de emergencia está disponible mientras te mueves.",
   "mobile.map.label": "Mapa de tus puntos y zonas",
+  "mobile.track.notificationTitle": "Jornada abierta",
+  "mobile.track.notificationBody": "Registrando tu recorrido hasta que cierres la jornada.",
+  "mobile.track.locationDenied":
+    "Sin permiso de ubicación tu recorrido no se registra. Puedes seguir trabajando; actívalo en Ajustes del teléfono.",
+  "mobile.track.notificationsDenied":
+    "Las notificaciones están apagadas: el recorrido se registra, pero no verás el aviso de jornada abierta.",
+  "mobile.track.unavailable":
+    "No se pudo iniciar el registro del recorrido. Se intentará de nuevo al volver a la app.",
+  "mobile.track.openSettings": "Abrir ajustes",
   "mobile.map.loading": "Preparando el mapa...",
   "mobile.map.unavailable": "El mapa no está disponible por ahora",
   "mobile.map.unavailableHint": "Conéctate una vez para guardarlo en el teléfono.",

@@ -18,6 +18,7 @@
       "predictiveBackGestureEnabled": false,
       "allowBackup": false,
       "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -27,7 +28,7 @@
       "./plugins/with-secure-store-commit",
       "./plugins/with-debug-lan-cleartext",
       "@maplibre/maplibre-react-native",
-      "expo-location",
+      ["expo-location", { "isAndroidForegroundServiceEnabled": true }],
       ["expo-image-picker", { "microphonePermission": false, "photosPermission": false }],
       ["expo-camera", { "microphonePermission": false, "recordAudioAndroid": false }],
       [
