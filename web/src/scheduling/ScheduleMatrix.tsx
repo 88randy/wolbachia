@@ -73,7 +73,7 @@ export function ScheduleMatrix({
                   >
                     {dayLabel(date, language)}
                     {date === plan.today && (
-                      <span className="block text-[11px] font-semibold normal-case">
+                      <span className="block text-xs font-semibold normal-case">
                         {t("scheduling.plan.today")}
                       </span>
                     )}

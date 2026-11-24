@@ -45,7 +45,7 @@ export function MeasurePanel({ summary }: { summary: MeasureSummary }) {
         ))}
       </dl>
       {summary.kind === "ruler" && (
-        <p className="m-0 mt-1 text-[11px] text-ink-2">{t("mapEditor.measure.rulerNote")}</p>
+        <p className="m-0 mt-1 text-xs text-ink-2">{t("mapEditor.measure.rulerNote")}</p>
       )}
     </section>
   );
