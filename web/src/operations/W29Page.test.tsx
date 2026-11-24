@@ -252,15 +252,23 @@ test("a failed refresh keeps readable facts but disables decisions until a succe
   ).toBe("true");
 });
 
-test("the W29 entry list sends URL status and page to the server", async () => {
+const COURIER = shiftDetail().courier;
+
+test("the W29 entry list sends URL status, page and the day-history filters to the server", async () => {
   const { api } = await openShift({
-    path: "/operations/shifts?status=closed&page=2",
+    path: `/operations/shifts?status=closed&page=2&courier=${COURIER}&date_from=2026-11-03&date_to=2026-11-04`,
     routes: {
       "GET /api/v1/shifts/": Response.json({
         count: 26,
         next: null,
         previous: null,
         results: [shiftDetail()],
+      }),
+      "GET /api/v1/lookups/users/": Response.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
       }),
     },
   });
@@ -273,6 +281,9 @@ test("the W29 entry list sends URL status and page to the server", async () => {
   const params = new URLSearchParams(request?.path.split("?")[1]);
   expect(params.get("status")).toBe("closed");
   expect(params.get("page")).toBe("2");
+  expect(params.get("courier")).toBe(COURIER);
+  expect(params.get("date_from")).toBe("2026-11-03");
+  expect(params.get("date_to")).toBe("2026-11-04");
 });
 
 test.each([403, 404])("a denied refresh (%s) removes private facts and drafts", async (status) => {

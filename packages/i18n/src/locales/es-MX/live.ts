@@ -16,4 +16,13 @@ export const live = {
   "live.mapTitle": "Zonas de trabajo",
   "live.noMap": "Sin cuadrantes asignados para mostrar.",
   "live.empty": "Nadie está trabajando en este momento.",
+  "live.position.recent": "Última posición: hace {minutes} min",
+  "live.position.stale": "Sin posición nueva: hace {minutes} min",
+  "live.position.none": "Todavía no recibimos su posición.",
+  "live.position.staleLabel": "{name} · hace {minutes} min",
+  "live.legend.recent": "Punto lleno: posición de los últimos {minutes} min.",
+  "live.legend.stale": "Punto hueco y punteado: sin posición nueva en más de {minutes} min.",
+  "live.position.error": "No pudimos cargar las posiciones. Se reintentará cada 30 segundos.",
+  "live.track.error":
+    "No pudimos cargar el recorrido de este repartidor. Se reintentará cada 2 minutos.",
 } as const satisfies AreaCatalog<"live">;
