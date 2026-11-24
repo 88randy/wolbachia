@@ -1,11 +1,15 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { RecordHistoryPage } from "./RecordHistoryPage";
-import { SearchPage } from "./SearchPage";
+
+const RecordHistoryPage = lazyRouteComponent(
+  () => import("./RecordHistoryPage"),
+  "RecordHistoryPage",
+);
+const SearchPage = lazyRouteComponent(() => import("./SearchPage"), "SearchPage");
 
 const HOME_READ = "home.read";
 

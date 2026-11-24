@@ -63,6 +63,11 @@ const FORBIDDEN: readonly { name: string; pattern: RegExp }[] = [
   { name: "px font size", pattern: /font-size\s*:[^;{}]*\d+px/ },
   { name: "px border radius", pattern: /border-radius\s*:[^;{}]*\d+px/ },
   { name: "inline style prop", pattern: /\bstyle\s*=\s*\{/ },
+  // CLAUDE.md Web: minimum text size 12px; Tailwind arbitrary sizes bypass the font-size check.
+  {
+    name: "text below 12px",
+    pattern: /\btext-\[(?:(?:\d|1[01])(?:\.\d+)?px|0?\.(?:[0-6]\d*|7(?:[0-4]\d*)?)rem)\]/,
+  },
 ];
 
 export function findLiterals(source: string): string[] {
@@ -85,9 +90,18 @@ describe("findLiterals (the detector itself)", () => {
     ["font-size: 14px;", "px font size"],
     ["border-radius: 8px;", "px border radius"],
     ["<div style={{ color: tone }} />", "inline style prop"],
+    ['<p className="text-[11px]" />', "text below 12px"],
+    ['<p className="text-[0.7rem]" />', "text below 12px"],
   ])("flags %j", (source, name) => {
     expect(findLiterals(source)).toContain(name);
   });
+
+  test.each(['className="text-xs"', 'className="text-[12px]"', 'className="text-[0.8rem]"'])(
+    "accepts text of 12px or more: %j",
+    (source) => {
+      expect(findLiterals(source)).toEqual([]);
+    },
+  );
 
   test("accepts token variables, ids and comments", () => {
     const source = `/* #FFFFFF */ .a { color: var(--color-text-primary); font-family: var(--font-family); border-radius: var(--radius-sm); } href="#main"`;

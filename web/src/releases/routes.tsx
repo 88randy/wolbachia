@@ -1,18 +1,19 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { W47Page } from "./devices/W47Page";
 import { PERMIT_MANAGE } from "./permits/permissions";
-import { W43Page } from "./permits/W43Page";
-import { W44Page } from "./permits/W44Page";
-import { W45Page } from "./permits/W45Page";
 import { RELEASE_READ } from "./records/releases-query";
-import { W46DetailPage } from "./records/W46DetailPage";
-import { W46Page } from "./records/W46Page";
-import { ReleasesHome } from "./ReleasesHome";
+
+const W47Page = lazyRouteComponent(() => import("./devices/W47Page"), "W47Page");
+const W43Page = lazyRouteComponent(() => import("./permits/W43Page"), "W43Page");
+const W44Page = lazyRouteComponent(() => import("./permits/W44Page"), "W44Page");
+const W45Page = lazyRouteComponent(() => import("./permits/W45Page"), "W45Page");
+const W46DetailPage = lazyRouteComponent(() => import("./records/W46DetailPage"), "W46DetailPage");
+const W46Page = lazyRouteComponent(() => import("./records/W46Page"), "W46Page");
+const ReleasesHome = lazyRouteComponent(() => import("./ReleasesHome"), "ReleasesHome");
 
 // W43-W45: permit types, permits and one permit by its human code. All need permit.manage; the
 // suspend action inside W45 checks permit.suspend on its own.

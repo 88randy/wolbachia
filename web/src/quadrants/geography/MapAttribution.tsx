@@ -9,7 +9,7 @@ import { OSM_COPYRIGHT } from "./map-source";
 export function MapAttribution({ source }: { source?: string | undefined }) {
   const { t } = useTranslation();
   return (
-    <p className="absolute right-1 bottom-1 z-[2] m-0 max-w-[75%] truncate rounded bg-surface/70 px-1.5 text-[11px] leading-4 text-ink-2">
+    <p className="absolute right-1 bottom-1 z-[2] m-0 max-w-[75%] truncate rounded bg-surface/70 px-1.5 text-xs leading-4 text-ink-2">
       <a
         href={OSM_COPYRIGHT}
         target="_blank"

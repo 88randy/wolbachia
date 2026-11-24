@@ -1,5 +1,5 @@
-import { createRoute } from "@tanstack/react-router";
-import type { ReactElement } from "react";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import type { RouteComponent } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaOf } from "../router/area-route";
@@ -7,23 +7,27 @@ import { authenticatedRoute } from "../router/base-routes";
 import { ForbiddenError, requireAreaAccess, requirePermission } from "../router/guards";
 import { canAny } from "../session/can";
 import { AreaErrorState } from "../states/AreaErrorState";
-import { DeliveryList } from "./allocation/DeliveryList";
-import { W15Page } from "./allocation/W15Page";
-import { W16Page } from "./allocation/W16Page";
-import { W17Page } from "./allocation/W17Page";
-import { W39Page } from "./allocation/W39Page";
-import { W18Page } from "./conditions/W18Page";
-import { InventoryHome } from "./InventoryHome";
 import { InventoryScreen } from "./InventoryScreen";
 import { LABEL_PERMISSIONS, labelsSearchSchema } from "../labels/label-kinds";
-import { W19Page } from "./labels/W19Page";
-import { W11Page } from "./locations/W11Page";
-import { W10Page } from "./lots/W10Page";
-import { W9Page } from "./lots/W9Page";
-import { W8Page } from "./supplies/W8Page";
-import { NewTransferPage } from "./transfers/new/NewTransferPage";
-import { W12Page } from "./transfers/W12Page";
-import { W14Page } from "./transfers/W14Page";
+
+const DeliveryList = lazyRouteComponent(() => import("./allocation/DeliveryList"), "DeliveryList");
+const W15Page = lazyRouteComponent(() => import("./allocation/W15Page"), "W15Page");
+const W16Page = lazyRouteComponent(() => import("./allocation/W16Page"), "W16Page");
+const W17Page = lazyRouteComponent(() => import("./allocation/W17Page"), "W17Page");
+const W39Page = lazyRouteComponent(() => import("./allocation/W39Page"), "W39Page");
+const W18Page = lazyRouteComponent(() => import("./conditions/W18Page"), "W18Page");
+const InventoryHome = lazyRouteComponent(() => import("./InventoryHome"), "InventoryHome");
+const W19Page = lazyRouteComponent(() => import("./labels/W19Page"), "W19Page");
+const W11Page = lazyRouteComponent(() => import("./locations/W11Page"), "W11Page");
+const W10Page = lazyRouteComponent(() => import("./lots/W10Page"), "W10Page");
+const W9Page = lazyRouteComponent(() => import("./lots/W9Page"), "W9Page");
+const W8Page = lazyRouteComponent(() => import("./supplies/W8Page"), "W8Page");
+const NewTransferPage = lazyRouteComponent(
+  () => import("./transfers/new/NewTransferPage"),
+  "NewTransferPage",
+);
+const W12Page = lazyRouteComponent(() => import("./transfers/W12Page"), "W12Page");
+const W14Page = lazyRouteComponent(() => import("./transfers/W14Page"), "W14Page");
 
 /** Shared inventory context (catalogs, locations) for every inventory screen and W39. */
 const inventoryLayout = createRoute({
@@ -42,7 +46,7 @@ const inventoryHomeRoute = createRoute({
 });
 function inventoryRoute<const Path extends string>(
   path: Path,
-  options: { permission: string; component: () => ReactElement; crumb?: MessageKey },
+  options: { permission: string; component: RouteComponent; crumb?: MessageKey },
 ) {
   return createRoute({
     getParentRoute: () => inventoryLayout,

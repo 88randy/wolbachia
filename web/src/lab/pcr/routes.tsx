@@ -1,22 +1,23 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
-import type { ReactElement } from "react";
+import type { RouteComponent } from "@tanstack/react-router";
 import "../../router/crumb";
 import { tableSearchSchema } from "../../data-table/table-search-schema";
 import { authenticatedRoute } from "../../router/base-routes";
 import { requirePermission } from "../../router/guards";
 import { AreaErrorState } from "../../states/AreaErrorState";
 import { PCR_MANAGE, PCR_READ } from "./pcr-api";
-import { PcrDetailPage } from "./PcrDetailPage";
-import { PcrLabsPage } from "./PcrLabsPage";
-import { PcrListPage } from "./PcrListPage";
-import { PcrNewPage } from "./PcrNewPage";
-import { PcrResultsPage } from "./PcrResultsPage";
+
+const PcrDetailPage = lazyRouteComponent(() => import("./PcrDetailPage"), "PcrDetailPage");
+const PcrLabsPage = lazyRouteComponent(() => import("./PcrLabsPage"), "PcrLabsPage");
+const PcrListPage = lazyRouteComponent(() => import("./PcrListPage"), "PcrListPage");
+const PcrNewPage = lazyRouteComponent(() => import("./PcrNewPage"), "PcrNewPage");
+const PcrResultsPage = lazyRouteComponent(() => import("./PcrResultsPage"), "PcrResultsPage");
 
 function pcrRoute<const Path extends string>(
   path: Path,
   permission: string,
-  component: () => ReactElement,
+  component: RouteComponent,
   crumb?: MessageKey,
 ) {
   return createRoute({

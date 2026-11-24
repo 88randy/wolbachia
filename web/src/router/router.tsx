@@ -78,7 +78,8 @@ const notFoundRoute = createRoute({
   component: NotFoundState,
 });
 
-const routeTree = rootRoute.addChildren([
+/** Exported for the test helper that loads every lazy screen up front (	est/render-app.tsx). */
+export const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
