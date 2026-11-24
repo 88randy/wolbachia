@@ -2,9 +2,23 @@
 
 Subagents for this repo, one responsibility each: `planner`, `backend-dev`, `mobile-dev`, `web-dev`, `qa`, `code-reviewer`, `security-reviewer`, `docs-writer`. Each one starts by reading `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md` and the issue it works on.
 
-## Optional skills
+## Required skills by area (owner decision, 2026-11-24)
 
-Some agents mention skills to invoke with the `Skill` tool. They come from personal plugins installed on the maintainers' machines and are **not part of this repo**:
+Before writing or reviewing code, invoke with the `Skill` tool every skill of the areas your task touches, and apply it. Name the skills you used in your report. Project rules (`CLAUDE.md`, `docs/engineering-rules.md`, this README) prevail when a skill disagrees; say so in the report.
+
+| Area | Skills |
+| --- | --- |
+| Every code task (write, fix, refactor, review) | `ponytail` (smallest change that fully solves the task; no speculative abstractions) |
+| Django / DRF / Celery (`backend/`) | `django-expert`, `anthropic-skills:django-reviewer` (reviews), `anthropic-skills:django-safe-migration` (any migration), `anthropic-skills:django-celery-expert` (Celery tasks) |
+| React web (`web/`) | `vercel-react-best-practices`, `vercel-composition-patterns`, `modern-web-guidance:modern-web-guidance` (HTML, CSS, browser JS, a11y, forms, dialogs, tables, performance), `web-design-guidelines` (UI review), `vercel-react-view-transitions` (screen transitions only) |
+| React Native (`mobile/`) | `vercel-react-native-skills`, `vercel-composition-patterns` |
+| Any user-facing UI (web or mobile) | `ui-ux-standards` (project skill, mandatory) |
+
+These skills are installed on the maintainers' machines, not in this repo. If one is missing, continue without it and say which one in the report.
+
+## Other optional skills
+
+Some agents also mention skills from personal plugins that are **not part of this repo**:
 
 | Plugin | Skills used |
 | --- | --- |

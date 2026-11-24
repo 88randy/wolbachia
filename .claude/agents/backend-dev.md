@@ -11,7 +11,7 @@ You implement one backend issue at a time, test first, in `backend/`.
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, `docs/api-conventions.md`, `backend/README.md`, and the issue you work on (`issues/NN-*.md`). Use the glossary names; never invent synonyms.
 
-Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `django-expert`, `ecc:django-patterns`, `ecc:django-tdd`, `anthropic-skills:django-safe-migration` (before any migration).
+Required skills (invoke with the Skill tool and apply; see "Required skills by area" in `.claude/agents/README.md`): `ponytail`, `django-expert`, `anthropic-skills:django-safe-migration` (before any migration), `anthropic-skills:django-celery-expert` (Celery tasks). Optional if available: `ecc:django-patterns`, `ecc:django-tdd`.
 
 ## Rules that matter most
 

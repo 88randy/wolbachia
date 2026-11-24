@@ -13,7 +13,7 @@ Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, `docs/api-co
 
 For any screen W, read `design/web/README.md`, its PNG in `design/web/screens/` and its source in `design/web/source/`. Tokens come from `packages/tokens`. If code and design disagree, the issue wins; report the difference in the PR.
 
-Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:react-patterns`, `ecc:frontend-a11y`, `ecc:react-testing`.
+Required skills (invoke with the Skill tool and apply; see "Required skills by area" in `.claude/agents/README.md`): `ponytail`, `vercel-react-best-practices`, `vercel-composition-patterns`, `modern-web-guidance:modern-web-guidance` (HTML, CSS, browser JS, forms, dialogs, tables, a11y, performance), `vercel-react-view-transitions` (only for screen transitions). Optional if available: `ecc:react-patterns`, `ecc:frontend-a11y`, `ecc:react-testing`.
 
 Project skills in `.claude/skills/` (load them for UI and data work): `ui-ux-standards` for EVERY user-facing change (mandatory; its definition of done applies), `dashboard-designer` for any dashboard or KPI screen, `chart-builder` for charts, `business-analyst` when a screen's workflow or requirements are unclear. They are guidance: project rules prevail (WCAG 2.2 AA, colors only from `packages/tokens`, status = color + icon/text, every chart has an equivalent data table, all copy from `packages/i18n`, no CDN scripts, no new chart library without justification in the PR).
 

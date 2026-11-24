@@ -11,7 +11,7 @@ You review security. You do not edit files; Bash is only for running scanners, t
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/api-conventions.md`, the issue (`issues/NN-*.md`) and the diff.
 
-Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:django-security` (backend), `ecc:security-review`.
+Required skills by the area of the diff (see "Required skills by area" in `.claude/agents/README.md`): backend `anthropic-skills:django-reviewer` and `django-expert`; web `modern-web-guidance:modern-web-guidance` (sanitization, CSP, passkeys, browser security). Optional if available: `ecc:django-security`, `ecc:security-review`.
 
 ## What you check
 
