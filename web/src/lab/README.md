@@ -125,3 +125,60 @@ ui-ux-standards sections 15 and 16 found and fixed these regressions. Physical s
 assistive-technology qualification and W4 consumer integration remain unverified.
 Runtime and browser layout checks use the locked workspace packages. Local
 verification and CI results are recorded in PR #320.
+
+### Manual egg annotation (AedesVision)
+
+`/lab/egg-counts/<bagCode>/annotate` uses the human Bag code and current
+`egg_count.create` permission. Numeric entry remains available. Photo capture
+also needs `field.upload`; the disabled flow explains missing access. A correction
+additionally requires the existing read/void/catalog grants and current
+void-context. It submits one void command with a same-Bag annotated replacement.
+No saved annotation is edited or deleted.
+
+Upload uses the generated private-upload client with the dedicated
+`egg_annotation` purpose, SHA-256, raw PUT and verification. JPEG, PNG and WebP
+keep the existing 10 MiB/25 megapixel limits. Progress reports the completed
+authorization, byte upload and verification stages. Coordinates refer to the
+verified, EXIF-oriented image dimensions. Retained downloads use the existing
+authorized, metadata-free image, never the private metadata-bearing source.
+
+The native Canvas 2D workspace uses separate image/mark layers, batched paths
+and animation-frame rendering. It adds no React peer dependency to the locked
+React 19.3.1. See [decision 174](../../../docs/decisions.md) and the
+[API mark contract](../../../docs/api-conventions.md#manual-egg-annotations-w35).
+One completed gesture is one undo step; history is bounded to 100 steps and
+annotations to 5,000 marks. Canvas size follows the viewport, not the source
+image's pixel dimensions. Boxes and points may be mixed; every mark counts once.
+
+V/B/D/H select the tools; Space temporarily pans. Wheel/pinch zoom about the
+cursor; +/− zoom, 0/R fit and 1 restores actual size. Select moves/resizes marks;
+Delete or right click removes a draft mark. Ctrl/Cmd+Z and Shift+Z undo/redo.
+On the focused canvas, Enter adds at the visible keyboard cursor, arrows move
+the cursor/selection, Shift+arrows resize a selected box, and PageUp/PageDown
+or brackets cycle selection. Tab leaves the canvas. G/S/? control the grid,
+settings and help. The HTML controls and live counter/selection descriptions
+provide keyboard and assistive-technology access alongside the canvas.
+
+IndexedDB stores only the authored photo, client UUID and marks, scoped to
+user, organization, Bag and correction target. Reopening explicitly asks to
+recover or discard; recovery reuploads/reverifies the same photo before saving.
+API responses and image download URLs are not persisted. Tips are remembered
+per user in localStorage and remain accessible through help. Save freezes the
+mark-derived value and annotation into the existing command writer: CAS,
+plausibility confirmation, explicit identical replay of uncertain responses,
+conflict handling and the server's `next_bag` remain authoritative. Count history
+offers an authorized read-only viewer, including retained voided annotations.
+
+| Criterion or edge | Test |
+| --- | --- |
+| Add/move/delete/undo/redo and bounded mark history | `annotation-state.test.ts` |
+| Zoom/pan transforms, cursor anchor, integer clamping and resizing | `annotation-coordinates.test.ts` |
+| Mark-derived payload, summary, confirmation and explicit replay | `annotation-submit.test.tsx` |
+| Photo upload, mixed keyboard marks, grid/settings and save; light/dark, es-MX/en, 320/1280 px, +30% text, axe | `e2e/egg-annotation.spec.ts` |
+| Missing upload permission and actionable field errors with server limits | `annotation-submit.test.tsx`, `annotation-upload-error.test.ts` |
+| Explicit draft recovery with 1,000 marks on a 4096 px image, preserved dismissal, zoom/pan and further editing | `e2e/egg-annotation.spec.ts` |
+| Authorized history viewer with zoom and no editing tools | `e2e/egg-annotation.spec.ts` |
+| Validation, immutable count/annotation transaction, UUID replay, correction retention and current scope/permissions | `backend/tests/test_egg_annotations.py` |
+
+Browser fixtures are synthetic. Physical phone/tablet pinch, camera capture,
+screen-reader qualification and performance on field hardware require device QA.

@@ -14,6 +14,10 @@ const LabHome = lazyRouteComponent(() => import("./LabHome"), "LabHome");
 const W34Page = lazyRouteComponent(() => import("./W34Page"), "W34Page");
 const W35HistoryPage = lazyRouteComponent(() => import("./W35HistoryPage"), "W35HistoryPage");
 const W35Page = lazyRouteComponent(() => import("./W35Page"), "W35Page");
+const W35AnnotationPage = lazyRouteComponent(
+  () => import("./W35AnnotationPage"),
+  "W35AnnotationPage",
+);
 const W36Page = lazyRouteComponent(() => import("./W36Page"), "W36Page");
 const W37Page = lazyRouteComponent(() => import("./W37Page"), "W37Page");
 const W38Page = lazyRouteComponent(() => import("./W38Page"), "W38Page");
@@ -48,6 +52,21 @@ const eggCountHistoryRoute = createRoute({
     requirePermission("lab", context.me, "egg_count.read");
   },
   component: W35HistoryPage,
+  errorComponent: AreaErrorState,
+});
+const eggAnnotationRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/egg-counts/$bagCode/annotate",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context, search }) => {
+    requirePermission("lab", context.me, "egg_count.create");
+    if (search.correction === "true") {
+      requirePermission("lab", context.me, "egg_count.read");
+      requirePermission("lab", context.me, "egg_count.void");
+      requirePermission("lab", context.me, "catalog.read");
+    }
+  },
+  component: W35AnnotationPage,
   errorComponent: AreaErrorState,
 });
 
@@ -99,6 +118,7 @@ export const labRoutes = [
   areaHomeRoute("lab", LabHome),
   labReceptionRoute,
   eggCountsRoute,
+  eggAnnotationRoute,
   eggCountHistoryRoute,
   recountsRoute,
   paddlesRoute,

@@ -1,0 +1,153 @@
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding: var(--space-2);
+  min-block-size: calc(100dvh - var(--web-layout-top-bar-height));
+}
+.workspace h1,
+.workspace h2,
+.workspace p {
+  margin: 0;
+}
+.toolbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-1);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.toolbar button {
+  white-space: normal;
+  min-inline-size: var(--space-3);
+}
+.wideTools {
+  display: contents;
+}
+.compactTools {
+  display: none;
+}
+.toolbar output {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  background: var(--color-tint);
+  border-radius: var(--radius-full);
+  padding: var(--space-0-5) var(--space-1);
+}
+.toolbar a,
+.title a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--space-3);
+  padding: var(--space-0-5);
+}
+.body {
+  display: flex;
+  flex: 1;
+  gap: var(--space-2);
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+.canvas {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 60dvh;
+}
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: min(100%, 22rem);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.settings input,
+.settings select {
+  min-block-size: var(--web-control-md);
+  accent-color: var(--color-action);
+}
+.settings select {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+.settings dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1);
+}
+.settings dd {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+.upload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.upload progress {
+  inline-size: 100%;
+  accent-color: var(--color-action);
+}
+.upload input {
+  max-inline-size: 100%;
+  min-block-size: var(--web-control-md);
+}
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.links a {
+  min-block-size: var(--space-3);
+  padding: var(--space-0-5);
+}
+.viewer {
+  min-block-size: 60dvh;
+}
+@media (max-width: 768px) {
+  .wideTools {
+    display: none;
+  }
+  .compactTools {
+    display: contents;
+  }
+  .workspace {
+    padding: var(--space-1);
+  }
+  .body {
+    flex-direction: column;
+  }
+  .settings {
+    inline-size: 100%;
+  }
+  .toolbar {
+    gap: var(--space-0-5);
+  }
+}

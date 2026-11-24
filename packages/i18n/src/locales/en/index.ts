@@ -1,3 +1,4 @@
+import { labAnnotation } from "./labAnnotation.ts";
 import { regulatory } from "./regulatory.ts";
 import { comparison } from "./comparison.ts";
 import { apiKeys } from "./apiKeys.ts";
@@ -65,6 +66,7 @@ import { voiding } from "./voiding.ts";
 
 import { discrepancies } from "./discrepancies.ts";
 export const en: Record<MessageKey, string> = {
+  ...labAnnotation,
   ...conditions,
   ...incidentTypes,
   ...notifications,
