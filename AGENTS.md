@@ -19,7 +19,7 @@ The task prompt names your role. Read and follow its definition, then the shared
 - `qa` → `.claude/agents/qa.md`; `code-reviewer` → `.claude/agents/code-reviewer.md`; `security-reviewer` → `.claude/agents/security-reviewer.md`
 - Every implementer: "Working protocol (all implementers)" in `.claude/agents/README.md`.
 
-Skills named in those files are optional Claude plugins; ignore them and follow `docs/engineering-rules.md`. Exception: the project skills in `.claude/skills/` (`ui-ux-standards`, mandatory for any UI change; `dashboard-designer`, `chart-builder`, `business-analyst`) are plain Markdown; read the matching `SKILL.md` before UI, dashboard or chart work. Project rules prevail over them.
+Skills named in those files are Claude skills. The "Required skills by area" table in `.claude/agents/README.md` applies to you too: when the file is readable, read the matching `SKILL.md` under `~/.claude/skills/<name>/` (for example `ponytail`, `vercel-react-best-practices`, `vercel-react-native-skills`, `vercel-composition-patterns`, `web-design-guidelines`) before coding in that area; if it is not readable, skip it and say so. `docs/engineering-rules.md` prevails. Exception: the project skills in `.claude/skills/` (`ui-ux-standards`, mandatory for any UI change; `dashboard-designer`, `chart-builder`, `business-analyst`) are plain Markdown; read the matching `SKILL.md` before UI, dashboard or chart work. Project rules prevail over them.
 
 ## Codex-specific notes
 

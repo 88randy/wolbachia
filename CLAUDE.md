@@ -37,7 +37,7 @@ El orquestador (sesión principal) planea, delega, revisa, integra y decide; no 
 **Flujo por issue**
 1. `planner` parte el issue en tareas, interfaces y riesgos.
 2. El implementador trabaja en su propio git worktree y rama (`feat|fix|chore/<n>-<slug>`). Solo se paralelizan issues sin dependencias entre sí ni archivos compartidos.
-3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla y los criterios de aceptación. Nada de instrucciones vagas.
+3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla, los criterios de aceptación y **las skills de su área** (tabla "Required skills by area" en `.claude/agents/README.md`: `ponytail` siempre; Django → `django-expert` y afines; React web → skills de Vercel React + `modern-web-guidance`; React Native → `vercel-react-native-skills`). El agente las invoca, las aplica y las nombra en su reporte; el orquestador también las usa al revisar o integrar. Nada de instrucciones vagas.
 4. **Revisión según riesgo (desde 2026-11-09, para avanzar rápido):**
    - **Riesgo alto** (sync, auth, permisos/aislamiento por organización, migraciones, concurrencia): `code-reviewer` + revisión adversarial de Codex, **máximo 2 rondas**. Después de la segunda, solo bloquea un hallazgo con reproducción concreta; lo demás se abre como issue de seguimiento y se mergea.
    - **Riesgo normal** (pantallas web, UI móvil, docs, tooling): una sola revisión (`code-reviewer` o Codex), sin ronda adversarial.
