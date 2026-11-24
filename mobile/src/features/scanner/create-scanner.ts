@@ -5,6 +5,7 @@ import { LabelPoolStore } from "../ovitrap-check/label-pool.ts";
 import { ScannerService } from "./service.ts";
 import type { ScannerResource } from "./resource-source.ts";
 import { readScannerResources } from "./resource-source.ts";
+import { resolveBagEntry } from "./bag-entry.ts";
 import type { SampleService } from "../samples/service.ts";
 import { sampleScannerRoute } from "./sample-route.ts";
 
@@ -21,6 +22,7 @@ export function createScanner(
       : undefined,
     read: () => bundle.captureLifecycleSource(),
     resources: async (turn) => withPoolCodes(await readScannerResources(db, turn), labels),
+    bag: (input, turn) => resolveBagEntry(db, turn, input),
     ovitrap,
   });
 }

@@ -8,6 +8,7 @@ import { codeScannerRoute } from "./code-route.ts";
 import { resolveScanner } from "./domain.ts";
 import type { ScannerInput, ScannerResult } from "./domain.ts";
 import type { ScannerResource } from "./resource-source.ts";
+import type { BagEntry } from "./bag-entry.ts";
 import type { Route } from "../../navigation/routes.ts";
 
 interface Dependencies {
@@ -17,6 +18,7 @@ interface Dependencies {
   ) => Promise<ScannerDestination | null>;
   readonly read: () => LifecycleSourceReader;
   readonly resources: (turn: LifecycleSourceTurn) => Promise<readonly ScannerResource[]>;
+  readonly bag: (input: ScannerInput, turn: LifecycleSourceTurn) => Promise<BagEntry>;
   readonly ovitrap: Pick<
     OvitrapService,
     "startCheck" | "enterBag" | "bindLabel" | "usedPointCode" | "draftBuffer" | "update"
@@ -39,9 +41,14 @@ export class ScannerService {
   async resolve(input: ScannerInput): Promise<ScannerResult> {
     const syntax = resolveScanner(input, []);
     if ("error" in syntax && syntax.error !== "unavailable") return syntax;
+    return this.#inTurn(async (turn) => resolveScanner(input, await this.#deps.resources(turn)));
+  }
+  async #inTurn<T>(
+    work: (turn: LifecycleSourceTurn) => Promise<T>,
+  ): Promise<T | { readonly error: "unavailable" }> {
     try {
       return await this.#deps.read()(null, async (turn) => {
-        const result = resolveScanner(input, await this.#deps.resources(turn));
+        const result = await work(turn);
         await turn.assertCurrent();
         return result;
       });
@@ -52,13 +59,12 @@ export class ScannerService {
   }
   open(request: OpenInput): Promise<ScannerDestination> {
     const { input, eventId, isCurrent } = request;
-    return input.bindsLabel
-      ? this.#bindLabel(input, eventId, isCurrent)
-      : this.#openResource(request);
+    if (input.bindsLabel) return this.#bindLabel(input, eventId, isCurrent);
+    const coded = codeScannerRoute(input);
+    if (coded) return Promise.resolve(coded);
+    return input.expected === "bag" ? this.#enterBag(request) : this.#openResource(request);
   }
   async #openResource({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
-    const coded = codeScannerRoute(input);
-    if (coded) return coded;
     const sample = await this.#deps.sample?.(input, isCurrent);
     if (sample) return sample;
     const result = await this.resolve(input);
@@ -94,6 +100,18 @@ export class ScannerService {
       return { error: "labelUsed", pointCode };
     }
     return { error: result === "unknown" ? "labelUnknown" : "invalid" };
+  }
+  /** The bag step of the open capture: camera and typed code follow the same rule (`resolveBagEntry`). */
+  async #enterBag({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
+    const syntax = resolveScanner(input, []);
+    if ("error" in syntax && syntax.error !== "unavailable") return syntax;
+    if (eventId === null) return { error: "unavailable" };
+    const entry = await this.#inTurn((turn) => this.#deps.bag(input, turn));
+    if ("error" in entry) return entry;
+    if (!isCurrent()) return { error: "unavailable" };
+    await this.#deps.ovitrap.draftBuffer.persist(this.#deps.ovitrap, eventId);
+    await this.#deps.ovitrap.enterBag(entry.value, eventId, input.isManual);
+    return isCurrent() ? { route: { name: "ovitrapCapture" } } : { error: "unavailable" };
   }
   async #startCapture(
     resource: ScannerResource,

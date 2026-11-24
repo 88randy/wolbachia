@@ -109,15 +109,25 @@ function assignedBagContext(draft: Draft | null, assignment: Assignment | null) 
   return isAssigned ? { pointId, ovitrapId: draft.ovitrapId, bags: assignment.bags } : null;
 }
 
-async function bagResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
+/**
+ * The bags a scan may bind: only while an unsaved capture is open at an assigned point and live
+ * ovitrap. Null otherwise. `bags` are the optional downloaded QR-to-code mappings.
+ */
+export async function readBagContext(db: SqlExecutor, turn: LifecycleSourceTurn) {
   const store = new OvitrapStore(db);
   const { draft, event } = await turn.write(() => store.read());
   const { assignment } = await turn.write(() => store.snapshots());
-  if (event || !turn.canCapture) return [];
+  if (event || !turn.canCapture) return null;
   const current = assignedBagContext(draft, assignment);
-  if (!current) return [];
+  if (!current) return null;
   const source = await resolveOvitrap(turn, current.ovitrapId);
-  if (!source || source.isRetired || source.point.id !== current.pointId) return [];
+  if (!source || source.isRetired || source.point.id !== current.pointId) return null;
+  return { bags: current.bags };
+}
+
+async function bagResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
+  const current = await readBagContext(db, turn);
+  if (!current) return [];
   return current.bags.map((bag): ScannerResource => ({
     kind: "bag",
     id: bag.id,

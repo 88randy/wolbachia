@@ -164,6 +164,73 @@ void test("M07 failed durable writes and cancelled continuations cannot return a
   assert.deepEqual(await local.db.query("SELECT id FROM outbox_event"), []);
 });
 
+/** The day bundle carries no bags (production): the bag only exists once the check sends its code. */
+async function openCheckWithoutBagMappings() {
+  const local = await scannerHarness();
+  await local.store.publishSnapshots(
+    { assignment: { ...ASSIGNMENT, bags: [] }, catalog: CATALOG, rules: RULES },
+    await local.store.assignmentAuthority(),
+  );
+  await local.bundle.refresh(true);
+  const trap = ASSIGNMENT.ovitraps[0];
+  assert.ok(trap);
+  await local.scanner.open({
+    input: { value: `wbf:1:ovitrap:${trap.id}`, isManual: false },
+    eventId: null,
+    isCurrent: () => true,
+  });
+  const eventId = (await local.store.read()).draft?.eventId;
+  assert.ok(eventId);
+  const enterBag = (value: string, isManual: boolean, id: string | null = eventId) =>
+    local.scanner.open({
+      input: { value, isManual, expected: "bag" },
+      eventId: id,
+      isCurrent: () => true,
+    });
+  return { ...local, eventId, enterBag };
+}
+
+void test("M07 bag step binds the typed printed code without a downloaded bag list", async () => {
+  const local = await openCheckWithoutBagMappings();
+  assert.deepEqual(await local.enterBag(" B-0042 ", true), { route: { name: "ovitrapCapture" } });
+  const draft = (await local.store.read()).draft;
+  assert.ok(draft);
+  assert.equal(draft.bagCode, "B-0042");
+  assert.equal(draft.bagUuid, null);
+  assert.equal(draft.manualCapture, true);
+  assert.deepEqual(await local.db.query("SELECT id FROM outbox_event"), []);
+});
+
+void test("M07 bag step refuses a malformed typed code and an unmapped camera QR without editing the draft", async () => {
+  const local = await openCheckWithoutBagMappings();
+  const before = (await local.store.read()).draft;
+  assert.deepEqual(await local.enterBag("B 42/x", true), { error: "invalid" });
+  assert.deepEqual(
+    await local.enterBag("wbf:1:bag:ab7837e0-65ff-4ff2-85ee-6081b7cba859", false),
+    { error: "bagCode" },
+    "a QR whose human code the phone does not know asks for the printed code",
+  );
+  assert.deepEqual(
+    await local.enterBag(`wbf:1:ovitrap:${ASSIGNMENT.ovitraps[0]?.id ?? ""}`, false),
+    { error: "kind" },
+  );
+  assert.deepEqual((await local.store.read()).draft, before);
+});
+
+void test("M07 bag step refuses a bag code already used by a saved capture", async () => {
+  const local = await openCheckWithoutBagMappings();
+  await prepareCheck(local.service);
+  await local.service.save(local.eventId);
+  assert.deepEqual(await local.enterBag("B-NEW", true), { error: "unavailable" }, "saved capture");
+  const trap = ASSIGNMENT.ovitraps[0];
+  assert.ok(trap);
+  await local.service.startCheck(`wbf:1:ovitrap:${trap.id}`, false, local.eventId);
+  const next = (await local.store.read()).draft;
+  assert.ok(next && next.eventId !== local.eventId);
+  assert.deepEqual(await local.enterBag("B-TEST", true, next.eventId), { error: "bagUsed" });
+  assert.equal((await local.store.read()).draft?.bagCode, "");
+});
+
 void test("M07 a scanned assigned bag keeps automatic provenance and explicit human entry marks manual capture", async () => {
   const local = await scannerHarness();
   const trap = ASSIGNMENT.ovitraps[0];
