@@ -3,6 +3,7 @@ import {
   CAPTURE_SCOPE_AVAILABLE,
   configurationStatement,
   assignmentPublication,
+  carryCaptureContext,
   StaleAssignmentAuthorityError,
 } from "./snapshot-authority.ts";
 import type { AssignmentAuthority } from "./snapshot-authority.ts";
@@ -70,6 +71,8 @@ export class OvitrapStore {
     const statement = assignmentPublication(snapshots, authority);
     const rows = await this.#db.query(statement.sql, statement.params);
     if (rows.length === 0) throw new StaleAssignmentAuthorityError();
+    const carry = carryCaptureContext(authority);
+    await this.#db.query(carry.sql, carry.params);
   }
   /** Why a guarded publication wrote nothing; diagnostic only. */
   async publishBlockReason(assignment: Assignment | null): Promise<AssignmentNullReason> {

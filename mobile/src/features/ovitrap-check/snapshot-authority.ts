@@ -1,5 +1,6 @@
 import type { SqlStatement, SqlValue } from "../../db/sql.ts";
 import type { Snapshots } from "./store.ts";
+import { CAPTURE_CONTEXT_KEY } from "../ovitrap-lifecycle/context-sql.ts";
 
 export const CAPTURE_SCOPE_AVAILABLE = `NOT EXISTS(SELECT 1 FROM kv WHERE key='day_cleanup_pending' AND value='true')`;
 export const AUTHORITY_REVISION = "COALESCE(json_extract(value,'$.authorityRevision'),0)";
@@ -63,5 +64,18 @@ export function assignmentPublication(
       JSON.stringify({ ...snapshots, authorityRevision: authority.revision + 1 }),
       authority.revision,
     ],
+  };
+}
+/**
+ * After a won publication (R -> R+1), a capture context that was current at R stays current: the
+ * route assignment is republished locally, the server grants did not change. Revisions only grow,
+ * so R+1 is ours; a context stale before R, or any later write, is left untouched.
+ */
+export function carryCaptureContext(authority: AssignmentAuthority): SqlStatement {
+  return {
+    sql: `UPDATE kv SET value=json_set(value,'$.authorityRevision',?+1)
+      WHERE key=? AND json_extract(value,'$.authorityRevision')=?
+        AND (SELECT ${AUTHORITY_REVISION} FROM kv WHERE key='ovitrap_snapshots')=?+1`,
+    params: [authority.revision, CAPTURE_CONTEXT_KEY, authority.revision, authority.revision],
   };
 }

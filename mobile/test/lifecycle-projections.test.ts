@@ -22,6 +22,7 @@ import type {
 import { readHistoryChange } from "../src/features/ovitrap-lifecycle/history-contract.ts";
 import { retainedProposal } from "../src/features/ovitrap-lifecycle/retained-proposal.ts";
 import { capturePointScopeSql } from "../src/features/ovitrap-lifecycle/context-sql.ts";
+import { revokeCaptureScope } from "../src/features/ovitrap-lifecycle/current-scope.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { runSyncPass } from "../src/sync/sync-pass.ts";
 import { RemoteSessionEnded } from "../src/auth/session-requests.ts";
@@ -246,11 +247,8 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
     (JSON.parse(String(state?.value)) as { owner: { userId: string } }).owner.userId,
     PROJECTION_IDENTITY.owner.userId,
   );
-  const configuration = new OvitrapStore(local.executor);
-  await configuration.publishSnapshots(
-    { catalog: null, rules: null, assignment: null },
-    await configuration.assignmentAuthority(),
-  );
+  // A scope writer moves authority; a local route republish carries a current context instead.
+  await local.executor.runAtomically([revokeCaptureScope()]);
   assert.equal(await new KvStore(local.executor).get("lifecycle_bootstrap_pending"), "false");
   assert.equal(
     await store.needsBootstrap(),
