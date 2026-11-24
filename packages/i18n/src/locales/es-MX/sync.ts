@@ -58,6 +58,8 @@ export const sync = {
     "Esta jornada no está abierta en el servidor. Avisa a tu supervisor si aún necesitas trabajar.",
   "sync.result.shiftEventNotVoidable":
     "Una jornada no se puede anular desde el teléfono. Pide a tu supervisor que la corrija.",
+  "sync.result.trackSegmentNotVoidable":
+    "El recorrido registrado no se puede anular desde el teléfono.",
   "sync.result.odometerDecreased":
     "El kilometraje es menor que el anterior, así que un supervisor lo revisará. No tienes que hacer nada mientras tanto.",
   "sync.result.severeCheck":

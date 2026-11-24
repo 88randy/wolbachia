@@ -20,6 +20,7 @@ from reviews.subject_batches import source_subject_facts
 from reviews.transactions import review_transaction
 from shifts.models import Motorcycle, Shift
 from shifts.permissions import SHIFT_VALIDATE
+from tracks.codes import TRACK_SEGMENT_EVENT_TYPE
 from uploads.access import UploadActor, current_scope
 
 
@@ -37,7 +38,7 @@ def shift_sources(shift: Shift) -> QuerySet[FieldEvent]:
         FieldEvent.objects.filter(
             organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
         )
-        .exclude(type="track.segment")
+        .exclude(type=TRACK_SEGMENT_EVENT_TYPE)
         .order_by("pk")
     )
 

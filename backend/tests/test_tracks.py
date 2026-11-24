@@ -12,6 +12,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from core.exceptions import ImmutableRecordError, PhysicalDeleteForbiddenError
+from field_sync.models import FieldEvent
 from organizations.models import Center, Organization
 from shifts.models import Shift
 from tests.conftest import MemberFactory
@@ -468,3 +469,179 @@ def test_track_of_a_foreign_or_unknown_shift_is_404(
 
     assert response.status_code == 404
     assert not TrackViewReceipt.objects.exists()
+
+
+# --- review round 1 -------------------------------------------------------------------------
+
+
+@pytest.fixture
+def fleet_phone(org_a: Organization, make_member: MemberFactory) -> Phone:
+    from tests.shift_support import make_check_items
+
+    MotorcycleFactory(organization=org_a, code="M-03")
+    make_check_items(org_a)
+    return make_phone(lambda *a, **k: grant_fleet_scope(make_member(*a, **k)), org_a)
+
+
+def severe_open(shift_id: uuid.UUID, at: datetime) -> dict[str, Any]:
+    from tests.shift_support import open_event
+
+    return open_event(
+        "M-03",
+        shift_id,
+        device_time=at.isoformat(),
+        payload_checks=[{"item": "brakes", "result": "severe"}],
+    )
+
+
+@pytest.mark.parametrize("same_batch", [False, True])
+def test_a_segment_of_a_shift_whose_opening_is_in_review_is_retained_not_rejected(
+    fleet_phone: Phone, same_batch: bool
+) -> None:
+    shift_id = uuid.uuid4()
+    opened = timezone.now() - timedelta(minutes=10)
+    opening = severe_open(shift_id, opened)
+    segment = segment_event(shift_id, opened + timedelta(minutes=1), [[0, 19.1, -99.1, 5]])
+    if same_batch:
+        results = fleet_phone.sync([segment, opening]).data["results"]
+        opening_result, segment_result = results[1], results[0]
+    else:
+        opening_result = only_result(fleet_phone.sync([opening]))
+        segment_result = only_result(fleet_phone.sync([segment]))
+
+    assert (opening_result["status"], opening_result["code"]) == ("in_review", "severe_check")
+    assert (segment_result["status"], segment_result["code"]) == (
+        "in_review",
+        "causal_parent_pending",
+    )
+    assert not Shift.objects.filter(pk=shift_id).exists()
+    assert FieldEvent.objects.get(pk=segment["id"]).shift_id == shift_id
+    assert not TrackSegment.objects.exists()
+
+
+def test_a_reviewed_opening_of_another_courier_still_answers_shift_not_open(
+    fleet_phone: Phone, org_a: Organization, make_member: MemberFactory
+) -> None:
+    shift_id = uuid.uuid4()
+    only_result(fleet_phone.sync([severe_open(shift_id, timezone.now() - timedelta(minutes=5))]))
+    other = make_phone(make_member, org_a)
+
+    result = only_result(
+        other.sync([segment_event(shift_id, timezone.now(), [[0, 19.1, -99.1, 5]])])
+    )
+
+    assert (result["status"], result["code"]) == ("rejected", "shift_not_open")
+
+
+@pytest.mark.parametrize("field", ["lat", "lng", "offset", "accuracy"])
+def test_a_huge_integer_is_invalid_payload_not_a_server_error(phone: Phone, field: str) -> None:
+    shift = own_shift(phone)
+    position: list[Any] = [0, 19.1, -99.1, 5]
+    position[["offset", "lat", "lng", "accuracy"].index(field)] = "HUGE"
+    sent = segment_event(shift.pk, timezone.now(), [[0, 19.1, -99.1, 5]])
+    sent["payload"]["positions"] = [position]
+    text = json.dumps(batch(phone, [sent])).replace('"HUGE"', "9" * 400)
+
+    result = only_result(phone.client.post(SYNC, text, content_type="application/json"))
+
+    assert (result["status"], result["code"]) == ("rejected", "invalid_payload")
+    assert result["params"]["fields"]["positions"] == ["invalid_position"]
+
+
+@pytest.mark.parametrize("started_at", ["9999-12-31T23:59:59Z", "1999-01-01T00:00:00Z"])
+def test_an_implausible_started_at_is_invalid_payload(phone: Phone, started_at: str) -> None:
+    shift = own_shift(phone)
+    sent = segment_event(shift.pk, timezone.now(), [[86_400, 19.1, -99.1, 5]])
+    sent["payload"]["started_at"] = started_at
+
+    result = only_result(phone.sync([sent]))
+
+    assert (result["code"], result["params"]["fields"]) == (
+        "invalid_payload",
+        {"started_at": ["out_of_range"]},
+    )
+
+
+@pytest.mark.usefixtures("void_catalog")
+def test_the_courier_cannot_void_a_track_segment(phone: Phone) -> None:
+    shift = own_shift(phone)
+    sent = segment_event(shift.pk, timezone.now() - timedelta(minutes=1), [[0, 19.1, -99.1, 5]])
+    only_result(phone.sync([sent]))
+    void = event(
+        type="record.void",
+        payload={"reason_code": "other", "reason": "typed in the wrong place"},
+        voids_event_id=sent["id"],
+    )
+
+    result = only_result(phone.sync([void]))
+
+    assert (result["status"], result["code"]) == ("rejected", "track_segment_not_voidable")
+    assert FieldEvent.objects.get(pk=sent["id"]).voided_at is None
+    assert TrackSegment.objects.count() == 1
+
+
+def test_positions_ahead_of_the_server_clock_are_trimmed(phone: Phone) -> None:
+    shift = own_shift(phone)
+    start = timezone.now() - timedelta(minutes=1)
+    ahead = int(timedelta(hours=2).total_seconds())
+    sent = segment_event(
+        shift.pk, start, [[0, 19.1, -99.1, 5], [60, 19.2, -99.2, 5], [ahead, 19.9, -99.9, 5]]
+    )
+
+    assert only_result(phone.sync([sent]))["status"] == "accepted"
+
+    segment = TrackSegment.objects.get()
+    assert (segment.position_count, segment.trimmed_count) == (2, 1)
+    assert segment.ended_at_device == start + timedelta(seconds=60)
+
+
+def test_pending_review_count_drops_segments_with_a_terminal_decision(
+    phone: Phone, make_member: MemberFactory
+) -> None:
+    from reviews.models import ReviewDecision, ReviewItem
+
+    configure_clock_skew(phone.organization)
+    shift = own_shift(phone)
+    skewed = (timezone.now() + timedelta(hours=3)).isoformat()
+    sent = [
+        segment_event(shift.pk, timezone.now() - timedelta(minutes=m), [[0, 19.1, -99.1, 5]])
+        for m in (2, 1)
+    ]
+    for item in sent:
+        assert only_result(phone.sync([item], sent_at=skewed))["status"] == "in_review"
+    client, reviewer_user = reader(phone.organization, make_member)
+    assert client.get(track_url(shift.pk)).data["pending_review_count"] == 2
+    ReviewDecision.objects.create(
+        organization=phone.organization,
+        created_by=reviewer_user,
+        review_item=ReviewItem.objects.get(field_event_id=sent[0]["id"]),
+        kind="void",
+        is_terminal=True,
+        revision=1,
+        expected_revision=0,
+        reason="Clock was wrong, track discarded",
+    )
+
+    assert client.get(track_url(shift.pk)).data["pending_review_count"] == 1
+
+
+def test_positions_run_in_constant_queries_for_an_organization_wide_reader(
+    org_a: Organization,
+    make_member: MemberFactory,
+    django_assert_max_num_queries: Any,  # noqa: ANN401
+) -> None:
+    from django.test.utils import CaptureQueriesContext
+
+    def open_with_segment() -> None:
+        shift = ShiftFactory(organization=org_a)
+        stored_segment(shift, timezone.now(), [[0, 19.1, -99.1, 5]])
+
+    for _ in range(2):
+        open_with_segment()
+    client, _ = reader(org_a, make_member)
+    with CaptureQueriesContext(connection) as few:
+        assert len(client.get(POSITIONS).data) == 2
+    for _ in range(8):
+        open_with_segment()
+    with django_assert_max_num_queries(len(few)):
+        assert len(client.get(POSITIONS).data) == 10

@@ -1,10 +1,11 @@
 """Payload of `track.segment` schema 1 (docs/sync.md "Courier track")."""
 
-import math
+from datetime import datetime
 from typing import Any
 
 from rest_framework import serializers
 
+from field_sync.envelope import is_plausible_time
 from tracks.codes import COORDINATE_DECIMALS, MAX_ACCURACY_M, MAX_POSITIONS, MAX_SPAN_SECONDS
 
 POSITION_LENGTH = 4
@@ -17,12 +18,12 @@ def _is_int(value: object) -> bool:
 def _is_coordinate(value: object, limit: int) -> bool:
     if not isinstance(value, int | float) or isinstance(value, bool):
         return False
+    # The range check comes before float(): a 400-digit integer would overflow it, and NaN fails
+    # every comparison.
+    if not -limit <= value <= limit:
+        return False
     number = float(value)
-    return (
-        math.isfinite(number)
-        and -limit <= number <= limit
-        and round(number, COORDINATE_DECIMALS) == number
-    )
+    return round(number, COORDINATE_DECIMALS) == number
 
 
 def _is_position(item: object) -> bool:
@@ -48,6 +49,11 @@ class TrackSegmentPayloadSerializer(serializers.Serializer[Any]):
     positions = serializers.ListField(
         child=serializers.JSONField(), min_length=1, max_length=MAX_POSITIONS
     )
+
+    def validate_started_at(self, started_at: datetime) -> datetime:
+        if not is_plausible_time(started_at):
+            raise serializers.ValidationError("Implausible time.", code="out_of_range")
+        return started_at
 
     def validate_positions(self, positions: list[Any]) -> list[list[Any]]:
         if not all(_is_position(item) for item in positions):
