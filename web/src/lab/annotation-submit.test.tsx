@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { apiError, makeVoidReasonItems } from "../test/fake-api";
@@ -73,6 +73,19 @@ async function prepareAnnotation() {
   await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
   return screen.findByRole("button", { name: "Add egg" });
 }
+
+test("a photo dropped on the upload card opens the canvas step", async () => {
+  await openAnnotation({ path: "/lab/egg-counts/B-031/annotate" });
+  const heading = await screen.findByRole("heading", { name: "Arrastra la foto aquí" });
+  const card = heading.closest("section");
+  if (!card) throw new Error("Upload card is missing");
+  fireEvent.drop(card, {
+    dataTransfer: { files: [new File(["photo"], "paddle.png", { type: "image/png" })] },
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
+  expect(await screen.findByRole("button", { name: "Add egg" })).toBeDefined();
+  expect(screen.queryByRole("heading", { name: "Arrastra la foto aquí" })).toBeNull();
+});
 
 test("submits mixed marks as the official value and confirms only after the server asks", async () => {
   const { api } = await openAnnotation({

@@ -447,6 +447,54 @@ async function syntheticPhoto(page: Page) {
   };
 }
 
+async function startPhotoDrag(page: Page) {
+  const photo = await syntheticPhoto(page);
+  const transfer = await page.evaluateHandle(
+    ({ source, name, type }) => {
+      const bytes = Uint8Array.from(atob(source), (character) => character.charCodeAt(0));
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([bytes], name, { type }));
+      return dataTransfer;
+    },
+    { source: photo.buffer.toString("base64"), name: photo.name, type: photo.mimeType },
+  );
+  const prevented = await transfer.evaluate((dataTransfer) =>
+    ["dragenter", "dragover"].map(
+      (eventType) =>
+        !document.body.dispatchEvent(
+          new DragEvent(eventType, { dataTransfer, bubbles: true, cancelable: true }),
+        ),
+    ),
+  );
+  expect(prevented).toEqual([true, true]);
+  return transfer;
+}
+
+async function dropPhotoOnBody(page: Page, language: "es-MX" | "en" = "es-MX") {
+  const transfer = await startPhotoDrag(page);
+  const overlay = page.getByText(messages[language]["labAnnotation.upload.dropHere"], {
+    exact: true,
+  });
+  await expect(overlay).toBeVisible();
+  expect(
+    await overlay.evaluate((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return [x, y, width === innerWidth, height === innerHeight];
+    }),
+  ).toEqual([0, 0, true, true]);
+  await expectNoAxeViolations(page);
+  expect(
+    await transfer.evaluate(
+      (dataTransfer) =>
+        !document.body.dispatchEvent(
+          new DragEvent("drop", { dataTransfer, bubbles: true, cancelable: true }),
+        ),
+    ),
+  ).toBe(true);
+  await expect(overlay).toHaveCount(0);
+  await transfer.dispose();
+}
+
 test("W35 unsaved photo keeps focus in its leave dialog and restores browser history on stay", async ({
   page,
 }, testInfo) => {
@@ -509,17 +557,19 @@ test("W35 unsaved photo keeps focus in its leave dialog and restores browser his
   expect(commands).toEqual([]);
 });
 
-test("W35 right mouse drag pans a point without deleting and releases the grabbing cursor", async ({
+test("W35 body photo drop opens the canvas and right mouse drag pans without deleting", async ({
   page,
 }) => {
   const text = (key: MessageKey) => messages["es-MX"][key];
   await mockAnnotation(page);
   await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
-  await page
-    .getByLabel(text("labAnnotation.upload.picker"), { exact: true })
-    .setInputFiles(await syntheticPhoto(page));
+  await expect(
+    page.getByRole("button", { name: text("labAnnotation.upload.choose"), exact: true }),
+  ).toBeVisible();
+  await dropPhotoOnBody(page);
   await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
   const canvas = page.getByRole("application").locator("canvas[tabindex='0']");
+  await expect(canvas).toBeVisible();
   await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
     0,
   );
@@ -698,7 +748,7 @@ for (const theme of ["light", "dark"] as const) {
       await expect(picker).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
       await expect(picker).not.toHaveAttribute("capture");
       await expect(picker).toBeHidden();
-      await picker.setInputFiles(await syntheticPhoto(page));
+      await dropPhotoOnBody(page, language);
       await page
         .getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true })
         .click();
