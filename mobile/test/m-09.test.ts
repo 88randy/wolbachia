@@ -3313,3 +3313,106 @@ void test("Replacement refuses a used label, the old trap's own label and unknow
   await complete(h, draft);
   await assert.rejects(h.service.save(eventId), /identity/);
 });
+
+import { REPLACEMENT_SCAN_ERRORS } from "../src/features/scanner/service.ts";
+const LABEL_L = "dddddddd-dddd-4ddd-8ddd-000000000777";
+/** A replacement draft from before the label step: a random UUID already reserved for its event. */
+async function legacyReplacement(h: Awaited<ReturnType<typeof harness>>) {
+  const started = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const eventId = started.draft.eventId;
+  const legacyId = "cccccccc-cccc-4ccc-8ccc-000000000001";
+  await h.db.runAtomically([
+    { sql: "INSERT INTO lifecycle_identity(id,event_id) VALUES(?,?)", params: [legacyId, eventId] },
+    {
+      sql: `UPDATE lifecycle_draft SET draft=json_remove(json_set(draft,'$.replacementId',?),
+        '$.labelScanned','$.replacementCode') WHERE slot=1`,
+      params: [legacyId],
+    },
+  ]);
+  const bound = await h.service.bindReplacementLabel(`wbf:1:ovitrap:${LABEL_L}`, false, eventId);
+  assert.equal(bound.labelResult, "read");
+  assert.ok(bound.draft);
+  await complete(h, bound.draft);
+  return { eventId, legacyId };
+}
+async function placeLabel(h: Awaited<ReturnType<typeof harness>>, ovitrapId: string) {
+  const placed = makeDraft({
+    eventId: h.deps.uuid(),
+    mode: "place",
+    ovitrapId,
+    deviceTime: "2026-01-16T15:00:00Z",
+  });
+  await h.store.capture.begin(placed);
+  return h.outbox.enqueue(
+    captureEvent(placed),
+    h.store.capture.commitStatements(placed, (await h.store.capture.read()).draftVersion),
+  );
+}
+
+void test("legacy replacement keeps its old reservation, sends the scanned label and still protects it", async () => {
+  const first = await harness();
+  const legacy = await legacyReplacement(first);
+  await first.service.save(legacy.eventId);
+  const [event] = await first.outbox.claimPending(10);
+  assert.equal(event?.envelope.payload.replacement_id, LABEL_L);
+  assert.deepEqual(
+    (
+      await first.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [legacy.eventId])
+    ).map((row) => row.id),
+    [legacy.legacyId],
+  );
+  await assert.rejects(placeLabel(first, LABEL_L), "a later placement cannot take the label");
+
+  const second = await harness();
+  const pending = await legacyReplacement(second);
+  await placeLabel(second, LABEL_L);
+  await assert.rejects(second.service.save(pending.eventId), "a placement saved first wins");
+  assert.equal((await second.store.read()).event, null);
+});
+
+void test("an open placement draft holding the label makes it used for the replacement", async () => {
+  const h = await harness();
+  await h.store.capture.begin(
+    makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: LABEL_L, labelScanned: true }),
+  );
+  const started = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const bound = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${LABEL_L}`,
+    false,
+    started.draft.eventId,
+  );
+  assert.equal(bound.labelResult, "used");
+});
+
+void test("after Me equivoqué the voided replacement's sticker stays used; a new sticker is needed", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  assert.ok(draft.replacementId);
+  await h.service.correct(
+    { reasonCode: "other", reason: "Wrong trap replaced by mistake" },
+    draft.eventId,
+  );
+  const again = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    draft.eventId,
+  );
+  assert.ok(again.draft);
+  assert.notEqual(again.draft.eventId, draft.eventId);
+  const rescan = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${draft.replacementId}`,
+    false,
+    again.draft.eventId,
+  );
+  assert.equal(rescan.labelResult, "used");
+  assert.equal(REPLACEMENT_SCAN_ERRORS[rescan.labelResult], "labelUsed");
+});

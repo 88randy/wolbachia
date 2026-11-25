@@ -36,7 +36,8 @@ export type ScannerDestination =
   /** Done: return to the screen that opened the scanner. */
   | { readonly back: true }
   | { readonly error: import("./domain.ts").ScannerError; readonly pointCode?: string | null };
-const REPLACEMENT_ERRORS: Readonly<
+/** What the scanner says for each refused replacement label. */
+export const REPLACEMENT_SCAN_ERRORS: Readonly<
   Record<Exclude<ReplacementLabelResult, "read">, import("./domain.ts").ScannerError>
 > = { invalid: "invalid", unknown: "labelUnknown", used: "labelUsed", own: "labelOwn" };
 /** Resolves only current downloaded scope; opening a capture awaits its existing durable writer. */
@@ -124,7 +125,9 @@ export class ScannerService {
       eventId,
     );
     if (!isCurrent()) return { error: "unavailable" };
-    return labelResult === "read" ? { back: true } : { error: REPLACEMENT_ERRORS[labelResult] };
+    return labelResult === "read"
+      ? { back: true }
+      : { error: REPLACEMENT_SCAN_ERRORS[labelResult] };
   }
   /** The bag step of the open capture: camera and typed code follow the same rule (`resolveBagEntry`). */
   async #enterBag({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {

@@ -450,7 +450,7 @@ export class OvitrapService {
     if (id === draft.ovitrapId && draft.labelScanned) return false;
     const { store } = this.#deps;
     if (draft.assignment?.ovitraps.some((item) => item.id === id)) return true;
-    if ((await store.projection(id)) !== null) return true;
+    if ((await store.projection(id)) !== null || (await store.isReplacementLabel(id))) return true;
     return (await store.lifecycleSource(id)).physical !== null;
   }
   enterBag(value: string, eventId: string | null, isManual = true): Promise<Snapshot> {
