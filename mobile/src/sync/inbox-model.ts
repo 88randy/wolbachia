@@ -15,16 +15,6 @@ export function eventTypeKey(type: string): MessageKey {
   return isMessageKey(key) ? key : "mobile.eventType.unknown";
 }
 
-/** Badge text for each status. Sent, rejected and in review reuse the shared sync keys. */
-export const STATUS_BADGE_KEY: Readonly<Record<OutboxStatus, MessageKey>> = {
-  pending: "mobile.status.pending",
-  sending: "mobile.status.sending",
-  sent: "sync.inbox.acceptedTitle",
-  error: "mobile.status.error",
-  in_review: "sync.inbox.inReviewTitle",
-  rejected: "sync.inbox.rejectedTitle",
-};
-
 const FALLBACK_HINT_KEY: Readonly<Partial<Record<OutboxStatus, MessageKey>>> = {
   rejected: "sync.inbox.rejectedHint",
   in_review: "sync.inbox.inReviewHint",

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { View } from "react-native";
 import { MapView } from "../../maps/MapView.tsx";
 import type { MapPoint, MapZone } from "../../maps/map-types.ts";
@@ -15,13 +16,14 @@ interface Props {
 export function P10Map({ model, points, zones }: Props) {
   const start = useStartTask();
   const track = useOwnTrack();
+  const lines = useMemo(() => [track], [track]);
   const taskOf = (id: string) => model.tasks.find((candidate) => candidate.task.id === id)?.task;
   return (
     <View className="flex-1">
       <MapView
         points={points}
         zones={zones}
-        track={track}
+        lines={lines}
         selectedId={model.selected?.task.id ?? null}
         onStart={(id) => {
           const task = taskOf(id);

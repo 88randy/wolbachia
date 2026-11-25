@@ -1,4 +1,10 @@
+import { captureLocalDate } from "../day/capture-local-date.ts";
 import type { CalendarService, CalendarView } from "./service.ts";
+
+/** True once `now` falls on another local date than the view's `today` (#373 step 10). */
+export function isStaleDay(view: CalendarView | null, now: Date): boolean {
+  return view !== null && captureLocalDate(now.toISOString(), view.timeZone) !== view.today;
+}
 
 export interface CalendarReadState {
   readonly view: CalendarView | null;

@@ -7,7 +7,6 @@ export const sync = {
   "sync.result.capturedAfterQuadrantClose":
     "La captura se hizo después del cierre del cuadrante. No autoriza trabajo nuevo ahí. Contacta a tu supervisor.",
   // Result of sending a record to the server (phone inbox)
-  "sync.inbox.acceptedTitle": "Enviado",
   "sync.inbox.acceptedHint": "El servidor ya recibió este registro. No tienes que hacer nada más.",
   "sync.inbox.rejectedTitle": "No aceptado",
   "sync.inbox.rejectedHint":

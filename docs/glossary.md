@@ -266,6 +266,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
 | validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
 | historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| calendario del recolector | courier calendar | `CalendarService`, routes `calendar` (P33) and `calendarTrack` (P33b) | Read-only offline month view on the phone: the past 30 local days of own activity and downloaded tasks, with one day's own track per shift. Never a server query. |
 | resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
 | reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
 

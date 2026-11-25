@@ -12,7 +12,7 @@ export interface ScreenScaffoldProps {
   readonly children: ReactNode;
   /** Sticky bottom area for the ONE primary action of the screen. */
   readonly footer?: ReactNode;
-  /** Shows Mi día / Mapa / Ayuda (top-level screens only, never inside a wizard). */
+  /** Shows Mi día / Mapa / Calendario / Ayuda (top-level screens only, never inside a wizard). */
   readonly tab?: BottomTab;
   /** Maps and other full-screen content must not scroll (see README). */
   readonly isScrollable?: boolean;

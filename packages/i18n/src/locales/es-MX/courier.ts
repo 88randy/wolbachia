@@ -10,6 +10,7 @@ export const courier = {
   "courier.tabs.label": "Menú principal",
   "courier.tabs.day": "Mi día",
   "courier.tabs.map": "Mapa",
+  "courier.tabs.calendar": "Calendario",
   "courier.tabs.help": "Ayuda",
   "courier.choice.yes": "Sí",
   "courier.choice.no": "No",
