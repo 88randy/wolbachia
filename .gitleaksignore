@@ -3,3 +3,7 @@
 686363b4e2199a1423b8eb30cf6215946eda0f51:issues/03-backend-catalog-rules.md:generic-api-key:19
 # backend/rules/seeds.py: ORM filter 'parameter__key__in=fuel_keys' (a lookup on rule-parameter keys), not a secret.
 8ec8d3f101e5c0250dfb90f96bdbd753b39ca563:backend/rules/seeds.py:generic-api-key:186
+# backend/tests/test_platform_admin.py: fake new password in a password-change test (PR #375), not a secret.
+aec10f3b5b65e416b81a29ceb2748be9d7213fa9:backend/tests/test_platform_admin.py:generic-api-key:442
+# backend/platform_admin/services.py: PASSWORD_ALPHABET, the character set for generated passwords (PR #375), not a secret.
+da0464368eb7e22c38fcca003f0495e4f97acae3:backend/platform_admin/services.py:generic-api-key:43
