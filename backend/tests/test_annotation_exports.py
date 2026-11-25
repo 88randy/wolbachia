@@ -58,21 +58,22 @@ def export_context(monkeypatch):
     return context
 
 
-def annotate(context, code, *, upload=None):
-    bag = capture_bag(context, code, new_source=True)
+def annotate(context, code, *, upload=None, marks=None, **bag_values):
+    bag = capture_bag(context, code, new_source=True, **bag_values)
     assert receive(context, bag).status == 200
     image = upload or verified_upload(
         context.actor.organization, context.actor.user, purpose="egg_annotation"
     )
+    marks = [POINT] if marks is None else marks
     result = execute_lab_command(
         context.actor,
         count_input(
             context,
             bag,
-            1,
+            len(marks),
             annotation={
                 "upload_id": str(image.public_id),
-                "marks": [POINT],
+                "marks": marks,
                 "tool_version": "aedesvision-synthetic-test",
             },
         ),
@@ -310,6 +311,61 @@ def test_ready_export_totals_disclose_original_count_before_archive_download(
     assert disclosures.exists()
 
 
+@pytest.mark.django_db
+def test_legacy_requester_is_disclosed_before_its_first_ready_poll(
+    monkeypatch, api_client, make_member
+):
+    from lab.annotation_exports import append_export_status
+    from lab.models import (
+        EggAnnotationExport,
+        EggAnnotationExportItem,
+        EggAnnotationExportStatus,
+        LabNumericDisclosure,
+    )
+
+    context = export_context(monkeypatch)
+    annotation = annotate(context, "EXPORT-LEGACY-REQUESTER")
+    requester = actor_with_codes(context, make_member, (EXPORT_CODE,))
+    export = EggAnnotationExport.objects.create(
+        organization=requester.organization,
+        created_by=requester.user,
+        date_from=date(2026, 2, 4),
+        date_to=date(2026, 2, 4),
+        format="coco",
+    )
+    EggAnnotationExportItem.objects.create(
+        organization=requester.organization,
+        created_by=requester.user,
+        export=export,
+        annotation=annotation,
+        voided=False,
+    )
+    EggAnnotationExportStatus.objects.create(
+        organization=requester.organization,
+        export=export,
+        status="queued",
+        revision=0,
+        actor_kind="system",
+        policy_version="egg-annotation-export-v1",
+    )
+    # A legacy queued request can finish under the new worker policy.
+    append_export_status(export, "running")
+    append_export_status(
+        export,
+        "ready",
+        image_count=1,
+        point_count=1,
+        object_key=f"dataset/{uuid4().hex}.zip",
+        size_bytes=1,
+        sha256="0" * 64,
+    )
+    api_client.force_authenticate(requester.user)
+    assert api_client.get(f"{EXPORTS}{export.pk}/").data["image_count"] == 1
+    assert LabNumericDisclosure.objects.filter(
+        count=annotation.count, created_by=requester.user
+    ).exists()
+
+
 def stored_annotation_upload(context):
     """Persist genuine sanitized bytes outside domain transactions for the eager wiring test."""
     from uploads.images import sanitize_image
@@ -394,10 +450,9 @@ def test_export_filters_author_local_dates_and_void_policy(monkeypatch, make_mem
         "author": context.actor.user.pk,
         "include_voided": False,
     }
-    assert set(export_annotation_rows(context.actor, filters).values_list("pk", flat=True)) == {
-        kept.pk
-    }
-    included = export_annotation_rows(context.actor, {**filters, "include_voided": True})
+    admin = actor_with_codes(context, make_member, (EXPORT_CODE, "recount.create"))
+    assert set(export_annotation_rows(admin, filters).values_list("pk", flat=True)) == {kept.pk}
+    included = export_annotation_rows(admin, {**filters, "include_voided": True})
     assert set(included.values_list("pk", flat=True)) == {kept.pk, voided.pk}
 
 
@@ -435,6 +490,68 @@ def test_export_snapshot_never_selects_another_organizations_annotations(monkeyp
     ) == [own.pk]
 
 
+@pytest.mark.django_db
+def test_export_discloses_only_annotations_inside_the_requesters_center(
+    monkeypatch, api_client, make_member
+):
+    from geography.models import Quadrant
+    from lab.models import EggAnnotationExportItem, LabNumericDisclosure
+    from organizations.models import Center
+    from tests.ovitrap_support import make_point
+
+    context = export_context(monkeypatch)
+    included = annotate(context, "EXPORT-IN-CENTER")
+    center_id = context.field.point.block.quadrant.center_id
+    other_center = Center.objects.create(
+        organization=context.actor.organization, code="EXPORT-OTHER", name="Other test center"
+    )
+    quadrant = Quadrant.objects.create(
+        organization=context.actor.organization, center=other_center, code="EXPORT-OTHER-Q"
+    )
+    context.field.point = make_point(quadrant, "EXPORT-OTHER-P")
+    annotate(context, "EXPORT-OUT-OF-CENTER")
+    admin = actor_with_codes(context, make_member, (EXPORT_CODE, "recount.create"))
+    profile = admin.user.memberships.get().profiles.get()
+    profile.scope = {
+        "centers": {"mode": "selected", "ids": [str(center_id)]},
+        "quadrants": {"mode": "all", "ids": []},
+    }
+    profile.save(update_fields=["scope"])
+    exported = request_export(api_client, SimpleNamespace(actor=admin))
+    assert list(
+        EggAnnotationExportItem.objects.filter(export_id=exported["id"]).values_list(
+            "annotation_id", flat=True
+        )
+    ) == [included.pk]
+    assert list(
+        LabNumericDisclosure.objects.filter(created_by=admin.user).values_list(
+            "count_id", "surface"
+        )
+    ) == [(included.count_id, "annotation_export")]
+
+
+@pytest.mark.django_db
+def test_failed_export_creation_rolls_back_selection_and_disclosures(monkeypatch, make_member):
+    from lab.annotation_exports import create_annotation_export
+    from lab.models import EggAnnotationExport, LabNumericDisclosure
+
+    context = export_context(monkeypatch)
+    annotate(context, "EXPORT-ROLLBACK")
+    admin = actor_with_codes(context, make_member, (EXPORT_CODE, "recount.create"))
+
+    def fail_status(*_args):
+        raise ValueError("Synthetic failure before export selection is sealed")
+
+    monkeypatch.setattr("lab.annotation_exports.append_export_status", fail_status)
+    with pytest.raises(ValueError, match="Synthetic failure"):
+        create_annotation_export(
+            admin,
+            {"date_from": date(2026, 2, 4), "date_to": date(2026, 2, 4), "format": "coco"},
+        )
+    assert not EggAnnotationExport.objects.exists()
+    assert not LabNumericDisclosure.objects.filter(created_by=admin.user).exists()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_eager_task_records_failed_code_without_exposing_storage_details(
     monkeypatch, api_client, settings, tmp_path
@@ -457,10 +574,16 @@ def test_eager_task_records_failed_code_without_exposing_storage_details(
 
 @pytest.mark.django_db(transaction=True)
 def test_eager_export_downloads_verified_dataset_and_logs_each_download(
-    monkeypatch, api_client, settings, tmp_path
+    monkeypatch, api_client, settings, tmp_path, make_member
 ):
     from config.celery import app
-    from lab.models import EggAnnotationExportDownload, EggAnnotationExportStatus
+    from lab.independent_qa.selectors import eligibility_reason
+    from lab.models import (
+        EggAnnotationExportDownload,
+        EggAnnotationExportStatus,
+        LabNumericDisclosure,
+        RecountRequest,
+    )
     from lab.tasks import build_egg_annotation_export
 
     settings.UPLOADS_PRIVATE_ROOT = tmp_path
@@ -468,15 +591,30 @@ def test_eager_export_downloads_verified_dataset_and_logs_each_download(
     monkeypatch.setitem(app.conf, "task_always_eager", True)
     context = export_context(monkeypatch)
     upload = stored_annotation_upload(context)
-    annotation = annotate(context, "PRIVATE-BAG-NEVER-EXPORTED", upload=upload)
-    exported = request_export(api_client, context)
+    annotation = annotate(
+        context,
+        "PRIVATE-BAG-NEVER-EXPORTED",
+        upload=upload,
+        marks=[{"kind": "box", "x": 0, "y": 0, "w": 2, "h": 2}, POINT],
+        has_eggs=False,
+    )
+    admin = actor_with_codes(context, make_member, (EXPORT_CODE, "recount.create"))
+    recount = RecountRequest.objects.get(count=annotation.count)
+    assert eligibility_reason(admin, recount, "second") is None
+    exported = request_export(api_client, SimpleNamespace(actor=admin))
+    assert list(
+        LabNumericDisclosure.objects.filter(
+            count=annotation.count, created_by=admin.user
+        ).values_list("surface", flat=True)
+    ) == ["annotation_export"]
+    assert eligibility_reason(admin, recount, "second") == "lab_recount_disclosed"
     detail = api_client.get(f"{EXPORTS}{exported['id']}/")
     assert detail.data["status"] == "ready", detail.data
     assert (
         detail.data["image_count"],
         detail.data["box_count"],
         detail.data["point_count"],
-    ) == (1, 0, 1)
+    ) == (1, 1, 1)
     archive_bytes = download_bytes(api_client, exported["id"])
     assert len(archive_bytes) == detail.data["size_bytes"]
     assert hashlib.sha256(archive_bytes).hexdigest() == detail.data["sha256"]
@@ -487,10 +625,14 @@ def test_eager_export_downloads_verified_dataset_and_logs_each_download(
         assert "PRIVATE-BAG" not in str(manifest)
         assert context.actor.user.username not in str(manifest)
         assert json.loads(archive.read("points.json"))["images"][0]["points"] == [[0, 0]]
+        coco = json.loads(archive.read("annotations.json"))
+        assert len(coco["images"]) == 1
+        assert [mark["bbox"] for mark in coco["annotations"]] == [[0, 0, 2, 2]]
+        assert coco["annotations"][0]["image_id"] == coco["images"][0]["id"]
     download_bytes(api_client, exported["id"])
     receipts = EggAnnotationExportDownload.objects.filter(export_id=exported["id"])
     assert receipts.count() == 2
-    assert set(receipts.values_list("created_by_id", flat=True)) == {context.actor.user.pk}
+    assert set(receipts.values_list("created_by_id", flat=True)) == {admin.user.pk}
     for statement in (
         "UPDATE lab_eggannotationexportitem SET voided=true WHERE export_id=%s",
         "DELETE FROM lab_eggannotationexportdownload WHERE export_id=%s",

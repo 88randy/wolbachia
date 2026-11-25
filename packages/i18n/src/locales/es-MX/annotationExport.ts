@@ -10,6 +10,8 @@ export const annotationExport = {
     "Las fechas incluyen ambos días y usan la zona horaria de la organización. Los puntos se guardan por separado, sin convertirlos en cajas.",
   "annotationExport.form.photoNotice":
     "No se incluyen datos personales en los metadatos, nombres de archivo ni manifiesto. Las fotos pueden mostrar códigos o etiquetas escritos a mano; revísalas antes de compartir el conjunto.",
+  "annotationExport.form.disclosureNotice":
+    "Generar la exportación revela los conteos incluidos: no podrás hacer reconteos ciegos de esas bolsas.",
   "annotationExport.form.from": "Fecha inicial",
   "annotationExport.form.to": "Fecha final",
   "annotationExport.form.author": "Autor (opcional)",

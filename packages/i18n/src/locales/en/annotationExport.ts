@@ -12,6 +12,8 @@ export const annotationExport: Record<keyof typeof esAnnotationExport, string> =
     "Both dates are included in the organization's time zone. Points are stored separately and are never converted into boxes.",
   "annotationExport.form.photoNotice":
     "Metadata, file names and the manifest contain no personal data. Photos may show handwritten codes or labels; review them before sharing the dataset.",
+  "annotationExport.form.disclosureNotice":
+    "Generating the export reveals the included counts: you will no longer be able to perform blind recounts of those bags.",
   "annotationExport.form.from": "Start date",
   "annotationExport.form.to": "End date",
   "annotationExport.form.author": "Author (optional)",

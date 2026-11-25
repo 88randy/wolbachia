@@ -76,6 +76,7 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
       >
         <p className="m-0 text-sm text-ink-2">{t("annotationExport.form.hint")}</p>
         <InlineNotice>{t("annotationExport.form.photoNotice")}</InlineNotice>
+        <InlineNotice>{t("annotationExport.form.disclosureNotice")}</InlineNotice>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             ref={fromRef}

@@ -127,14 +127,24 @@ export in the organization, including another requester's export, subject to
 current whole paired scope and independent-QA visibility. Each download is logged.
 `seed_organization_defaults --apply` adds this new code to
 eligible seeded admin profiles using the existing non-restoration policy.
-Current whole paired scope and the independent-QA visibility predicate precede
-selection, list counts, paging and access to an indivisible archive. Losing access
-to any selected count hides the entire export. The first disclosure of ready
-totals publishes only selected counts without an existing actor/count receipt.
-Repeated polls of the same immutable exports perform no disclosure writes or
-materialization of previously disclosed counts. Lists, detail and downloads use
-this existing idempotent disclosure boundary; exports cannot bypass
-independent recount blindness. Download checks current identity and authority,
+Selection applies organization and current whole paired export scope, dates,
+author and voided policy, without the independent-QA visibility filter. Creating
+an export is an explicit numeric disclosure: within the same User/Organization
+transaction that seals its selection, bulk insert an `annotation_export`
+`LabNumericDisclosure` for the requester and every included count, ignoring
+existing actor/count receipts. This makes the requester ineligible for blind
+recounts of those Bags (`lab_recount_disclosed`), even before the worker runs or
+if generation later fails. W72 explains this consequence before generation.
+Queued policy `egg-annotation-export-v2` identifies requests with atomic creation
+disclosure; their requester polls need no totals publication. Historical requests
+retain the receipt on first numeric delivery, even if a new worker finishes them.
+Other readers retain current paired
+scope and blind visibility before list counts, paging or archive access; an
+eligible blind counter cannot open somebody else's export to reveal counts.
+An authorized new reader without a recount grant still receives the existing
+idempotent disclosure receipt on numeric delivery, protecting later grants.
+Losing access to any selected count hides the entire export.
+Download checks current identity and authority,
 then checks the sealed size with stat and verifies SHA-256 while streaming. A
 digest mismatch aborts the stream rather than delivering a successful completion.
 
@@ -213,8 +223,13 @@ transition guards. `0019_annotation_export_expiry` expands the retained states;
 expiry facts prevent reversal. Populated export history prevents table removal. The format and
 private stream tests live in `tests/test_annotation_export_archive.py`; API,
 eager-task and PostgreSQL invariants live in `tests/test_annotation_exports.py`.
+Migration `0020_annotation_export_disclosure` expands only the existing numeric
+surface guard and model choices; rollback refuses retained export disclosures.
+The existing migration owner verifies forward and reverse guards. Bulk insertion
+uses Django's documented [conflict handling](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#bulk-create)
+and the choice-only change uses [separate database/state operations](https://docs.djangoproject.com/en/5.2/ref/migration-operations/#separatedatabaseandstate).
 See [the API contract](../../docs/api-conventions.md#training-dataset-exports-w72)
-and decision 177. Format references:
+and decisions 177/178. Format references:
 [COCO](https://cocodataset.org/#format-data),
 [COCO reference API](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py),
 [Ultralytics detection datasets](https://docs.ultralytics.com/datasets/detect/),

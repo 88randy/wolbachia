@@ -51,12 +51,19 @@ The annotation's sole public identifier is `id`.
 
 Every action requires current `egg_annotation.export`, granted only to seeded
 admins by default. Organization comes from the authenticated membership; neither
-the request nor the route accepts an organization ID. Current whole paired action
-scope and independent-QA blindness restrict annotations before selection or page
-counts. An export is indivisible: if any selected annotation becomes inaccessible,
+the request nor the route accepts an organization ID. Selection applies current
+whole paired export scope, date/author/voided filters, without blind-QA filtering.
+Creating the export explicitly discloses every sealed count to its requester:
+`annotation_export` numeric receipts commit atomically with the selection,
+making the requester ineligible for blind recounts of those Bags
+(`lab_recount_disclosed`). This happens before dispatch, including failed jobs.
+Other readers retain blind visibility before page counts and archive access.
+An export is indivisible: if any selected annotation becomes inaccessible,
 list/detail/download conceal it. Admins with this permission may see/download
 every currently accessible export in their organization, regardless of requester;
-each download is logged. Ready totals publish only selected counts missing the
+each download is logged. New requester polls need no numeric publication;
+historical requests retain disclosure on their first numeric delivery. For other
+authorized readers, ready/expired totals publish only selected counts missing the
 existing actor/count disclosure receipt. Subsequent polls of the same immutable
 exports perform no disclosure writes or materialization of already disclosed counts.
 

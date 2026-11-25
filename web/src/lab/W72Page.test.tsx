@@ -142,11 +142,17 @@ describe("W72 annotation training exports", () => {
     expect(document.activeElement).toBe(culprit);
   });
 
-  test("shows the photo notice before a request and invalidates only export history", async () => {
-    const { app } = await openExports({
+  test("shows photo and disclosure notices before a request and invalidates only export history", async () => {
+    const { app, api } = await openExports({
       routes: { [`POST ${EXPORT_PATH}`]: Response.json(exportRow("queued"), { status: 201 }) },
     });
     await screen.findByText(/Las fotos pueden mostrar códigos o etiquetas escritos a mano/);
+    expect(
+      screen.getByText(
+        "Generar la exportación revela los conteos incluidos: no podrás hacer reconteos ciegos de esas bolsas.",
+      ),
+    ).toBeDefined();
+    expect(api.requests.some((item) => item.method === "POST")).toBe(false);
     const identity = makeMe();
     const prefix = ["org", identity.user.id, identity.organization?.slug ?? "", "lab"];
     const queueKey = [...prefix, "queue"];

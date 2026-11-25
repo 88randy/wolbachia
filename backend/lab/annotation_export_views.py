@@ -121,9 +121,7 @@ class EggAnnotationExportViewSet(
         payload.is_valid(raise_exception=True)
         actor = self.export_actor
         export = create_annotation_export(actor, payload.validated_data)
-        with numeric_read_transaction(actor):
-            publish_export_totals(actor, [export])
-            return Response(self.get_serializer(export_projection(export)).data, status=201)
+        return Response(self.get_serializer(export_projection(export)).data, status=201)
 
     @extend_schema(responses={(200, "application/zip"): OpenApiTypes.BINARY})
     @action(detail=True, methods=["get"])

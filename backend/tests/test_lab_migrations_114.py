@@ -446,6 +446,65 @@ def assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, method):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_annotation_export_disclosure_upgrade_retains_audit_and_protects_reverse(
+    monkeypatch, make_member
+):
+    from lab.models import LabNumericDisclosure
+
+    context = lab_context(monkeypatch)
+    bag = capture_bag(context, "EXPORT-DISCLOSURE-MIGRATION")
+    assert receive(context, bag).status == 200
+    result = execute_lab_command(context.actor, count_input(context, bag, 0))
+    assert result.status == 201
+    requester, _member = make_member(context.actor.organization, ["egg_annotation.export"])
+    reader, _member = make_member(context.actor.organization, ["egg_count.read"])
+    owner = {"organization": context.actor.organization, "count_id": result.body["count"]["id"]}
+    executor = MigrationExecutor(connection)
+    target = ("lab", "0020_annotation_export_disclosure")
+    migration = executor.loader.get_migration(*target)
+    prior_state = executor.loader.project_state([("lab", "0019_annotation_export_expiry")])
+    try:
+        with transaction.atomic():
+            executor.unapply_migration(prior_state.clone(), migration)
+        assert target not in executor.recorder.applied_migrations()
+        with (
+            pytest.raises(DatabaseError, match="Numeric disclosure boundary invalid"),
+            transaction.atomic(),
+        ):
+            LabNumericDisclosure.objects.create(
+                **owner, created_by=requester, surface="annotation_export"
+            )
+        legacy = LabNumericDisclosure.objects.create(**owner, created_by=reader, surface="result")
+        legacy_before = LabNumericDisclosure.objects.filter(pk=legacy.pk).values().get()
+        with transaction.atomic():
+            executor.apply_migration(prior_state.clone(), migration)
+        with (
+            pytest.raises(DatabaseError, match="Numeric disclosure boundary invalid"),
+            transaction.atomic(),
+        ):
+            LabNumericDisclosure.objects.create(**owner, created_by=requester, surface="unknown")
+        disclosed = LabNumericDisclosure.objects.create(
+            **owner, created_by=requester, surface="annotation_export"
+        )
+        retained = LabNumericDisclosure.objects.filter(pk=disclosed.pk).values().get()
+        applied = set(executor.recorder.applied_migrations())
+        with (
+            pytest.raises(
+                IrreversibleError, match="Retain immutable annotation export disclosure facts"
+            ),
+            transaction.atomic(),
+        ):
+            executor.unapply_migration(prior_state.clone(), migration)
+        assert set(executor.recorder.applied_migrations()) == applied
+        assert LabNumericDisclosure.objects.filter(pk=legacy.pk).values().get() == legacy_before
+        assert LabNumericDisclosure.objects.filter(pk=disclosed.pk).values().get() == retained
+    finally:
+        if target not in executor.recorder.applied_migrations():
+            with transaction.atomic():
+                executor.apply_migration(prior_state.clone(), migration)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_sample_upgrade_retains_issued_shipments_and_refuses_populated_reverse(monkeypatch):
     context = lab_context(monkeypatch)
     bag = capture_bag(context)

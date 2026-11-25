@@ -28,6 +28,8 @@ expired row shows “Expired” and can request a new export with the same filte
 Creating a job invalidates only annotation export history for the current identity.
 Before generating, the screen explains that metadata, file names and manifest
 omit personal data, while photos may contain handwritten codes or labels.
+The adjacent disclosure notice explains that generating reveals the included
+counts and makes the requester ineligible for blind recounts of those bags.
 Download controls explain why they are unavailable until ready.
 
 W72 is the next unused screen code; the original W1–W71 design export has no asset
@@ -42,7 +44,7 @@ and [React state](https://react.dev/reference/react/useState). No new dependency
 | Inclusive range, missing/invalid/reversed dates, leap-year 366-day limit | `annotation-export-domain.test.ts` |
 | Poll only while visible jobs are queued/running; stop for terminal/empty pages | `annotation-export-domain.test.ts` |
 | Form validation/focus and exact COCO/YOLO/voided request | `W72Page.test.tsx` |
-| Ready-only native download, expired regeneration, isolated history invalidation and photo notice | `W72Page.test.tsx` |
+| Ready-only native download, expired regeneration, isolated history invalidation and pre-generation photo/disclosure notices | `W72Page.test.tsx` |
 | Server-limit interpolation and date field ownership | `annotation-export-error.test.ts`, `W72Page.test.tsx` |
 | Permission-gated route, export-only home card and screen axe scan | `W72Page.test.tsx` |
 

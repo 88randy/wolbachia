@@ -56,7 +56,7 @@ MAX_EXPORT_IMAGES = 5000
 MAX_EXPORT_BYTES = 2 * 1024**3
 EXPORT_TIME_LIMIT_SECONDS = 1860
 EXPORT_RECOVERY_MARGIN_SECONDS = 120
-EXPORT_POLICY_VERSION = "egg-annotation-export-v1"
+EXPORT_POLICY_VERSION = "egg-annotation-export-v2"
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +72,10 @@ def visible_annotation_rows(actor: UploadActor) -> QuerySet[EggAnnotation]:
 
 def export_annotation_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[EggAnnotation]:
     zone = actor.organization.timezone
-    rows = visible_annotation_rows(actor).filter(
+    # Requesting a training export explicitly discloses its sealed counts to the requester.
+    rows = EggAnnotation.objects.filter(
+        organization=actor.organization,
+        count__bag__in=scoped_bags(actor, ANNOTATION_EXPORT),
         created_at__gte=local_day_start(zone, values["date_from"]),
         created_at__lt=local_day_start(zone, values["date_to"] + timedelta(days=1)),
     )
@@ -134,7 +137,7 @@ def append_export_status(export: EggAnnotationExport, status: str, **facts: Any)
 
 
 def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggAnnotationExport:
-    """Pin selected immutable annotations and their void policy before enqueueing after commit."""
+    """Seal selection and requester disclosures atomically, before enqueueing after commit."""
     with numeric_read_transaction(actor):
         if not current_scope(actor).allows(ANNOTATION_EXPORT):
             raise PermissionDenied
@@ -148,14 +151,14 @@ def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggA
             raise FieldValidationError("author", "does_not_exist")
         selected = list(
             export_annotation_rows(actor, values).values_list(
-                "pk", "count__void_fact__pk", "image_upload__verification__size_bytes"
+                "pk", "count_id", "count__void_fact__pk", "image_upload__verification__size_bytes"
             )[: MAX_EXPORT_IMAGES + 1]
         )
         if len(selected) > MAX_EXPORT_IMAGES:
             raise FieldValidationError(
                 "date_to", "annotation_export_too_many_images", {"max_images": MAX_EXPORT_IMAGES}
             )
-        total_bytes = sum(size for _, _, size in selected)
+        total_bytes = sum(size for _, _, _, size in selected)
         if total_bytes > MAX_EXPORT_BYTES:
             raise FieldValidationError(
                 "date_to",
@@ -177,8 +180,20 @@ def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggA
                     annotation_id=annotation_id,
                     voided=void_id is not None,
                 )
-                for annotation_id, void_id, _ in selected
+                for annotation_id, _, void_id, _ in selected
             ]
+        )
+        LabNumericDisclosure.objects.bulk_create(
+            [
+                LabNumericDisclosure(
+                    organization=actor.organization,
+                    created_by=actor.user,
+                    count_id=count_id,
+                    surface="annotation_export",
+                )
+                for _, count_id, _, _ in selected
+            ],
+            ignore_conflicts=True,
         )
         append_export_status(export, "queued")
         transaction.on_commit(lambda: enqueue_annotation_export(str(export.pk)))
@@ -356,12 +371,19 @@ def ready_export(actor: UploadActor, identifier: UUID) -> tuple[EggAnnotationExp
 
 
 def publish_export_totals(actor: UploadActor, exports: Sequence[EggAnnotationExport]) -> None:
-    """Publish each missing actor/count once; repeat polls materialize and insert nothing."""
-    ready_ids = [
-        export.pk
-        for export in exports
-        if next(iter(export.statuses.all())).status in {"ready", "expired"}
-    ]
+    """Publish shared/legacy reads; new requesters disclosed the sealed selection at creation."""
+    ready_ids = []
+    for export in exports:
+        states = list(export.statuses.all())
+        # Only the queued policy proves creation-time disclosure, even for an upgraded worker.
+        has_creation_disclosure = export.created_by_id == actor.user.pk and any(
+            state.status == "queued" and state.policy_version == EXPORT_POLICY_VERSION
+            for state in states
+        )
+        if states[0].status in {"ready", "expired"} and not has_creation_disclosure:
+            ready_ids.append(export.pk)
+    if not ready_ids:
+        return
     counts = list(
         EggCountAttempt.objects.filter(annotation__export_items__export_id__in=ready_ids)
         .filter(
