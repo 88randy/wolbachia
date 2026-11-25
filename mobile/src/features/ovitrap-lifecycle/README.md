@@ -1,5 +1,20 @@
 # M-09 lifecycle capture (#138)
 
+## Replacement label
+
+Replacing is reason → new label → photo → review. The label step uses the shared
+P11 scanner with the placement rules (`resolveLabel`): a scanned QR UUID unknown to
+the pool is accepted, a typed OVT code must be in the downloaded pool. The label
+must be free: not on, reserved for or once used by a trap on this phone, not held by
+the open placement draft, and not the label of the trap being taken out.
+`replacement_id` is that label's UUID; it is reserved in `lifecycle_identity` with
+the capture, and both saves carry SQL guards so a placement and a replacement can
+never take the same label. A draft started before this step keeps its immutable
+random reservation; the guards protect its scanned label.
+
+A voided replacement ("Me equivoqué") keeps its label: the sticker stays bound to
+that trap's history and cannot be reused. The courier needs a new sticker.
+
 ## Configured training eligibility (#144)
 
 New M09 saves check the complete current eligibility snapshot for the exact event

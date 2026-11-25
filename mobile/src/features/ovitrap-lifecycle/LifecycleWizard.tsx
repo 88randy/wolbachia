@@ -7,6 +7,7 @@ import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { PrimaryButton } from "../../ui/PrimaryButton.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
 import { LifecycleConfirmPage } from "./LifecycleConfirmPage.tsx";
+import { LifecycleLabelPage } from "./LifecycleLabelPage.tsx";
 import { LifecyclePhotoPage } from "./LifecyclePhotoPage.tsx";
 import { LifecycleReasonPage } from "./LifecycleReasonPage.tsx";
 import { LifecycleRecoveryPage } from "./LifecycleRecoveryPage.tsx";
@@ -16,10 +17,10 @@ import type { LifecycleProps } from "./model.ts";
 import type { LifecycleDraft, LifecycleKind } from "./types.ts";
 import { useLifecycleSave } from "./use-lifecycle-save.ts";
 
-type Page = "recovery" | "reason" | "photo" | "confirm";
+type Page = "recovery" | "reason" | "label" | "photo" | "confirm";
 
 const PAGES: Readonly<Record<LifecycleKind, readonly Page[]>> = {
-  replace: ["reason", "photo", "confirm"],
+  replace: ["reason", "label", "photo", "confirm"],
   relocate: ["reason", "photo", "confirm"],
   remove: ["recovery", "reason", "photo", "confirm"],
 };
@@ -28,13 +29,22 @@ function isPageDone(page: Page, draft: LifecycleDraft): boolean {
   if (page === "recovery") return draft.recovery !== null;
   if (page === "reason")
     return draft.reasonCode !== "" && (!needsOther(draft) || draft.otherText.trim() !== "");
+  if (page === "label") return draft.labelScanned === true;
   if (page === "photo") return draft.evidence.length > 0;
   return true;
+}
+
+function resumeIndex(pages: readonly Page[], draft: LifecycleDraft): number {
+  const open = pages.findIndex((page) => !isPageDone(page, draft));
+  if (open === -1) return pages.length - 1;
+  // Show the label just scanned before moving on, as the design asks ("Escanear otra · Continuar").
+  return pages[open - 1] === "label" ? open - 1 : open;
 }
 
 function PageBody({ page, ...props }: LifecycleProps & { readonly page: Page }) {
   if (page === "recovery") return <LifecycleRecoveryPage {...props} />;
   if (page === "reason") return <LifecycleReasonPage {...props} />;
+  if (page === "label") return <LifecycleLabelPage {...props} />;
   if (page === "photo") return <LifecyclePhotoPage {...props} />;
   return <LifecycleConfirmPage {...props} />;
 }
@@ -44,7 +54,8 @@ export function LifecycleWizard(props: LifecycleProps) {
   const { model, draft } = props;
   const t = useT();
   const pages = PAGES[draft.kind];
-  const [index, setIndex] = useState(0);
+  // The label scanner is its own screen: coming back resumes at the first unfinished page.
+  const [index, setIndex] = useState(() => resumeIndex(pages, draft));
   const page = pages[index] ?? "confirm";
   const save = useLifecycleSave(props);
   const isLast = index === pages.length - 1;

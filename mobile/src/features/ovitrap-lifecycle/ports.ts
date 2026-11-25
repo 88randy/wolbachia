@@ -25,6 +25,8 @@ export interface Dependencies {
     turn: LifecycleSourceTurn,
   ) => Promise<readonly SqlStatement[]>;
   readonly cancelNative?: () => void;
+  /** The downloaded label pool, so a typed short code resolves offline. */
+  readonly labelPool?: () => Promise<readonly import("../ovitrap-check/label-pool.ts").PoolLabel[]>;
   readonly selectTask?: (
     id: string,
     expected: import("../day/current-task.ts").TaskOwner,

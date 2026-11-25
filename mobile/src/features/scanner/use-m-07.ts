@@ -5,7 +5,7 @@ import { useServices } from "../../app/services-context.ts";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
 import { useM08 } from "../ovitrap-check/use-m-08.ts";
 import type { QrKind } from "../ovitrap-check/types.ts";
-import type { ScannerError } from "./domain.ts";
+import type { ScannerError, ScannerInput } from "./domain.ts";
 import { useScannerLifecycle } from "./use-scanner-lifecycle.ts";
 import { ensureCameraAccess } from "./camera-access.ts";
 import type { ScannerDestination } from "./service.ts";
@@ -84,7 +84,7 @@ function useScanOrigin(eventId: string | null | undefined) {
   };
 }
 function useScanCommand(
-  options: { readonly expected?: QrKind; readonly bindsLabel: boolean },
+  options: { readonly expected?: QrKind; readonly bindsLabel?: ScannerInput["bindsLabel"] },
   lifecycle: ReturnType<typeof useScannerLifecycle>,
   eventId: string | null | undefined,
 ) {
@@ -119,15 +119,20 @@ function useScanCommand(
     retryOrigin: origin.retry,
   };
 }
+/** `null` returns to the screen that opened the scanner. */
 function useScannerNavigation() {
   const { push, goBack } = useNavigation();
-  return (route: Route) => {
+  return (route: Route | null) => {
     goBack();
-    push(route);
+    if (route) push(route);
   };
 }
 /** Manual input and origin capture survive camera failures and scanner retries. */
-export function useM07(expected?: QrKind, eventId?: string | null, bindsLabel = false) {
+export function useM07(
+  expected?: QrKind,
+  eventId?: string | null,
+  bindsLabel?: ScannerInput["bindsLabel"],
+) {
   const lifecycle = useScannerLifecycle();
   const camera = useCameraStart(lifecycle);
   const command = useScanCommand({ expected, bindsLabel }, lifecycle, eventId);
@@ -174,7 +179,7 @@ function cameraRecovery(
 interface ScanCommand {
   readonly scanner: ReturnType<typeof useServices>["scanner"];
   readonly lifecycle: ReturnType<typeof useScannerLifecycle>;
-  readonly push: (route: Route) => void;
+  readonly push: (route: Route | null) => void;
   readonly setError: (error: ScannerError | null, pointCode?: string | null) => void;
   readonly setBusy: (isBusy: boolean) => void;
   readonly input: import("./domain.ts").ScannerInput;
@@ -211,5 +216,5 @@ function finishScan(command: ScanCommand, result: ScannerDestination | "duplicat
   }
   command.lifecycle.stop();
   Vibration.vibrate(SCAN_FEEDBACK_MS);
-  command.push(result.route);
+  command.push("route" in result ? result.route : null);
 }

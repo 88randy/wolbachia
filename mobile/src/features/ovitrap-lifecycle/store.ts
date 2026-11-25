@@ -34,6 +34,29 @@ export function identityGuard(eventId: string | null): SqlStatement {
     params: [eventId],
   };
 }
+/**
+ * The scanned label is reserved with the capture, so a later placement of it is refused. A draft
+ * started before the label step already reserved a random UUID for its event and that immutable row
+ * stays; the guard and the placement guard (`OvitrapStore.commitStatements`) protect its label.
+ */
+function replacementReservation(draft: LifecycleDraft): readonly SqlStatement[] {
+  if (draft.kind !== "replace" || !draft.replacementId) return [];
+  return [
+    {
+      sql: `INSERT INTO lifecycle_guard(slot,value) VALUES(1,CASE WHEN EXISTS(
+        SELECT 1 FROM ovitrap_capture WHERE ovitrap_id=?
+        UNION ALL SELECT 1 FROM lifecycle_identity WHERE id=? AND event_id<>?
+        UNION ALL SELECT 1 FROM lifecycle_capture WHERE kind='replace' AND json_extract(draft,'$.replacementId')=?)
+        THEN 0 ELSE 1 END) ON CONFLICT(slot) DO UPDATE SET value=excluded.value`,
+      params: [draft.replacementId, draft.replacementId, draft.eventId, draft.replacementId],
+    },
+    {
+      sql: `INSERT INTO lifecycle_identity(id,event_id) SELECT ?,?
+        WHERE NOT EXISTS(SELECT 1 FROM lifecycle_identity WHERE event_id=?)`,
+      params: [draft.replacementId, draft.eventId, draft.eventId],
+    },
+  ];
+}
 export class LifecycleStore {
   readonly db: SqlExecutor;
   readonly capture: OvitrapStore;
@@ -166,17 +189,8 @@ export class LifecycleStore {
   }
   /** Ordinary restore/update path: this NEVER creates or reseals ownership. */
   beginStatements(draft: LifecycleDraft, eventId: string | null): readonly SqlStatement[] {
-    const reserve: SqlStatement[] = draft.replacementId
-      ? [
-          {
-            sql: "INSERT INTO lifecycle_identity(id,event_id) VALUES (?,?)",
-            params: [draft.replacementId, draft.eventId],
-          },
-        ]
-      : [];
     return [
       identityGuard(eventId),
-      ...reserve,
       {
         sql: `INSERT OR IGNORE INTO lifecycle_archive(event_id,draft) SELECT json_extract(draft,'$.eventId'),draft FROM lifecycle_draft WHERE slot = 1`,
       },
@@ -284,8 +298,23 @@ export class LifecycleStore {
     return [
       identityGuard(draft.eventId),
       this.#versionGuard(expectedVersion),
+      ...replacementReservation(draft),
       ...lifecycleStatements(draft),
     ];
+  }
+  /** A label already on, reserved for, or once used by a trap on this phone cannot be a new trap. */
+  async isLabelTaken(id: string, eventId: string): Promise<boolean> {
+    const rows = await this.db.query(
+      `SELECT 1 FROM ovitrap_capture WHERE ovitrap_id=?
+      UNION ALL SELECT 1 FROM ovitrap_draft WHERE event_id IS NULL AND json_extract(draft,'$.mode')='place'
+        AND json_extract(draft,'$.labelScanned')=1 AND json_extract(draft,'$.ovitrapId')=?
+      UNION ALL SELECT 1 FROM lifecycle_capture WHERE ovitrap_id=? OR json_extract(draft,'$.replacementId')=?
+      UNION ALL SELECT 1 FROM lifecycle_identity WHERE id=? AND event_id<>?
+      UNION ALL SELECT 1 FROM lifecycle_courier_projection WHERE kind='ovitrap' AND id=?
+      UNION ALL SELECT 1 FROM lifecycle_active_identity WHERE id=? LIMIT 1`,
+      [id, id, id, id, id, eventId, id, id],
+    );
+    return rows.length > 0 || (await this.physical(id)) !== null;
   }
   /** Local typed ingest seam ONLY. B-33 has no documented producer/wire decoder yet. */
   async ingestDecision(decision: RelocationDecision): Promise<void> {

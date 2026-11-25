@@ -96,3 +96,17 @@ void test("a short code that was not typed by hand is not a QR", async () => {
     "invalid",
   );
 });
+
+void test("a label bound by the open replacement draft is used, not free", async () => {
+  const h = await harness(undefined, { labelPool: () => Promise.resolve(POOL) });
+  await h.db.runAtomically([
+    {
+      sql: "INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?)",
+      params: [JSON.stringify({ kind: "replace", replacementId: ID, labelScanned: true })],
+    },
+  ]);
+  await h.service.startPlace(await currentEventId(h.store));
+  const eventId = await currentEventId(h.store);
+  assert.equal(await h.service.bindLabel("OVT-0001", true, eventId), "used");
+  assert.equal(await h.service.bindLabel(`wbf:1:ovitrap:${ID}`, false, eventId), "used");
+});

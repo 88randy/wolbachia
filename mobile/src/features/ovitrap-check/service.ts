@@ -18,7 +18,7 @@ import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { normalizePaddle, parseQr, UUID_PATTERN } from "./domain.ts";
 import { captureEvent, voidEvent } from "./events.ts";
 import { newDraft } from "./new-draft.ts";
-import { findPoolLabel, normalizeLabelCode } from "./label-pool.ts";
+import { resolveLabel } from "./label-pool.ts";
 import type { PoolLabel } from "./label-pool.ts";
 import type { OvitrapStore, StoredCapture } from "./store.ts";
 import type {
@@ -91,12 +91,6 @@ export interface Snapshot extends StoredCapture {
   readonly isBagReserved: boolean;
   /** An unfinished draft from another day or a closed shift: the courier must choose first. */
   readonly staleDraft: StaleDraft | null;
-}
-/** Every command carries the displayed UUID; validate it inside the writer and on its loaded draft. */
-function labelId(value: string, isManual: boolean): string | null {
-  const code = value.trim();
-  if (isManual && UUID_PATTERN.test(code)) return code.toLowerCase();
-  return parseQr(code, "ovitrap")?.id ?? null;
 }
 /** Outcome of scanning the label of a trap being placed. */
 export type LabelResult = "read" | "invalid" | "used" | "unknown" | "cancelled";
@@ -450,18 +444,13 @@ export class OvitrapService {
     value: string,
     isManual: boolean,
   ): Promise<{ readonly id: string } | { readonly failure: "invalid" | "unknown" }> {
-    if (isManual && normalizeLabelCode(value) !== null) {
-      const label = findPoolLabel((await this.#deps.labelPool?.()) ?? [], value);
-      return label ? { id: label.id } : { failure: "unknown" };
-    }
-    const id = labelId(value, isManual);
-    return id ? { id } : { failure: "invalid" };
+    return resolveLabel(value, isManual, (await this.#deps.labelPool?.()) ?? []);
   }
   async #isIdentityTaken(id: string, draft: Draft): Promise<boolean> {
     if (id === draft.ovitrapId && draft.labelScanned) return false;
     const { store } = this.#deps;
     if (draft.assignment?.ovitraps.some((item) => item.id === id)) return true;
-    if ((await store.projection(id)) !== null) return true;
+    if ((await store.projection(id)) !== null || (await store.isReplacementLabel(id))) return true;
     return (await store.lifecycleSource(id)).physical !== null;
   }
   enterBag(value: string, eventId: string | null, isManual = true): Promise<Snapshot> {

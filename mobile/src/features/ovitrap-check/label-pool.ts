@@ -1,5 +1,6 @@
 import { KV_KEYS, KvStore } from "../../db/kv-store.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
+import { parseQr } from "./domain.ts";
 
 /** One printed label that is not on a trap yet: its QR identity and the short code printed large on it. */
 export interface PoolLabel {
@@ -27,6 +28,31 @@ export function normalizeLabelCode(value: string): string | null {
 export function findPoolLabel(pool: readonly PoolLabel[], value: string): PoolLabel | null {
   const code = normalizeLabelCode(value);
   return code === null ? null : (pool.find((label) => label.code === code) ?? null);
+}
+
+/**
+ * The identity of a new trap's label. A typed short code must be in the downloaded pool; a scanned
+ * QR (or typed UUID) is accepted even when the pool does not know it, and the server allocates.
+ */
+export function resolveLabel(
+  value: string,
+  isManual: boolean,
+  pool: readonly PoolLabel[],
+):
+  | { readonly id: string; readonly code: string | null }
+  | { readonly failure: "invalid" | "unknown" } {
+  if (isManual && normalizeLabelCode(value) !== null) {
+    const label = findPoolLabel(pool, value);
+    return label ?? { failure: "unknown" };
+  }
+  const id = scannedLabelId(value.trim(), isManual);
+  if (!id) return { failure: "invalid" };
+  return { id, code: pool.find((label) => label.id === id)?.code ?? null };
+}
+
+function scannedLabelId(value: string, isManual: boolean): string | null {
+  if (isManual && UUID.test(value)) return value.toLowerCase();
+  return parseQr(value, "ovitrap")?.id ?? null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

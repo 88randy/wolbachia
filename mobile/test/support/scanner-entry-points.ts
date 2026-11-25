@@ -9,7 +9,12 @@ export const SCANNER_ENTRY_POINTS: readonly { name: string; file: string; patter
     name: "placement label, review and bag scans",
     file: "features/ovitrap-check/ScannerScreen.tsx",
     pattern:
-      /<P11Screen expected="ovitrap" eventId=\{eventId\} bindsLabel \/>[\s\S]*<P11Screen expected=\{target\}/,
+      /<P11Screen expected="ovitrap" eventId=\{eventId\} bindsLabel="place" \/>[\s\S]*<P11Screen expected="ovitrap" eventId=\{eventId\} bindsLabel="replace" \/>[\s\S]*<P11Screen expected=\{target\}/,
+  },
+  {
+    name: "replacement label button",
+    file: "features/ovitrap-lifecycle/LifecycleLabelPage.tsx",
+    pattern: /name: "ovitrapScanner", target: "replacementLabel"/,
   },
   {
     name: "placement label button",
