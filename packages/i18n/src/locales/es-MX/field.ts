@@ -207,6 +207,8 @@ export const field = {
   "field.lifecycle.kind.remove": "Retirar ovitrampa",
   "field.lifecycle.kind.replace": "Reemplazar ovitrampa",
   "field.lifecycle.listChanged": "Las listas cambiaron. Intenta de nuevo.",
+  "field.lifecycle.noReasons": "No hay motivos descargados.",
+  "field.lifecycle.noReasonsHint": "Conéctate a internet y vuelve a intentar.",
   "field.lifecycle.mistake": "Me equivoqué",
   "field.lifecycle.mistakeHint": "No se borra nada: se cancela con un motivo.",
   "field.lifecycle.mistakeQuestion": "¿Qué se equivocó?",

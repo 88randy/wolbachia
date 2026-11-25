@@ -205,6 +205,8 @@ export const field = {
   "field.lifecycle.kind.remove": "Remove ovitrap",
   "field.lifecycle.kind.replace": "Replace ovitrap",
   "field.lifecycle.listChanged": "The lists changed. Try again.",
+  "field.lifecycle.noReasons": "No reasons downloaded.",
+  "field.lifecycle.noReasonsHint": "Connect to the internet and try again.",
   "field.lifecycle.mistake": "I made a mistake",
   "field.lifecycle.mistakeHint": "Nothing is deleted: it is cancelled with a reason.",
   "field.lifecycle.mistakeQuestion": "What was wrong?",
