@@ -55,7 +55,11 @@ async function performReview(context: AttemptContext, command: ReviewCommand): P
       phase: "review",
       revision,
       context: context.context,
-      code: error instanceof ApiError ? error.code : "network",
+      // A 409 review_blocked carries the real cause in blocked_by; show it, not "Needs review".
+      code:
+        error instanceof ApiError
+          ? (error.envelope?.blocked_by?.[0]?.reason ?? error.code)
+          : "network",
     });
     reportSessionError(error, context.queryClient);
     return false;
