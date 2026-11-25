@@ -271,8 +271,8 @@ No retained payload or point-code fallback creates an action or capture permissi
 The planner dates weekly tasks on the epi-week start, and the courier has the whole week.
 `epi-week.ts` holds the one rule shared with the backend: a capture on local date `d`
 counts for the task with the same point/action when `due <= d <= end of due's epi week`
-(`mmwr` Sunday-Saturday, `iso` or missing Monday-Sunday). `local-work.ts` reads the
-convention captured with the work and applies it in `taskWork`, the only matcher, used by
-`buildDay` (P9 route, P10 map points). If tasks with different due dates match, the
+(`mmwr` Sunday-Saturday, `iso` or missing Monday-Sunday). `taskWork`, the only matcher,
+applies it with the organization's convention from the profile (the same value P33 uses),
+for every row including legacy ones; `buildDay` passes it for P9 and the P10 map points. If tasks with different due dates match, the
 earliest due wins; equal identities stay unlinked. Local work still never decides
 completion: only `serverCompletion` does.

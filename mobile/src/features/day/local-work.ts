@@ -24,7 +24,6 @@ function localWork(row: SqlRow): LocalWork {
     ovitrapId: textOrNull(row.ovitrap_id),
     status: readText(row, "local_status"),
     pointId,
-    epiWeek: isCapture ? textOrNull(row.epi_week) : null,
     captureDate: isCapture ? captureDate : readText(row, "device_time").slice(0, 10),
     origin: isCapture
       ? "capture"
@@ -44,15 +43,14 @@ export class OutboxWorkOverlay implements LocalWorkOverlay {
       json_extract(e.payload,'$.ovitrap_id') AS ovitrap_id,e.device_time,e.type,e.local_status,
       c.event_id AS capture_id,json_extract(c.draft,'$.point.id') AS point_id,
       json_extract(c.draft,'$.mode') AS mode,json_extract(c.draft,'$.deviceTime') AS captured_time,
-      json_extract(c.draft,'$.assignment.organization.timezone') AS time_zone,
-      json_extract(c.draft,'$.assignment.organization.epi_week') AS epi_week
+      json_extract(c.draft,'$.assignment.organization.timezone') AS time_zone
       FROM outbox_event e LEFT JOIN ovitrap_capture c ON c.event_id=e.id WHERE e.type LIKE 'ovitrap.%'`);
     return rows.map(localWork);
   }
 }
-function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
+function matchesCapture(task: AssignedTask, entry: LocalWork, epiWeek: string | null): boolean {
   if (entry.action !== task.action) return false;
-  if (!isWithinTaskWeek(task.date, entry.captureDate, entry.epiWeek)) return false;
+  if (!isWithinTaskWeek(task.date, entry.captureDate, epiWeek)) return false;
   if (entry.origin === "capture") return entry.pointId !== null && entry.pointId === task.point_id;
   return (
     entry.origin === "legacy" &&
@@ -68,15 +66,21 @@ function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
 export function taskWork(
   task: AssignedTask,
   work: readonly LocalWork[],
-  visibleTasks: readonly AssignedTask[],
+  scope: {
+    readonly visibleTasks: readonly AssignedTask[];
+    /** The organization's convention (profile), the same for every row, as the server uses. */
+    readonly epiWeek: string | null;
+  },
 ): readonly LocalWork[] {
+  const matches = (candidate: AssignedTask, entry: LocalWork) =>
+    matchesCapture(candidate, entry, scope.epiWeek);
   return work.filter((entry) => {
     if (entry.taskId !== null) return entry.taskId === task.id;
-    if (!matchesCapture(task, entry)) return false;
-    const dues = visibleTasks
-      .filter((candidate) => matchesCapture(candidate, entry))
+    if (!matches(task, entry)) return false;
+    const dues = scope.visibleTasks
+      .filter((candidate) => matches(candidate, entry))
       .map((candidate) => candidate.date);
-    const earliest = dues.sort()[0];
+    const earliest = dues.reduce((min, due) => (due < min ? due : min), task.date);
     return task.date === earliest && dues.filter((due) => due === earliest).length === 1;
   });
 }

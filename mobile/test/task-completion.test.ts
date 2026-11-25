@@ -97,6 +97,7 @@ function change(sequence: number, data: Record<string, unknown>) {
 async function day(local: TestStores) {
   const cache = await new DayStore(local.db).read();
   return buildDay({
+    epiWeek: null,
     tasks: cache.tasks,
     work: await new OutboxWorkOverlay(local.db).read(),
     location: { kind: "unavailable" },

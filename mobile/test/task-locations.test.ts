@@ -95,7 +95,13 @@ async function locationFixture(existing?: TestStores) {
 async function markers(h: Awaited<ReturnType<typeof locationFixture>>) {
   const state = await h.day.read();
   return mapTasks(
-    buildDay({ tasks: state.tasks, work: [], location: { kind: "denied" }, now: FIXED_NOW }).tasks,
+    buildDay({
+      epiWeek: null,
+      tasks: state.tasks,
+      work: [],
+      location: { kind: "denied" },
+      now: FIXED_NOW,
+    }).tasks,
   );
 }
 void test("task locations: real assignments v2 join SamplingPointBundle by UUID for markers and directions", async () => {
