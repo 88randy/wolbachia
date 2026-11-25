@@ -1342,6 +1342,7 @@ export const mobile = {
   "mobile.calendar.outsideWindow": "El teléfono no guarda este día",
   "mobile.calendar.outsideWindowLabel": "{date}: el teléfono no guarda este día",
   "mobile.calendar.noActivity": "Sin actividad este día",
+  "mobile.calendar.noTasks": "Sin tareas este día",
   "mobile.calendar.tasks": "Tareas",
   "mobile.calendar.activity": "Actividad",
   "mobile.calendar.seeRoute": "Ver recorrido",

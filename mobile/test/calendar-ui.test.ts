@@ -397,3 +397,22 @@ void test("P33 the calendar re-reads on foreground and on the minute check only 
   stop();
   assert.equal(stopped, 2);
 });
+
+void test("#374 a later empty day of the open week says 'Sin tareas este día', never 'not kept'", () => {
+  for (const { locale, scheme } of MATRIX) {
+    const { render } = componentHarness({ locale, scheme, fontScale: 1.3 });
+    const m = messages[locale];
+    const empty = (view: Partial<CalendarView>, date: string) =>
+      texts(
+        render("mobile/src/features/calendar/CalendarDayEmpty.tsx", "CalendarDayEmpty", {
+          view: { today: TODAY, identityKey: "owner|session", isHistoryAvailable: true, ...view },
+          date,
+          hasError: false,
+        }),
+      );
+    assert.deepEqual(empty({}, "2026-11-27"), [m["mobile.calendar.noTasks"]]);
+    assert.ok(!empty({}, "2026-11-27").includes(m["mobile.calendar.outsideWindow"]));
+    assert.deepEqual(empty({ identityKey: null }, "2026-11-27"), [], "locked: tasks unknown");
+    assert.deepEqual(empty({}, TODAY), [m["mobile.calendar.noActivity"]]);
+  }
+});

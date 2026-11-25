@@ -79,12 +79,22 @@ void test("P33 an unparsable time is listed last on today and never marks the gr
   assert.equal(today.hasPending, false);
 });
 
-void test("P33 window: today and the 29 previous days, plus dates up to the last downloaded task", () => {
+void test("P33 window: the 29 previous days, the rest of the open epi week and downloaded task dates", () => {
   const empty = calendar({});
   assert.equal(day(empty, "2026-10-27").isInWindow, true);
   assert.equal(day(empty, "2026-10-26").isInWindow, false);
   assert.equal(day(empty, TODAY).isInWindow, true);
-  assert.equal(day(empty, "2026-11-26").isInWindow, false);
+  // #374: the rest of the iso week (Mon 23 - Sun 29) is open even without tasks.
+  assert.deepEqual(day(empty, "2026-11-29"), {
+    date: "2026-11-29",
+    items: [],
+    hasActivity: false,
+    hasPending: false,
+    isInWindow: true,
+  });
+  assert.equal(day(empty, "2026-11-30").isInWindow, false);
+  assert.equal(day(calendar({ epiWeek: "mmwr" }), "2026-11-28").isInWindow, true);
+  assert.equal(day(calendar({ epiWeek: "mmwr" }), "2026-11-29").isInWindow, false);
 
   const withTasks = calendar({ tasks: [task("2026-12-02", false)] });
   assert.equal(day(withTasks, "2026-12-01").isInWindow, true);
@@ -115,22 +125,25 @@ void test("P33 task status table: done, scheduled, missed and unconfirmed", () =
     [task(TODAY, false), "scheduled"],
     [task(TODAY, null), "scheduled"],
     [task("2026-11-27", null), "scheduled"],
-    [task("2026-11-24", false), "missed"],
-    [task("2026-11-24", null), "unconfirmed"],
+    [task("2026-11-20", false), "missed"],
+    [task("2026-11-20", null), "unconfirmed"],
   ];
   for (const [row, status] of cases)
     assert.equal(
-      calendarStatus(row, TODAY),
+      calendarStatus(row, TODAY, "iso"),
       status,
       `${row.task.date} ${String(row.serverCompletion)}`,
     );
 });
 
 void test("P33 history status table: D2 reviewed stays reviewed, a delivered void reads as voided", () => {
-  assert.equal(calendarStatus(entry({ status: "reviewed" }), TODAY), "reviewed");
-  assert.equal(calendarStatus(entry({ kind: "record.void", status: "sent" }), TODAY), "voided");
+  assert.equal(calendarStatus(entry({ status: "reviewed" }), TODAY, "iso"), "reviewed");
+  assert.equal(
+    calendarStatus(entry({ kind: "record.void", status: "sent" }), TODAY, "iso"),
+    "voided",
+  );
   for (const status of ["pending", "rejected", "in_review"] as const)
-    assert.equal(calendarStatus(entry({ kind: "record.void", status }), TODAY), status);
+    assert.equal(calendarStatus(entry({ kind: "record.void", status }), TODAY, "iso"), status);
 });
 
 void test("P33 hasPending marks unsent activity and scheduled or missed tasks only", () => {
@@ -178,4 +191,19 @@ void test("P33 a day outside the window is empty even when the outbox still hold
 
 void test("P33 the calendar window never exceeds the phone's track retention", () => {
   assert.ok(CALENDAR_WINDOW_DAYS * 86_400_000 <= LOCAL_RETENTION_MS);
+});
+
+void test("#374 a Monday task stays scheduled through its epi week and is missed after it (iso, mmwr)", () => {
+  const monday = task("2026-11-23", false);
+  const unknown = task("2026-11-23", null);
+  // Wednesday of the same week: both conventions keep it open.
+  for (const epiWeek of ["iso", "mmwr"])
+    assert.equal(calendarStatus(monday, "2026-11-25", epiWeek), "scheduled");
+  // Sunday 29: the mmwr week (Sun 22 - Sat 28) ended; the iso week (Mon 23 - Sun 29) has not.
+  assert.equal(calendarStatus(monday, "2026-11-29", "mmwr"), "missed");
+  assert.equal(calendarStatus(unknown, "2026-11-29", "mmwr"), "unconfirmed");
+  assert.equal(calendarStatus(monday, "2026-11-29", "iso"), "scheduled");
+  assert.equal(calendarStatus(monday, "2026-11-30", "iso"), "missed");
+  const grid = calendar({ tasks: [monday] });
+  assert.equal(day(grid, "2026-11-23").items[0]?.status, "scheduled", "Programado on its date");
 });

@@ -51,6 +51,8 @@ export interface LocalWork {
   readonly origin: "capture" | "legacy" | "unknown";
   readonly pointId: string | null;
   readonly captureDate: string | null;
+  /** Epi-week convention captured with the work (`iso`/`mmwr`); null = Monday start. */
+  readonly epiWeek: string | null;
   readonly action: string;
   readonly taskId: string | null;
   readonly ovitrapId: string | null;

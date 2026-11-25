@@ -2,6 +2,7 @@ import type { SqlExecutor, SqlRow } from "../../db/sql.ts";
 import { readText } from "../../db/sql.ts";
 import type { LocalWork, LocalWorkOverlay, AssignedTask } from "./types.ts";
 import { captureLocalDate } from "./capture-local-date.ts";
+import { isWithinTaskWeek } from "./epi-week.ts";
 function textOrNull(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
@@ -23,6 +24,7 @@ function localWork(row: SqlRow): LocalWork {
     ovitrapId: textOrNull(row.ovitrap_id),
     status: readText(row, "local_status"),
     pointId,
+    epiWeek: isCapture ? textOrNull(row.epi_week) : null,
     captureDate: isCapture ? captureDate : readText(row, "device_time").slice(0, 10),
     origin: isCapture
       ? "capture"
@@ -42,13 +44,15 @@ export class OutboxWorkOverlay implements LocalWorkOverlay {
       json_extract(e.payload,'$.ovitrap_id') AS ovitrap_id,e.device_time,e.type,e.local_status,
       c.event_id AS capture_id,json_extract(c.draft,'$.point.id') AS point_id,
       json_extract(c.draft,'$.mode') AS mode,json_extract(c.draft,'$.deviceTime') AS captured_time,
-      json_extract(c.draft,'$.assignment.organization.timezone') AS time_zone
+      json_extract(c.draft,'$.assignment.organization.timezone') AS time_zone,
+      json_extract(c.draft,'$.assignment.organization.epi_week') AS epi_week
       FROM outbox_event e LEFT JOIN ovitrap_capture c ON c.event_id=e.id WHERE e.type LIKE 'ovitrap.%'`);
     return rows.map(localWork);
   }
 }
 function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
-  if (entry.captureDate !== task.date || entry.action !== task.action) return false;
+  if (entry.action !== task.action) return false;
+  if (!isWithinTaskWeek(task.date, entry.captureDate, entry.epiWeek)) return false;
   if (entry.origin === "capture") return entry.pointId !== null && entry.pointId === task.point_id;
   return (
     entry.origin === "legacy" &&
@@ -56,7 +60,11 @@ function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
     entry.ovitrapId === task.ovitrap_id
   );
 }
-/** Backend task identity is unique by organization/point/action/local date; ambiguity stays unlinked. */
+/**
+ * A capture counts for the task with the same point/action due on or before it in the same epi
+ * week (#374, as the backend). If tasks with different due dates match, the earliest due wins;
+ * two tasks with the same identity and due date are ambiguous and stay unlinked.
+ */
 export function taskWork(
   task: AssignedTask,
   work: readonly LocalWork[],
@@ -65,7 +73,10 @@ export function taskWork(
   return work.filter((entry) => {
     if (entry.taskId !== null) return entry.taskId === task.id;
     if (!matchesCapture(task, entry)) return false;
-    const matches = visibleTasks.filter((candidate) => matchesCapture(candidate, entry));
-    return matches.length === 1 && matches[0]?.id === task.id;
+    const dues = visibleTasks
+      .filter((candidate) => matchesCapture(candidate, entry))
+      .map((candidate) => candidate.date);
+    const earliest = dues.sort()[0];
+    return task.date === earliest && dues.filter((due) => due === earliest).length === 1;
   });
 }

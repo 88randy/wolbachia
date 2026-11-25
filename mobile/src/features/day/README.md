@@ -265,3 +265,14 @@ projection cleanup; an old cleanup cannot clear a replacement session's cache.
 Current-task navigation and lifecycle feedback share current-task.ts: exact UUID,
 point, proven courier, removed=false and explicit v3 isCompleted=false only.
 No retained payload or point-code fallback creates an action or capture permission.
+
+## Weekly tasks and local work (#374)
+
+The planner dates weekly tasks on the epi-week start, and the courier has the whole week.
+`epi-week.ts` holds the one rule shared with the backend: a capture on local date `d`
+counts for the task with the same point/action when `due <= d <= end of due's epi week`
+(`mmwr` Sunday-Saturday, `iso` or missing Monday-Sunday). `local-work.ts` reads the
+convention captured with the work and applies it in `taskWork`, the only matcher, used by
+`buildDay` (P9 route, P10 map points). If tasks with different due dates match, the
+earliest due wins; equal identities stay unlinked. Local work still never decides
+completion: only `serverCompletion` does.
