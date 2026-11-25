@@ -25,31 +25,41 @@ export function useAnnotationExportColumns(scope: LabScope): DataTableColumn<Ann
   return [
     {
       id: "created_at",
-      headerKey: "annotationExport.list.created",
-      cell: (row) => <time dateTime={row.created_at}>{formatDateTime(row.created_at)}</time>,
-    },
-    {
-      id: "format",
-      headerKey: "annotationExport.form.format",
-      cell: (row) => t(`annotationExport.format.${row.format}`),
+      headerKey: "annotationExport.list.export",
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">{t(`annotationExport.format.${row.format}`)}</span>
+          <time className="whitespace-nowrap text-xs text-ink-2" dateTime={row.created_at}>
+            {formatDateTime(row.created_at)}
+          </time>
+        </div>
+      ),
     },
     {
       id: "filters",
       headerKey: "annotationExport.list.filters",
       cell: (row) => <AnnotationExportFilters row={row} />,
     },
-    ...(
-      [
-        ["image_count", "imageCount"],
-        ["box_count", "boxCount"],
-        ["point_count", "pointCount"],
-      ] as const
-    ).map(([id, label]) => ({
-      id,
-      headerKey: `annotationExport.list.${label}` as const,
-      align: "end" as const,
-      cell: (row: AnnotationExport) => formatNumber(row[id]),
-    })),
+    {
+      id: "content",
+      headerKey: "annotationExport.list.content",
+      cell: (row) => (
+        <dl className="grid grid-cols-[auto_auto] gap-x-2 text-xs">
+          {(
+            [
+              ["image_count", "imageCount"],
+              ["box_count", "boxCount"],
+              ["point_count", "pointCount"],
+            ] as const
+          ).map(([id, label]) => (
+            <div key={id} className="contents">
+              <dt className="text-ink-2">{t(`annotationExport.list.${label}`)}</dt>
+              <dd className="text-end tabular-nums">{formatNumber(row[id])}</dd>
+            </div>
+          ))}
+        </dl>
+      ),
+    },
     {
       id: "status",
       headerKey: "annotationExport.list.status",

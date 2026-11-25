@@ -22,11 +22,27 @@ export function formatDate(iso: string, language: Locale, timeZone: string): str
  * show another day.
  */
 export function formatCalendarDate(isoDate: string, language: Locale): string {
+  const day = calendarDay(isoDate);
+  return day === undefined ? isoDate : calendarFormat(language).format(day);
+}
+
+/**
+ * Two calendar dates as one compact range ("1–30 nov 2026"), sharing the month and year when
+ * `Intl` can. Falls back to the original text when either date is not valid.
+ */
+export function formatCalendarRange(fromDate: string, toDate: string, language: Locale): string {
+  const from = calendarDay(fromDate);
+  const to = calendarDay(toDate);
+  if (from === undefined || to === undefined) return `${fromDate} – ${toDate}`;
+  return calendarFormat(language).formatRange(from, to);
+}
+
+function calendarDay(isoDate: string): Date | undefined {
   const match = CALENDAR_DATE.exec(isoDate);
-  if (match === null) return isoDate;
-  const day = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  return new Intl.DateTimeFormat(INTL_LOCALE[language], {
-    dateStyle: "medium",
-    timeZone: "UTC",
-  }).format(day);
+  if (match === null) return undefined;
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+}
+
+function calendarFormat(language: Locale): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(INTL_LOCALE[language], { dateStyle: "medium", timeZone: "UTC" });
 }

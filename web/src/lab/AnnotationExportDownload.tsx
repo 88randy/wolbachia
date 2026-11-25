@@ -23,7 +23,7 @@ export function AnnotationExportDownload({
       <a
         href={`/api/v1/lab/egg-annotation-exports/${row.id}/download/`}
         download={`aedesvision-${row.id}.zip`}
-        className={buttonVariants({ variant: "secondary", size: "sm" })}
+        className={`${buttonVariants({ variant: "secondary", size: "sm" })} whitespace-nowrap`}
         onClick={(event) => {
           if (!scope.identity.isSettled || scope.identity.revision !== currentRevision())
             event.preventDefault();

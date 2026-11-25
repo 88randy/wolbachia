@@ -28,8 +28,9 @@ export const annotationExport: Record<keyof typeof esAnnotationExport, string> =
   "annotationExport.list.title": "Exports",
   "annotationExport.list.hint":
     "Newest exports appear first. Generate an export above and download it when ready.",
-  "annotationExport.list.created": "Date",
   "annotationExport.list.filters": "Filters",
+  "annotationExport.list.export": "Export",
+  "annotationExport.list.content": "Contents",
   "annotationExport.list.period": "Period",
   "annotationExport.list.imageCount": "Images",
   "annotationExport.list.boxCount": "Boxes",

@@ -26,8 +26,9 @@ export const annotationExport = {
   "annotationExport.list.title": "Exportaciones",
   "annotationExport.list.hint":
     "Las más recientes aparecen primero. Genera una exportación arriba y descárgala cuando esté lista.",
-  "annotationExport.list.created": "Fecha",
   "annotationExport.list.filters": "Filtros",
+  "annotationExport.list.export": "Exportación",
+  "annotationExport.list.content": "Contenido",
   "annotationExport.list.period": "Periodo",
   "annotationExport.list.imageCount": "Imágenes",
   "annotationExport.list.boxCount": "Cajas",
