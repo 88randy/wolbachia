@@ -150,6 +150,11 @@ DEFAULT_PARAMETER_SEEDS = (
     ),
     # Boolean stored as 0/1: 1 uses high accuracy instead of balanced for the background capture.
     ParameterSeed("track_high_accuracy", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(1)),
+    # Local work-day end in minutes after midnight in the organization's time zone (1200 = 20:00):
+    # a shift left open stops recording its track there (#371). The shift is never auto-closed.
+    ParameterSeed(
+        "track_day_end_minutes", ValueType.INTEGER, Unit.MINUTES, 1200, Decimal(600), Decimal(1439)
+    ),
 )
 
 

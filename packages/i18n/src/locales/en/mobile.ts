@@ -1293,6 +1293,7 @@ export const mobile: Record<keyof typeof source, string> = {
     "Notifications are off: your track is recorded, but you will not see the open-shift notice.",
   "mobile.track.unavailable":
     "Track recording could not start. It will try again when you return to the app.",
+  "mobile.track.dayEnded": "Your shift is still open. Close it to end your day.",
   "mobile.track.openSettings": "Open settings",
   "mobile.map.loading": "Getting the map ready...",
   "mobile.map.unavailable": "The map is not available right now",
