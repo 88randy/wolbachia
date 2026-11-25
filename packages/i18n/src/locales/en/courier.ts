@@ -11,6 +11,7 @@ export const courier = {
   "courier.tabs.label": "Main menu",
   "courier.tabs.day": "My day",
   "courier.tabs.map": "Map",
+  "courier.tabs.calendar": "Calendar",
   "courier.tabs.help": "Help",
   "courier.choice.yes": "Yes",
   "courier.choice.no": "No",

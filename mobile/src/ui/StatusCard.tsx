@@ -6,13 +6,15 @@ import { useTheme } from "../theme/ThemeProvider.tsx";
 import { AppText } from "./AppText.tsx";
 import { KIT_ICON_STROKE, kitShadow } from "./kit-styles.ts";
 
-export type StatusTone = "success" | "warning" | "danger" | "info";
+export type StatusTone = "success" | "warning" | "danger" | "info" | "neutral";
 
 export interface StatusCardProps {
   readonly title: string;
   /** Status in plain words, shown next to an icon (never color alone). */
   readonly statusLabel: string;
   readonly tone: StatusTone;
+  /** Overrides the tone's icon (the shared status table, `status-presentation.ts`). */
+  readonly icon?: LucideIcon;
   /** Extra lines (dates, reasons) shown under the title. */
   readonly children?: ReactNode;
 }
@@ -22,10 +24,11 @@ const ICONS: Readonly<Record<StatusTone, LucideIcon>> = {
   warning: TriangleAlert,
   danger: Ban,
   info: Clock,
+  neutral: Clock,
 };
 
 /** A fact with a state: big icon, title, status in words and a few detail lines. */
-export function StatusCard({ title, statusLabel, tone, children }: StatusCardProps) {
+export function StatusCard({ title, statusLabel, tone, icon, children }: StatusCardProps) {
   const { theme } = useTheme();
   const status = theme.color.status;
   const color = {
@@ -33,8 +36,9 @@ export function StatusCard({ title, statusLabel, tone, children }: StatusCardPro
     warning: status.warning.fg,
     danger: status.critical.fg,
     info: status.info.fg,
+    neutral: status.neutral.fg,
   }[tone];
-  const Icon = ICONS[tone];
+  const Icon = icon ?? ICONS[tone];
   return (
     <View className="gap-2 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
       <View className="flex-row items-center gap-3">

@@ -17,7 +17,7 @@ interface Props {
   readonly mapStyle: StyleSpecification;
   readonly points: readonly MapPoint[];
   readonly zones: readonly MapZone[];
-  readonly track: readonly LngLatPair[];
+  readonly lines: readonly (readonly LngLatPair[])[];
   readonly selectedId: string | null;
   readonly onSelectPoint: (id: string) => void;
 }
@@ -26,10 +26,10 @@ interface Props {
  * Native boundary. Labels appear by zoom so they never pile up: dots first, zone names when
  * closer, point codes when close. The selected point always keeps its code.
  */
-export function MapCanvas({ mapStyle, points, zones, track, selectedId, onSelectPoint }: Props) {
+export function MapCanvas({ mapStyle, points, zones, lines, selectedId, onSelectPoint }: Props) {
   const styles = useStyles(createMapStyles);
   const t = useT();
-  const view = useMemo(() => initialViewFor(points, zones), [points, zones]);
+  const view = useMemo(() => initialViewFor(points, zones, lines), [points, zones, lines]);
   const [zoom, setZoom] = useState(OVERVIEW_ZOOM);
   return (
     <Map
@@ -44,7 +44,7 @@ export function MapCanvas({ mapStyle, points, zones, track, selectedId, onSelect
     >
       <Camera initialViewState={view} />
       <MapZoneLayers zones={zones} zoom={zoom} />
-      <MapTrackLine line={track} />
+      <MapTrackLine lines={lines} />
       <MapPointDots points={points} />
       <MapUserLocation />
       <MapPointMarkers

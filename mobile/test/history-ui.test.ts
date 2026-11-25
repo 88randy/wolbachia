@@ -27,7 +27,8 @@ function texts(nodes: readonly RenderNode[]) {
 function assertHistoryCards(render: Render, locale: Locale) {
   const labels = [
     ["sent", "mobile.history.received"],
-    ["reviewed", "mobile.history.reviewed"],
+    // D2/D4 (#373): accepted decisions read "Aceptado" in the shared status table.
+    ["reviewed", "mobile.calendar.statusAccepted"],
     ["voided", "mobile.history.voided"],
     ["observed", "mobile.history.observed"],
     ["pending", "mobile.status.pending"],

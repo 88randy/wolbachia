@@ -5,11 +5,16 @@ import type { LngLatPair, MapPoint, MapZone } from "./map-types.ts";
 /** West, south, east, north. */
 export type Bounds = readonly [number, number, number, number];
 
-/** Bounds covering every point and zone vertex, or null when there is nothing to show. */
-export function boundsOf(points: readonly MapPoint[], zones: readonly MapZone[]): Bounds | null {
+/** Bounds covering every point, zone vertex and track vertex, or null when there is nothing to show. */
+export function boundsOf(
+  points: readonly MapPoint[],
+  zones: readonly MapZone[],
+  lines: readonly (readonly LngLatPair[])[] = [],
+): Bounds | null {
   const coords: LngLatPair[] = [
     ...points.map((point): LngLatPair => [point.lng, point.lat]),
     ...zones.flatMap((zone) => zone.ring),
+    ...lines.flat(),
   ];
   const [first] = coords;
   if (first === undefined) return null;
@@ -52,8 +57,9 @@ const PAD = 48;
 export function initialViewFor(
   points: readonly MapPoint[],
   zones: readonly MapZone[],
+  lines: readonly (readonly LngLatPair[])[] = [],
 ): InitialViewState {
-  const bounds = boundsOf(points, zones);
+  const bounds = boundsOf(points, zones, lines);
   if (bounds === null) return { center: [...DEMO_CENTER], zoom: DEMO_ZOOM };
   return { bounds: [...bounds], padding: { top: PAD, right: PAD, bottom: PAD, left: PAD } };
 }

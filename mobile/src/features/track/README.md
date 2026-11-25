@@ -14,7 +14,7 @@ it as `track.segment` schema 1 events through the existing outbox (contract: `do
 | `simplify-track.ts` | Pure Douglas-Peucker (`track_simplify_tolerance_m`); keeps first, last and points after a heartbeat-long gap. |
 | `day-end.ts` | Pure: the first local day end after the shift opening in an IANA zone (DST-aware, `Intl`). |
 | `track-store.ts` | `track_point` (schema25), the cut into <= 250-position segments and the 30-day pruning. |
-| `use-own-track.ts`, `TrackNoticeBanner.tsx`, `maps/MapTrackLine.tsx` | P10 line from local points (offline) and the non-blocking notice. |
+| `use-own-track.ts`, `TrackNoticeBanner.tsx`, `maps/MapTrackLine.tsx` | P10 line from local points (offline) and the non-blocking notice. `MapTrackLine` draws `lines` (one per shift, MultiLineString); P10 passes `[track]`, P33b a day's `linesForDay`. |
 
 ## Rules that make the races impossible
 

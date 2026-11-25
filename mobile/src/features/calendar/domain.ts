@@ -1,6 +1,6 @@
 import { DEFAULT_TIME_ZONE } from "../../sync/format-time.ts";
 import { captureLocalDate } from "../day/capture-local-date.ts";
-import type { CachedTask } from "../day/types.ts";
+import type { AssignedTask, CachedTask } from "../day/types.ts";
 import type { HistoryEntry, UnscopedEntry } from "../history/domain.ts";
 
 export type CalendarStatus =
@@ -25,6 +25,8 @@ export interface CalendarItem {
   readonly codes: readonly string[];
   readonly isScoped: boolean;
   readonly source: "history" | "local" | "task";
+  /** The downloaded task behind a `task` row (P33 opens today's like P9); null for activity. */
+  readonly task: AssignedTask | null;
 }
 export interface CalendarDay {
   /** YYYY-MM-DD in the organization time zone. */
@@ -56,7 +58,14 @@ const DAY_MS = 86_400_000;
  * track retention (`LOCAL_RETENTION_MS`) so a window day never promises pruned points.
  */
 export const CALENDAR_WINDOW_DAYS = 30;
-const PENDING: readonly CalendarStatus[] = ["pending", "sending", "error", "scheduled", "missed"];
+/** Statuses that mark a day as pending (ring with clock in the grid). */
+export const PENDING: readonly CalendarStatus[] = [
+  "pending",
+  "sending",
+  "error",
+  "scheduled",
+  "missed",
+];
 
 const addDays = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00.000Z`) + days * DAY_MS).toISOString().slice(0, 10);
@@ -101,6 +110,7 @@ function taskItem(row: CachedTask, today: string): CalendarItem {
     codes: [row.task.point_code],
     isScoped: true,
     source: "task",
+    task: row.task,
   };
 }
 function activityItems(input: CalendarInput): readonly CalendarItem[] {
@@ -112,6 +122,7 @@ function activityItems(input: CalendarInput): readonly CalendarItem[] {
     codes: entry.codes,
     isScoped: true,
     source: "history",
+    task: null,
   }));
   const unscoped = input.unscoped.map((entry): CalendarItem => ({
     ...entry,
@@ -119,6 +130,7 @@ function activityItems(input: CalendarInput): readonly CalendarItem[] {
     codes: [],
     isScoped: false,
     source: "local",
+    task: null,
   }));
   return [...scoped, ...unscoped].sort(
     (left, right) => instant(right.time) - instant(left.time) || left.id.localeCompare(right.id),

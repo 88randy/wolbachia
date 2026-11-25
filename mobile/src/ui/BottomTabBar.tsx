@@ -1,4 +1,4 @@
-import { LifeBuoy, Map, Sun } from "lucide-react-native";
+import { CalendarDays, LifeBuoy, Map, Sun } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import type { MessageKey } from "@wolbachia/i18n";
 import { Pressable, View } from "react-native";
@@ -11,7 +11,7 @@ import { useTheme } from "../theme/ThemeProvider.tsx";
 import { AppText } from "./AppText.tsx";
 import { KIT_ICON_STROKE } from "./kit-styles.ts";
 
-export type BottomTab = "day" | "map" | "help";
+export type BottomTab = "day" | "map" | "calendar" | "help";
 
 interface TabSpec {
   readonly tab: BottomTab;
@@ -23,6 +23,12 @@ interface TabSpec {
 const TABS: readonly TabSpec[] = [
   { tab: "day", icon: Sun, labelKey: "courier.tabs.day", route: { name: "home" } },
   { tab: "map", icon: Map, labelKey: "courier.tabs.map", route: { name: "map" } },
+  {
+    tab: "calendar",
+    icon: CalendarDays,
+    labelKey: "courier.tabs.calendar",
+    route: { name: "calendar" },
+  },
   { tab: "help", icon: LifeBuoy, labelKey: "courier.tabs.help", route: { name: "help" } },
 ];
 const BAR_BOTTOM_GAP = 8;
@@ -59,7 +65,7 @@ function Tab({
 }
 
 /**
- * Mi día / Mapa / Ayuda. "Mi día" returns to the home screen; the other tabs open on top of it,
+ * Mi día / Mapa / Calendario / Ayuda. "Mi día" returns to the home screen; the other tabs open on top of it,
  * so Android Back always comes home.
  */
 export function BottomTabBar({ active }: { readonly active: BottomTab }) {

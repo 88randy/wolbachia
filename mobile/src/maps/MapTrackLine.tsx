@@ -5,18 +5,30 @@ import type { LngLatPair } from "./map-types.ts";
 
 const SOURCE = "own-track";
 
-/** The courier's own day track: a line on a surface-colored casing so it reads on any tile. */
-export function MapTrackLine({ line }: { readonly line: readonly LngLatPair[] }) {
+/** Drawable lines only: a single fix is no LineString. */
+function trackFeature(
+  lines: readonly (readonly LngLatPair[])[],
+): GeoJSON.Feature<GeoJSON.MultiLineString> {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "MultiLineString",
+      coordinates: lines
+        .filter((line) => line.length >= 2)
+        .map((line) => line.map(([lng, lat]) => [lng, lat])),
+    },
+  };
+}
+
+/**
+ * The courier's own track: one line per shift (MultiLineString, so two shifts never join), on a
+ * surface-colored casing so it reads on any tile. A single fix is no line.
+ */
+export function MapTrackLine({ lines }: { readonly lines: readonly (readonly LngLatPair[])[] }) {
   const { theme } = useTheme();
-  const data = useMemo<GeoJSON.Feature<GeoJSON.LineString>>(
-    () => ({
-      type: "Feature",
-      properties: {},
-      geometry: { type: "LineString", coordinates: line.map(([lng, lat]) => [lng, lat]) },
-    }),
-    [line],
-  );
-  if (line.length < 2) return null;
+  const data = useMemo(() => trackFeature(lines), [lines]);
+  if (data.geometry.coordinates.length === 0) return null;
   return (
     <GeoJSONSource id={SOURCE} data={data}>
       <Layer

@@ -38,8 +38,9 @@ React Native Paper was the fallback and was not needed.
 | `CheckRow` | Checklist item with filled "Bien" / "Con falla" (icon + text). |
 | `InfoNotice` | Calm tinted message (`info`, `success`, `warning`, `danger`), icon + words. |
 | `Counter` | Minus / number / plus for quantities (never eggs). |
-| `BottomTabBar` | Mi día / Mapa / Ayuda. |
+| `BottomTabBar` | Mi día / Mapa / Calendario / Ayuda (P33, #373). |
 | `EmptyState` | Icon, sentence and at most one action. |
+| `status-presentation.ts` | D4 (#373): the ONE status table (tone, icon, words) of P28, P29 and P33; `StatusCard` takes its `icon`. |
 | `Wordmark` | Organization logo when given (`logoUri`), otherwise the "AedesVision" text wordmark. |
 
 Older primitives (`Button`, `Card`, `Notice`, `TopBar`...) still serve the flows that were not re-skinned
