@@ -1,7 +1,7 @@
 import { Inbox } from "lucide-react-native";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { eventTypeKey } from "../../sync/inbox-model.ts";
+import { historyTitleKey } from "../history/domain.ts";
 import { AppText } from "../../ui/AppText.tsx";
 import { kitShadow } from "../../ui/kit-styles.ts";
 import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
@@ -16,10 +16,6 @@ interface CalendarItemRowProps {
   readonly onOpenInbox: () => void;
 }
 
-/** Local event types are dotted (`fuel.load`); server facts (`review_decision`) are office notes. */
-const titleKey = (kind: string) =>
-  kind.includes(".") ? eventTypeKey(kind) : "mobile.history.serverFact";
-
 /**
  * One activity row of P33: type, time, codes when scoped (D1 rows show none), status pill.
  * Voided rows stay listed, struck through. Problems link to the inbox, where actions live.
@@ -30,7 +26,7 @@ export function CalendarItemRow({ item, time, onOpenInbox }: CalendarItemRowProp
   return (
     <View className="gap-2 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
       <AppText variant="bodyStrong" className={isVoided ? "line-through" : undefined}>
-        {t(titleKey(item.kind))}
+        {t(historyTitleKey(item.kind))}
       </AppText>
       <AppText variant="caption" tone="secondary" isMonospace>
         {time ?? t("mobile.history.unknownTime")}

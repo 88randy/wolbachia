@@ -145,20 +145,21 @@ void test("P29 offline restart retains original UUID, ingest verdict, review/voi
   assert.equal(view.available, true);
   const capture = view.entries.find((entry) => entry.id === ID.source);
   assert.ok(capture);
-  assert.equal(capture.status, "in_review");
+  // The office void folds into the courier's own row (#373 device finding): one row, voided.
+  assert.equal(capture.status, "voided");
   assert.deepEqual(capture.codes, ["B-144", "OV-138"]);
-  assert.equal(capture.reason, null, "result codes are never displayed as authored prose");
+  assert.equal(capture.reason, REVIEW_HISTORY.reason, "the office reason, never a result code");
+  assert.equal(capture.author, ID.actor);
   assert.deepEqual(capture.observation, {
     es: "Casa cerrada archivada",
     en: "Archived closed house",
   });
-  const decision = view.entries.find((entry) => entry.id === `review_decision:${ID.history}`);
-  assert.ok(decision);
-  assert.equal(decision.status, "voided");
-  assert.equal(decision.author, ID.actor);
-  assert.equal(decision.voidsId, ID.source);
-  assert.equal(decision.reason, REVIEW_HISTORY.reason);
-  assert.ok(filterHistory(view.entries, "ov-138").some((entry) => entry.id === decision.id));
+  assert.equal(
+    view.entries.some((entry) => entry.id === `review_decision:${ID.history}`),
+    false,
+    "the decision is not a second row",
+  );
+  assert.ok(filterHistory(view.entries, "ov-138").some((entry) => entry.id === capture.id));
   assert.equal(
     filterHistory(view.entries, "closed-house").length,
     0,

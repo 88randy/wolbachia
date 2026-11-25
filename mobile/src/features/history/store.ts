@@ -5,7 +5,7 @@ import { readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
 import { readHistoryEntry } from "../ovitrap-lifecycle/history-contract.ts";
 import { CURRENT_CAPTURE_CONTEXT } from "../ovitrap-lifecycle/context-sql.ts";
-import { localHistory, serverHistory, text, UNAVAILABLE_HISTORY } from "./domain.ts";
+import { foldDecisions, localHistory, serverHistory, text, UNAVAILABLE_HISTORY } from "./domain.ts";
 import type { HistoryView, HistoryEntry, UnscopedEntry } from "./domain.ts";
 import type { Draft } from "../ovitrap-check/types.ts";
 import type { Schemas } from "@wolbachia/api-client";
@@ -127,7 +127,7 @@ export async function readHistory(
   const local = localEntries(snapshot, author);
   return {
     available: true,
-    entries: [...local, ...remoteEntries(snapshot, local)],
+    entries: foldDecisions([...local, ...remoteEntries(snapshot, local)]),
     unscoped: unscopedEntries(snapshot),
   };
 }
