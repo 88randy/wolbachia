@@ -4,6 +4,7 @@ import type { useAnnotationUpload } from "./use-annotation-upload";
 import { AnnotationPhotoPicker } from "./AnnotationPhotoPicker";
 import { AnnotationUploadChoice } from "./AnnotationUploadChoice";
 import { AnnotationUploadStatus } from "./AnnotationUploadStatus";
+import { AnnotationDropOverlay } from "./AnnotationDropOverlay";
 import { useAnnotationPhotoChoice } from "./use-annotation-photo-choice";
 import styles from "./annotation-upload.module.css";
 interface Props {
@@ -14,19 +15,21 @@ interface Props {
 }
 export function AnnotationUpload({ upload, onChoose, original, canUpload }: Props) {
   const { t } = useTranslation();
-  const { selected, choose, isInvalid, dropzone } = useAnnotationPhotoChoice({
+  const { selected, choose, error, hasMultiple, isDragging } = useAnnotationPhotoChoice({
     upload,
     onChoose,
     original,
     canUpload,
   });
   return (
-    <section className={styles.upload} {...dropzone}>
+    <section className={styles.upload} data-drag-over={isDragging || undefined}>
+      <AnnotationDropOverlay isDragging={isDragging} />
       <ImageUp className={styles.uploadIcon} aria-hidden="true" />
       <h2>{t("labAnnotation.upload.title")}</h2>
       {!canUpload && <p>{t("labAnnotation.upload.permission")}</p>}
       <AnnotationPhotoPicker isBusy={upload.isBusy || !canUpload} onChoose={choose} />
-      {isInvalid && <p role="alert">{t("labAnnotation.upload.invalid")}</p>}
+      {error && <p role="alert">{t(error)}</p>}
+      {hasMultiple && <p role="status">{t("labAnnotation.upload.multiple")}</p>}
       <AnnotationUploadChoice
         selected={selected}
         isBusy={upload.isBusy}

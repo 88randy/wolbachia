@@ -1,5 +1,7 @@
-import { useState, type DragEvent } from "react";
-import { isAnnotationPhoto } from "./annotation-upload";
+import { useEffect, useRef, useState } from "react";
+import type { MessageKey } from "@wolbachia/i18n";
+import { chooseAnnotationPhoto } from "./annotation-photo-file";
+import { usePhotoDrop } from "./use-photo-drop";
 import type { useAnnotationUpload } from "./use-annotation-upload";
 
 interface ChoiceOptions {
@@ -9,38 +11,48 @@ interface ChoiceOptions {
   canUpload: boolean;
 }
 
-/** A valid selection starts uploading immediately; retries retain the upload identity. */
-export function useAnnotationPhotoChoice(options: ChoiceOptions) {
+function usePhotoChoiceState(options: ChoiceOptions) {
   const [selection, setSelected] = useState<ChoiceOptions["original"]>();
-  const [isInvalid, setInvalid] = useState(false);
-  const choose = (file?: File) => {
-    if (!file || options.upload.isBusy || !options.canUpload) return;
-    const isValid = isAnnotationPhoto(file);
-    setInvalid(!isValid);
-    if (!isValid) return;
-    const selected = { file, clientId: crypto.randomUUID() };
+  const [error, setError] = useState<MessageKey>();
+  const [hasMultiple, setMultiple] = useState(false);
+  const version = useRef(0);
+  useEffect(
+    () => () => {
+      version.current += 1;
+    },
+    [options.canUpload, options.upload.isBusy],
+  );
+  const chooseFiles = async (files: File[]) => {
+    if (options.upload.isBusy || !options.canUpload) return;
+    const attempt = ++version.current;
+    const choice = await chooseAnnotationPhoto(files).catch(() => ({
+      error: "labAnnotation.upload.invalidImage" as const,
+    }));
+    if (attempt !== version.current) return;
+    setError(choice.error);
+    setMultiple(!choice.error && files.length > 1);
+    if (choice.error) return;
+    const selected = { file: choice.file, clientId: crypto.randomUUID() };
     setSelected(selected);
     options.onChoose(selected.file, selected.clientId);
   };
-  const dropzone = usePhotoDrop({ choose, isAllowed: options.canUpload && !options.upload.isBusy });
-  return { selected: selection ?? options.original, choose, isInvalid, dropzone };
+  return { selected: selection ?? options.original, error, hasMultiple, chooseFiles };
 }
 
-function usePhotoDrop(options: { choose: (file?: File) => void; isAllowed: boolean }) {
-  const [isDragging, setDragging] = useState(false);
+/** A valid selection starts uploading immediately; retries retain the upload identity. */
+export function useAnnotationPhotoChoice(options: ChoiceOptions) {
+  const { chooseFiles, ...choice } = usePhotoChoiceState(options);
+  const isDragging = usePhotoDrop({
+    chooseFiles: (files) => {
+      void chooseFiles(files);
+    },
+    isAllowed: options.canUpload && !options.upload.isBusy,
+  });
   return {
-    "data-drag-over": isDragging || undefined,
-    onDragOver: (event: DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      setDragging(options.isAllowed);
-    },
-    onDragLeave: () => {
-      setDragging(false);
-    },
-    onDrop: (event: DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      setDragging(false);
-      options.choose(event.dataTransfer.files[0]);
+    ...choice,
+    isDragging,
+    choose: (file?: File) => {
+      if (file) void chooseFiles([file]);
     },
   };
 }

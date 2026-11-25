@@ -33,6 +33,13 @@ export const labAnnotation = {
   "labAnnotation.upload.camera": "Tomar foto",
   "labAnnotation.upload.preview": "Vista previa de la foto seleccionada",
   "labAnnotation.upload.invalid": "Selecciona una foto JPG, PNG o WebP de hasta 10 MB.",
+  "labAnnotation.upload.dropHere": "Suelta la foto aquí",
+  "labAnnotation.upload.noFile":
+    "Arrastra un archivo de imagen desde tu computadora; las imágenes arrastradas desde una página no se pueden usar. También puedes usar Elegir archivo.",
+  "labAnnotation.upload.unsupported": "Selecciona un archivo de imagen JPG, PNG o WebP.",
+  "labAnnotation.upload.tooLarge":
+    "La foto supera el límite de 10 MB. Reduce su tamaño y vuelve a seleccionarla.",
+  "labAnnotation.upload.multiple": "Se usará la primera imagen; las demás se omitieron.",
   "labAnnotation.upload.pixelLimit":
     "La foto supera el límite de {max} píxeles. Reduce su resolución y vuelve a seleccionarla.",
   "labAnnotation.upload.invalidImage":

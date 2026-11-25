@@ -17,8 +17,8 @@ interface UploadOptions {
   requireCurrent: () => void;
   onStage: (stage: AnnotationUploadStage) => void;
 }
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function isAnnotationPhoto(file: File) {
   return IMAGE_TYPES.includes(file.type) && file.size > 0 && file.size <= MAX_IMAGE_BYTES;
