@@ -4,6 +4,7 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { KIT_ICON_STROKE, kitShadow } from "../../ui/kit-styles.ts";
+import { displayPointCode } from "../day/point-code.ts";
 import { ACTION_KEYS } from "../day/presentation.ts";
 import type { AssignedTask } from "../day/types.ts";
 import { CalendarStatusPill } from "./CalendarStatusPill.tsx";
@@ -29,7 +30,7 @@ function rowContent(title: string, item: CalendarTaskRowProps["item"], chevron: 
       )}
     </View>,
     <AppText key="code" variant="code">
-      {item.task.point_code}
+      {displayPointCode(item.task.point_code)}
     </AppText>,
     <CalendarStatusPill key="status" status={item.status} />,
   ];

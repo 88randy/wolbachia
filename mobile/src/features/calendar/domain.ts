@@ -1,5 +1,6 @@
 import { DEFAULT_TIME_ZONE } from "../../sync/format-time.ts";
 import { captureLocalDate } from "../day/capture-local-date.ts";
+import { displayPointCode } from "../day/point-code.ts";
 import type { AssignedTask, CachedTask } from "../day/types.ts";
 import type { HistoryEntry, UnscopedEntry } from "../history/domain.ts";
 
@@ -107,7 +108,7 @@ function taskItem(row: CachedTask, today: string): CalendarItem {
     kind: row.task.action,
     time: null,
     status: calendarStatus(row, today),
-    codes: [row.task.point_code],
+    codes: [displayPointCode(row.task.point_code)],
     isScoped: true,
     source: "task",
     task: row.task,

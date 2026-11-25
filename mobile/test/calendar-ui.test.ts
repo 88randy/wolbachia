@@ -46,7 +46,8 @@ const item = (overrides: Partial<CalendarItem>): CalendarItem => ({
 const task = (date: string, serverCompletion: boolean | null): CachedTask => ({
   task: {
     id: `P-1:${date}`,
-    point_code: "OV-010",
+    // The day bundle may send the task key ("code:action:date") as the point code.
+    point_code: `OV-010:check:${date}`,
     point_id: "p-1",
     courier: "courier",
     action: "check",
@@ -267,6 +268,8 @@ void test("P33 task rows: today's opens like P9, other days are read-only", () =
   const future = row(null);
   assert.equal(pressables(future).length, 0);
   assert.ok(texts(future).includes(messages["es-MX"]["mobile.calendar.statusScheduled"]));
+  assert.ok(texts(future).includes("OV-010"), "the row shows the point code, not the task key");
+  assert.ok(!texts(future).some((text) => String(text).includes(":check:")));
   assertReadable(future);
 });
 
