@@ -1289,6 +1289,99 @@ void test("AC2: a draft started before configuration can adopt later downloaded 
   );
   assert.equal((await h.service.read()).catalogChanged, true);
 });
+void test("no downloaded reasons: the reason page says so and its retry downloads them", async () => {
+  const h = await harness();
+  const source = await begin(h, "replace");
+  for (const locale of ["es-MX", "en"] as const) {
+    const calls: string[] = [];
+    const model = {
+      state: await h.service.read(),
+      isBusy: false,
+      edit: () => undefined,
+      run: (action: () => Promise<unknown>, eventId: string) => {
+        calls.push(eventId);
+        return action().then(() => true);
+      },
+      service: { updateConfiguration: (id: string) => Promise.resolve(calls.push(`update:${id}`)) },
+    };
+    const nodes = componentHarness({ locale, scheme: "light", fontScale: 1 }).render(
+      "mobile/src/features/ovitrap-lifecycle/LifecycleReasonPage.tsx",
+      "LifecycleReasonPage",
+      { draft: { ...source, catalog: null }, model },
+    );
+    const texts = nodes.filter((item) => item.type === "Text").map((item) => item.props.children);
+    assert.ok(texts.flat().includes(messages[locale]["field.lifecycle.noReasons"]));
+    const retry = nodes.find(
+      (item) => item.props.accessibilityLabel === messages[locale]["field.action.retry"],
+    );
+    assert.ok(retry);
+    (retry.props.onPress as () => void)();
+    await Promise.resolve();
+    assert.deepEqual(calls, [source.eventId, `update:${source.eventId}`]);
+  }
+});
+
+void test("opening an action downloads the current reasons and moves the open draft onto them", async () => {
+  const h = await harness();
+  const config = await h.store.configuration();
+  assert.ok(config.catalog);
+  await h.source.read(null, (turn) =>
+    h.store.saveConfiguration({ catalog: null, rules: null }, turn),
+  );
+  const draft = await begin(h, "replace");
+  assert.equal(draft.catalog, null);
+  const downloaded = { ...config, catalog: { ...config.catalog, version: "catalog-v2" } };
+  const service = new LifecycleService({
+    ...h.deps,
+    refresh: (turn) => h.store.saveConfiguration(downloaded, turn),
+  });
+
+  const updated = await service.updateConfiguration(draft.eventId);
+
+  assert.equal(updated.draft?.catalog?.version, "catalog-v2");
+  assert.deepEqual(
+    updated.draft.catalog.replace.map((item) => item.code),
+    ["damaged", "other"],
+  );
+  assert.equal(updated.catalogChanged, false);
+});
+
+void test("offline keeps the last lists; a chosen reason that left the list is never swapped out", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  const offline = new LifecycleService({
+    ...h.deps,
+    refresh: () => Promise.reject(new TypeError("Network request failed")),
+  });
+  const kept = await offline.updateConfiguration(draft.eventId);
+  assert.equal(kept.draft?.catalog?.version, draft.catalog?.version);
+
+  await h.service.update({ reasonCode: "damaged" }, draft.eventId);
+  const config = await h.store.configuration();
+  assert.ok(config.catalog);
+  const shrunk = {
+    ...config,
+    catalog: { ...config.catalog, version: "catalog-v3", replace: [reason("other")] },
+  };
+  const online = new LifecycleService({
+    ...h.deps,
+    refresh: (turn) => h.store.saveConfiguration(shrunk, turn),
+  });
+  const result = await online.updateConfiguration(draft.eventId);
+  assert.equal(result.draft?.reasonCode, "damaged");
+  assert.equal(result.draft.catalog?.version, draft.catalog?.version);
+  assert.equal(result.catalogChanged, true);
+});
+
+void test("a lost session is not hidden as offline", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  const service = new LifecycleService({
+    ...h.deps,
+    refresh: () => Promise.reject(new StaleCaptureError()),
+  });
+  await assert.rejects(() => service.updateConfiguration(draft.eventId), StaleCaptureError);
+});
 import { runSyncPass } from "../src/sync/sync-pass.ts";
 void test("AC3 wiring: existing sync applies retired/current projections before receipt and cursor advancement", async () => {
   const h = await harness();

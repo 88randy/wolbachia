@@ -433,6 +433,24 @@ export class LifecycleService {
       return this.#snapshot(turn);
     });
   }
+  /**
+   * Downloads the current catalog and rules when online and moves an open draft onto them, so a
+   * list fixed on the server reaches a courier who already began. Offline keeps the last copy.
+   */
+  updateConfiguration(eventId: string | null): Promise<Snapshot> {
+    return this.#write(eventId, async (state, turn, operation) => {
+      try {
+        await this.#deps.refresh?.(turn, operation);
+      } catch (error) {
+        if (isSessionError(error)) throw error;
+      }
+      const draft = state.event ? null : state.draft;
+      const config = await this.#deps.store.configuration(turn.handle);
+      if (draft && canAdopt(draft, config))
+        await this.#persist({ ...draft, ...config, reviewAcknowledged: false }, turn, operation);
+      return this.#snapshot(turn);
+    });
+  }
   openTask(eventId: string | null): Promise<Snapshot> {
     return this.#write(
       eventId,
@@ -527,6 +545,20 @@ function configurationChanged(
   );
 }
 
+/** A newer list replaces the draft's copy only while the chosen reason is still offered. */
+function canAdopt(draft: LifecycleDraft, config: import("./types.ts").Configuration): boolean {
+  const reasons = config.catalog?.[draft.kind];
+  if (!reasons || !configurationChanged(draft, config)) return false;
+  return !draft.reasonCode || reasons.some((item) => item.code === draft.reasonCode);
+}
+function isSessionError(error: unknown): boolean {
+  return (
+    error instanceof LifecycleGateError ||
+    error instanceof RemoteSessionEnded ||
+    error instanceof StaleCaptureError ||
+    (error instanceof ApiError && error.status === 403)
+  );
+}
 async function readTurnIsCurrent(turn: LifecycleSourceTurn | null): Promise<boolean> {
   if (turn === null) return true;
   try {
