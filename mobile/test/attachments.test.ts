@@ -1428,3 +1428,55 @@ async function sealNoFileOrigin(
     },
   });
 }
+
+void test("a server-rejected upload is terminal: no retry loop, persisted, reported to the courier", async (test) => {
+  const h = await attachmentHarness(test);
+  const draft = makeDraft({
+    eventId: makeEnvelope().id,
+    evidence: [{ id: ID, fileRef: h.source }],
+  });
+  const event = captureEvent(draft);
+  assert.ok(
+    await new EvidenceCapture(h).capture(
+      { capture: () => Promise.resolve({ id: ID, fileRef: h.source }) },
+      event.id,
+    ),
+  );
+  await h.outbox.enqueue(
+    event,
+    h.store.bindingStatements({
+      eventId: event.id,
+      evidenceIds: [ID],
+      fence: await h.session.capture(),
+    }),
+  );
+  let calls = 0;
+  const sync = new AttachmentSync({
+    ...h,
+    now: () => NOW,
+    transport: {
+      authorize: () => {
+        calls++;
+        return Promise.resolve({ state: "failed" });
+      },
+      renew: () => {
+        calls++;
+        return Promise.resolve({ state: "failed" });
+      },
+      put: () => Promise.reject(new Error("Unexpected put")),
+      finalize: () => Promise.reject(new Error("Unexpected finalize")),
+    },
+  });
+  assert.equal(await sync.advanceOne(), true);
+  assert.equal(await sync.advanceOne(), false);
+  assert.equal(calls, 1);
+  assert.equal(await sync.nextRetryDelayMs(), null);
+  assert.deepEqual(await h.store.pendingSummary(), { pending: 1, hasError: true, rejected: 1 });
+  const reopened = await h.reopen();
+  assert.equal((await reopened.store.pendingSummary()).rejected, 1);
+  assert.equal(
+    (await reopened.db.query("SELECT state,last_error FROM attachment_file WHERE id=?", [ID]))[0]
+      ?.last_error,
+    "upload_rejected",
+  );
+});

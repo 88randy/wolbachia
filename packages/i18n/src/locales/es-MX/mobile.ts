@@ -799,6 +799,8 @@ export const mobile = {
     "Referencias de fotos pendientes: {count}. Esto no confirma la recepción del registro.",
   "mobile.inbox.evidenceError":
     "Algunas referencias de fotos siguen incompletas. Usa Intentar ahora; si el archivo no está disponible, contacta a tu coordinador.",
+  "mobile.inbox.evidenceRejected":
+    "El servidor rechazó {count} foto(s) y no se pueden enviar. Vuelve a tomarlas si puedes; si no, avisa a tu coordinador.",
   "mobile.inbox.empty": "No hay registros todavía. Lo que captures aparecerá aquí.",
   "mobile.inbox.groupTitle": "{count} · {label}",
   "mobile.inbox.timeRange": "{from} a {to}",
