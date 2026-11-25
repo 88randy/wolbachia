@@ -51,7 +51,7 @@ export function AnnotationSettings(props: AnnotationSettingsProps) {
         <AnnotationConfiguration {...props} />
         <section aria-label={t("labAnnotation.editor.keyboardShortcuts")}>
           <h3>{t("labAnnotation.editor.keyboardShortcuts")}</h3>
-          <AnnotationShortcutTable />
+          <AnnotationShortcutTable isCompact />
         </section>
       </div>
       <AnnotationSettingsGuide userId={props.userId} />

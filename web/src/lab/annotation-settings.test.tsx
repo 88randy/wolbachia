@@ -85,7 +85,7 @@ test("settings exposes radio swatches, bounded pixel sliders and conditional gri
   expect(within(panel).getByRole("button", { name: "Cambiar a cajas" })).toBeDefined();
 });
 
-test("panel reuses the shortcut dialog rows and returns nested guide focus to its footer", async () => {
+test("panel lists the main shortcut rows of the dialog and returns nested guide focus to its footer", async () => {
   const i18n = await setupI18n("en");
   const user = userEvent.setup();
   localStorage.setItem("aedesvision:annotation-tips:settings-test", "seen");
@@ -94,7 +94,10 @@ test("panel reuses the shortcut dialog rows and returns nested guide focus to it
       <SettingsHarness />
     </I18nextProvider>,
   );
-  const actions = screen.getByRole("table").textContent;
+  const panelRows = screen
+    .getAllByRole("row")
+    .slice(1)
+    .map((row) => row.textContent);
   const guide = screen.getByRole("button", { name: "View annotation guide" });
   await user.click(guide);
   expect(screen.getByRole("dialog", { name: i18n.t("labAnnotation.tips.title") })).toBeDefined();
@@ -106,7 +109,13 @@ test("panel reuses the shortcut dialog rows and returns nested guide focus to it
       <AnnotationShortcutsDialog open onOpenChange={vi.fn()} />
     </I18nextProvider>,
   );
-  expect(screen.getByRole("table").textContent).toBe(actions);
+  const dialogRows = screen
+    .getAllByRole("row")
+    .slice(1)
+    .map((row) => row.textContent);
+  // The compact panel shows the leading rows; the dialog adds keyboard-only extras after them.
+  expect(dialogRows.slice(0, panelRows.length)).toEqual(panelRows);
+  expect(dialogRows.length).toBeGreaterThan(panelRows.length);
   localStorage.removeItem("aedesvision:annotation-tips:settings-test");
 });
 
