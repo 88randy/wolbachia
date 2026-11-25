@@ -113,6 +113,122 @@ test("each courier shows the age of its last position; a stale one says so in wo
   expect(calls(api.requests, TRACK)).toBe(0);
 });
 
+// Shapes copied from the demo API responses of 2026-11-25 (only `recorded_at` is made relative).
+const REAL_COURIER = "20517eac-19c5-463c-b2d0-0c7c429e3d38";
+const REAL_SHIFT = "a7924634-7d99-4815-b539-bbd6b9c21809";
+
+function realShift(): Schemas["Shift"] {
+  return {
+    id: REAL_SHIFT,
+    code: "JOR-0272",
+    courier: REAL_COURIER,
+    device: "aba35b30-fdb3-481c-912f-c0ec310746ec",
+    motorcycle: "e077aed5-4174-493f-ae1d-d791de90f4af",
+    motorcycle_code: "M-DEMO-01",
+    status: "open",
+    opened_at_device: "2026-11-19T01:23:19.877000Z",
+    opened_event: "d0d50dfa-82ee-4b2b-97ed-c22125a7de7a",
+    odometer_open_km: 15650,
+    open_note: "",
+    closed_at_device: null,
+    closed_event: null,
+    odometer_close_km: null,
+    close_note: "",
+    checks: [
+      {
+        id: "2aa08139-09a9-4411-834b-31dd5ec71f23",
+        item: "ccca743e-311b-4c9a-a351-61c4b9ec25b2",
+        item_code: "brakes",
+        result: "ok",
+        note: "",
+      },
+    ],
+    created_at: "2026-11-19T01:23:02.972308Z",
+  };
+}
+
+function realPosition(): Schemas["LastPosition"] {
+  const recorded = new Date(Date.now() - 2 * 60_000 - 5_000).toISOString();
+  return {
+    shift_id: REAL_SHIFT,
+    shift_code: "JOR-0272",
+    courier: REAL_COURIER,
+    motorcycle_code: "M-DEMO-01",
+    lat: 19.394955,
+    lng: -99.171675,
+    accuracy_m: 3,
+    recorded_at: recorded,
+    received_at: "2026-11-25T17:29:52.834203Z",
+  };
+}
+
+function realUsers() {
+  const others = Array.from({ length: 16 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    display_name: `Persona ${String(index)}`,
+    is_courier: index % 2 === 0,
+  }));
+  return page([
+    ...others.slice(0, 8),
+    { id: REAL_COURIER, display_name: "Carlos Canul Pech", is_courier: true },
+    ...others.slice(8),
+  ]);
+}
+
+function realRoutes(overrides: FakeApiRoutes = {}): FakeApiRoutes {
+  return {
+    "GET /api/v1/me/": () => Response.json(makeMe({ permissions: TRACKING })),
+    "GET /api/v1/shifts/": () => Response.json(page([realShift()])),
+    "GET /api/v1/quadrant-assignments/": () => Response.json(page([])),
+    "GET /api/v1/quadrants/": () => Response.json(page([])),
+    "GET /api/v1/lookups/users/": () => Response.json(realUsers()),
+    [POSITIONS]: () => Response.json([realPosition()]),
+    ...overrides,
+  };
+}
+
+test("real API shapes join: the courier's name, its last position and its map dot", async () => {
+  const api = createFakeApi(realRoutes());
+  await renderApp({ path: "/operations/live", fetch: api.fetch });
+  expect(await screen.findByText("Carlos Canul Pech")).toBeDefined();
+  expect(await screen.findByText("Última posición: hace 2 min")).toBeDefined();
+  expect(screen.queryByText(/Repartidor 1|Todavía no recibimos/)).toBeNull();
+  // The legend is drawn only when at least one courier dot is on the map.
+  expect(screen.getByText(/Punto lleno/)).toBeDefined();
+});
+
+test("a focus check of the session during the first load still ends with name and position", async () => {
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const api = createFakeApi(
+    realRoutes({
+      "GET /api/v1/lookups/users/": async () => {
+        await held;
+        return Response.json(realUsers());
+      },
+      [POSITIONS]: async () => {
+        await held;
+        return Response.json([realPosition()]);
+      },
+    }),
+  );
+  await renderApp({ path: "/operations/live", fetch: api.fetch });
+  await screen.findByText("M-DEMO-01", { exact: false });
+  await waitFor(() => {
+    expect(calls(api.requests, POSITIONS)).toBeGreaterThan(0);
+  });
+  const meCalls = calls(api.requests, "GET /api/v1/me/");
+  window.dispatchEvent(new Event("focus"));
+  await waitFor(() => {
+    expect(calls(api.requests, "GET /api/v1/me/")).toBe(meCalls + 1);
+  });
+  release();
+  expect(await screen.findByText("Carlos Canul Pech")).toBeDefined();
+  expect(await screen.findByText("Última posición: hace 2 min")).toBeDefined();
+});
+
 test("focusing a courier loads that shift's track once and refreshes it every 2 minutes", async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   const { api } = await openLive({
