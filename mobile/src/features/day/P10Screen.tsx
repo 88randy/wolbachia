@@ -2,14 +2,14 @@ import { useMemo } from "react";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useFieldZones } from "../../maps/use-field-zones.ts";
-import { MapView } from "../../maps/MapView.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
+import { TrackNoticeBanner } from "../track/TrackNoticeBanner.tsx";
 import { toMapPoints, zonesOfTasks } from "./map-points.ts";
+import { P10Map } from "./P10Map.tsx";
 import { RouteProblems } from "./RouteProblems.tsx";
 import { useM06 } from "./use-m-06.ts";
-import { useStartTask } from "./use-start-task.ts";
 
 /** Day map: every point of the route with its state; tap one, then "Cómo llegar". No scrolling here. */
 export function P10Screen() {
@@ -18,7 +18,6 @@ export function P10Screen() {
   const points = useMemo(() => toMapPoints(model.tasks, t), [model.tasks, t]);
   const allZones = useFieldZones();
   const zones = useMemo(() => zonesOfTasks(allZones, model.tasks), [allZones, model.tasks]);
-  const start = useStartTask();
   const hasMissingLocation = model.tasks.length > points.length;
   return (
     <ScreenScaffold
@@ -28,25 +27,12 @@ export function P10Screen() {
     >
       <View className="gap-3 px-4 pt-3">
         <RouteProblems model={model} />
+        <TrackNoticeBanner />
         {hasMissingLocation ? (
           <InfoNotice tone="info" message={t("field.map.someWithoutLocation")} />
         ) : null}
       </View>
-      <View className="flex-1">
-        <MapView
-          points={points}
-          zones={zones}
-          selectedId={model.selected?.task.id ?? null}
-          onStart={(id) => {
-            const row = model.tasks.find((candidate) => candidate.task.id === id);
-            if (row !== undefined) start(row.task);
-          }}
-          onSelectPoint={(id) => {
-            const row = model.tasks.find((candidate) => candidate.task.id === id);
-            if (row !== undefined) void model.select(row.task);
-          }}
-        />
-      </View>
+      <P10Map model={model} points={points} zones={zones} />
     </ScreenScaffold>
   );
 }

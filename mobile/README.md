@@ -58,6 +58,13 @@ New screens do not edit `routes.ts` or `ScreenRouter.tsx`:
 `push`, `goBack`, `popToRoot` (back to Mi día after "Listo") and `replace` (swap a finished step)
 come from `useNavigation()`. `src/features/help/` is the reference example.
 
+## Courier track (#370)
+
+Between a local shift open and close a location foreground service (`expo-task-manager` +
+`expo-location`, Balanced by default) records a filtered, simplified track. It is cut every
+`track_upload_interval_seconds` into `track.segment` outbox events and drawn on P10 from local
+points. See [feature contract, parameters and limits](src/features/track/README.md).
+
 ## M10 release, blocked release and samples (#139)
 
 Assignments4 release tasks now remain visible in the day list and open P18/P19.

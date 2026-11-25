@@ -26,6 +26,8 @@ export const field = {
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",
   "field.scan.labelUnknown":
     "We could not find that label. Check the number printed large on it or use a new label.",
+  "field.scan.bagCode": "We could not read this bag's code. Type the code printed on it.",
+  "field.scan.bagUsed": "That bag was already used. Use a new bag.",
   "field.gps.searching": "Looking for your location…",
   "field.gps.searchingAccuracy": "Looking for your location… ± {meters} m",
   "field.gps.ready": "Location ready.",
@@ -345,6 +347,7 @@ export const field = {
   "field.receipt.signClear": "Erase",
   "field.receipt.signHint": "Sign with your finger in the box.",
   "field.receipt.signKeep": "Keep signature",
+  "field.receipt.signIncomplete": "Draw your full signature.",
   "field.receipt.signQuestion": "Sign for it",
   "field.receipt.signSaved": "Signature saved.",
   "field.receipt.supply": "Supply {number} (should be {expected})",

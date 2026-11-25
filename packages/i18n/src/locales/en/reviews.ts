@@ -75,6 +75,8 @@ export const reviews = {
   "reviews.event.incidentReport": "Incident report",
   "reviews.event.recordVoid": "Record voided",
   "reviews.event.other": "Phone record",
+  "reviews.reason.captureContextChanged":
+    "The rules or the point changed since the capture; ask an administrator to review it.",
   "reviews.reason.reviewRevisionConflict":
     "Someone else changed this review; refresh before deciding",
   "reviews.reason.unknown": "Needs review",

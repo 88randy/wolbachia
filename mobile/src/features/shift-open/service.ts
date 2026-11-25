@@ -21,6 +21,8 @@ interface ServiceDeps {
   readonly maps: MapPreparationSource;
   readonly photos: PhotoCapturePort;
   readonly refreshCatalog?: () => Promise<void>;
+  /** Runs after the opening is saved on the phone (starts the courier track). */
+  readonly onOpened?: () => Promise<void>;
 }
 export interface ShiftSnapshot extends StoredShift {
   readonly locallyClosedAt?: string | null;
@@ -214,6 +216,7 @@ export class ShiftOpenService {
         throw new Error(`Departure blocked: ${state.gate}`);
       const event = await this.#event(state.draft, state.catalog);
       await this.#deps.engine.enqueue(event, this.#deps.store.openStatements(state.draft));
+      void this.#deps.onOpened?.();
       return this.read();
     });
   }

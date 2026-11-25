@@ -8,12 +8,14 @@ import { MapFooter } from "./MapFooter.tsx";
 import { MapUnavailable } from "./MapUnavailable.tsx";
 import { buildMapStyle } from "./map-style.ts";
 import { createMapStyles } from "./map-styles.ts";
-import type { MapPoint, MapZone } from "./map-types.ts";
+import type { LngLatPair, MapPoint, MapZone } from "./map-types.ts";
 import { useMapTiles } from "./use-map-tiles.ts";
 
 interface Props {
   readonly points?: readonly MapPoint[];
   readonly zones?: readonly MapZone[];
+  /** The courier's own day track, drawn as a line under the points. */
+  readonly track?: readonly LngLatPair[];
   /** Highlighted point; the directions button targets it. */
   readonly selectedId?: string | null;
   readonly onSelectPoint?: (id: string) => void;
@@ -25,6 +27,7 @@ interface Props {
 
 const NO_POINTS: readonly MapPoint[] = [];
 const NO_ZONES: readonly MapZone[] = [];
+const NO_TRACK: readonly LngLatPair[] = [];
 
 /**
  * Embeddable offline map: quadrants as polygons (color + dash pattern + label), points with
@@ -34,6 +37,7 @@ const NO_ZONES: readonly MapZone[] = [];
 export function MapView({
   points = NO_POINTS,
   zones = NO_ZONES,
+  track = NO_TRACK,
   selectedId = null,
   onSelectPoint,
   onStart,
@@ -54,6 +58,7 @@ export function MapView({
           mapStyle={mapStyle}
           points={points}
           zones={zones}
+          track={track}
           selectedId={selectedId}
           onSelectPoint={(id) => onSelectPoint?.(id)}
         />

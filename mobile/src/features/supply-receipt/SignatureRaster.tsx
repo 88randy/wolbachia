@@ -15,6 +15,8 @@ export function SignatureRaster({
       ref={svg}
       width="100%"
       height="100%"
+      // Stretch per axis like signaturePoint does, so strokes land under the finger on any pad ratio.
+      preserveAspectRatio="none"
       viewBox={`0 0 ${String(SIGNATURE_WIDTH)} ${String(SIGNATURE_HEIGHT)}`}
     >
       <Rect width={SIGNATURE_WIDTH} height={SIGNATURE_HEIGHT} fill={theme.color.surface} />
