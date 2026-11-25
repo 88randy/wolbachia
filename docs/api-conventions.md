@@ -47,6 +47,57 @@ download; private source bytes are never exposed. Voiding a count retains its
 annotation and image. A photo-backed correction creates a new annotation.
 The annotation's sole public identifier is `id`.
 
+## Training dataset exports (W72)
+
+Every action requires current `egg_annotation.export`, granted only to seeded
+admins by default. Organization comes from the authenticated membership; neither
+the request nor the route accepts an organization ID. Current whole paired action
+scope and independent-QA blindness restrict annotations before selection or page
+counts. An export is indivisible: if any selected annotation becomes inaccessible,
+list/detail/download conceal it. Ready aggregate totals and downloads append
+numeric disclosure receipts under the existing independent-QA boundary.
+
+| Method and path | Contract |
+| --- | --- |
+| `POST /api/v1/lab/egg-annotation-exports/` | `{date_from, date_to, author?, include_voided?: false, format}` with format `coco` or `yolo`; returns `201` with the job projection. Dates are inclusive organization-local days, at most 366 days. `author` is an optional same-organization User UUID or null. At most 5,000 images are selected. |
+| `GET /api/v1/lab/egg-annotation-exports/` | Standard server page-number pagination (`page`, `page_size`), newest creation time/UUID first. |
+| `GET /api/v1/lab/egg-annotation-exports/{id}/` | One currently authorized job projection. |
+| `GET /api/v1/lab/egg-annotation-exports/{id}/download/` | Ready ZIP stream, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`; one immutable actor/time download receipt per authorized delivery. |
+
+The projection has `id`, `created_at`, `date_from`, `date_to`, `author` (nullable),
+`include_voided`, `format`, `status`, `image_count`, `box_count`, `point_count`,
+`error_code`, `size_bytes` (nullable) and `sha256`. Result counts/size/hash are
+available when ready; other states retain zero counts and no result. Status
+transitions append immutable facts: `queued -> running -> ready | failed`.
+Selections and voided flags are fixed when requested, before asynchronous work;
+later annotation creation or voiding does not alter the selected dataset.
+All actions use the existing `export` throttle. Foreign/inaccessible jobs are
+opaque `404`; missing permission is `403`. Errors contain codes/params only:
+invalid/reversed/over-366-day dates use field code
+`annotation_export_date_range` (`max_days: 366`); oversized selections use
+`annotation_export_too_many_images` (`max_images: 5000`). These follow the existing
+`400 validation_error` field envelope. Download before ready returns
+`409 annotation_export_not_ready`. A failed task retains
+`error_code: annotation_export_failed`, never exception text or private paths.
+
+One archive contains only verified sanitized images named with annotation public
+UUIDs. COCO has `annotations.json`, images, consistent detection IDs, pixel bbox
+and area, category 1 `aedes_egg`, `iscrowd: 0`, AedesVision/export/UTC metadata and
+empty licenses. YOLO has image/label pairs, class 0 normalized center `xywh` to
+six decimals, `classes.txt`, and relative `data.yaml` paths (`path: .`,
+`train: images`, `val: null`, `nc: 1`, `names: [aedes_egg]`). This is an unsplit
+export; a consumer creates an independent validation split before training.
+Both contain `points.json` as
+`{"images":[{"image_id":1,"file_name":"images/<UUID>.<ext>","points":[[x,y],...]}]}`
+in pixels, a minimal `manifest.csv`, and a schema/policy `README.txt`.
+Points never become boxes; point-only images remain present with empty YOLO
+labels. Manifest columns are `image_file,annotation_id,count_id,box_count,point_count,voided,created_at`
+(UTC). Archive metadata contains no author identifiers/names, organization IDs,
+locations, Bag/ovitrap codes or original filenames. Voided counts are excluded
+by default; explicit inclusion retains their captured manifest flag.
+See [the format/storage details](../backend/lab/README.md#training-dataset-exports-w72)
+and [decision 177](decisions.md).
+
 ## UIEB shipment source and material delivery (#118)
 
 `GET/POST /uieb-shipments/` and `GET /uieb-shipments/{id}/` expose the versioned

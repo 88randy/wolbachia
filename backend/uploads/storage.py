@@ -5,7 +5,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO
+from typing import IO, BinaryIO
 from uuid import uuid4
 
 from django.conf import settings
@@ -16,6 +16,7 @@ from uploads.exceptions import UploadStorageError
 from uploads.limits import MAX_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES, max_upload_bytes
 
 KEY_PATTERN = re.compile(r"(?:source|verified)/[0-9a-f]{32}\.bin", re.ASCII)
+DATASET_KEY_PATTERN = re.compile(r"dataset/[0-9a-f]{32}\.zip", re.ASCII)
 logger = logging.getLogger(__name__)
 
 
@@ -26,10 +27,10 @@ class StoredObject:
     sha256: str
 
 
-def _private_path(key: str) -> Path:
+def _private_path(key: str, *, pattern: re.Pattern[str] = KEY_PATTERN) -> Path:
     if connection.in_atomic_block:
         raise RuntimeError("Private evidence I/O cannot run inside a database transaction.")
-    if KEY_PATTERN.fullmatch(key) is None:
+    if pattern.fullmatch(key) is None:
         raise ValueError("Invalid private evidence key.")
     root = Path(settings.UPLOADS_PRIVATE_ROOT).resolve()
     target = (root / key).resolve()
@@ -112,3 +113,32 @@ def read_object(key: str) -> bytes:
     if len(content) > MAX_UPLOAD_BYTES:
         raise UploadStorageError
     return content
+
+
+def store_dataset_export(stream: IO[bytes]) -> StoredObject:
+    """Copy a completed dataset ZIP to exclusive private storage without the upload-size cap."""
+    key = f"dataset/{uuid4().hex}.zip"
+    target = _private_path(key, pattern=DATASET_KEY_PATTERN)
+    created = False
+    size, digest = 0, hashlib.sha256()
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as output:
+            created = True
+            while chunk := stream.read(UPLOAD_CHUNK_BYTES):
+                output.write(chunk)
+                size += len(chunk)
+                digest.update(chunk)
+    except OSError as error:
+        if created:
+            _discard_path(target)
+        raise UploadStorageError from error
+    return StoredObject(key, size, digest.hexdigest())
+
+
+def open_dataset_export(key: str) -> BinaryIO:
+    """Open only a private dataset object after the caller has authorized its immutable receipt."""
+    try:
+        return _private_path(key, pattern=DATASET_KEY_PATTERN).open("rb")
+    except OSError as error:
+        raise UploadStorageError from error

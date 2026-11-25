@@ -3207,6 +3207,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/lab/egg-annotation-exports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_egg_annotation_exports_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_egg_annotation_exports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab/egg-annotation-exports/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_egg_annotation_exports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab/egg-annotation-exports/{id}/download/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_egg_annotation_exports_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/locations/": {
         parameters: {
             query?: never;
@@ -9488,6 +9576,46 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        EggAnnotationExport: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            /** Format: uuid */
+            author: string | null;
+            include_voided: boolean;
+            format: components["schemas"]["FormatEnum"];
+            status: components["schemas"]["EggAnnotationExportStatusEnum"];
+            image_count: number;
+            box_count: number;
+            point_count: number;
+            error_code: string;
+            size_bytes: number | null;
+            sha256: string;
+        };
+        EggAnnotationExportCreateRequest: {
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            /** Format: uuid */
+            author?: string | null;
+            /** @default false */
+            include_voided: boolean;
+            format: components["schemas"]["FormatEnum"];
+        };
+        /**
+         * @description * `queued` - queued
+         *     * `running` - running
+         *     * `ready` - ready
+         *     * `failed` - failed
+         * @enum {string}
+         */
+        EggAnnotationExportStatusEnum: "queued" | "running" | "ready" | "failed";
         EggAnnotationPayloadRequest: {
             /** Format: uuid */
             upload_id: string;
@@ -9962,6 +10090,12 @@ export interface components {
             code: string;
             ring: number[][];
         };
+        /**
+         * @description * `coco` - coco
+         *     * `yolo` - yolo
+         * @enum {string}
+         */
+        FormatEnum: "coco" | "yolo";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -12580,6 +12714,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Discrepancy"][];
+        };
+        PaginatedEggAnnotationExportList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["EggAnnotationExport"][];
         };
         PaginatedEggAnnotationList: {
             /** @example 123 */
@@ -24124,6 +24273,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabVoidContext"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_egg_annotation_exports_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEggAnnotationExportList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_egg_annotation_exports_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EggAnnotationExportCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EggAnnotationExport"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_egg_annotation_exports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this egg annotation export. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EggAnnotationExport"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_egg_annotation_exports_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this egg annotation export. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

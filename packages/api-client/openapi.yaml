@@ -8317,6 +8317,186 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab/egg-annotation-exports/:
+    get:
+      operationId: lab_egg_annotation_exports_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - lab
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEggAnnotationExportList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: lab_egg_annotation_exports_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - lab
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EggAnnotationExportCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggAnnotationExport'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab/egg-annotation-exports/{id}/:
+    get:
+      operationId: lab_egg_annotation_exports_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this egg annotation export.
+        required: true
+      tags:
+      - lab
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EggAnnotationExport'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab/egg-annotation-exports/{id}/download/:
+    get:
+      operationId: lab_egg_annotation_exports_download_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this egg annotation export.
+        required: true
+      tags:
+      - lab
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/locations/:
     get:
       operationId: locations_list
@@ -24279,6 +24459,96 @@ components:
       - point_count
       - tool_version
       - upload_id
+    EggAnnotationExport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        author:
+          type: string
+          format: uuid
+          nullable: true
+        include_voided:
+          type: boolean
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+        status:
+          $ref: '#/components/schemas/EggAnnotationExportStatusEnum'
+        image_count:
+          type: integer
+          minimum: 0
+        box_count:
+          type: integer
+          minimum: 0
+        point_count:
+          type: integer
+          minimum: 0
+        error_code:
+          type: string
+        size_bytes:
+          type: integer
+          nullable: true
+        sha256:
+          type: string
+      required:
+      - author
+      - box_count
+      - created_at
+      - date_from
+      - date_to
+      - error_code
+      - format
+      - id
+      - image_count
+      - include_voided
+      - point_count
+      - sha256
+      - size_bytes
+      - status
+    EggAnnotationExportCreateRequest:
+      type: object
+      properties:
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        author:
+          type: string
+          format: uuid
+          nullable: true
+        include_voided:
+          type: boolean
+          default: false
+        format:
+          $ref: '#/components/schemas/FormatEnum'
+      required:
+      - date_from
+      - date_to
+      - format
+    EggAnnotationExportStatusEnum:
+      enum:
+      - queued
+      - running
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `queued` - queued
+        * `running` - running
+        * `ready` - ready
+        * `failed` - failed
     EggAnnotationPayloadRequest:
       type: object
       properties:
@@ -25310,6 +25580,14 @@ components:
       - code
       - id
       - ring
+    FormatEnum:
+      enum:
+      - coco
+      - yolo
+      type: string
+      description: |-
+        * `coco` - coco
+        * `yolo` - yolo
     FuelLoad:
       type: object
       description: |-
@@ -31484,6 +31762,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Discrepancy'
+    PaginatedEggAnnotationExportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EggAnnotationExport'
     PaginatedEggAnnotationList:
       type: object
       required:

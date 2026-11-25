@@ -5,6 +5,11 @@ from http import HTTPStatus
 from core.exceptions import DomainError
 
 
+class AnnotationExportNotReadyError(DomainError):
+    code = "annotation_export_not_ready"
+    status_code = HTTPStatus.CONFLICT
+
+
 class LabConflictError(DomainError):
     status_code = HTTPStatus.CONFLICT
 

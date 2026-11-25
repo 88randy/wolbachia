@@ -10,6 +10,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | marca | mark (`marks`) | One manually identified egg in image pixels, origin top-left. The total number of boxes and points is the official count. |
 | recuadro | box (`kind: "box"`) | Integer `x`, `y`, `w`, `h`; positive width/height and a rectangle fully inside the verified oriented image. |
 | punto | point (`kind: "point"`) | Integer `x`, `y` inside the verified oriented image. A quick-count mark, retained alongside boxes. |
+| exportación de datos de entrenamiento | training dataset export (`EggAnnotationExport`) | Immutable organization-scoped request and fixed annotation/void selection, with separate status and download facts. COCO/YOLO detector boxes stay separate from pixel points; archive metadata contains no personal identifiers or location codes. API: `/lab/egg-annotation-exports/`. |
 
 ## PCR tests at external laboratories
 

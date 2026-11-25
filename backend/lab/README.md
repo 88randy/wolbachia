@@ -107,6 +107,78 @@ organization isolation and immutable persistence; the module belongs once to
 nullable parent, metadata default and separately validated constraints.
 Reversal refuses populated annotations or their upload purpose.
 
+## Training dataset exports (W72)
+
+`EggAnnotationExport` is an immutable organization-scoped request with retained
+`EggAnnotationExportItem` selection and voided flags. Separate immutable
+`EggAnnotationExportStatus` facts derive `queued -> running -> ready | failed`;
+the worker claims each queued request once under its row lock. A request fixes
+its selected annotation UUIDs before dispatch, so later annotations or voids do
+not silently change a queued dataset. `EggAnnotationExportDownload` records the
+authenticated actor and UTC timestamp of every authorized download.
+
+Every endpoint under `/api/v1/lab/egg-annotation-exports/` requires
+`egg_annotation.export`, registered through `lab.permissions.ADMIN_CODES` in
+`organizations/defaults.py`. It is admin-only by default, like Lab method
+management and recount adjudication; routine entomologists are not granted bulk
+data transfer. `seed_organization_defaults --apply` adds this new code to
+eligible seeded admin profiles using the existing non-restoration policy.
+Current whole paired scope and the independent-QA visibility predicate precede
+selection, list counts, paging and access to an indivisible archive. Losing access
+to any selected count hides the entire export. Ready totals and downloads record
+numeric disclosure before delivery; exports cannot bypass independent recount
+blindness. Download rechecks identity and authority before and after unlocked
+storage integrity verification.
+
+Creation takes inclusive organization-local `date_from`/`date_to` (at most 366
+days), optional same-organization author User UUID, `include_voided` (default
+false) and `format: coco | yolo`. The limit is 5,000 selected images;
+`annotation_export_too_many_images` identifies an oversized request. Counts refer
+to the immutable selected annotations, including one image for each point-only
+annotation. Empty selections produce valid empty archives. Failures retain
+`annotation_export_failed` without exposing exception text.
+
+The Celery task builds one ZIP into a temporary file. JSON arrays are separately
+spooled to disk and selected rows are iterated one at a time. Images come only
+from the existing verified sanitized upload, with size/SHA-256 checked; originals
+with EXIF are never included. The same private storage backend stores completed
+archives at exclusive `dataset/<random UUID>.zip` keys, with an immutable result
+size and SHA-256. This archive stream does not change the individual upload's
+10 MiB cap. No whole dataset is buffered in memory and no storage I/O holds SQL
+locks. Downloads stream an attachment with `private, no-store` and `nosniff`.
+
+COCO contains `annotations.json` and `images/<annotation public UUID>.<ext>`.
+Detection annotations retain pixel `bbox: [x,y,w,h]`, area, `iscrowd: 0`, and
+category 1 `aedes_egg`; image/annotation IDs are consistent integers. Metadata
+identifies AedesVision, export UUID and UTC creation time; licenses are empty.
+YOLO contains the same images, corresponding `labels/<UUID>.txt` with class 0
+and normalized center/width/height to six decimals, `classes.txt`, and `data.yaml`
+with `path: .`, `train: images`, `val: null`, `nc: 1`, `names: [aedes_egg]`.
+The dataset is unsplit: consumers must create an independent validation split.
+
+Both formats include `points.json` with
+`{"images":[{"image_id":1,"file_name":"images/<UUID>.<ext>","points":[[x,y],...]}]}`.
+Points remain top-left-origin pixel points and never become boxes. Point-only
+images have empty YOLO label files. `manifest.csv` contains only image filename,
+annotation public UUID, count UUID, box count, point count, captured voided flag
+and UTC annotation time. `README.txt` explains schema, coordinates, counts,
+filters and the voided policy. No author UUID/name, organization ID, location,
+Bag/ovitrap code or original filename leaves in archive metadata; the author
+filter is described only as applied/not applied.
+
+Migrations `0017_egg_annotation_exports` and `0018_egg_annotation_export_guards`
+add new tables, same-organization links, sealed selections and insert-only/state
+transition guards; populated export history prevents reversal. The format and
+private stream tests live in `tests/test_annotation_export_archive.py`; API,
+eager-task and PostgreSQL invariants live in `tests/test_annotation_exports.py`.
+See [the API contract](../../docs/api-conventions.md#training-dataset-exports-w72)
+and decision 177. Format references:
+[COCO](https://cocodataset.org/#format-data),
+[COCO reference API](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py),
+[Ultralytics detection datasets](https://docs.ultralytics.com/datasets/detect/),
+[Python ZIP streams](https://docs.python.org/3.13/library/zipfile.html) and
+[temporary files](https://docs.python.org/3.13/library/tempfile.html).
+
 ## Corrections and independent QA
 
 `corrections.py` appends a canonical-catalog reason plus a normalized note of at

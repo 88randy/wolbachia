@@ -17,6 +17,14 @@ from organizations.models import Organization
 RECOVERY_PAGE_SIZE = 100
 
 
+@shared_task(soft_time_limit=1800, time_limit=1860)  # type: ignore[untyped-decorator]  # Celery has no task decorator stubs.
+def build_egg_annotation_export(export_id: str) -> None:
+    """The immutable request, rather than broker result state, owns the job outcome."""
+    from lab.annotation_exports import run_annotation_export
+
+    run_annotation_export(UUID(export_id))
+
+
 @shared_task  # type: ignore[untyped-decorator]  # Celery has no bundled task decorator stubs.
 def recover_reception_incidents(after_time: str | None = None, after_id: str | None = None) -> int:
     rows = ReceptionDiscrepancy.objects.filter(
