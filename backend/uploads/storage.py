@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -116,23 +117,26 @@ def read_object(key: str) -> bytes:
 
 
 def store_dataset_export(stream: IO[bytes]) -> StoredObject:
-    """Copy a completed dataset ZIP to exclusive private storage without the upload-size cap."""
+    """Publish only a complete ZIP via an atomic rename within its private directory."""
     key = f"dataset/{uuid4().hex}.zip"
     target = _private_path(key, pattern=DATASET_KEY_PATTERN)
+    candidate = target.with_suffix(".tmp")
     created = False
     size, digest = 0, hashlib.sha256()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        with target.open("xb") as output:
+        with candidate.open("xb") as output:
             created = True
             while chunk := stream.read(UPLOAD_CHUNK_BYTES):
                 output.write(chunk)
                 size += len(chunk)
                 digest.update(chunk)
+        os.replace(candidate, target)
     except OSError as error:
-        if created:
-            _discard_path(target)
         raise UploadStorageError from error
+    finally:
+        if created:
+            _discard_path(candidate)
     return StoredObject(key, size, digest.hexdigest())
 
 
@@ -140,5 +144,13 @@ def open_dataset_export(key: str) -> BinaryIO:
     """Open only a private dataset object after the caller has authorized its immutable receipt."""
     try:
         return _private_path(key, pattern=DATASET_KEY_PATTERN).open("rb")
+    except OSError as error:
+        raise UploadStorageError from error
+
+
+def discard_dataset_export(key: str) -> None:
+    """Discard an unreferenced or expired archive outside database transactions; retries are safe."""
+    try:
+        _private_path(key, pattern=DATASET_KEY_PATTERN).unlink(missing_ok=True)
     except OSError as error:
         raise UploadStorageError from error

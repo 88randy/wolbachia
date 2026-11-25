@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from tempfile import TemporaryFile
 from typing import IO
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 from lab.models import EggAnnotation, EggAnnotationExport
 from uploads.exceptions import UploadStorageError
@@ -27,7 +27,10 @@ MANIFEST_COLUMNS = (
     "voided",
     "created_at",
 )
-YOLO_CONFIGURATION = "path: .\ntrain: images\nval: null\nnc: 1\nnames: [aedes_egg]\n"
+YOLO_CONFIGURATION = (
+    "# Unsplit export: create an independent training/validation split before training.\n"
+    "train: images\nval: images\nnc: 1\nnames: [aedes_egg]\n"
+)
 
 
 @dataclass(frozen=True)
@@ -92,7 +95,7 @@ def _write_image(archive: ZipFile, annotation: EggAnnotation) -> str:
     ):
         raise UploadStorageError
     image_file = _image_file(annotation)
-    archive.writestr(image_file, content)
+    archive.writestr(image_file, content, compress_type=ZIP_STORED)
     return image_file
 
 
@@ -197,12 +200,14 @@ def _readme(export: EggAnnotationExport, counts: ExportCounts) -> str:
         'points.json schema: {"images":[{"image_id":1,"file_name":"images/<annotation-id>.<ext>",'
         '"points":[[x,y],...]}]}. Points stay pixel points and never become detector boxes.\n'
         "Every selected image appears, including point-only images (empty YOLO label files).\n"
-        "YOLO data.yaml references the unsplit images directory; val is null. Create an independent "
+        "YOLO data.yaml references the unsplit images directory for both train and val. Create an independent "
         "training/validation split before training. classes.txt contains aedes_egg.\n"
         "manifest.csv: image_file,annotation_id,count_id,box_count,point_count,voided,created_at (UTC). "
         "Annotation IDs are public UUIDs; count IDs are opaque UUIDs. No authors, organization IDs, "
         "locations, bag or ovitrap codes are included. Filenames use annotation public IDs only.\n"
         "Images are verified sanitized uploads without EXIF metadata; original uploads are not included.\n"
+        "There are no personal data in metadata, file names or manifest. Photos themselves may show "
+        "handwritten codes or labels; review the images before sharing or training.\n"
     )
 
 

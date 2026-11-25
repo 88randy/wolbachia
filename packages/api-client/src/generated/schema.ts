@@ -9613,9 +9613,10 @@ export interface components {
          *     * `running` - running
          *     * `ready` - ready
          *     * `failed` - failed
+         *     * `expired` - expired
          * @enum {string}
          */
-        EggAnnotationExportStatusEnum: "queued" | "running" | "ready" | "failed";
+        EggAnnotationExportStatusEnum: "queued" | "running" | "ready" | "failed" | "expired";
         EggAnnotationPayloadRequest: {
             /** Format: uuid */
             upload_id: string;

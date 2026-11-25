@@ -24543,12 +24543,14 @@ components:
       - running
       - ready
       - failed
+      - expired
       type: string
       description: |-
         * `queued` - queued
         * `running` - running
         * `ready` - ready
         * `failed` - failed
+        * `expired` - expired
     EggAnnotationPayloadRequest:
       type: object
       properties:

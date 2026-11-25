@@ -212,6 +212,10 @@ if not SYNC_REJECTION_ALERT_PERCENTS or any(
 # the web in `GET /me/` (`limits`). Owner delegated the value to the orchestrator (2026-11-04).
 VOID_REASON_MIN_LENGTH = env.int("VOID_REASON_MIN_LENGTH", default=10)
 
+ANNOTATION_EXPORT_RETENTION_DAYS = env.int("ANNOTATION_EXPORT_RETENTION_DAYS", default=7)
+if ANNOTATION_EXPORT_RETENTION_DAYS < 1:
+    raise ImproperlyConfigured("ANNOTATION_EXPORT_RETENTION_DAYS must be positive.")
+
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -239,6 +243,7 @@ REST_FRAMEWORK = {
         "field_sync": THROTTLE_FIELD_SYNC_RATE,
         "search": env("THROTTLE_SEARCH_RATE", default="60/min"),
         "export": env("THROTTLE_EXPORT_RATE", default="10/hour"),
+        "export_download": env("THROTTLE_EXPORT_DOWNLOAD_RATE", default="30/hour"),
         "portal": env("THROTTLE_PORTAL_RATE", default="30/min"),
         "risk_import_upload": env("THROTTLE_RISK_IMPORT_UPLOAD_RATE", default="10/hour"),
         "platform": env("THROTTLE_PLATFORM_RATE", default="120/min"),
@@ -353,6 +358,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-annotation-exports": {
+        "task": "lab.tasks.recover_annotation_exports",
+        "schedule": 60.0,
+    },
+    "expire-annotation-exports": {
+        "task": "lab.tasks.expire_annotation_exports",
+        "schedule": 3600.0,
+    },
     "maintain-training-notices": {
         "task": "people.tasks.maintain_training_notices",
         "schedule": 300.0,

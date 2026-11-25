@@ -54,12 +54,15 @@ admins by default. Organization comes from the authenticated membership; neither
 the request nor the route accepts an organization ID. Current whole paired action
 scope and independent-QA blindness restrict annotations before selection or page
 counts. An export is indivisible: if any selected annotation becomes inaccessible,
-list/detail/download conceal it. Ready aggregate totals and downloads append
-numeric disclosure receipts under the existing independent-QA boundary.
+list/detail/download conceal it. Admins with this permission may see/download
+every currently accessible export in their organization, regardless of requester;
+each download is logged. Ready totals publish only selected counts missing the
+existing actor/count disclosure receipt. Subsequent polls of the same immutable
+exports perform no disclosure writes or materialization of already disclosed counts.
 
 | Method and path | Contract |
 | --- | --- |
-| `POST /api/v1/lab/egg-annotation-exports/` | `{date_from, date_to, author?, include_voided?: false, format}` with format `coco` or `yolo`; returns `201` with the job projection. Dates are inclusive organization-local days, at most 366 days. `author` is an optional same-organization User UUID or null. At most 5,000 images are selected. |
+| `POST /api/v1/lab/egg-annotation-exports/` | `{date_from, date_to, author?, include_voided?: false, format}` with format `coco` or `yolo`; returns `201` with the job projection. Dates are inclusive organization-local days, at most 366 days. `author` is an optional same-organization User UUID or null. At most 5,000 images and 2 GiB of verified image bytes are selected; at most one active request per requester and two per organization. |
 | `GET /api/v1/lab/egg-annotation-exports/` | Standard server page-number pagination (`page`, `page_size`), newest creation time/UUID first. |
 | `GET /api/v1/lab/egg-annotation-exports/{id}/` | One currently authorized job projection. |
 | `GET /api/v1/lab/egg-annotation-exports/{id}/download/` | Ready ZIP stream, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`; one immutable actor/time download receipt per authorized delivery. |
@@ -67,25 +70,45 @@ numeric disclosure receipts under the existing independent-QA boundary.
 The projection has `id`, `created_at`, `date_from`, `date_to`, `author` (nullable),
 `include_voided`, `format`, `status`, `image_count`, `box_count`, `point_count`,
 `error_code`, `size_bytes` (nullable) and `sha256`. Result counts/size/hash are
-available when ready; other states retain zero counts and no result. Status
-transitions append immutable facts: `queued -> running -> ready | failed`.
+available when ready; expired facts retain the ready counts without a downloadable
+object. Queued/running/failed facts retain zero counts and no result. Status
+transitions append immutable facts: `queued -> running -> ready | failed` and
+`ready -> expired`.
 Selections and voided flags are fixed when requested, before asynchronous work;
 later annotation creation or voiding does not alter the selected dataset.
-All actions use the existing `export` throttle. Foreign/inaccessible jobs are
+Creation uses the existing `export` throttle, downloads use `export_download`
+(30/hour), and polling uses the ordinary read allowance. Foreign/inaccessible jobs are
 opaque `404`; missing permission is `403`. Errors contain codes/params only:
 invalid/reversed/over-366-day dates use field code
 `annotation_export_date_range` (`max_days: 366`); oversized selections use
-`annotation_export_too_many_images` (`max_images: 5000`). These follow the existing
-`400 validation_error` field envelope. Download before ready returns
+`annotation_export_too_many_images` (`max_images: 5000`) or
+`annotation_export_too_many_bytes` (`max_bytes: 2147483648`). These follow the existing
+`400 validation_error` field envelope. Concurrent active requests are refused
+inside the organization-locked create transaction with `annotation_export_in_progress`.
+Download before ready returns
 `409 annotation_export_not_ready`. A failed task retains
 `error_code: annotation_export_failed`, never exception text or private paths.
+An inactive requester or removed permission causes a retained
+`annotation_export_requester_unauthorized` failure. Beat
+recovers queued/running requests older than the 1,860-second hard time limit plus
+120 seconds as `annotation_export_timed_out`. Ready archives expire after
+`ANNOTATION_EXPORT_RETENTION_DAYS` (default 7); expiry deletes bytes and appends
+`expired` while retaining every historical row. Expired downloads return
+`annotation_export_expired`. Clients can create a new request with identical filters.
+
+The web is authenticated by session cookies and uses a same-origin download
+anchor; it does not fetch the archive into a Blob or put credentials in a URL.
+Headerless cookie downloads resolve a current active membership of the export's
+organization before applying ordinary permission/scope checks. The download
+checks stat size against the immutable ready fact, verifies SHA-256 while
+streaming, and aborts on mismatch. HEAD does not append a download receipt.
 
 One archive contains only verified sanitized images named with annotation public
 UUIDs. COCO has `annotations.json`, images, consistent detection IDs, pixel bbox
 and area, category 1 `aedes_egg`, `iscrowd: 0`, AedesVision/export/UTC metadata and
 empty licenses. YOLO has image/label pairs, class 0 normalized center `xywh` to
-six decimals, `classes.txt`, and relative `data.yaml` paths (`path: .`,
-`train: images`, `val: null`, `nc: 1`, `names: [aedes_egg]`). This is an unsplit
+six decimals, `classes.txt`, and relative `data.yaml` paths (no `path`,
+`train: images`, `val: images`, `nc: 1`, `names: [aedes_egg]`). This is an unsplit
 export; a consumer creates an independent validation split before training.
 Both contain `points.json` as
 `{"images":[{"image_id":1,"file_name":"images/<UUID>.<ext>","points":[[x,y],...]}]}`
@@ -95,6 +118,8 @@ labels. Manifest columns are `image_file,annotation_id,count_id,box_count,point_
 (UTC). Archive metadata contains no author identifiers/names, organization IDs,
 locations, Bag/ovitrap codes or original filenames. Voided counts are excluded
 by default; explicit inclusion retains their captured manifest flag.
+There are no personal data in metadata, file names or manifest; photos may still
+show handwritten codes or labels. W72 and the archive README disclose this limitation.
 See [the format/storage details](../backend/lab/README.md#training-dataset-exports-w72)
 and [decision 177](decisions.md).
 

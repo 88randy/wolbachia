@@ -35,7 +35,7 @@ class EggAnnotationExportSerializer(serializers.Serializer[Any]):
     author = serializers.UUIDField(allow_null=True)
     include_voided = serializers.BooleanField()
     format = serializers.ChoiceField(choices=["coco", "yolo"])
-    status = serializers.ChoiceField(choices=["queued", "running", "ready", "failed"])
+    status = serializers.ChoiceField(choices=["queued", "running", "ready", "failed", "expired"])
     image_count = serializers.IntegerField(min_value=0)
     box_count = serializers.IntegerField(min_value=0)
     point_count = serializers.IntegerField(min_value=0)

@@ -7,12 +7,13 @@ from datetime import UTC, date, datetime
 from io import BytesIO, StringIO
 from types import SimpleNamespace
 from uuid import uuid4
-from zipfile import ZipFile
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 import pytest
 from PIL import Image
 
 from lab.annotation_export_archive import build_annotation_archive
+from uploads import storage
 from uploads.exceptions import UploadStorageError
 from uploads.images import sanitize_image
 from uploads.storage import open_dataset_export, store_dataset_export, store_source, store_verified
@@ -204,3 +205,78 @@ def test_dataset_storage_streams_large_files_and_retries_never_overwrite(tmp_pat
         assert stored.read() == content
     with pytest.raises(ValueError, match="Invalid private evidence key"):
         open_dataset_export("../private.zip")
+
+
+def test_dataset_final_key_is_invisible_until_copy_finishes(tmp_path, settings):
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "private"
+    dataset_directory = settings.UPLOADS_PRIVATE_ROOT / "dataset"
+
+    class InterruptedCopy(BytesIO):
+        def read(self, size=-1):
+            assert not list(dataset_directory.glob("*.zip"))
+            if self.tell():
+                raise OSError("Interrupted synthetic copy")
+            return super().read(size)
+
+    with pytest.raises(UploadStorageError):
+        store_dataset_export(InterruptedCopy(b"archive"))
+    assert not list(dataset_directory.iterdir())
+
+
+def test_dataset_atomic_replace_failure_removes_unpublished_candidate(
+    tmp_path, settings, monkeypatch
+):
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "private"
+
+    def fail_replace(source, destination):
+        assert source.parent == destination.parent
+        assert source.read_bytes() == b"complete archive"
+        assert not destination.exists()
+        raise OSError("Synthetic rename failure")
+
+    monkeypatch.setattr(storage.os, "replace", fail_replace)
+    with pytest.raises(UploadStorageError):
+        store_dataset_export(BytesIO(b"complete archive"))
+    assert not list((settings.UPLOADS_PRIVATE_ROOT / "dataset").iterdir())
+
+
+def test_discard_dataset_removes_only_validated_archive_and_is_retryable(tmp_path, settings):
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "private"
+    stored = store_dataset_export(BytesIO(b"archive"))
+    storage.discard_dataset_export(stored.key)
+    storage.discard_dataset_export(stored.key)
+    with pytest.raises(UploadStorageError):
+        open_dataset_export(stored.key)
+    with pytest.raises(ValueError, match="Invalid private evidence key"):
+        storage.discard_dataset_export("../private.zip")
+
+
+def test_zip_stores_compressed_images_and_deflates_metadata(export_request, annotation):
+    archive, _counts = build_zip(export_request, [annotation])
+    with archive:
+        assert archive.getinfo(f"images/{annotation.public_id}.png").compress_type == ZIP_STORED
+        for name in ("annotations.json", "points.json", "manifest.csv", "README.txt"):
+            assert archive.getinfo(name).compress_type == ZIP_DEFLATED
+
+
+def test_yolo_configuration_requires_explicit_split(export_request):
+    export_request.format = "yolo"
+    archive, _counts = build_zip(export_request, [])
+    with archive:
+        configuration = archive.read("data.yaml").decode()
+        assert "path:" not in configuration
+        assert "train: images\n" in configuration
+        assert "val: images\n" in configuration
+        assert "split" in configuration
+        readme = archive.read("README.txt").decode()
+        assert "independent training/validation split" in readme
+
+
+@pytest.mark.parametrize("file_format", ["coco", "yolo"])
+def test_readme_warns_that_sanitized_photos_can_show_labels(export_request, file_format):
+    export_request.format = file_format
+    archive, _counts = build_zip(export_request, [])
+    with archive:
+        readme = archive.read("README.txt").decode()
+        assert "in metadata, file names or manifest" in readme
+        assert "handwritten codes or labels" in readme

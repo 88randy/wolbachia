@@ -275,7 +275,8 @@ class EggAnnotationExportStatus(LabSystemFact):
         EggAnnotationExport, on_delete=models.PROTECT, related_name="statuses"
     )
     status = models.CharField(
-        max_length=7, choices=[(value, value) for value in ("queued", "running", "ready", "failed")]
+        max_length=7,
+        choices=[(value, value) for value in ("queued", "running", "ready", "failed", "expired")],
     )
     revision = models.PositiveSmallIntegerField()
     image_count = models.PositiveIntegerField(default=0)
@@ -297,7 +298,7 @@ class EggAnnotationExportStatus(LabSystemFact):
                 fields=["export", "revision"], name="lab_annotation_export_revision_once"
             ),
             models.CheckConstraint(
-                condition=models.Q(status__in=["queued", "running", "ready", "failed"]),
+                condition=models.Q(status__in=["queued", "running", "ready", "failed", "expired"]),
                 name="lab_annotation_export_state",
             ),
             models.CheckConstraint(

@@ -2,22 +2,30 @@
 
 import hashlib
 import logging
+import os
 import tempfile
-from collections.abc import Sequence
-from datetime import timedelta
-from typing import Any, BinaryIO, cast
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Exists, F, OuterRef, QuerySet
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 
+from accounts.exceptions import SessionRevokedError
 from accounts.models import User
 from core.exceptions import FieldValidationError
-from core.time import local_day_start
+from core.time import local_day_start, server_now
 from lab.access import scoped_bags
-from lab.exceptions import AnnotationExportNotReadyError
+from lab.exceptions import (
+    AnnotationExportExpiredError,
+    AnnotationExportInProgressError,
+    AnnotationExportNotReadyError,
+)
 from lab.independent_qa.selectors import blind_visible_counts
 from lab.independent_qa.services import (
     NumericPublication,
@@ -31,15 +39,23 @@ from lab.models import (
     EggAnnotationExportItem,
     EggAnnotationExportStatus,
     EggCountAttempt,
+    LabNumericDisclosure,
 )
 from lab.permissions import ANNOTATION_EXPORT
 from organizations.models import Membership
+from organizations.services import memoize_effective_scope
 from uploads.access import UploadActor, current_scope
 from uploads.exceptions import UploadStorageError
 from uploads.limits import UPLOAD_CHUNK_BYTES
 from uploads.storage import StoredObject
 
+if TYPE_CHECKING:
+    from lab.annotation_export_archive import ExportCounts
+
 MAX_EXPORT_IMAGES = 5000
+MAX_EXPORT_BYTES = 2 * 1024**3
+EXPORT_TIME_LIMIT_SECONDS = 1860
+EXPORT_RECOVERY_MARGIN_SECONDS = 120
 EXPORT_POLICY_VERSION = "egg-annotation-export-v1"
 logger = logging.getLogger(__name__)
 
@@ -64,7 +80,7 @@ def export_annotation_rows(actor: UploadActor, values: dict[str, Any]) -> QueryS
         rows = rows.filter(created_by_id=values["author"])
     if not values.get("include_voided", False):
         rows = rows.filter(count__void_fact__isnull=True)
-    return rows.select_related("count__void_fact").order_by("created_at", "id")
+    return rows.order_by("created_at", "id")
 
 
 def export_rows(actor: UploadActor) -> QuerySet[EggAnnotationExport]:
@@ -110,7 +126,7 @@ def append_export_status(export: EggAnnotationExport, status: str, **facts: Any)
         organization=export.organization,
         export=export,
         status=status,
-        revision={"queued": 0, "running": 1, "ready": 2, "failed": 2}[status],
+        revision={"queued": 0, "running": 1, "ready": 2, "failed": 2, "expired": 3}[status],
         actor_kind="system",
         policy_version=EXPORT_POLICY_VERSION,
         **facts,
@@ -122,6 +138,7 @@ def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggA
     with numeric_read_transaction(actor):
         if not current_scope(actor).allows(ANNOTATION_EXPORT):
             raise PermissionDenied
+        require_export_capacity(actor)
         if (
             values.get("author")
             and not Membership.objects.filter(
@@ -130,13 +147,20 @@ def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggA
         ):
             raise FieldValidationError("author", "does_not_exist")
         selected = list(
-            export_annotation_rows(actor, values).values_list("pk", "count__void_fact__pk")[
-                : MAX_EXPORT_IMAGES + 1
-            ]
+            export_annotation_rows(actor, values).values_list(
+                "pk", "count__void_fact__pk", "image_upload__verification__size_bytes"
+            )[: MAX_EXPORT_IMAGES + 1]
         )
         if len(selected) > MAX_EXPORT_IMAGES:
             raise FieldValidationError(
                 "date_to", "annotation_export_too_many_images", {"max_images": MAX_EXPORT_IMAGES}
+            )
+        total_bytes = sum(size for _, _, size in selected)
+        if total_bytes > MAX_EXPORT_BYTES:
+            raise FieldValidationError(
+                "date_to",
+                "annotation_export_too_many_bytes",
+                {"max_bytes": MAX_EXPORT_BYTES, "total_bytes": total_bytes},
             )
         export = EggAnnotationExport.objects.create(
             organization=actor.organization,
@@ -153,12 +177,24 @@ def create_annotation_export(actor: UploadActor, values: dict[str, Any]) -> EggA
                     annotation_id=annotation_id,
                     voided=void_id is not None,
                 )
-                for annotation_id, void_id in selected
+                for annotation_id, void_id, _ in selected
             ]
         )
         append_export_status(export, "queued")
         transaction.on_commit(lambda: enqueue_annotation_export(str(export.pk)))
     return export
+
+
+def require_export_capacity(actor: UploadActor) -> None:
+    """Caller holds User then Organization, serializing both global requester and tenant caps."""
+    active = EggAnnotationExport.objects.exclude(
+        statuses__status__in=["ready", "failed", "expired"]
+    )
+    if (
+        active.filter(created_by=actor.user).exists()
+        or active.filter(organization=actor.organization).count() >= 2
+    ):
+        raise AnnotationExportInProgressError
 
 
 def enqueue_annotation_export(identifier: str) -> None:
@@ -188,9 +224,24 @@ def claim_annotation_export(identifier: UUID) -> EggAnnotationExport | None:
 
 
 def require_export_access(actor: UploadActor, identifier: UUID) -> EggAnnotationExport:
-    if not current_scope(actor).allows(ANNOTATION_EXPORT):
+    if not actor.user.is_active or not current_scope(actor).allows(ANNOTATION_EXPORT):
         raise PermissionDenied
     return get_object_or_404(export_rows(actor), pk=identifier)
+
+
+def resolve_download_membership(user: User, identifier: UUID) -> Membership:
+    """An ambiguous headerless cookie download resolves only a current object membership."""
+    organization = EggAnnotationExport.objects.filter(pk=identifier).values("organization_id")
+    member = get_object_or_404(
+        Membership.objects.select_related("organization").filter(
+            user=user,
+            is_active=True,
+            organization__is_active=True,
+            organization_id__in=organization,
+        )
+    )
+    member.user = user
+    return memoize_effective_scope(member)
 
 
 def selected_export_annotations(export: EggAnnotationExport) -> QuerySet[EggAnnotation]:
@@ -208,97 +259,230 @@ def selected_export_annotations(export: EggAnnotationExport) -> QuerySet[EggAnno
 
 
 def run_annotation_export(identifier: UUID) -> None:
-    from lab.annotation_export_archive import build_annotation_archive
-    from uploads.storage import store_dataset_export
-
     export = claim_annotation_export(identifier)
     if export is None:
         return
+    stored = None
     try:
         actor = UploadActor(cast(User, export.created_by), export.organization)
         require_export_access(actor, identifier)
-        with tempfile.TemporaryFile(mode="w+b") as archive:
-            counts = build_annotation_archive(
-                export, selected_export_annotations(export).iterator(chunk_size=1), archive
-            )
-            archive.seek(0)
-            stored = store_dataset_export(archive)
-        with numeric_read_transaction(actor):
-            require_export_access(actor, identifier)
-            append_export_status(
-                export,
-                "ready",
-                image_count=counts.image_count,
-                box_count=counts.box_count,
-                point_count=counts.point_count,
-                object_key=stored.key,
-                size_bytes=stored.size_bytes,
-                sha256=stored.sha256,
-            )
+        counts, stored = build_stored_annotation_export(export)
+        complete_annotation_export(actor, export, (counts, stored))
+    except (PermissionDenied, SessionRevokedError):
+        record_export_failure(identifier, "annotation_export_requester_unauthorized")
     except Exception:  # noqa: BLE001 -- every job failure is an immutable machine-code fact.
         record_export_failure(identifier)
         logger.exception("Annotation export failed.", extra={"export_id": str(identifier)})
+    finally:
+        if stored is not None:
+            discard_unreferenced_export(export, stored)
 
 
-def record_export_failure(identifier: UUID) -> None:
+def build_stored_annotation_export(
+    export: EggAnnotationExport,
+) -> tuple["ExportCounts", StoredObject]:
+    from lab.annotation_export_archive import build_annotation_archive
+    from uploads.storage import store_dataset_export
+
+    stored = None
+    try:
+        with tempfile.TemporaryFile(mode="w+b") as archive:
+            counts = build_annotation_archive(
+                export, selected_export_annotations(export).iterator(chunk_size=200), archive
+            )
+            archive.seek(0)
+            stored = store_dataset_export(archive)
+    except BaseException:
+        if stored is not None:
+            discard_unreferenced_export(export, stored)
+        raise
+    return counts, stored
+
+
+def complete_annotation_export(
+    actor: UploadActor, export: EggAnnotationExport, result: tuple["ExportCounts", StoredObject]
+) -> None:
+    counts, stored = result
+    with numeric_read_transaction(actor):
+        require_export_access(actor, export.pk)
+        locked = EggAnnotationExport.objects.select_for_update().get(pk=export.pk)
+        if next(iter(locked.statuses.all())).status != "running":
+            return  # Recovery won; the unreferenced stored object is discarded by the caller.
+        append_export_status(
+            locked,
+            "ready",
+            image_count=counts.image_count,
+            box_count=counts.box_count,
+            point_count=counts.point_count,
+            object_key=stored.key,
+            size_bytes=stored.size_bytes,
+            sha256=stored.sha256,
+        )
+
+
+def discard_unreferenced_export(export: EggAnnotationExport, stored: StoredObject) -> None:
+    from uploads.storage import discard_dataset_export
+
+    try:
+        # A lost COMMIT acknowledgment must never delete bytes referenced by a retained ready fact.
+        if not export.statuses.filter(status="ready", object_key=stored.key).exists():
+            discard_dataset_export(stored.key)
+    except Exception:  # noqa: BLE001 -- preserve possible committed evidence and the original failure.
+        logger.exception("Annotation export cleanup failed.", extra={"export_id": str(export.pk)})
+
+
+def record_export_failure(identifier: UUID, code: str = "annotation_export_failed") -> bool:
     with transaction.atomic():
         export = EggAnnotationExport.objects.select_for_update().get(pk=identifier)
         status = next(iter(export.statuses.all())).status
-        if status in {"ready", "failed"}:
-            return
+        if status in {"ready", "failed", "expired"}:
+            return False
         if status == "queued":
             append_export_status(export, "running")
-        append_export_status(export, "failed", error_code="annotation_export_failed")
+        append_export_status(export, "failed", error_code=code)
+        return True
 
 
 def ready_export(actor: UploadActor, identifier: UUID) -> tuple[EggAnnotationExport, StoredObject]:
     export = require_export_access(actor, identifier)
     state = next(iter(export.statuses.all()))
+    if state.status == "expired" or (
+        state.status == "ready" and state.created_at <= export_expiry_cutoff()
+    ):
+        raise AnnotationExportExpiredError
     if state.status != "ready":
         raise AnnotationExportNotReadyError
     return export, StoredObject(state.object_key, state.size_bytes, state.sha256)
 
 
 def publish_export_totals(actor: UploadActor, exports: Sequence[EggAnnotationExport]) -> None:
-    """Even one-image aggregate totals disclose the original numeric observation."""
+    """Publish each missing actor/count once; repeat polls materialize and insert nothing."""
     ready_ids = [
-        export.pk for export in exports if next(iter(export.statuses.all())).status == "ready"
+        export.pk
+        for export in exports
+        if next(iter(export.statuses.all())).status in {"ready", "expired"}
     ]
     counts = list(
         EggCountAttempt.objects.filter(annotation__export_items__export_id__in=ready_ids)
+        .filter(
+            ~Exists(
+                LabNumericDisclosure.objects.filter(count_id=OuterRef("pk"), created_by=actor.user)
+            )
+        )
         .only("id")
         .distinct()
     )
     publish_numeric_access_batch(actor, counts, NumericPublication(ANNOTATION_EXPORT, "result"))
 
 
-def verify_export_integrity(archive: BinaryIO, receipt: StoredObject) -> None:
-    size, digest = 0, hashlib.sha256()
-    while chunk := archive.read(UPLOAD_CHUNK_BYTES):
-        size += len(chunk)
-        digest.update(chunk)
-    if size != receipt.size_bytes or digest.hexdigest() != receipt.sha256:
-        raise UploadStorageError
-    archive.seek(0)
+@dataclass(frozen=True)
+class VerifiedAnnotationExportStream:
+    archive: BinaryIO
+    receipt: StoredObject
+
+    def __iter__(self) -> Iterator[bytes]:
+        size, digest, pending = 0, hashlib.sha256(), b""
+        try:
+            while chunk := self.archive.read(UPLOAD_CHUNK_BYTES):
+                size += len(chunk)
+                digest.update(chunk)
+                if pending:
+                    yield pending
+                pending = chunk
+            if size != self.receipt.size_bytes or digest.hexdigest() != self.receipt.sha256:
+                raise UploadStorageError
+            yield pending  # A corrupt stream cannot finish its sealed Content-Length.
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        """StreamingHttpResponse also registers this when closed before iteration starts."""
+        self.archive.close()
 
 
-def open_annotation_export(actor: UploadActor, identifier: UUID) -> BinaryIO:
-    """Reauthorize before and after unlocked streaming integrity verification; log each delivery."""
+def open_annotation_export(actor: UploadActor, identifier: UUID) -> VerifiedAnnotationExportStream:
+    """Log the authorized dispatch once; stat and streaming integrity I/O hold no SQL locks."""
     from uploads.storage import open_dataset_export
 
     with numeric_read_transaction(actor):
-        _, receipt = ready_export(actor, identifier)
+        export, receipt = ready_export(actor, identifier)
+        publish_export_totals(actor, [export])
+        EggAnnotationExportDownload.objects.create(
+            organization=actor.organization, created_by=actor.user, export=export
+        )
     archive = open_dataset_export(receipt.key)
     try:
-        verify_export_integrity(archive, receipt)
-        with numeric_read_transaction(actor):
-            export, _ = ready_export(actor, identifier)
-            publish_export_totals(actor, [export])
-            EggAnnotationExportDownload.objects.create(
-                organization=actor.organization, created_by=actor.user, export=export
-            )
+        verify_export_size(archive, receipt)
     except BaseException:
         archive.close()
         raise
     else:
-        return archive
+        return VerifiedAnnotationExportStream(archive, receipt)
+
+
+def verify_export_size(archive: BinaryIO, receipt: StoredObject) -> None:
+    if os.fstat(archive.fileno()).st_size != receipt.size_bytes:
+        raise UploadStorageError
+
+
+def export_expiry_cutoff() -> datetime:
+    return server_now() - timedelta(days=settings.ANNOTATION_EXPORT_RETENTION_DAYS)
+
+
+def recover_stale_annotation_exports() -> int:
+    cutoff = server_now() - timedelta(
+        seconds=EXPORT_TIME_LIMIT_SECONDS + EXPORT_RECOVERY_MARGIN_SECONDS
+    )
+    identifiers = list(
+        EggAnnotationExport.objects.filter(created_at__lt=cutoff)
+        .exclude(statuses__status__in=["ready", "failed", "expired"])
+        .order_by("created_at", "pk")
+        .values_list("pk", flat=True)[:100]
+    )
+    return sum(
+        record_export_failure(identifier, "annotation_export_timed_out")
+        for identifier in identifiers
+    )
+
+
+def expire_annotation_export(identifier: UUID) -> bool:
+    from uploads.storage import discard_dataset_export
+
+    with transaction.atomic():
+        export = EggAnnotationExport.objects.select_for_update().get(pk=identifier)
+        state = next(iter(export.statuses.all()))
+        if state.status != "ready" or state.created_at > export_expiry_cutoff():
+            return False
+    discard_dataset_export(state.object_key)
+    with transaction.atomic():
+        export = EggAnnotationExport.objects.select_for_update().get(pk=identifier)
+        if next(iter(export.statuses.all())).status != "ready":
+            return False
+        append_export_status(
+            export,
+            "expired",
+            image_count=state.image_count,
+            box_count=state.box_count,
+            point_count=state.point_count,
+        )
+    return True
+
+
+def expire_due_annotation_exports() -> int:
+    identifiers = list(
+        EggAnnotationExport.objects.filter(
+            statuses__status="ready", statuses__created_at__lte=export_expiry_cutoff()
+        )
+        .exclude(statuses__status="expired")
+        .order_by("pk")
+        .values_list("pk", flat=True)[:100]
+    )
+    expired = 0
+    for identifier in identifiers:
+        try:
+            expired += expire_annotation_export(identifier)
+        except UploadStorageError:
+            logger.exception(
+                "Annotation export expiry storage failed.", extra={"export_id": str(identifier)}
+            )
+    return expired

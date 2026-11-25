@@ -8,6 +8,7 @@ from celery import shared_task
 from django.db.models import Exists, OuterRef, Q
 
 from core.time import server_now
+from lab.annotation_exports import EXPORT_TIME_LIMIT_SECONDS
 from lab.exceptions import LabInProgressError
 from lab.incidents import recover_reception_incident
 from lab.models import EggCountAttempt, ReceptionDiscrepancy
@@ -17,12 +18,26 @@ from organizations.models import Organization
 RECOVERY_PAGE_SIZE = 100
 
 
-@shared_task(soft_time_limit=1800, time_limit=1860)  # type: ignore[untyped-decorator]  # Celery has no task decorator stubs.
+@shared_task(soft_time_limit=1800, time_limit=EXPORT_TIME_LIMIT_SECONDS)  # type: ignore[untyped-decorator]  # Celery has no task decorator stubs.
 def build_egg_annotation_export(export_id: str) -> None:
     """The immutable request, rather than broker result state, owns the job outcome."""
     from lab.annotation_exports import run_annotation_export
 
     run_annotation_export(UUID(export_id))
+
+
+@shared_task  # type: ignore[untyped-decorator]  # Celery has no bundled task decorator stubs.
+def recover_annotation_exports() -> int:
+    from lab.annotation_exports import recover_stale_annotation_exports
+
+    return recover_stale_annotation_exports()
+
+
+@shared_task  # type: ignore[untyped-decorator]  # Celery has no bundled task decorator stubs.
+def expire_annotation_exports() -> int:
+    from lab.annotation_exports import expire_due_annotation_exports
+
+    return expire_due_annotation_exports()
 
 
 @shared_task  # type: ignore[untyped-decorator]  # Celery has no bundled task decorator stubs.

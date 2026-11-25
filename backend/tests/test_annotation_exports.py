@@ -39,6 +39,7 @@ def export_requester(org_a, make_member, monkeypatch):
     from uploads.access import UploadActor
 
     monkeypatch.setattr("django.utils.timezone.now", lambda: AT)
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
     user, member = make_member(org_a, [EXPORT_CODE])
     member.scope = all_scope()
     member.save(update_fields=["scope"])
@@ -129,7 +130,10 @@ def test_queued_export_preserves_filters_and_refuses_download(export_requester, 
 
 @pytest.mark.django_db
 def test_export_history_is_server_paged_newest_first(export_requester, monkeypatch, api_client):
+    from lab.annotation_exports import record_export_failure
+
     earlier = request_export(api_client, export_requester)
+    record_export_failure(earlier["id"])
     monkeypatch.setattr("django.utils.timezone.now", lambda: AT + timedelta(seconds=1))
     later = request_export(api_client, export_requester, format="yolo")
     page = api_client.get(EXPORTS, {"page_size": 1})
@@ -509,3 +513,549 @@ def download_bytes(api_client, identifier):
     assert response["Cache-Control"] == "private, no-store"
     assert response["X-Content-Type-Options"] == "nosniff"
     return b"".join(response.streaming_content)
+
+
+def mark_export_ready(identifier, *, receipt=None):
+    from lab.annotation_exports import append_export_status
+    from lab.models import EggAnnotationExport
+    from uploads.storage import StoredObject
+
+    export = EggAnnotationExport.objects.get(pk=identifier)
+    stored = receipt or StoredObject(f"dataset/{uuid4().hex}.zip", 1, "0" * 64)
+    append_export_status(export, "running")
+    append_export_status(
+        export, "ready", object_key=stored.key, size_bytes=stored.size_bytes, sha256=stored.sha256
+    )
+    return export
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("state", ["queued", "running"])
+def test_recovery_times_out_only_stale_active_exports(
+    export_requester, api_client, monkeypatch, state
+):
+    from lab.annotation_exports import append_export_status
+    from lab.models import EggAnnotationExport
+    from lab.tasks import recover_annotation_exports
+
+    exported = request_export(api_client, export_requester)
+    export = EggAnnotationExport.objects.get(pk=exported["id"])
+    if state == "running":
+        append_export_status(export, "running")
+    monkeypatch.setattr("django.utils.timezone.now", lambda: AT + timedelta(hours=1))
+    assert recover_annotation_exports() == 1
+    assert recover_annotation_exports() == 0
+    detail = api_client.get(f"{EXPORTS}{export.pk}/")
+    assert (detail.data["status"], detail.data["error_code"]) == (
+        "failed",
+        "annotation_export_timed_out",
+    )
+    fresh = request_export(api_client, export_requester)
+    assert recover_annotation_exports() == 0
+    assert api_client.get(f"{EXPORTS}{fresh['id']}/").data["status"] == "queued"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("limit", ["requester", "organization"])
+def test_active_export_capacity_is_enforced(export_requester, api_client, make_member, limit):
+    first = request_export(api_client, export_requester)
+    if limit == "organization":
+        second_user, _ = make_member(export_requester.actor.organization, [EXPORT_CODE])
+        api_client.force_authenticate(second_user)
+        assert api_client.post(EXPORTS, FILTERS, format="json").status_code == 201
+        third_user, _ = make_member(export_requester.actor.organization, [EXPORT_CODE])
+        api_client.force_authenticate(third_user)
+    response = api_client.post(EXPORTS, FILTERS, format="json")
+    assert (response.status_code, response.data["code"]) == (409, "annotation_export_in_progress")
+    if limit == "requester":
+        mark_export_ready(first["id"])
+        assert api_client.post(EXPORTS, FILTERS, format="json").status_code == 201
+
+
+@pytest.mark.django_db
+def test_export_verified_byte_limit_reports_cap_and_selected_total(monkeypatch, api_client):
+    from lab.models import EggAnnotationExport
+
+    context = export_context(monkeypatch)
+    annotation = annotate(context, "EXPORT-BYTE-LIMIT")
+    size = annotation.image_upload.verification.size_bytes
+    monkeypatch.setattr("lab.annotation_exports.MAX_EXPORT_BYTES", size - 1)
+    api_client.force_authenticate(context.actor.user)
+    response = api_client.post(EXPORTS, FILTERS, format="json")
+    assert response.status_code == 400
+    assert response.data["fields"]["date_to"][0] == {
+        "code": "annotation_export_too_many_bytes",
+        "params": {"max_bytes": size - 1, "total_bytes": size},
+    }
+    assert not EggAnnotationExport.objects.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_expiry_removes_only_archive_and_retains_status_history(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    from lab.models import EggAnnotationExport, EggAnnotationExportStatus
+    from lab.tasks import expire_annotation_exports
+    from uploads.storage import store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    settings.ANNOTATION_EXPORT_RETENTION_DAYS = 2
+    exported = request_export(api_client, export_requester)
+    stored = store_dataset_export(BytesIO(b"synthetic archive"))
+    mark_export_ready(exported["id"], receipt=stored)
+    assert expire_annotation_exports() == 0
+    monkeypatch.setattr("django.utils.timezone.now", lambda: AT + timedelta(days=2))
+    response = api_client.get(f"{EXPORTS}{exported['id']}/download/")
+    assert (response.status_code, response.data["code"]) == (409, "annotation_export_expired")
+    assert expire_annotation_exports() == 1
+    assert expire_annotation_exports() == 0
+    assert not (tmp_path / stored.key).exists()
+    assert EggAnnotationExport.objects.filter(pk=exported["id"]).exists()
+    assert list(
+        EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).values_list(
+            "status", flat=True
+        )
+    ) == ["expired", "ready", "running", "queued"]
+    assert api_client.get(f"{EXPORTS}{exported['id']}/").data["status"] == "expired"
+    assert request_export(api_client, export_requester)["status"] == "queued"
+
+
+@pytest.mark.django_db
+def test_repeated_polling_performs_no_numeric_disclosure_inserts(
+    monkeypatch, api_client, make_member
+):
+    from django.test.utils import CaptureQueriesContext
+
+    from lab.annotation_exports import append_export_status
+    from lab.models import EggAnnotationExport, LabNumericDisclosure
+
+    context = export_context(monkeypatch)
+    annotation = annotate(context, "EXPORT-NO-POLL-WRITE")
+    exported = request_export(api_client, context)
+    export = EggAnnotationExport.objects.get(pk=exported["id"])
+    append_export_status(export, "running")
+    append_export_status(
+        export,
+        "ready",
+        image_count=1,
+        point_count=1,
+        object_key=f"dataset/{uuid4().hex}.zip",
+        size_bytes=1,
+        sha256="0" * 64,
+    )
+    viewer = actor_with_codes(context, make_member, (EXPORT_CODE,))
+    api_client.force_authenticate(viewer.user)
+    assert api_client.get(EXPORTS).status_code == 200
+    assert LabNumericDisclosure.objects.filter(
+        count=annotation.count, created_by=viewer.user
+    ).exists()
+    with CaptureQueriesContext(connection) as queries:
+        assert api_client.get(EXPORTS).status_code == 200
+        assert api_client.get(EXPORTS).status_code == 200
+    assert not [
+        query for query in queries if 'INSERT INTO "lab_labnumericdisclosure"' in query["sql"]
+    ]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("revoked", ["active", "permission"])
+def test_worker_refuses_requester_after_authorization_loss(export_requester, api_client, revoked):
+    from lab.annotation_exports import run_annotation_export
+
+    exported = request_export(api_client, export_requester)
+    if revoked == "active":
+        export_requester.actor.user.is_active = False
+        export_requester.actor.user.save(update_fields=["is_active"])
+    else:
+        profile = export_requester.member.profiles.get()
+        profile.permission_codes = []
+        profile.save(update_fields=["permission_codes"])
+    run_annotation_export(exported["id"])
+    from lab.models import EggAnnotationExportStatus
+
+    state = EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).first()
+    assert (state.status, state.error_code) == (
+        "failed",
+        "annotation_export_requester_unauthorized",
+    )
+
+
+@pytest.mark.django_db
+def test_same_annotation_keeps_each_exports_voided_snapshot(monkeypatch, api_client):
+    from lab.annotation_exports import selected_export_annotations
+    from lab.models import EggAnnotationExport
+
+    context = export_context(monkeypatch)
+    annotation = annotate(context, "EXPORT-TWO-SNAPSHOTS")
+    first = request_export(api_client, context, include_voided=True)
+    from lab.annotation_exports import record_export_failure
+
+    record_export_failure(first["id"])
+    assert (
+        command(
+            context,
+            "void_count",
+            LabTarget("count", annotation.count_id),
+            {
+                "expected_revision": 1,
+                "reason_code": "data-entry-error",
+                "reason": "Synthetic snapshot correction",
+            },
+        ).status
+        == 200
+    )
+    second = request_export(api_client, context, include_voided=True)
+    for exported, expected in ((first, False), (second, True)):
+        rows = list(selected_export_annotations(EggAnnotationExport.objects.get(pk=exported["id"])))
+        assert [(row.pk, row.export_voided) for row in rows] == [(annotation.pk, expected)]
+
+
+@pytest.mark.django_db
+def test_head_does_not_create_download_receipts(export_requester, api_client):
+    from lab.models import EggAnnotationExportDownload
+
+    exported = request_export(api_client, export_requester)
+    assert api_client.head(f"{EXPORTS}{exported['id']}/download/").status_code == 405
+    assert not EggAnnotationExportDownload.objects.exists()
+
+
+@pytest.mark.django_db
+def test_download_has_its_own_hourly_throttle(export_requester, api_client, monkeypatch):
+    from rest_framework.throttling import ScopedRateThrottle
+
+    monkeypatch.setattr(
+        ScopedRateThrottle,
+        "THROTTLE_RATES",
+        {**ScopedRateThrottle.THROTTLE_RATES, "export_download": "1/hour"},
+    )
+    exported = request_export(api_client, export_requester)
+    url = f"{EXPORTS}{exported['id']}/download/"
+    assert api_client.get(url).status_code == 409
+    assert api_client.get(url).status_code == 429
+    assert api_client.get(EXPORTS).status_code == 200
+
+
+@pytest.mark.django_db(transaction=True)
+def test_cookie_download_resolves_export_membership_without_organization_header(
+    export_requester, api_client, make_member, org_b, settings, tmp_path
+):
+    from uploads.storage import store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    exported = request_export(api_client, export_requester)
+    stored = store_dataset_export(BytesIO(b"synthetic archive"))
+    mark_export_ready(exported["id"], receipt=stored)
+    make_member(org_b, [EXPORT_CODE], user=export_requester.actor.user)
+    assert api_client.get(EXPORTS).status_code == 400
+    assert download_bytes(api_client, exported["id"]) == b"synthetic archive"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_download_reads_no_archive_bytes_until_stream_is_consumed(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    from uploads.storage import open_dataset_export, store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    exported = request_export(api_client, export_requester)
+    stored = store_dataset_export(BytesIO(b"synthetic archive"))
+    mark_export_ready(exported["id"], receipt=stored)
+    opened = []
+
+    def track_open(key):
+        archive = open_dataset_export(key)
+        opened.append(archive)
+        return archive
+
+    monkeypatch.setattr("uploads.storage.open_dataset_export", track_open)
+    response = api_client.get(f"{EXPORTS}{exported['id']}/download/")
+    assert response.status_code == 200
+    assert opened[0].tell() == 0
+    assert b"".join(response.streaming_content) == b"synthetic archive"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_stream_aborts_on_archive_hash_mismatch(export_requester, api_client, settings, tmp_path):
+    from uploads.exceptions import UploadStorageError
+    from uploads.storage import store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    exported = request_export(api_client, export_requester)
+    stored = store_dataset_export(BytesIO(b"synthetic archive"))
+    mark_export_ready(exported["id"], receipt=stored)
+    (tmp_path / stored.key).write_bytes(b"corrupted archive")
+    response = api_client.get(f"{EXPORTS}{exported['id']}/download/")
+    assert response.status_code == 200
+    with pytest.raises(UploadStorageError):
+        b"".join(response.streaming_content)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_requesters_compete_for_one_remaining_organization_slot(
+    export_requester, api_client, make_member, monkeypatch
+):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    from django.db import close_old_connections
+    from rest_framework.test import APIClient
+
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    request_export(api_client, export_requester)
+    users = [make_member(export_requester.actor.organization, [EXPORT_CODE])[0] for _ in range(2)]
+    start = Barrier(2)
+
+    def create(user):
+        close_old_connections()
+        try:
+            client = APIClient()
+            client.force_authenticate(user)
+            start.wait(timeout=10)
+            response = client.post(EXPORTS, FILTERS, format="json")
+            return response.status_code, response.data.get("code")
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(create, users))
+    assert sorted(results, key=lambda result: result[0]) == [
+        (201, None),
+        (409, "annotation_export_in_progress"),
+    ]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("failure", ["authorization", "ready_insert", "recovery"])
+def test_failure_after_storage_discards_unreferenced_archive(
+    export_requester, api_client, settings, tmp_path, monkeypatch, failure
+):
+    from lab.annotation_exports import (
+        append_export_status,
+        record_export_failure,
+        run_annotation_export,
+    )
+    from lab.models import EggAnnotationExportStatus
+    from uploads.storage import store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    exported = request_export(api_client, export_requester)
+
+    def store_then_fail(archive):
+        receipt = store_dataset_export(archive)
+        if failure == "authorization":
+            profile = export_requester.member.profiles.get()
+            profile.permission_codes = []
+            profile.save(update_fields=["permission_codes"])
+        elif failure == "recovery":
+            record_export_failure(exported["id"], "annotation_export_timed_out")
+        return receipt
+
+    def append_or_fail(export, status, **facts):
+        if status == "ready" and failure == "ready_insert":
+            raise DatabaseError("Synthetic ready insert failure")
+        return append_export_status(export, status, **facts)
+
+    monkeypatch.setattr("uploads.storage.store_dataset_export", store_then_fail)
+    monkeypatch.setattr("lab.annotation_exports.append_export_status", append_or_fail)
+    run_annotation_export(exported["id"])
+    assert not list(tmp_path.rglob("*.zip"))
+    assert (
+        EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).first().status
+        == "failed"
+    )
+
+
+@pytest.mark.django_db
+def test_expired_transition_refuses_a_failed_predecessor(export_requester, api_client):
+    from lab.annotation_exports import append_export_status, record_export_failure
+    from lab.models import EggAnnotationExport
+
+    exported = request_export(api_client, export_requester)
+    record_export_failure(exported["id"])
+    with pytest.raises(DatabaseError), transaction.atomic():
+        append_export_status(EggAnnotationExport.objects.get(pk=exported["id"]), "expired")
+
+
+@pytest.mark.django_db
+def test_requester_capacity_spans_active_memberships(
+    export_requester, api_client, make_member, org_b
+):
+    request_export(api_client, export_requester)
+    make_member(org_b, [EXPORT_CODE], user=export_requester.actor.user)
+    response = api_client.post(
+        EXPORTS, FILTERS, format="json", headers={"X-Organization": org_b.slug}
+    )
+    assert (response.status_code, response.data["code"]) == (409, "annotation_export_in_progress")
+
+
+def test_annotation_export_maintenance_is_registered_in_beat(settings):
+    tasks = {entry["task"]: entry["schedule"] for entry in settings.CELERY_BEAT_SCHEDULE.values()}
+    assert tasks["lab.tasks.recover_annotation_exports"] > 0
+    assert tasks["lab.tasks.expire_annotation_exports"] > 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_lost_ready_commit_acknowledgment_preserves_referenced_archive(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    from lab.annotation_exports import complete_annotation_export, run_annotation_export
+    from lab.models import EggAnnotationExportStatus
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    exported = request_export(api_client, export_requester)
+
+    def complete_then_lose_ack(actor, export, result):
+        complete_annotation_export(actor, export, result)
+        raise DatabaseError("Synthetic lost commit acknowledgment")
+
+    monkeypatch.setattr("lab.annotation_exports.complete_annotation_export", complete_then_lose_ack)
+    run_annotation_export(exported["id"])
+    assert (
+        EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).first().status == "ready"
+    )
+    assert len(list(tmp_path.rglob("*.zip"))) == 1
+    assert download_bytes(api_client, exported["id"])
+
+
+@pytest.mark.django_db(transaction=True)
+def test_unconsumed_download_response_closes_private_file(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    from uploads.storage import open_dataset_export, store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    exported = request_export(api_client, export_requester)
+    mark_export_ready(exported["id"], receipt=store_dataset_export(BytesIO(b"synthetic archive")))
+    opened = []
+
+    def track_open(key):
+        archive = open_dataset_export(key)
+        opened.append(archive)
+        return archive
+
+    monkeypatch.setattr("uploads.storage.open_dataset_export", track_open)
+    response = api_client.get(f"{EXPORTS}{exported['id']}/download/")
+    response.close()
+    assert opened[0].closed
+
+
+@pytest.mark.django_db(transaction=True)
+def test_expiry_storage_failure_keeps_ready_fact_retryable(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    from lab.models import EggAnnotationExportStatus
+    from lab.tasks import expire_annotation_exports
+    from uploads.exceptions import UploadStorageError
+    from uploads.storage import store_dataset_export
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    exported = request_export(api_client, export_requester)
+    mark_export_ready(exported["id"], receipt=store_dataset_export(BytesIO(b"synthetic archive")))
+    monkeypatch.setattr("django.utils.timezone.now", lambda: AT + timedelta(days=8))
+
+    def cannot_delete(_key):
+        raise UploadStorageError
+
+    with monkeypatch.context() as fault:
+        fault.setattr("uploads.storage.discard_dataset_export", cannot_delete)
+        assert expire_annotation_exports() == 0
+    assert (
+        EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).first().status == "ready"
+    )
+    assert expire_annotation_exports() == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("multiple_memberships", [False, True])
+def test_malformed_download_identifier_is_concealed_as_missing(
+    export_requester, api_client, make_member, org_b, multiple_memberships
+):
+    api_client.force_authenticate(export_requester.actor.user)
+    if multiple_memberships:
+        make_member(org_b, [EXPORT_CODE], user=export_requester.actor.user)
+    assert api_client.get(f"{EXPORTS}not-a-uuid/download/").status_code == 404
+
+
+@pytest.mark.django_db(transaction=True)
+def test_archive_close_failure_after_storage_discards_unreferenced_zip(
+    export_requester, api_client, settings, tmp_path, monkeypatch
+):
+    import tempfile
+
+    from lab.annotation_exports import run_annotation_export
+    from lab.models import EggAnnotationExportStatus
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    exported = request_export(api_client, export_requester)
+    real_temporary_file = tempfile.TemporaryFile
+    stored_before_close = []
+
+    class FailingClose:
+        def __init__(self, **kwargs):
+            self.stream = real_temporary_file(**kwargs)
+
+        def __enter__(self):
+            return self.stream
+
+        def __exit__(self, *_args):
+            self.stream.close()
+            stored_before_close.append(bool(list(tmp_path.rglob("*.zip"))))
+            raise OSError("Synthetic archive close failure")
+
+    monkeypatch.setattr(
+        "lab.annotation_exports.tempfile", SimpleNamespace(TemporaryFile=FailingClose)
+    )
+    run_annotation_export(exported["id"])
+    assert stored_before_close == [True]
+    assert (
+        EggAnnotationExportStatus.objects.filter(export_id=exported["id"]).first().status
+        == "failed"
+    )
+    assert not list(tmp_path.rglob("*.zip"))
+
+
+@pytest.mark.django_db(transaction=True)
+def test_expired_totals_publish_once_for_a_new_viewer(
+    monkeypatch, api_client, make_member, settings, tmp_path
+):
+    from django.test.utils import CaptureQueriesContext
+
+    from lab.annotation_exports import append_export_status
+    from lab.models import EggAnnotationExport, LabNumericDisclosure
+    from lab.tasks import expire_annotation_exports
+
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path
+    monkeypatch.setattr("lab.tasks.build_egg_annotation_export.delay", lambda *_: None)
+    context = export_context(monkeypatch)
+    annotation = annotate(context, "EXPORT-EXPIRED-DISCLOSURE")
+    exported = request_export(api_client, context)
+    export = EggAnnotationExport.objects.get(pk=exported["id"])
+    append_export_status(export, "running")
+    append_export_status(
+        export,
+        "ready",
+        image_count=1,
+        point_count=1,
+        object_key=f"dataset/{uuid4().hex}.zip",
+        size_bytes=1,
+        sha256="0" * 64,
+    )
+    monkeypatch.setattr("django.utils.timezone.now", lambda: AT + timedelta(days=8))
+    assert expire_annotation_exports() == 1
+    viewer = actor_with_codes(context, make_member, (EXPORT_CODE,))
+    api_client.force_authenticate(viewer.user)
+    response = api_client.get(EXPORTS)
+    assert response.data["results"][0]["status"] == "expired"
+    assert LabNumericDisclosure.objects.filter(
+        count=annotation.count, created_by=viewer.user
+    ).exists()
+    with CaptureQueriesContext(connection) as queries:
+        assert api_client.get(EXPORTS).status_code == 200
+    assert not [
+        query for query in queries if 'INSERT INTO "lab_labnumericdisclosure"' in query["sql"]
+    ]
