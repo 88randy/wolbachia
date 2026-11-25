@@ -1328,6 +1328,7 @@ export const mobile = {
     "Las notificaciones están apagadas: el recorrido se registra, pero no verás el aviso de jornada abierta.",
   "mobile.track.unavailable":
     "No se pudo iniciar el registro del recorrido. Se intentará de nuevo al volver a la app.",
+  "mobile.track.dayEnded": "Tu jornada sigue abierta. Ciérrala para terminar tu día.",
   "mobile.track.openSettings": "Abrir ajustes",
   "mobile.map.loading": "Preparando el mapa...",
   "mobile.map.unavailable": "El mapa no está disponible por ahora",

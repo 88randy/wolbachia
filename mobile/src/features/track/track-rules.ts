@@ -1,7 +1,7 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { readRule } from "../../auth/auth-rules.ts";
 
-/** The six `track_*` rule parameters (backend/rules/seeds.py): defaults and bounds of the seed. */
+/** The seven `track_*` rule parameters (backend/rules/seeds.py): defaults and bounds of the seed. */
 export interface TrackRules {
   readonly sampleIntervalSeconds: number;
   readonly minMoveM: number;
@@ -9,6 +9,8 @@ export interface TrackRules {
   readonly uploadIntervalSeconds: number;
   readonly simplifyToleranceM: number;
   readonly isHighAccuracy: boolean;
+  /** Local end of the work day, in minutes after midnight in the organization's time zone. */
+  readonly dayEndMinutes: number;
 }
 
 export function readTrackRules(snapshot: Schemas["RulesSnapshot"] | null): TrackRules {
@@ -22,5 +24,6 @@ export function readTrackRules(snapshot: Schemas["RulesSnapshot"] | null): Track
     uploadIntervalSeconds: rule("track_upload_interval_seconds", [300, 60, 3600]),
     simplifyToleranceM: rule("track_simplify_tolerance_m", [5, 0, 50]),
     isHighAccuracy: rule("track_high_accuracy", [0, 0, 1]) === 1,
+    dayEndMinutes: rule("track_day_end_minutes", [1200, 600, 1439]),
   };
 }

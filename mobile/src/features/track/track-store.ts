@@ -185,6 +185,26 @@ export class TrackStore {
     return rows.map(toFix);
   }
 
+  /** The points of the shift not yet carried by a segment. */
+  async unsent(owner: string, shiftId: string): Promise<readonly TrackFix[]> {
+    const rows = await this.#db.query(
+      `SELECT ${POINT_COLUMNS} FROM track_point WHERE owner_user_id=? AND shift_id=?
+       AND segment_event_id IS NULL ORDER BY recorded_at, id`,
+      [owner, shiftId],
+    );
+    return rows.map(toFix);
+  }
+
+  /** Device time of the local opening of shiftId. */
+  async openedAt(shiftId: string): Promise<number> {
+    const [opening] = await this.#db.query(
+      "SELECT device_time FROM outbox_event WHERE type='shift.open' AND shift_id=? ORDER BY seq LIMIT 1",
+      [shiftId],
+    );
+    if (opening === undefined) throw new Error("Shift opening not found.");
+    return Date.parse(readText(opening, "device_time"));
+  }
+
   /**
    * Turns every unsent point of `owner` into `track.segment` events. Per shift, ONE transaction
    * inserts the events and stamps `segment_event_id` on the points they cover (the simplified-away
@@ -212,12 +232,8 @@ export class TrackStore {
 
   async #cutShift(input: CutInput, shiftId: string): Promise<number> {
     const closedAt = await this.closedAt(shiftId);
-    const rows = await this.#db.query(
-      `SELECT ${POINT_COLUMNS} FROM track_point WHERE owner_user_id=? AND shift_id=?
-       AND segment_event_id IS NULL ORDER BY recorded_at, id`,
-      [input.owner, shiftId],
-    );
-    const inside = rows.map(toFix).filter((point) => point.at <= closedAt);
+    const unsent = await this.unsent(input.owner, shiftId);
+    const inside = unsent.filter((point) => point.at <= closedAt);
     const segments = chunks(
       simplifyTrack(
         inside,
