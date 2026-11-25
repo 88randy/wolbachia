@@ -58,6 +58,7 @@ function recorderDeps(deps: Dependencies): TrackRecorderDeps {
     store: new TrackStore(deps.db),
     native: nativeTrack,
     identity: () => ownerOf(deps),
+    timeZone: () => deps.auth.getSnapshot().profile?.organization?.timezone ?? null,
     rules: () => readRules(kv),
     texts: () => notificationTexts(kv),
     versions: async () => ({

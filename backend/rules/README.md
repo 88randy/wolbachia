@@ -62,10 +62,14 @@ MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
 | track_upload_interval_seconds | 300 | s | 60 | 3600 |
 | track_simplify_tolerance_m | 5 | m | 0 | 50 |
 | track_high_accuracy | 0 | count | 0 | 1 |
+| track_day_end_minutes | 1200 | min | 600 | 1439 |
 
 The `track_*` keys tune the courier track capture on the phone (#370, `docs/sync.md` "Courier
 track"); the server never reads them. `track_high_accuracy` is a boolean stored as 0/1 (1 = high
-accuracy instead of balanced for the background capture). Bounds are [ASSUMPTION].
+accuracy instead of balanced for the background capture). `track_day_end_minutes` is the local
+end of the work day (minutes after midnight in the organization's time zone, 1200 = 20:00): a
+shift left open stops recording at the first day end after its opening, and the courier is asked
+to close it; the shift itself is never closed automatically (#371). Bounds are [ASSUMPTION].
 
 `delivery_signature_mode` says where the courier signs a supply delivery: 0 = either (default,
 whichever happens first completes it), 1 = on the warehouse screen, 2 = on the courier's phone.
