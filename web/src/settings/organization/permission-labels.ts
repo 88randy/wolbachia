@@ -25,6 +25,7 @@ const GROUPS: Record<string, string> = {
   home: "operation",
   bag: "laboratory",
   egg_count: "laboratory",
+  egg_annotation: "laboratory",
   egg_paddle: "laboratory",
   recount: "laboratory",
   sample: "laboratory",
@@ -86,6 +87,7 @@ export function permissionLabel(
   t: TFunction,
   exists: (key: string) => boolean,
 ): string {
+  if (code === "egg_annotation.export") return t("annotationExport.permission.label");
   const [resource, action] = split(code);
   const verb = `perm.verb.${action}`;
   const object = `perm.object.${resource}`;

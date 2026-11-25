@@ -73,6 +73,10 @@ Plain, blameless, with a next step. Mexican Spanish (tuteo, no regional slang) a
 
 ## Contents today
 
+`annotationExport.*` supplies W72 training dataset export labels and feedback in
+es-MX/en, including the readable `egg_annotation.export` permission label. Points
+are described separately from boxes and no copy claims that model training runs.
+
 Only shared, cross-screen text. Screen copy lands with each screen.
 
 - `common.actions.*`: save, cancel, retry, close, void. `common.fields.*`: void reason label, "Other (specify)" label.

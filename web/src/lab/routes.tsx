@@ -23,6 +23,7 @@ const W37Page = lazyRouteComponent(() => import("./W37Page"), "W37Page");
 const W38Page = lazyRouteComponent(() => import("./W38Page"), "W38Page");
 const W40Page = lazyRouteComponent(() => import("./W40Page"), "W40Page");
 const W41Page = lazyRouteComponent(() => import("./W41Page"), "W41Page");
+const W72Page = lazyRouteComponent(() => import("./W72Page"), "W72Page");
 
 const labReceptionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -110,6 +111,12 @@ const materialsRoute = listRoute(
   W41Page,
   "lab.materials.title",
 );
+const annotationExportsRoute = listRoute(
+  "/lab/annotation-exports",
+  "egg_annotation.export",
+  W72Page,
+  "annotationExport.page.title",
+);
 
 /**
  * Lab area: home, W34 reception, W35 count and history, W36-W38, W40 and W41. W39 (`/lab/write-offs`) lives in
@@ -126,5 +133,6 @@ export const labRoutes = [
   shipmentsRoute,
   resultsRoute,
   materialsRoute,
+  annotationExportsRoute,
   ...pcrRoutes,
 ];

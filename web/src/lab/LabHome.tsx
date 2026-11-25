@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Boxes,
+  Download,
   FlaskConical,
   History,
   Microscope,
@@ -95,6 +96,13 @@ export function LabHome() {
   ];
   const pending = candidates.filter((entry) => (entry.count ?? 0) > 0);
   const all: Item[] = [
+    item({
+      id: "annotation-exports",
+      permissions: ["egg_annotation.export"],
+      icon: Download,
+      to: "/lab/annotation-exports",
+      text: [t("annotationExport.page.title"), t("annotationExport.page.card")],
+    }),
     item({
       id: "bags",
       permissions: ["bag.receive"],

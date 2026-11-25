@@ -1,4 +1,4 @@
-# Web screen inventory (W1–W71)
+# Web screen inventory (W1–W72)
 
 Source: Wolbachia web design canvas. Screens are designed at 1280×800. W2, W22, W53 and W54 also exist at 1440×900. English variants: W2, W35, W53. Dark variants: W53, W54.
 
@@ -105,6 +105,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W69 | Portal home | GOB | 3-section top nav; plain-language sentence; data cut-off date per figure; access-log notice | R10 |
 | W70 | Portal map and trends | GOB | aggregated layers only; simplified charts with tables | R10 |
 | W71 | Portal downloads | GOB | reports with cut-off date in PDF/CSV; "API access" docs; key handed out by admin | R10 |
+| W72 | Annotation training dataset exports | permission `egg_annotation.export` | built at `/lab/annotation-exports`; inclusive date range, optional author, COCO/YOLO, retained points, job status and authenticated ZIP download | no original design asset; shared form/table primitives |
 
 ## Journeys (clickable prototype)
 

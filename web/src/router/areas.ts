@@ -85,6 +85,7 @@ export const AREAS = [
       "sample.read",
       "material_request.read",
       "pcr.read",
+      "egg_annotation.export",
     ],
   },
   {
