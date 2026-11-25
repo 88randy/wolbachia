@@ -122,6 +122,29 @@ test("409 retains reason, refreshes original and current evidence, and requires 
   });
 });
 
+test("a blocked accept shows the first blocked_by reason, not the generic review code", async () => {
+  const initial = review({
+    evaluation: { ...review().evaluation, can_accept: true, blockers: [] },
+  });
+  await open({
+    [DETAIL]: Response.json(initial),
+    [ACCEPT]: Response.json(
+      {
+        code: "review_blocked",
+        detail: "Fake review_blocked.",
+        blocked_by: [{ reason: "capture_context_changed", unblocked_by_role: "admin" }],
+      },
+      { status: 409 },
+    ),
+  });
+  await userEvent.type(await screen.findByLabelText("Motivo de la decisión"), "Placement verified");
+  await userEvent.click(screen.getByRole("button", { name: "Aceptar" }));
+  await userEvent.click(screen.getAllByRole("button", { name: "Aceptar" }).at(-1) as HTMLElement);
+  await screen.findByText(
+    "Cambiaron las reglas o el punto desde la captura; pide a un administrador que la revise.",
+  );
+});
+
 test("scope loss removes old results and prevents an inaccessible deep link from reading or deciding", async () => {
   const { api, app } = await open();
   await screen.findByLabelText("Motivo de la decisión");

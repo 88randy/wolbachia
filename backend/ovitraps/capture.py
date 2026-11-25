@@ -17,6 +17,7 @@ from ovitraps import codes
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
 from rules.selectors import list_parameters_with_current, to_number
 
+# Every rule the capture gates read; review compares only these (#370 added unrelated keys).
 REQUIRED_RULES = ("max_distance_to_point_m", "max_gps_accuracy_m", "speed_lock_kmh")
 SECONDS_PER_HOUR = 3600
 METERS_PER_KILOMETER = 1000
@@ -116,13 +117,23 @@ def observed_capture_inputs(
             "speed_reference"
         ] and _resolved_speed_reference(ctx, previous):
             comparison["speed_reference"] = original.get("speed_reference")
-        if original != comparison:
+        if _consumed(original) != _consumed(comparison):
             raise ReviewBlockedError(("capture_context_changed",))
         # Equal current proof verifies applicability; original values remain the inputs.
         values = dict(original["rules"])
         identifiers = dict(original["rule_version_ids"])
     ctx.observed_facts["ovitrap"] = deepcopy(facts)
     return version, values, identifiers, previous
+
+
+def _consumed(facts: dict[str, Any]) -> dict[str, Any]:
+    """Project full-dict snapshots (old and new) onto the consumed rules; other facts stay."""
+    rules, identifiers = facts.get("rules") or {}, facts.get("rule_version_ids") or {}
+    return {
+        **facts,
+        "rules": {key: rules.get(key) for key in REQUIRED_RULES},
+        "rule_version_ids": {key: identifiers.get(key) for key in REQUIRED_RULES},
+    }
 
 
 def _resolved_speed_reference(ctx: EventContext, previous: FieldEvent | None) -> bool:
