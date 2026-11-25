@@ -1,9 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { setupI18n } from "../i18n/setup-i18n";
 import { AnnotationHelpDialog } from "./AnnotationHelpDialog";
+import { AnnotationShortcutTable } from "./AnnotationShortcutTable";
 
 test("walks the three-step guide, opens a separate shortcut table and remembers dismissal", async () => {
   const i18n = await setupI18n("es-MX");
@@ -34,7 +35,7 @@ test("walks the three-step guide, opens a separate shortcut table and remembers 
   expect(within(shortcuts).getByText(i18n.t("labAnnotation.tips.mouse"))).toBeDefined();
   expect(
     within(shortcuts).getByRole("table", { name: "Atajos" }).querySelectorAll("kbd"),
-  ).toHaveLength(18);
+  ).toHaveLength(21);
   await user.click(within(shortcuts).getByText("Cerrar", { selector: "button span" }));
   expect(screen.getByRole("heading", { name: "Cajas o puntos" })).toBeDefined();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Ver atajos" }));
@@ -55,3 +56,30 @@ test("walks the three-step guide, opens a separate shortcut table and remembers 
   expect(screen.getByRole("button", { name: "Omitir" })).toBeDefined();
   localStorage.removeItem(preferenceKey);
 });
+
+test.each([
+  ["Win32", "Ctrl + Z", "Ctrl + Mayús + Z"],
+  ["MacIntel", "⌘ + Z", "⌘ + Mayús + Z"],
+])(
+  "shows complete annotation gestures and platform modifiers on %s",
+  async (platform, undo, redo) => {
+    const i18n = await setupI18n("es-MX");
+    const platformValue = vi.spyOn(window.navigator, "platform", "get").mockReturnValue(platform);
+    render(
+      <I18nextProvider i18n={i18n}>
+        <AnnotationShortcutTable />
+      </I18nextProvider>,
+    );
+    const table = screen.getByRole("table", { name: "Atajos" });
+    expect(
+      within(table).getByRole("row", { name: "Mover mientras se mantiene Espacio" }),
+    ).toBeDefined();
+    expect(
+      within(table).getByRole("row", { name: "Mover con clic derecho Mantener y arrastrar" }),
+    ).toBeDefined();
+    expect(within(table).getByRole("row", { name: "Cerrar panel Esc" })).toBeDefined();
+    expect(within(table).getByRole("row", { name: `Deshacer ${undo}` })).toBeDefined();
+    expect(within(table).getByRole("row", { name: `Rehacer ${redo}` })).toBeDefined();
+    platformValue.mockRestore();
+  },
+);

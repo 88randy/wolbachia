@@ -168,6 +168,23 @@ resizing it. Dialogs sit above the toolbar and return focus to the canvas when
 closed. A muted bottom-left pill announces the tool and selection; local draft
 status stays inside the workspace without changing its geometry.
 
+The settings Panel (S) is a compact 300 px sheet with a scrollable body and a
+fixed header/footer; narrow screens use a bottom sheet. Its tinted summary shows
+the plural-aware mark total, mark-derived Box/Point/Mixed mode, density per Mpx,
+image resolution and zoom using the current locale. Configuration includes a
+Box/Point toggle, box sliders (1 px arrows, 10 px with Shift), five token-color
+radio swatches with a check/ring, and the grid switch. Grid size appears only
+when enabled: square cells use image pixels (50–1000 px, step 10, default 310 px)
+and remain anchored to the paper through zoom/pan. Previously the grid divided
+each image dimension into eight parts, so it had no fixed pixel default.
+
+Versioned localStorage preferences retain only box dimensions, marker color and
+grid size per user. Invalid values fall back to defaults; changing users replaces
+the settings before persistence. Photos and marks remain in their existing draft
+store. Panel controls retain focus; its guide button opens the existing three-step
+dialog and receives focus again when it closes. Panel and shortcuts dialog render
+the same `AnnotationShortcutTable`, including platform-specific Ctrl/⌘ keys.
+
 Boxes use a 2 screen-pixel color stroke with a contrasting outline. Selected
 boxes have handles; filled points and handles keep their screen size at every
 zoom. Boxes and points may be mixed; every mark counts once.
@@ -231,6 +248,8 @@ for that event, so no custom in-app copy or modal can replace it.
 | One photo write, debounced marks, pagehide flush, photo-write failure retention, terminal clear and retired-session write fence | `use-annotation-draft.test.ts`, `annotation-draft.test.ts` |
 | Active visible/idle time and side-effect-free replacement command identity | `annotation-active-time.test.ts`, `annotation-command.test.ts` |
 | Zoom/pan transforms, cursor anchor, integer clamping and resizing | `annotation-coordinates.test.ts` |
+| Image-pixel grid spacing across sizes/zooms; per-user validated preference persistence | `annotation-canvas-draw.test.ts`, `use-annotation-preferences.test.ts` |
+| Swatch radio semantics, bounded slider keys, conditional grid size and shared shortcut rows/guide focus | `annotation-settings.test.tsx`, `annotation-help.test.tsx` |
 | Mark-derived payload, summary, confirmation and explicit replay | `annotation-submit.test.tsx` |
 | Photo upload, mixed keyboard marks, grid/settings and save; light/dark, es-MX/en, 320/1280 px, +30% text, axe | `e2e/egg-annotation.spec.ts` |
 | Missing upload permission and actionable field errors with server limits | `annotation-submit.test.tsx`, `annotation-upload-error.test.ts` |

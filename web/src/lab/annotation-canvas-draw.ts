@@ -5,8 +5,8 @@ import {
   type ImageSize,
 } from "./annotation-coordinates";
 import type { AnnotationMark } from "./annotation-state";
+import { DEFAULT_ANNOTATION_GRID_SIZE } from "./annotation-preferences";
 
-const GRID_CELLS = 8;
 const MARK_LINE_WIDTH = 2;
 const MARK_OUTLINE_WIDTH = 4;
 const MARK_OUTLINE_COLOR = "var(--color-on-action)";
@@ -67,17 +67,22 @@ function traceMark(context: CanvasRenderingContext2D, mark: AnnotationMark, scal
   context.arc(mark.x, mark.y, radius, 0, Math.PI * 2);
 }
 
-function drawGrid(context: CanvasRenderingContext2D, image: ImageSize, scale: number): void {
+function drawGrid(context: CanvasRenderingContext2D, layer: MarksLayer): void {
+  const {
+    image,
+    viewport: { scale },
+  } = layer;
+  const gridSize = layer.gridSize ?? DEFAULT_ANNOTATION_GRID_SIZE;
   context.save();
   context.globalAlpha = 0.7;
   context.lineWidth = 1 / scale;
   context.setLineDash([6 / scale, 6 / scale]);
   context.beginPath();
-  for (let index = 1; index < GRID_CELLS; index++) {
-    const x = (image.width * index) / GRID_CELLS;
-    const y = (image.height * index) / GRID_CELLS;
+  for (let x = gridSize; x < image.width; x += gridSize) {
     context.moveTo(x, 0);
     context.lineTo(x, image.height);
+  }
+  for (let y = gridSize; y < image.height; y += gridSize) {
     context.moveTo(0, y);
     context.lineTo(image.width, y);
   }
@@ -155,6 +160,7 @@ export interface MarksLayer {
   selected: number;
   color: string;
   showGrid: boolean;
+  gridSize?: number;
   cursor?: ImagePoint;
   preview?: AnnotationMark;
 }
@@ -167,7 +173,7 @@ export function drawMarksLayer(layer: MarksLayer): void {
   context.strokeStyle = canvasColor(layer.canvas, layer.color);
   context.fillStyle = context.strokeStyle;
   context.lineWidth = MARK_LINE_WIDTH / layer.viewport.scale;
-  if (layer.showGrid) drawGrid(context, layer.image, layer.viewport.scale);
+  if (layer.showGrid) drawGrid(context, layer);
   drawMarkPaths(context, layer);
   const selected = layer.marks[layer.selected];
   if (selected) drawSelection(context, selected, layer.viewport.scale);

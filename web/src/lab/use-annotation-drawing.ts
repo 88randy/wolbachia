@@ -44,6 +44,7 @@ function marksLayer(options: DrawingOptions, canvas: HTMLCanvasElement): MarksLa
     selected,
     color: props.markerColor,
     showGrid: props.showGrid,
+    gridSize: props.gridSize,
     cursor,
     preview: pointer.previewIndex < 0 ? pointer.preview : undefined,
   };

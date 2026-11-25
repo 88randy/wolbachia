@@ -17,6 +17,7 @@ export function AnnotationLoadedBody({ workspace, view, photo, url }: Props) {
       {view.showSettings && (
         <AnnotationSettings
           {...view}
+          userId={workspace.scope.identity.userId}
           marks={workspace.editor.state.marks}
           width={photo.width}
           height={photo.height}

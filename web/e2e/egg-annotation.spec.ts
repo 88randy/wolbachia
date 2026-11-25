@@ -606,6 +606,77 @@ async function expectWorkspaceLayout(page: Page, canvas: ReturnType<Page["locato
   }
 }
 
+async function exerciseSettingsControls(page: Page, text: (key: MessageKey) => string) {
+  const panel = page.getByRole("dialog", { name: text("labAnnotation.editor.panel"), exact: true });
+  const width = panel.getByRole("slider", { name: text("labAnnotation.editor.defaultWidth") });
+  await width.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(width).toHaveValue("13");
+  await page.keyboard.press("Shift+ArrowUp");
+  await expect(width).toHaveValue("23");
+  const grid = panel.getByRole("slider", { name: text("labAnnotation.editor.gridSize") });
+  await grid.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(grid).toHaveValue("320");
+  const swatches = panel.getByRole("radiogroup", {
+    name: text("labAnnotation.editor.markerColor"),
+  });
+  await expect(swatches.getByRole("radio")).toHaveCount(5);
+  await swatches.getByRole("radio", { checked: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(swatches.getByRole("radio").nth(1)).toBeChecked();
+  await expect(swatches.getByRole("radio").nth(1)).toBeFocused();
+  await panel.getByRole("button", { name: text("labAnnotation.editor.switchToBox") }).click();
+  await expect(
+    panel.getByRole("button", { name: text("labAnnotation.editor.switchToPoint") }),
+  ).toBeVisible();
+  const guide = panel.getByRole("button", { name: text("labAnnotation.editor.guide") });
+  await guide.click();
+  await expect(
+    page.getByRole("dialog", { name: text("labAnnotation.tips.title"), exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(guide).toBeFocused();
+}
+
+async function expectSettingsLayout(page: Page, text: (key: MessageKey) => string) {
+  const panel = page.getByRole("dialog", { name: text("labAnnotation.editor.panel"), exact: true });
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("Viewport geometry unavailable");
+  await expect
+    .poll(async () => {
+      const bounds = await panel.boundingBox();
+      return bounds ? bounds.x + bounds.width : Infinity;
+    })
+    .toBeLessThanOrEqual(viewport.width);
+  const bounds = await panel.boundingBox();
+  if (!bounds) throw new Error("Settings geometry unavailable");
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.y).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+  expect(bounds.width).toBeLessThanOrEqual(Math.min(viewport.width, 340));
+  expect(
+    await panel.evaluate((element) =>
+      [element, ...element.querySelectorAll("*")].some(
+        (child) =>
+          /auto|scroll/.test(getComputedStyle(child).overflowY) &&
+          child.scrollHeight > child.clientHeight,
+      ),
+    ),
+  ).toBe(true);
+  const close = panel.getByRole("button", { name: text("common.actions.close"), exact: true });
+  const guide = panel.getByRole("button", { name: text("labAnnotation.editor.guide") });
+  await guide.focus();
+  await expect(panel.locator("tbody th").first()).toHaveCSS("text-align", "start");
+  await page.keyboard.press("Tab");
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(guide).toBeFocused();
+  await expectNoHorizontalScroll(page);
+  await expectNoAxeViolations(page);
+}
+
 for (const theme of ["light", "dark"] as const) {
   for (const language of ["es-MX", "en"] as const) {
     test(`W35 photo annotation keyboard and reflow: ${theme}, ${language}`, async ({
@@ -655,12 +726,14 @@ for (const theme of ["light", "dark"] as const) {
       await page.keyboard.press("Control+Shift+z");
       await expect(page.locator(COUNTER)).toContainText("2");
       await page.keyboard.press("g");
+      const beforeSettings = await canvas.boundingBox();
       await page.keyboard.press("s");
       await expect(page.getByLabel(text("labAnnotation.editor.defaultWidth"))).toBeVisible();
       await expect(
-        page.getByRole("switch", { name: text("labAnnotation.editor.grid"), exact: true }),
+        page.getByRole("switch", { name: text("labAnnotation.editor.gridLabel"), exact: true }),
       ).toBeChecked();
-      const beforeSettings = await canvas.boundingBox();
+      await exerciseSettingsControls(page, text);
+      expect(await canvas.boundingBox()).toEqual(beforeSettings);
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(canvas).toBeFocused();
@@ -702,6 +775,16 @@ for (const theme of ["light", "dark"] as const) {
         await expectStableDraftStatus(page, canvas);
         await expectUncoveredCanvas(canvas);
         await expectNoAxeViolations(page);
+        const beforePanel = await canvas.boundingBox();
+        await page.keyboard.press("s");
+        await expectSettingsLayout(page, text);
+        expect(await canvas.boundingBox()).toEqual(beforePanel);
+        await page.screenshot({
+          path: testInfo.outputPath(`W35-settings-${String(viewport.width)}.png`),
+          fullPage: true,
+        });
+        await page.keyboard.press("Escape");
+        await expect(canvas).toBeFocused();
         await page
           .getByRole("button", { name: text("labAnnotation.editor.finish"), exact: true })
           .click();

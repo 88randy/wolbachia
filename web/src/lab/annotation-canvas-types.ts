@@ -22,6 +22,7 @@ export interface AnnotationCanvasProps {
   defaultBox: ImageSize;
   markerColor: string;
   showGrid: boolean;
+  gridSize?: number;
   onZoomChange?: (scale: number) => void;
   onUndo?: () => void;
   onRedo?: () => void;

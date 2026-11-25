@@ -7,22 +7,26 @@ const SHORTCUTS = [
   "point",
   "pan",
   "zoom",
+  "grid",
   "fit",
   "actualSize",
-  "grid",
   "settings",
+  "undo",
+  "redo",
+  "holdPan",
+  "rightPan",
+  "delete",
+  "removeAtPointer",
+  "closePanel",
   "help",
   "add",
   "cycle",
   "move",
   "resize",
-  "delete",
-  "removeAtPointer",
-  "undo",
-  "redo",
 ] as const;
 export function AnnotationShortcutTable() {
   const { t } = useTranslation();
+  const modifier = /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "⌘" : "Ctrl";
   return (
     <table className={styles.shortcuts}>
       <caption className={styles.visuallyHidden}>{t("labAnnotation.shortcuts.title")}</caption>
@@ -37,7 +41,7 @@ export function AnnotationShortcutTable() {
           <tr key={action}>
             <th scope="row">{t(`labAnnotation.shortcuts.${action}`)}</th>
             <td>
-              <kbd>{t(`labAnnotation.shortcuts.${action}Key`)}</kbd>
+              <kbd>{t(`labAnnotation.shortcuts.${action}Key`).replace("Ctrl", modifier)}</kbd>
             </td>
           </tr>
         ))}

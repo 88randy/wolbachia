@@ -1,25 +1,20 @@
 import { useRef, useState, type RefObject } from "react";
 import type { AnnotationCanvasHandle, AnnotationTool } from "./EggAnnotationCanvas";
-import type { AnnotationColor } from "./AnnotationSettings";
-function useAnnotationPreferences() {
-  const [defaultBox, setDefaultBox] = useState({ width: 12, height: 24 });
-  const [color, setColor] = useState<AnnotationColor>("action");
-  return { defaultBox, setDefaultBox, color, setColor };
-}
-export function useAnnotationWorkspaceView() {
+import { useAnnotationPreferences } from "./use-annotation-preferences";
+export function useAnnotationWorkspaceView(userId = "") {
   const canvas = useRef<AnnotationCanvasHandle>(null);
-  const tools = useAnnotationTool(canvas);
+  const dialogs = useAnnotationDialogs();
+  const tools = useAnnotationTool(canvas, !dialogs.showSettings);
   const [zoom, onZoomChange] = useState(1);
   const [showGrid, setGrid] = useState(false);
-  const dialogs = useAnnotationDialogs();
-  const preferences = useAnnotationPreferences();
+  const preferences = useAnnotationPreferences(userId);
   const onCloseAutoFocus = (event: Event) => {
     event.preventDefault();
     canvas.current?.focus();
   };
   const onGrid = () => {
     setGrid((value) => !value);
-    canvas.current?.focus();
+    if (!dialogs.showSettings) canvas.current?.focus();
   };
   return {
     ...preferences,
@@ -54,11 +49,14 @@ function useAnnotationDialogs() {
     },
   };
 }
-function useAnnotationTool(canvas: RefObject<AnnotationCanvasHandle | null>) {
+function useAnnotationTool(
+  canvas: RefObject<AnnotationCanvasHandle | null>,
+  shouldFocusCanvas: boolean,
+) {
   const [tool, setTool] = useState<AnnotationTool>("box");
   const onToolChange = (next: AnnotationTool) => {
     setTool(next);
-    canvas.current?.focus();
+    if (shouldFocusCanvas) canvas.current?.focus();
   };
   return { tool, onToolChange };
 }

@@ -81,6 +81,7 @@
 }
 .shortcuts {
   inline-size: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: start;
   font-size: var(--web-type-label-font-size);
@@ -96,7 +97,22 @@
 .shortcuts thead th {
   color: var(--color-text-secondary);
 }
+.shortcuts th {
+  text-align: start;
+}
+.shortcuts td,
+.shortcuts thead th:last-child {
+  inline-size: 42%;
+  text-align: end;
+}
 .shortcuts kbd {
+  display: inline-block;
+  max-inline-size: 100%;
+  padding: var(--space-0-5);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-sm);
   font-family: var(--font-family-mono);
   font-size: var(--web-type-caption-font-size);
   white-space: normal;

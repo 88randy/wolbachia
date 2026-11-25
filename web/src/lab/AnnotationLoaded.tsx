@@ -16,7 +16,7 @@ export function AnnotationLoaded({
   workspace: AnnotationWorkspaceState;
   onFinish: () => void;
 }) {
-  const view = useAnnotationWorkspaceView();
+  const view = useAnnotationWorkspaceView(workspace.scope.identity.userId);
   const navigate = useNavigate();
   const photo = workspace.editor.upload.photo;
   const url = useBlobUrl(photo?.file);

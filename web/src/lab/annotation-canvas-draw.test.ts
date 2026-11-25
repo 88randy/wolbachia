@@ -5,6 +5,66 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+test.each([0.25, 2])("draws adjustable square grid cells in image pixels at zoom %s", (scale) => {
+  const canvas = document.createElement("canvas");
+  const context = {
+    canvas,
+    setTransform: vi.fn(),
+    clearRect: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    setLineDash: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+  };
+  vi.spyOn(canvas, "getContext").mockReturnValue(context as unknown as CanvasRenderingContext2D);
+  const layer = {
+    canvas,
+    size: { width: 600, height: 600 },
+    viewport: { x: 40, y: 70, scale },
+    image: { width: 1000, height: 700 },
+    marks: [],
+    selected: -1,
+    color: "blue",
+    showGrid: true,
+  };
+  drawMarksLayer({ ...layer, gridSize: 200 });
+  expect(context.translate).toHaveBeenCalledWith(40, 70);
+  expect(context.scale).toHaveBeenCalledWith(scale, scale);
+  expect(context.moveTo.mock.calls).toEqual([
+    [200, 0],
+    [400, 0],
+    [600, 0],
+    [800, 0],
+    [0, 200],
+    [0, 400],
+    [0, 600],
+  ]);
+  expect(context.lineTo.mock.calls).toEqual([
+    [200, 700],
+    [400, 700],
+    [600, 700],
+    [800, 700],
+    [1000, 200],
+    [1000, 400],
+    [1000, 600],
+  ]);
+  context.moveTo.mockClear();
+  drawMarksLayer({ ...layer, gridSize: 310 });
+  expect(context.moveTo.mock.calls).toEqual([
+    [310, 0],
+    [620, 0],
+    [930, 0],
+    [0, 310],
+    [0, 620],
+  ]);
+});
+
 test.each([0.25, 1, 4])(
   "draws outlined boxes, filled points and selection handles at constant screen sizes at zoom %s",
   (scale) => {

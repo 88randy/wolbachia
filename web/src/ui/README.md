@@ -27,6 +27,8 @@ here. Import the component from its own file.
   the trigger. Controlled overlays opened without a trigger can supply
   `onCloseAutoFocus` to restore their editor or invoking control. Use sheets for
   supplementary detail; screens own shareable URL state.
+  `className` customizes a surface's dimensions; `titleIcon` adds a decorative
+  icon beside the translated title while retaining the shared close control.
 - `ConfirmDialog`: `trigger`, `title`, `consequence`, `actionLabel`, `onConfirm`.
   Use only for irreversible/high-impact actions; Cancel receives initial focus.
   Async business flows own validation and submission outside this primitive.

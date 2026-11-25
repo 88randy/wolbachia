@@ -1,5 +1,6 @@
 import * as Primitive from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { DialogHeader } from "./DialogHeader";
 import {
   DIALOG_CLASS,
@@ -10,6 +11,8 @@ import {
 export interface DialogFrameProps {
   trigger: ReactNode;
   title: string;
+  titleIcon?: ReactNode;
+  className?: string;
   description: string;
   children: ReactNode;
   isSheet?: boolean;
@@ -26,6 +29,7 @@ export function DialogFrame({
   open,
   onOpenChange,
   onCloseAutoFocus,
+  ...appearance
 }: DialogFrameProps) {
   return (
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
@@ -33,10 +37,10 @@ export function DialogFrame({
       <Primitive.Portal>
         <Primitive.Overlay className={OVERLAY_CLASS} />
         <Primitive.Content
-          className={isSheet ? SHEET_CLASS : DIALOG_CLASS}
+          className={cn(isSheet ? SHEET_CLASS : DIALOG_CLASS, appearance.className)}
           onCloseAutoFocus={onCloseAutoFocus}
         >
-          <DialogHeader title={title} />
+          <DialogHeader title={title} icon={appearance.titleIcon} />
           <Primitive.Description className={DIALOG_DESCRIPTION_CLASS}>
             {description}
           </Primitive.Description>
