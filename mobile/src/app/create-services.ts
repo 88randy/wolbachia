@@ -52,6 +52,8 @@ import { createSamples } from "../features/samples/create-samples.ts";
 import type { SampleService } from "../features/samples/service.ts";
 import { createHistory } from "../features/history/service.ts";
 import type { HistoryService } from "../features/history/service.ts";
+import { createCalendar } from "../features/calendar/create-calendar.ts";
+import type { CalendarService } from "../features/calendar/service.ts";
 import { createTraining } from "../features/training/create-training.ts";
 import type { TrainingService } from "../features/training/service.ts";
 import { SettingsService } from "../screens/settings/settings-service.ts";
@@ -63,6 +65,7 @@ export interface AppServices {
   readonly samples: SampleService;
   readonly releases: ReleaseService;
   readonly history: HistoryService;
+  readonly calendar: CalendarService;
   readonly training: TrainingService;
   readonly settings: SettingsService;
   readonly scanner: ScannerService;
@@ -137,8 +140,10 @@ function createShift(
 function createReadScreens(
   deps: Parameters<typeof createTraining>[0] & { readonly attachments: Attachments },
 ) {
+  const history = createHistory({ ...deps, current: deps.attachments.session.deps.current });
   return {
-    history: createHistory({ ...deps, current: deps.attachments.session.deps.current }),
+    history,
+    calendar: createCalendar({ history, bundle: deps.bundle, auth: deps.auth }),
     training: createTraining(deps),
     settings: new SettingsService({ ...deps, appVersion: appManifest.version }),
   };

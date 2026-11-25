@@ -1,3 +1,5 @@
+import type { LngLatPair } from "../../maps/map-types.ts";
+import { captureLocalDate } from "../day/capture-local-date.ts";
 import { dayEndAfter } from "./day-end.ts";
 import type { TrackFix } from "./simplify-track.ts";
 import { keepFix } from "./track-filter.ts";
@@ -34,6 +36,26 @@ export type TrackNotice =
  * heartbeats wait until the oldest is this old, so a still hour is one segment instead of twelve.
  */
 export const IDLE_CUT_MS = 60 * 60_000;
+
+const HOUR_MS = 3_600_000;
+/** UTC offsets span -12 h..+14 h: this window around UTC midnight of a date holds its local day. */
+const DAY_BEFORE_MS = 14 * HOUR_MS;
+const DAY_AFTER_MS = 38 * HOUR_MS;
+/** Every UTC offset is a multiple of 15 min, so one bucket never spans two local dates. */
+const OFFSET_STEP_MS = 15 * 60_000;
+
+/** Points grouped by shift in time order: two shifts never join into one false segment. */
+function linesByShift(
+  points: readonly (TrackFix & { readonly shiftId: string })[],
+): readonly (readonly LngLatPair[])[] {
+  const lines = new Map<string, LngLatPair[]>();
+  for (const point of points) {
+    const line = lines.get(point.shiftId) ?? [];
+    line.push([point.lng, point.lat]);
+    lines.set(point.shiftId, line);
+  }
+  return [...lines.values()];
+}
 
 export interface TrackSnapshot {
   /** Bumped after every local change, so the map reloads its line. */
@@ -114,6 +136,33 @@ export class TrackRecorder {
     return active === null
       ? Promise.resolve([])
       : this.#deps.store.listForShift(active.owner, active.shiftId);
+  }
+
+  /**
+   * The owner's local lines of one organization-local `date` (YYYY-MM-DD), one per shift; empty
+   * when signed out or once the points were pruned. Read-only, so it does not join the queue.
+   */
+  async linesForDay(date: string, timeZone: string): Promise<readonly (readonly LngLatPair[])[]> {
+    const owner = this.#deps.identity();
+    if (owner === null) return [];
+    const dayStart = Date.parse(`${date}T00:00:00.000Z`);
+    if (!Number.isFinite(dayStart)) return [];
+    const points = await this.#deps.store.listBetween(
+      owner,
+      dayStart - DAY_BEFORE_MS,
+      dayStart + DAY_AFTER_MS,
+    );
+    const dates = new Map<number, string | null>();
+    const localDate = (at: number) => {
+      const bucket = Math.floor(at / OFFSET_STEP_MS);
+      if (!dates.has(bucket))
+        dates.set(
+          bucket,
+          captureLocalDate(new Date(bucket * OFFSET_STEP_MS).toISOString(), timeZone),
+        );
+      return dates.get(bucket);
+    };
+    return linesByShift(points.filter((point) => localDate(point.at) === date));
   }
 
   reconcile = (): Promise<void> => this.#serial(() => this.#reconcile());

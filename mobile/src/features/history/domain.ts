@@ -16,10 +16,20 @@ export interface HistoryEntry {
   readonly isServerDecision: boolean;
   readonly observation: { readonly es: string; readonly en: string } | null;
 }
+/** D1 (#373): an own outbox event without a point subject; never codes, reason or payload. */
+export interface UnscopedEntry {
+  readonly id: string;
+  readonly kind: string;
+  readonly time: string | null;
+  readonly status: OutboxStatus;
+}
 export interface HistoryView {
   readonly available: boolean;
   readonly entries: readonly HistoryEntry[];
+  /** P33 only; P29 ignores it. */
+  readonly unscoped: readonly UnscopedEntry[];
 }
+export const UNAVAILABLE_HISTORY: HistoryView = { available: false, entries: [], unscoped: [] };
 export interface HistoryGroup {
   readonly id: string;
   readonly date: string | null;

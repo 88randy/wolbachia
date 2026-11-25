@@ -76,6 +76,20 @@ function sourceSubjects(event: OutboxEvent, scope: Scope): readonly Subject[] {
   );
   return sources.flatMap((row) => row.subjects);
 }
+const POINT_KEYS = ["sampling_point_id", "point_id", "ovitrap_id"] as const;
+/**
+ * D1 (#373): any point reference, known or not, keeps the P29 grant check, so a reassigned
+ * point's events stay hidden. A void inherits its original; a missing original or a void of a
+ * void counts as a point (no subject proof).
+ */
+export function hasPointSubject(event: OutboxEvent, events: readonly OutboxEvent[]): boolean {
+  const target = event.envelope.voids_event_id;
+  const subject = target
+    ? events.find((candidate) => candidate.envelope.id === target)?.envelope
+    : event.envelope;
+  if (!subject || subject.voids_event_id) return true;
+  return POINT_KEYS.some((key) => text(subject.payload, key) !== null);
+}
 /** Missing original subject proof is unavailable, never an organization-wide display grant. */
 export function permitsLocal(event: OutboxEvent, scope: Scope): boolean {
   const target = event.envelope.voids_event_id;

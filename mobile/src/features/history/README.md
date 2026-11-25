@@ -17,6 +17,11 @@ block and quadrant relation; voids inherit their exact source's proof. Unscoped
 local facts remain in the inbox/outbox and are absent here until genuine server
 source or whole-shift history supplies their subjects. A narrowed scope never
 authorizes a retained old code, reason or observation.
+P33 (#373, D1): the same snapshot and gates also return `unscoped`, own outbox
+events P29 hides that reference no point (`sampling_point_id`, `point_id`,
+`ovitrap_id`; a void inherits its original), without `track.segment` and
+`location.ping`. They carry only id, type, device time and outbox status; P29
+ignores them (`calendar-store.test.ts`).
 Code search uses explicit local code/reference fields; it searches no arbitrary
 payload notes. Timeline grouping uses the organization's timezone.
 

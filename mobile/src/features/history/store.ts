@@ -5,11 +5,11 @@ import { readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
 import { readHistoryEntry } from "../ovitrap-lifecycle/history-contract.ts";
 import { CURRENT_CAPTURE_CONTEXT } from "../ovitrap-lifecycle/context-sql.ts";
-import { localHistory, serverHistory, text } from "./domain.ts";
-import type { HistoryView, HistoryEntry } from "./domain.ts";
+import { localHistory, serverHistory, text, UNAVAILABLE_HISTORY } from "./domain.ts";
+import type { HistoryView, HistoryEntry, UnscopedEntry } from "./domain.ts";
 import type { Draft } from "../ovitrap-check/types.ts";
 import type { Schemas } from "@wolbachia/api-client";
-import { permitsLocal, permitsSubjects } from "./scope.ts";
+import { hasPointSubject, permitsLocal, permitsSubjects } from "./scope.ts";
 
 function codes(payload: object, index: ReadonlyMap<string, string>): readonly string[] {
   const direct = ["code", "bag_code", "motorcycle_code", "point_code"].map((key) =>
@@ -82,6 +82,25 @@ function remoteEntries(snapshot: SqlRow, local: readonly HistoryEntry[]): readon
       ),
     );
 }
+/** Track fixes and pings are not activity rows (#373). */
+const UNLISTED_TYPES: readonly string[] = ["track.segment", "location.ping"];
+/** D1 (#373): own events P29 cannot place in a granted scope and that name no point. */
+function unscopedEntries(snapshot: SqlRow): readonly UnscopedEntry[] {
+  const scope = historyScope(snapshot);
+  return scope.events
+    .filter(
+      (event) =>
+        !UNLISTED_TYPES.includes(event.envelope.type) &&
+        !permitsLocal(event, scope) &&
+        !hasPointSubject(event, scope.events),
+    )
+    .map((event) => ({
+      id: event.envelope.id,
+      kind: event.envelope.type,
+      time: event.envelope.device_time,
+      status: event.status,
+    }));
+}
 function historyScope(snapshot: SqlRow) {
   const stored = JSON.parse(readText(snapshot, "context")) as {
     context: Schemas["CaptureContext"];
@@ -110,8 +129,12 @@ export async function readHistory(
     identity.sessionId,
   ]);
   // A retained outbox is not a current display grant when scope/readiness is unavailable.
-  if (snapshot?.available !== 1) return { available: false, entries: [] };
-  if (historyScope(snapshot).grants.length === 0) return { available: false, entries: [] };
+  if (snapshot?.available !== 1) return UNAVAILABLE_HISTORY;
+  if (historyScope(snapshot).grants.length === 0) return UNAVAILABLE_HISTORY;
   const local = localEntries(snapshot, author);
-  return { available: true, entries: [...local, ...remoteEntries(snapshot, local)] };
+  return {
+    available: true,
+    entries: [...local, ...remoteEntries(snapshot, local)],
+    unscoped: unscopedEntries(snapshot),
+  };
 }
