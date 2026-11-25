@@ -58,6 +58,7 @@ function recorderDeps(deps: Dependencies): TrackRecorderDeps {
     store: new TrackStore(deps.db),
     native: nativeTrack,
     identity: () => ownerOf(deps),
+    isUnlocked: () => deps.auth.getSnapshot().phase === "unlocked",
     timeZone: () => deps.auth.getSnapshot().profile?.organization?.timezone ?? null,
     rules: () => readRules(kv),
     texts: () => notificationTexts(kv),

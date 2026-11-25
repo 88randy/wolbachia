@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildCalendar, calendarStatus } from "../src/features/calendar/domain.ts";
+import {
+  buildCalendar,
+  CALENDAR_WINDOW_DAYS,
+  calendarStatus,
+} from "../src/features/calendar/domain.ts";
+import { LOCAL_RETENTION_MS } from "../src/features/track/track-store.ts";
 import type { CalendarInput } from "../src/features/calendar/domain.ts";
 import type { CachedTask } from "../src/features/day/types.ts";
 import type { HistoryEntry } from "../src/features/history/domain.ts";
@@ -124,7 +129,8 @@ void test("P33 task status table: done, scheduled, missed and unconfirmed", () =
 void test("P33 history status table: D2 reviewed stays reviewed, a delivered void reads as voided", () => {
   assert.equal(calendarStatus(entry({ status: "reviewed" }), TODAY), "reviewed");
   assert.equal(calendarStatus(entry({ kind: "record.void", status: "sent" }), TODAY), "voided");
-  assert.equal(calendarStatus(entry({ kind: "record.void", status: "pending" }), TODAY), "pending");
+  for (const status of ["pending", "rejected", "in_review"] as const)
+    assert.equal(calendarStatus(entry({ kind: "record.void", status }), TODAY), status);
 });
 
 void test("P33 hasPending marks unsent activity and scheduled or missed tasks only", () => {
@@ -154,4 +160,22 @@ void test("P33 hasPending marks unsent activity and scheduled or missed tasks on
     false,
     "local",
   ]);
+});
+
+void test("P33 a day outside the window is empty even when the outbox still holds its facts", () => {
+  const result = calendar({
+    entries: [entry({ time: "2026-10-10T15:00:00.000Z", status: "pending" })],
+    tasks: [task("2026-10-10", false)],
+  });
+  assert.deepEqual(day(result, "2026-10-10"), {
+    date: "2026-10-10",
+    items: [],
+    hasActivity: false,
+    hasPending: false,
+    isInWindow: false,
+  });
+});
+
+void test("P33 the calendar window never exceeds the phone's track retention", () => {
+  assert.ok(CALENDAR_WINDOW_DAYS * 86_400_000 <= LOCAL_RETENTION_MS);
 });

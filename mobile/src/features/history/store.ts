@@ -9,7 +9,7 @@ import { localHistory, serverHistory, text, UNAVAILABLE_HISTORY } from "./domain
 import type { HistoryView, HistoryEntry, UnscopedEntry } from "./domain.ts";
 import type { Draft } from "../ovitrap-check/types.ts";
 import type { Schemas } from "@wolbachia/api-client";
-import { hasPointSubject, permitsLocal, permitsSubjects } from "./scope.ts";
+import { isUnscopedOwn, permitsLocal, permitsSubjects } from "./scope.ts";
 
 function codes(payload: object, index: ReadonlyMap<string, string>): readonly string[] {
   const direct = ["code", "bag_code", "motorcycle_code", "point_code"].map((key) =>
@@ -82,18 +82,11 @@ function remoteEntries(snapshot: SqlRow, local: readonly HistoryEntry[]): readon
       ),
     );
 }
-/** Track fixes and pings are not activity rows (#373). */
-const UNLISTED_TYPES: readonly string[] = ["track.segment", "location.ping"];
 /** D1 (#373): own events P29 cannot place in a granted scope and that name no point. */
 function unscopedEntries(snapshot: SqlRow): readonly UnscopedEntry[] {
   const scope = historyScope(snapshot);
   return scope.events
-    .filter(
-      (event) =>
-        !UNLISTED_TYPES.includes(event.envelope.type) &&
-        !permitsLocal(event, scope) &&
-        !hasPointSubject(event, scope.events),
-    )
+    .filter((event) => !permitsLocal(event, scope) && isUnscopedOwn(event, scope))
     .map((event) => ({
       id: event.envelope.id,
       kind: event.envelope.type,

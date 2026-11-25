@@ -44,7 +44,23 @@ const DAY_AFTER_MS = 38 * HOUR_MS;
 /** Every UTC offset is a multiple of 15 min, so one bucket never spans two local dates. */
 const OFFSET_STEP_MS = 15 * 60_000;
 
-/** Points grouped by shift in time order: two shifts never join into one false segment. */
+/** Local date per fix time, formatting once per 15-minute bucket. */
+function localDateOf(timeZone: string): (at: number) => string | null {
+  const dates = new Map<number, string | null>();
+  return (at) => {
+    const bucket = Math.floor(at / OFFSET_STEP_MS);
+    const known = dates.get(bucket);
+    if (known !== undefined) return known;
+    const date = captureLocalDate(new Date(bucket * OFFSET_STEP_MS).toISOString(), timeZone);
+    dates.set(bucket, date);
+    return date;
+  };
+}
+
+/**
+ * Points grouped by shift in time order: two shifts never join into one false segment. A line
+ * needs two points (a single fix is no LineString).
+ */
 function linesByShift(
   points: readonly (TrackFix & { readonly shiftId: string })[],
 ): readonly (readonly LngLatPair[])[] {
@@ -54,7 +70,7 @@ function linesByShift(
     line.push([point.lng, point.lat]);
     lines.set(point.shiftId, line);
   }
-  return [...lines.values()];
+  return [...lines.values()].filter((line) => line.length >= 2);
 }
 
 export interface TrackSnapshot {
@@ -68,6 +84,8 @@ export interface TrackRecorderDeps {
   readonly native: NativeTrackApi;
   /** Owner key of the signed-in courier; null once the session ended (logout, revocation). */
   readonly identity: () => string | null;
+  /** Reads of private history (P33b) need an unlocked session. */
+  readonly isUnlocked: () => boolean;
   /** IANA zone of the signed-in organization; null falls back to the device zone. */
   readonly timeZone: () => string | null;
   readonly rules: () => Promise<TrackRules>;
@@ -144,27 +162,18 @@ export class TrackRecorder {
    */
   async linesForDay(date: string, timeZone: string): Promise<readonly (readonly LngLatPair[])[]> {
     const owner = this.#deps.identity();
-    if (owner === null) return [];
     const dayStart = Date.parse(`${date}T00:00:00.000Z`);
-    if (!Number.isFinite(dayStart)) return [];
+    if (owner === null || !this.#deps.isUnlocked() || !Number.isFinite(dayStart)) return [];
     const points = await this.#deps.store.listBetween(
       owner,
       dayStart - DAY_BEFORE_MS,
       dayStart + DAY_AFTER_MS,
     );
-    const dates = new Map<number, string | null>();
-    const localDate = (at: number) => {
-      const bucket = Math.floor(at / OFFSET_STEP_MS);
-      if (!dates.has(bucket))
-        dates.set(
-          bucket,
-          captureLocalDate(new Date(bucket * OFFSET_STEP_MS).toISOString(), timeZone),
-        );
-      return dates.get(bucket);
-    };
+    // A lock or owner change during the read shows nothing.
+    if (this.#deps.identity() !== owner || !this.#deps.isUnlocked()) return [];
+    const localDate = localDateOf(timeZone);
     return linesByShift(points.filter((point) => localDate(point.at) === date));
   }
-
   reconcile = (): Promise<void> => this.#serial(() => this.#reconcile());
 
   /**

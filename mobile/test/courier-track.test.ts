@@ -107,6 +107,7 @@ function fixture(
     store: options.store ?? new TrackStore(db),
     native,
     identity: () => state.owner,
+    isUnlocked: () => true,
     timeZone: () => "America/Merida",
     rules: () => Promise.resolve(RULES),
     texts: () => Promise.resolve({ title: "t", body: "b" }),

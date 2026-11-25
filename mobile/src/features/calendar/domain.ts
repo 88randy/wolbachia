@@ -2,7 +2,6 @@ import { DEFAULT_TIME_ZONE } from "../../sync/format-time.ts";
 import { captureLocalDate } from "../day/capture-local-date.ts";
 import type { CachedTask } from "../day/types.ts";
 import type { HistoryEntry, UnscopedEntry } from "../history/domain.ts";
-import { LOCAL_RETENTION_MS } from "../track/track-store.ts";
 
 export type CalendarStatus =
   | "pending"
@@ -52,14 +51,21 @@ export interface CalendarInput {
 }
 
 const DAY_MS = 86_400_000;
-/** Past window: today and the previous days the phone keeps (owner decision, 30 days). */
-const WINDOW_DAYS = LOCAL_RETENTION_MS / DAY_MS;
+/**
+ * Owner decision (#373): past = today and the 29 previous local days. It must stay within the
+ * track retention (`LOCAL_RETENTION_MS`) so a window day never promises pruned points.
+ */
+export const CALENDAR_WINDOW_DAYS = 30;
 const PENDING: readonly CalendarStatus[] = ["pending", "sending", "error", "scheduled", "missed"];
-const UNSENT: readonly CalendarStatus[] = ["pending", "sending", "error"];
 
 const addDays = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00.000Z`) + days * DAY_MS).toISOString().slice(0, 10);
 const weekday = (date: string) => new Date(`${date}T00:00:00.000Z`).getUTCDay();
+/** Unparsable times sort last. */
+const instant = (time: string | null) => {
+  const value = time === null ? NaN : Date.parse(time);
+  return Number.isFinite(value) ? value : -Infinity;
+};
 
 /** Invalid or missing zone falls back to the organization default, as P29 does. */
 export function resolveTimeZone(timeZone: string | null): string {
@@ -81,7 +87,8 @@ export function calendarStatus(
   today: string,
 ): CalendarStatus {
   if ("task" in item) return taskStatus(item, today);
-  if (item.kind === "record.void" && !UNSENT.includes(item.status)) return "voided";
+  // Only a delivered void voids; a rejected or in-review one keeps its own state.
+  if (item.kind === "record.void" && item.status === "sent") return "voided";
   return item.status;
 }
 
@@ -114,8 +121,7 @@ function activityItems(input: CalendarInput): readonly CalendarItem[] {
     source: "local",
   }));
   return [...scoped, ...unscoped].sort(
-    (left, right) =>
-      (right.time ?? "").localeCompare(left.time ?? "") || left.id.localeCompare(right.id),
+    (left, right) => instant(right.time) - instant(left.time) || left.id.localeCompare(right.id),
   );
 }
 function sortedTasks(tasks: readonly CachedTask[]): readonly CachedTask[] {
@@ -165,26 +171,28 @@ function monthWeeks(first: string, last: string, epiWeek: string | null): readon
 
 /**
  * The month grids and their days: past = today and the 29 previous local days; future = the
- * dates of downloaded tasks. Days outside are kept but marked `isInWindow: false`.
+ * dates of downloaded tasks. Days outside are laid out empty with `isInWindow: false`: the
+ * outbox never deletes, so older facts must not light up the grid.
  */
 export function buildCalendar(input: CalendarInput): {
   readonly days: readonly CalendarDay[];
   readonly monthWeeks: readonly CalendarMonth[];
 } {
   const { dated, undated } = itemsByDate(input);
-  const first = addDays(input.today, 1 - WINDOW_DAYS);
-  const bounds = [first, input.today, ...input.tasks.map((row) => row.task.date)].sort();
-  const last = bounds[bounds.length - 1] ?? input.today;
-  const months = monthWeeks(bounds[0] ?? first, last, input.epiWeek);
+  const first = addDays(input.today, 1 - CALENDAR_WINDOW_DAYS);
+  const last =
+    [input.today, ...input.tasks.map((row) => row.task.date)].sort().pop() ?? input.today;
+  const months = monthWeeks(first, last, input.epiWeek);
   const days = [...new Set(months.flatMap((month) => month.weeks.flat()))].map(
     (date): CalendarDay => {
-      const items = dated.get(date) ?? [];
+      const isInWindow = date >= first && date <= last;
+      const items = isInWindow ? (dated.get(date) ?? []) : [];
       return {
         date,
         items: date === input.today ? [...items, ...undated] : items,
         hasActivity: items.some((item) => item.source !== "task"),
         hasPending: items.some((item) => PENDING.includes(item.status)),
-        isInWindow: date >= first && date <= last,
+        isInWindow,
       };
     },
   );

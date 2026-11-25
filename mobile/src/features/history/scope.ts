@@ -66,29 +66,54 @@ function eventPoint(event: OutboxEvent, resources: readonly object[]): string | 
   );
   return trap ? text(trap, "sampling_point_id") : null;
 }
-function sourceSubjects(event: OutboxEvent, scope: Scope): readonly Subject[] {
-  const point = eventPoint(event, scope.resources);
-  if (point) return pointSubject(point, scope.resources);
-  const sources = scope.history.filter(
+function serverSources(event: OutboxEvent, scope: Scope) {
+  return scope.history.filter(
     (row) =>
       text(row, "source_event_id") === event.envelope.id ||
       text(row, "proposal_event_id") === event.envelope.id,
   );
-  return sources.flatMap((row) => row.subjects);
 }
+function sourceSubjects(event: OutboxEvent, scope: Scope): readonly Subject[] {
+  const point = eventPoint(event, scope.resources);
+  if (point) return pointSubject(point, scope.resources);
+  return serverSources(event, scope).flatMap((row) => row.subjects);
+}
+/** D1 (#373): the exact own types P33 may list without a granted subject (verified producers). */
+export const UNSCOPED_TYPES: readonly string[] = [
+  "fuel.load",
+  "supplies.receive",
+  "supplies.reconcile",
+  "incident.report",
+  "emergency.accident",
+  "shift.open",
+  "shift.close",
+];
 const POINT_KEYS = ["sampling_point_id", "point_id", "ovitrap_id"] as const;
+/** No point reference and no server history row placing it outside the current grant. */
+function isUnplaced(event: OutboxEvent, scope: Scope): boolean {
+  return (
+    !POINT_KEYS.some((key) => text(event.envelope.payload, key) !== null) &&
+    serverSources(event, scope).every(
+      (row) => row.subjects.length === 0 || permitsSubjects(scope.grants, row.subjects),
+    )
+  );
+}
 /**
- * D1 (#373): any point reference, known or not, keeps the P29 grant check, so a reassigned
- * point's events stay hidden. A void inherits its original; a missing original or a void of a
- * void counts as a point (no subject proof).
+ * D1 (#373): exact whitelisted types only, never inference (#113). A `record.void` qualifies
+ * through its original; a missing original or a void of a void stays hidden.
  */
-export function hasPointSubject(event: OutboxEvent, events: readonly OutboxEvent[]): boolean {
+export function isUnscopedOwn(event: OutboxEvent, scope: Scope): boolean {
   const target = event.envelope.voids_event_id;
-  const subject = target
-    ? events.find((candidate) => candidate.envelope.id === target)?.envelope
-    : event.envelope;
-  if (!subject || subject.voids_event_id) return true;
-  return POINT_KEYS.some((key) => text(subject.payload, key) !== null);
+  if (target && event.envelope.type !== "record.void") return false;
+  const original = target
+    ? scope.events.find((candidate) => candidate.envelope.id === target)
+    : event;
+  if (!original || original.envelope.voids_event_id) return false;
+  return (
+    UNSCOPED_TYPES.includes(original.envelope.type) &&
+    isUnplaced(event, scope) &&
+    isUnplaced(original, scope)
+  );
 }
 /** Missing original subject proof is unavailable, never an organization-wide display grant. */
 export function permitsLocal(event: OutboxEvent, scope: Scope): boolean {

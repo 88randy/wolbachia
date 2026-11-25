@@ -1,57 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useServices } from "../../app/services-context.ts";
-import type { CalendarService, CalendarView } from "./service.ts";
+import { CalendarReads } from "./calendar-reads.ts";
 
-/** Latest-read-wins: an older read finishing late never replaces a newer one. */
-function useCalendarRead(calendar: CalendarService) {
-  const [view, setView] = useState<CalendarView | null>(null);
-  const [hasError, setError] = useState(false);
-  const sequence = useRef(0);
-  const invalidate = useCallback(() => {
-    sequence.current++;
-  }, []);
-  const read = useCallback(async () => {
-    const request = ++sequence.current;
-    try {
-      const next = await calendar.read();
-      if (request !== sequence.current) return;
-      setView(next);
-      setError(false);
-    } catch {
-      // Stale-while-revalidate: the last good grid stays under the inline error.
-      if (request === sequence.current) setError(true);
-    }
-  }, [calendar]);
-  return { view, setView, hasError, setError, invalidate, read };
-}
-
-/** P33 data: re-reads on the same sources as P29 (auth, bundle, sync engine). */
+/**
+ * P33 data on the P29 sources: auth/bundle changes hide the view before re-reading; sync
+ * results re-read stale-while-revalidate (same identity only, see `CalendarReads`).
+ */
 export function useCalendar() {
-  const { calendar, engine, auth } = useServices();
-  const state = useCalendarRead(calendar);
-  const { setView, read, invalidate } = state;
+  const { calendar, engine } = useServices();
+  const reads = useMemo(() => new CalendarReads(calendar), [calendar]);
+  const state = useSyncExternalStore(reads.subscribe, reads.getSnapshot);
   useEffect(() => {
-    const update = () => {
-      // A lock or session end hides private rows at once, before the asynchronous read.
-      if (auth.getSnapshot().phase !== "unlocked") setView(null);
-      void read();
+    const onPrivacyChange = () => {
+      reads.hide();
+      void reads.load();
     };
-    update();
-    const stops = [calendar.subscribe(update), engine.subscribe(update)];
+    const onSync = () => {
+      void reads.load();
+    };
+    void reads.load();
+    const stops = [calendar.subscribe(onPrivacyChange), engine.subscribe(onSync)];
     return () => {
-      invalidate();
+      reads.stop();
       stops.forEach((stop) => {
         stop();
       });
     };
-  }, [calendar, engine, auth, read, setView, invalidate]);
-  const refresh = async () => {
-    try {
-      await calendar.refresh();
-      await read();
-    } catch {
-      state.setError(true);
-    }
+  }, [calendar, engine, reads]);
+  return {
+    ...state,
+    retry: () => reads.load(),
+    refresh: () => reads.load(calendar.refresh),
   };
-  return { view: state.view, hasError: state.hasError, retry: read, refresh };
 }

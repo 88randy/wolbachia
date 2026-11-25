@@ -214,11 +214,10 @@ void test("P29 missing/full-bootstrap readiness and exact owner/session fences h
   await new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
     makeEnvelope({ type: "fuel.load", payload: { liters: 3 } }),
   );
-  assert.deepEqual(
-    (await readHistory(local.executor, PROJECTION_IDENTITY, "courier")).entries,
-    before.entries,
-    "P33 unscoped rows never change P29 entries",
-  );
+  const after = await readHistory(local.executor, PROJECTION_IDENTITY, "courier");
+  assert.deepEqual(after.entries, before.entries, "P33 unscoped rows never change P29 entries");
+  assert.equal(after.unscoped.length, 1);
+  // Unavailable history (other session/owner) never lists the retained unscoped fuel load.
   for (const identity of [
     { ...PROJECTION_IDENTITY, sessionId: "replacement-session" },
     { ...PROJECTION_IDENTITY, owner: { ...PROJECTION_IDENTITY.owner, organizationId: ID.point } },

@@ -10,7 +10,7 @@ import type { CalendarView } from "../src/features/calendar/service.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
 import { makeEnvelope } from "./support/factories.ts";
 import { openTestDatabase } from "./support/sqlite-executor.ts";
-import { CONTRACT_IDS as ID } from "./support/lifecycle-contract-fixtures.ts";
+import { CONTRACT_IDS as ID, REVIEW_HISTORY } from "./support/lifecycle-contract-fixtures.ts";
 import {
   PROJECTION_IDENTITY,
   PROJECTION_NOW,
@@ -24,8 +24,8 @@ const OTHER_SCOPE = [
   },
 ];
 
-function bundleFor(db: SqlExecutor, grants?: typeof OTHER_SCOPE) {
-  const body = projectionBundle();
+function bundleFor(db: SqlExecutor, grants?: typeof OTHER_SCOPE, history: unknown[] = []) {
+  const body = { ...projectionBundle(), history };
   const context = grants ? { ...body.capture_context, grants } : body.capture_context;
   return new DayBundleService({
     store: new DayStore(db),
@@ -48,12 +48,19 @@ const opening = makeEnvelope({
 });
 const segment = makeEnvelope({ type: "track.segment", payload: { positions: [] } });
 
-async function seeded(grants?: typeof OTHER_SCOPE) {
+async function seeded(grants?: typeof OTHER_SCOPE, history: unknown[] = []) {
   const local = await openTestDatabase(":memory:");
   const outbox = new OutboxRepository(local.executor, () => PROJECTION_NOW);
   for (const event of [fuel, opening, segment]) await outbox.enqueue(event);
-  return { local, outbox, bundle: bundleFor(local.executor, grants) };
+  return { local, outbox, bundle: bundleFor(local.executor, grants, history) };
 }
+/** A server history row placing `eventId` in the Q1 pair, which OTHER_SCOPE does not grant. */
+const placedInQ1 = (eventId: string, index: number) => ({
+  ...REVIEW_HISTORY,
+  id: `00000000-0000-4000-8000-0000000009${String(index).padStart(2, "0")}`,
+  source_event_id: eventId,
+  subjects: [{ center_id: ID.center, quadrant_id: ID.quadrant }],
+});
 
 void test("P33 D1 pending fuel load and shift open are unscoped rows with type, time and status only", async (t) => {
   const { local, bundle } = await seeded();
@@ -91,27 +98,39 @@ void test("P33 D1 a point event outside the current grant stays hidden from both
   assert.deepEqual(view.unscoped.map((entry) => entry.kind).sort(), ["fuel.load", "shift.open"]);
 });
 
-void test("P33 D1 unavailable history gives no unscoped rows", async (t) => {
-  const { local } = await seeded();
+void test("P33 D1 release, sample, their voids and a server-placed incident outside the grant stay hidden", async (t) => {
+  const release = makeEnvelope({ type: "release.record", payload: { lot_code: "L-1" } });
+  const sample = makeEnvelope({ type: "sample.collect", payload: { sample_code: "S-1" } });
+  const incident = makeEnvelope({ type: "incident.report", payload: { category: "dog" } });
+  const voids = [release, sample].map((original) =>
+    makeEnvelope({ type: "record.void", voids_event_id: original.id, payload: { reason: "x" } }),
+  );
+  const { local, outbox, bundle } = await seeded(
+    OTHER_SCOPE,
+    [release, sample, incident].map((event, index) => placedInQ1(event.id, index)),
+  );
   t.after(local.close);
+  for (const event of [release, sample, incident, ...voids]) await outbox.enqueue(event);
+  await outbox.claimPending(10);
+  await outbox.settle([release, sample].map((event) => ({ id: event.id, action: "accept" })));
+  await bundle.refresh();
 
-  assert.deepEqual(await readHistory(local.executor, PROJECTION_IDENTITY, "courier"), {
-    available: false,
-    entries: [],
-    unscoped: [],
-  });
+  const view = await readHistory(local.executor, PROJECTION_IDENTITY, "courier");
+
+  assert.deepEqual(view.entries, []);
+  assert.deepEqual(view.unscoped.map((entry) => entry.kind).sort(), ["fuel.load", "shift.open"]);
 });
-
 void test("P33 wiring: a saved event shows on its day in the subscriber's re-read", async (t) => {
   const local = await openTestDatabase(":memory:");
   t.after(local.close);
   const bundle = bundleFor(local.executor);
   await bundle.refresh();
+  const session = { phase: "unlocked" };
   const auth = {
     subscribe: () => () => undefined,
     getSnapshot: () =>
       ({
-        phase: "unlocked",
+        phase: session.phase,
         profile: { organization: { timezone: "America/Merida", epi_week: "mmwr" } },
       }) as unknown as ReturnType<
         ConstructorParameters<typeof HistoryService>[0]["auth"]["getSnapshot"]
@@ -123,7 +142,14 @@ void test("P33 wiring: a saved event shows on its day in the subscriber's re-rea
     auth,
     current: () => PROJECTION_IDENTITY,
   });
-  const calendar = new CalendarService({ history, bundle, auth, now: () => PROJECTION_NOW });
+  const current = () => PROJECTION_IDENTITY;
+  const calendar = new CalendarService({
+    history,
+    bundle,
+    auth,
+    current,
+    now: () => PROJECTION_NOW,
+  });
   let reread!: (view: CalendarView) => void;
   const notified = new Promise<CalendarView>((resolve) => {
     reread = resolve;
@@ -144,4 +170,12 @@ void test("P33 wiring: a saved event shows on its day in the subscriber's re-rea
     [[fuel.id, "pending", "local"]],
   );
   assert.equal(day.hasPending, true);
+
+  session.phase = "locked";
+  const locked = await calendar.read();
+  assert.equal(locked.identityKey, null);
+  assert.ok(
+    locked.days.every((candidate) => candidate.items.length === 0),
+    "nothing while locked",
+  );
 });

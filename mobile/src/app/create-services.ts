@@ -143,7 +143,12 @@ function createReadScreens(
   const history = createHistory({ ...deps, current: deps.attachments.session.deps.current });
   return {
     history,
-    calendar: createCalendar({ history, bundle: deps.bundle, auth: deps.auth }),
+    calendar: createCalendar({
+      history,
+      bundle: deps.bundle,
+      auth: deps.auth,
+      current: deps.attachments.session.deps.current,
+    }),
     training: createTraining(deps),
     settings: new SettingsService({ ...deps, appVersion: appManifest.version }),
   };
