@@ -34,7 +34,9 @@ export function AnnotationUpload({ upload, onChoose, original, canUpload }: Prop
         selected={selected}
         isBusy={upload.isBusy}
         isAllowed={canUpload}
-        onChoose={onChoose}
+        onChoose={(file, clientId) => {
+          void upload.upload(file, clientId);
+        }}
         hasFailed={upload.failure !== undefined}
       />
       <AnnotationUploadStatus upload={upload} />

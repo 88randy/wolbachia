@@ -53,7 +53,8 @@ test("starts a selected gallery photo immediately and keeps its identity for ret
     />,
   );
   await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
-  expect(onChoose).toHaveBeenLastCalledWith(photo, identity);
+  expect(props.upload.upload).toHaveBeenLastCalledWith(photo, identity);
+  expect(onChoose).toHaveBeenCalledOnce();
 });
 
 test("accepts a dropped photo automatically and clears the drag highlight", async () => {

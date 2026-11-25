@@ -59,7 +59,16 @@ test("settings exposes radio swatches, bounded pixel sliders and conditional gri
     true,
   );
   expect(document.activeElement).toBe(within(swatches).getByRole("radio", { name: "Verde" }));
-  const width = within(panel).getByRole("slider", { name: "Ancho de caja" });
+  const box = within(panel).getByRole("group", { name: "Caja con un clic" });
+  expect(
+    within(box).getByText(
+      "Tamaño de la caja que se pone con un solo clic. Arrastrando dibujas cualquier tamaño.",
+    ),
+  ).toBeDefined();
+  expect(within(box).getByText("Ancho", { selector: "label" })).toBeDefined();
+  expect(within(box).getByText("Alto", { selector: "label" })).toBeDefined();
+  expect(within(box).getByRole("slider", { name: "Alto de la caja con un clic" })).toBeDefined();
+  const width = within(box).getByRole("slider", { name: "Ancho de la caja con un clic" });
   fireEvent.keyDown(width, { key: "ArrowRight" });
   expect(width.getAttribute("value")).toBe("13");
   fireEvent.keyDown(width, { key: "ArrowUp", shiftKey: true });
@@ -141,7 +150,16 @@ test("limits a restored box preference to the current photo in its value and ann
       />
     </I18nextProvider>,
   );
-  const width = screen.getByRole<HTMLInputElement>("slider", { name: "Box width" });
+  const box = screen.getByRole("group", { name: "Single-click box" });
+  expect(
+    within(box).getByText("Size of the box placed with one click. Drag to draw any size."),
+  ).toBeDefined();
+  expect(within(box).getByText("Width", { selector: "label" })).toBeDefined();
+  expect(within(box).getByText("Height", { selector: "label" })).toBeDefined();
+  expect(within(box).getByRole("slider", { name: "Height of the single-click box" })).toBeDefined();
+  const width = within(box).getByRole<HTMLInputElement>("slider", {
+    name: "Width of the single-click box",
+  });
   expect(width.value).toBe("50");
   expect(width.getAttribute("aria-valuetext")).toBe("50px");
   fireEvent.keyDown(width, { key: "ArrowLeft", shiftKey: true });

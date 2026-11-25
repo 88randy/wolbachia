@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import { annotationUploadFailure } from "./annotation-upload-error";
 import { reportSessionError } from "../session/session-events";
 import { useSessionGuard } from "../session/use-session-guard";
 import type { SessionGuard } from "../session/use-session-guard";
-import { currentRevision } from "../session/session-revision";
+import { currentRevision, isSessionKnown } from "../session/session-revision";
 import { isAnnotationPhoto, uploadAnnotationPhoto } from "./annotation-upload";
 import type { AnnotationPhoto, AnnotationUploadStage } from "./annotation-upload";
 import type { LabScope } from "./lab-query";
@@ -21,6 +21,30 @@ interface UploadContext {
   cache: ReturnType<typeof useQueryClient>;
   locked: { current: boolean };
   setState: Dispatch<SetStateAction<UploadState>>;
+}
+type OriginalPhoto = { file: File; clientId: string };
+/** Retain the user's intent while a same-session verification temporarily closes admission. */
+function usePendingUpload(
+  context: UploadContext,
+  pending: { current?: OriginalPhoto },
+  stage: AnnotationUploadStage | undefined,
+) {
+  const { scope, begin, cache, locked, setState } = context;
+  useEffect(() => {
+    const original = pending.current;
+    if (stage !== "preparing" || !original || !scope.identity.isSettled || !isSessionKnown())
+      return;
+    pending.current = undefined;
+    if (
+      !scope.identity.permissions?.includes("field.upload") ||
+      scope.identity.revision !== currentRevision()
+    ) {
+      locked.current = false;
+      setState({ failure: { code: "permission_denied", params: {} } });
+      return;
+    }
+    void verifyAnnotationUpload({ scope, begin, cache, locked, setState }, original);
+  }, [scope, begin, cache, locked, setState, pending, stage]);
 }
 async function verifyAnnotationUpload(
   context: UploadContext,
@@ -52,25 +76,24 @@ async function verifyAnnotationUpload(
     context.locked.current = false;
   }
 }
-/** Session admission and the synchronous lock fence file selection before asynchronous work. */
+/** A synchronous lock retains one selection until session admission can verify it. */
 export function useAnnotationUpload(scope: LabScope) {
   const begin = useSessionGuard();
   const cache = useQueryClient();
   const locked = useRef(false);
+  const pending = useRef<OriginalPhoto | undefined>(undefined);
   const [state, setState] = useState<UploadState>({});
+  usePendingUpload({ scope, begin, cache, locked, setState }, pending, state.stage);
   const upload = (file: File, clientId: string) => {
-    if (
-      locked.current ||
-      !scope.identity.isSettled ||
-      !scope.identity.permissions?.includes("field.upload") ||
-      scope.identity.revision !== currentRevision()
-    )
-      return Promise.resolve();
+    if (locked.current) return Promise.resolve();
     if (!isAnnotationPhoto(file)) {
       setState({ failure: { code: "invalid", params: {} } });
       return Promise.resolve();
     }
-    return verifyAnnotationUpload({ scope, begin, cache, locked, setState }, { file, clientId });
+    locked.current = true;
+    pending.current = { file, clientId };
+    setState({ stage: "preparing" });
+    return Promise.resolve();
   };
   return { ...state, upload, isBusy: state.stage !== undefined };
 }
