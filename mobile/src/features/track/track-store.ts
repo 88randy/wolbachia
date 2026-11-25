@@ -185,6 +185,20 @@ export class TrackStore {
     return rows.map(toFix);
   }
 
+  /** Every point of `owner` recorded in [fromMs, toMs), any shift (index `track_point_time`). */
+  async listBetween(
+    owner: string,
+    fromMs: number,
+    toMs: number,
+  ): Promise<readonly (TrackFix & { readonly shiftId: string })[]> {
+    const rows = await this.#db.query(
+      `SELECT shift_id, ${POINT_COLUMNS} FROM track_point WHERE recorded_at>=? AND recorded_at<?
+       AND owner_user_id=? ORDER BY recorded_at, id`,
+      [fromMs, toMs, owner],
+    );
+    return rows.map((row) => ({ ...toFix(row), shiftId: readText(row, "shift_id") }));
+  }
+
   /** The points of the shift not yet carried by a segment. */
   async unsent(owner: string, shiftId: string): Promise<readonly TrackFix[]> {
     const rows = await this.#db.query(

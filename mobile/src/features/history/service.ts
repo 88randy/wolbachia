@@ -3,7 +3,7 @@ import { ownerKey } from "../../attachments/types.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { AuthController } from "../../auth/auth-controller.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
-import { filterHistory } from "./domain.ts";
+import { filterHistory, UNAVAILABLE_HISTORY } from "./domain.ts";
 import type { HistoryView } from "./domain.ts";
 import { readHistory } from "./store.ts";
 
@@ -22,7 +22,7 @@ export class HistoryService {
   async read(search = ""): Promise<HistoryView> {
     const original = this.#deps.current(),
       auth = this.#deps.auth.getSnapshot();
-    if (!original || auth.phase !== "unlocked") return { available: false, entries: [] };
+    if (!original || auth.phase !== "unlocked") return UNAVAILABLE_HISTORY;
     const key = JSON.stringify([ownerKey(original.owner), original.sessionId]);
     const write = this.#deps.bundle.captureProjectionWriter();
     const view = await write(() =>
@@ -34,7 +34,7 @@ export class HistoryService {
       this.#deps.auth.getSnapshot().phase !== "unlocked" ||
       JSON.stringify([ownerKey(current.owner), current.sessionId]) !== key
     )
-      return { available: false, entries: [] };
+      return UNAVAILABLE_HISTORY;
     return { ...view, entries: filterHistory(view.entries, search) };
   }
   refresh = () => this.#deps.bundle.refresh();

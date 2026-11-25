@@ -1,3 +1,5 @@
+import type { LngLatPair } from "../../maps/map-types.ts";
+import { captureLocalDate } from "../day/capture-local-date.ts";
 import { dayEndAfter } from "./day-end.ts";
 import type { TrackFix } from "./simplify-track.ts";
 import { keepFix } from "./track-filter.ts";
@@ -35,6 +37,42 @@ export type TrackNotice =
  */
 export const IDLE_CUT_MS = 60 * 60_000;
 
+const HOUR_MS = 3_600_000;
+/** UTC offsets span -12 h..+14 h: this window around UTC midnight of a date holds its local day. */
+const DAY_BEFORE_MS = 14 * HOUR_MS;
+const DAY_AFTER_MS = 38 * HOUR_MS;
+/** Every UTC offset is a multiple of 15 min, so one bucket never spans two local dates. */
+const OFFSET_STEP_MS = 15 * 60_000;
+
+/** Local date per fix time, formatting once per 15-minute bucket. */
+function localDateOf(timeZone: string): (at: number) => string | null {
+  const dates = new Map<number, string | null>();
+  return (at) => {
+    const bucket = Math.floor(at / OFFSET_STEP_MS);
+    const known = dates.get(bucket);
+    if (known !== undefined) return known;
+    const date = captureLocalDate(new Date(bucket * OFFSET_STEP_MS).toISOString(), timeZone);
+    dates.set(bucket, date);
+    return date;
+  };
+}
+
+/**
+ * Points grouped by shift in time order: two shifts never join into one false segment. A line
+ * needs two points (a single fix is no LineString).
+ */
+function linesByShift(
+  points: readonly (TrackFix & { readonly shiftId: string })[],
+): readonly (readonly LngLatPair[])[] {
+  const lines = new Map<string, LngLatPair[]>();
+  for (const point of points) {
+    const line = lines.get(point.shiftId) ?? [];
+    line.push([point.lng, point.lat]);
+    lines.set(point.shiftId, line);
+  }
+  return [...lines.values()].filter((line) => line.length >= 2);
+}
+
 export interface TrackSnapshot {
   /** Bumped after every local change, so the map reloads its line. */
   readonly revision: number;
@@ -46,6 +84,8 @@ export interface TrackRecorderDeps {
   readonly native: NativeTrackApi;
   /** Owner key of the signed-in courier; null once the session ended (logout, revocation). */
   readonly identity: () => string | null;
+  /** Reads of private history (P33b) need an unlocked session. */
+  readonly isUnlocked: () => boolean;
   /** IANA zone of the signed-in organization; null falls back to the device zone. */
   readonly timeZone: () => string | null;
   readonly rules: () => Promise<TrackRules>;
@@ -116,6 +156,24 @@ export class TrackRecorder {
       : this.#deps.store.listForShift(active.owner, active.shiftId);
   }
 
+  /**
+   * The owner's local lines of one organization-local `date` (YYYY-MM-DD), one per shift; empty
+   * when signed out or once the points were pruned. Read-only, so it does not join the queue.
+   */
+  async linesForDay(date: string, timeZone: string): Promise<readonly (readonly LngLatPair[])[]> {
+    const owner = this.#deps.identity();
+    const dayStart = Date.parse(`${date}T00:00:00.000Z`);
+    if (owner === null || !this.#deps.isUnlocked() || !Number.isFinite(dayStart)) return [];
+    const points = await this.#deps.store.listBetween(
+      owner,
+      dayStart - DAY_BEFORE_MS,
+      dayStart + DAY_AFTER_MS,
+    );
+    // A lock or owner change during the read shows nothing.
+    if (this.#deps.identity() !== owner || !this.#deps.isUnlocked()) return [];
+    const localDate = localDateOf(timeZone);
+    return linesByShift(points.filter((point) => localDate(point.at) === date));
+  }
   reconcile = (): Promise<void> => this.#serial(() => this.#reconcile());
 
   /**

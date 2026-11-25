@@ -183,6 +183,7 @@ void test("P29 offline restart retains original UUID, ingest verdict, review/voi
   assert.deepEqual(await readHistory(local.executor, PROJECTION_IDENTITY, "synthetic-courier"), {
     available: false,
     entries: [],
+    unscoped: [],
   });
   assert.equal(
     (await local.executor.query("SELECT COUNT(*) AS total FROM outbox_event"))[0]?.total,
@@ -205,9 +206,18 @@ void test("P29 missing/full-bootstrap readiness and exact owner/session fences h
   assert.deepEqual(await readHistory(local.executor, PROJECTION_IDENTITY, "courier"), {
     available: false,
     entries: [],
+    unscoped: [],
   });
   await bundle.refresh();
-  assert.equal((await readHistory(local.executor, PROJECTION_IDENTITY, "courier")).available, true);
+  const before = await readHistory(local.executor, PROJECTION_IDENTITY, "courier");
+  assert.equal(before.available, true);
+  await new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
+    makeEnvelope({ type: "fuel.load", payload: { liters: 3 } }),
+  );
+  const after = await readHistory(local.executor, PROJECTION_IDENTITY, "courier");
+  assert.deepEqual(after.entries, before.entries, "P33 unscoped rows never change P29 entries");
+  assert.equal(after.unscoped.length, 1);
+  // Unavailable history (other session/owner) never lists the retained unscoped fuel load.
   for (const identity of [
     { ...PROJECTION_IDENTITY, sessionId: "replacement-session" },
     { ...PROJECTION_IDENTITY, owner: { ...PROJECTION_IDENTITY.owner, organizationId: ID.point } },
@@ -216,6 +226,7 @@ void test("P29 missing/full-bootstrap readiness and exact owner/session fences h
     assert.deepEqual(await readHistory(local.executor, identity, "replacement"), {
       available: false,
       entries: [],
+      unscoped: [],
     });
   await local.executor.runAtomically([
     { sql: "DELETE FROM kv WHERE key='history_projection_ready'" },
@@ -267,7 +278,7 @@ void test("P29 late local read cannot republish after lock or accepted owner rep
   identity = null;
   isUnlocked = false;
   resolve();
-  assert.deepEqual(await reading, { available: false, entries: [] });
+  assert.deepEqual(await reading, { available: false, entries: [], unscoped: [] });
 });
 
 void test("P29 current empty grants or A-to-B scope narrowing hides old A facts without deleting recoverable work", async (t) => {
@@ -309,6 +320,7 @@ void test("P29 current empty grants or A-to-B scope narrowing hides old A facts 
     assert.deepEqual(await readHistory(local.executor, PROJECTION_IDENTITY, "courier"), {
       available: grants.length > 0,
       entries: [],
+      unscoped: [],
     });
     const [retained] = await outbox.claimPending(1);
     assert.ok(retained);
