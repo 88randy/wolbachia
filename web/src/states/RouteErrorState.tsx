@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,9 +8,13 @@ import { useDocumentTitle } from "../shell/use-document-title";
 import { Card } from "../ui/Card";
 import { ErrorState } from "../ui/ErrorState";
 import styles from "../styles/page.module.css";
-/** Keep the existing reset and home actions while scoping recovery to a shared error surface. */
-export function RouteErrorState({ error, reset }: ErrorComponentProps) {
+/**
+ * Retry re-runs the guards and loaders (`router.invalidate`, which also resets the boundary): a
+ * plain `reset` would render the same failed load again.
+ */
+export function RouteErrorState({ error }: ErrorComponentProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   useDocumentTitle(t("states.error.title"));
   useEffect(() => {
     console.error("A route failed to render", error);
@@ -18,7 +22,7 @@ export function RouteErrorState({ error, reset }: ErrorComponentProps) {
   return (
     <section className={styles.page}>
       <Card title={t("states.error.title")} headingLevel={1}>
-        <ErrorState message={t("states.error.body")} onRetry={reset} />
+        <ErrorState message={t("states.error.body")} onRetry={() => void router.invalidate()} />
         <Link to="/" className={classNames(buttons.button, buttons.secondary)}>
           {t("common.actions.goHome")}
         </Link>

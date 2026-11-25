@@ -779,6 +779,8 @@ export const mobile: Record<keyof typeof source, string> = {
     "Pending photo references: {count}. This does not confirm event delivery.",
   "mobile.inbox.evidenceError":
     "Some photo references are incomplete. Use Try now; if the file is unavailable, contact your coordinator.",
+  "mobile.inbox.evidenceRejected":
+    "{count} photo(s) were rejected by the server and cannot be sent. Retake them if you can; otherwise tell your coordinator.",
   "mobile.inbox.empty": "No records yet. What you capture will show up here.",
   "mobile.inbox.groupTitle": "{count} · {label}",
   "mobile.inbox.timeRange": "{from} to {to}",
@@ -1293,6 +1295,7 @@ export const mobile: Record<keyof typeof source, string> = {
     "Notifications are off: your track is recorded, but you will not see the open-shift notice.",
   "mobile.track.unavailable":
     "Track recording could not start. It will try again when you return to the app.",
+  "mobile.track.dayEnded": "Your shift is still open. Close it to end your day.",
   "mobile.track.openSettings": "Open settings",
   "mobile.map.loading": "Getting the map ready...",
   "mobile.map.unavailable": "The map is not available right now",

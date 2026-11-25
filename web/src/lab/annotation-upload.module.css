@@ -19,6 +19,21 @@
   border-color: var(--color-action);
   background: var(--color-tint);
 }
+.dropOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--color-action);
+  background: var(--color-tint);
+  border: 2px dashed var(--color-action);
+  font-size: var(--web-type-title-font-size);
+  text-align: center;
+  pointer-events: none;
+}
 .upload > p {
   color: var(--color-text-secondary);
 }

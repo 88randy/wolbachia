@@ -6,6 +6,13 @@ import { InfoNotice } from "../../ui/InfoNotice.tsx";
 export function EvidenceNotice() {
   const summary = useEvidenceSummary();
   const t = useT();
+  if (summary.rejected > 0)
+    return (
+      <InfoNotice
+        tone="warning"
+        message={t("mobile.inbox.evidenceRejected", { count: summary.rejected })}
+      />
+    );
   if (summary.hasError)
     return <InfoNotice tone="warning" message={t("mobile.inbox.evidenceError")} />;
   if (!summary.pending) return null;

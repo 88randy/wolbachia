@@ -799,6 +799,8 @@ export const mobile = {
     "Referencias de fotos pendientes: {count}. Esto no confirma la recepción del registro.",
   "mobile.inbox.evidenceError":
     "Algunas referencias de fotos siguen incompletas. Usa Intentar ahora; si el archivo no está disponible, contacta a tu coordinador.",
+  "mobile.inbox.evidenceRejected":
+    "El servidor rechazó {count} foto(s) y no se pueden enviar. Vuelve a tomarlas si puedes; si no, avisa a tu coordinador.",
   "mobile.inbox.empty": "No hay registros todavía. Lo que captures aparecerá aquí.",
   "mobile.inbox.groupTitle": "{count} · {label}",
   "mobile.inbox.timeRange": "{from} a {to}",
@@ -1326,6 +1328,7 @@ export const mobile = {
     "Las notificaciones están apagadas: el recorrido se registra, pero no verás el aviso de jornada abierta.",
   "mobile.track.unavailable":
     "No se pudo iniciar el registro del recorrido. Se intentará de nuevo al volver a la app.",
+  "mobile.track.dayEnded": "Tu jornada sigue abierta. Ciérrala para terminar tu día.",
   "mobile.track.openSettings": "Abrir ajustes",
   "mobile.map.loading": "Preparando el mapa...",
   "mobile.map.unavailable": "El mapa no está disponible por ahora",

@@ -18,13 +18,10 @@ const SHORTCUTS = [
   "delete",
   "removeAtPointer",
   "closePanel",
-  "help",
-  "add",
-  "cycle",
-  "move",
-  "resize",
 ] as const;
-export function AnnotationShortcutTable() {
+/** Keyboard-only extras listed in the full shortcuts dialog, not in the compact settings panel. */
+const EXTENDED_SHORTCUTS = ["help", "add", "cycle", "move", "resize"] as const;
+export function AnnotationShortcutTable({ isCompact = false }: { isCompact?: boolean }) {
   const { t } = useTranslation();
   const modifier = /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "⌘" : "Ctrl";
   return (
@@ -37,7 +34,7 @@ export function AnnotationShortcutTable() {
         </tr>
       </thead>
       <tbody>
-        {SHORTCUTS.map((action) => (
+        {(isCompact ? SHORTCUTS : [...SHORTCUTS, ...EXTENDED_SHORTCUTS]).map((action) => (
           <tr key={action}>
             <th scope="row">{t(`labAnnotation.shortcuts.${action}`)}</th>
             <td>

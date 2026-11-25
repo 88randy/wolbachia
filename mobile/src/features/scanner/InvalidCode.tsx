@@ -13,6 +13,7 @@ const ERROR_KEYS: Readonly<Record<ScannerError, MessageKey>> = {
   storage: "field.scan.storage",
   labelUsed: "field.scan.labelUsed",
   labelUnknown: "field.scan.labelUnknown",
+  labelOwn: "field.scan.labelOwn",
   bagCode: "field.scan.bagCode",
   bagUsed: "field.scan.bagUsed",
 };

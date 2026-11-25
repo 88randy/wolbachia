@@ -1,3 +1,4 @@
+import { dayEndAfter } from "./day-end.ts";
 import type { TrackFix } from "./simplify-track.ts";
 import { keepFix } from "./track-filter.ts";
 import type { RawFix } from "./track-filter.ts";
@@ -25,7 +26,14 @@ export interface NativeTrackApi {
 }
 
 /** Non-blocking reasons the track is not (fully) recorded. Work never waits on them. */
-export type TrackNotice = "locationDenied" | "notificationsDenied" | "unavailable" | null;
+export type TrackNotice =
+  "locationDenied" | "notificationsDenied" | "unavailable" | "dayEnded" | null;
+
+/**
+ * [ASSUMPTION] Technical batching, not a business rule: unsent points that only hold stillness
+ * heartbeats wait until the oldest is this old, so a still hour is one segment instead of twelve.
+ */
+export const IDLE_CUT_MS = 60 * 60_000;
 
 export interface TrackSnapshot {
   /** Bumped after every local change, so the map reloads its line. */
@@ -38,6 +46,8 @@ export interface TrackRecorderDeps {
   readonly native: NativeTrackApi;
   /** Owner key of the signed-in courier; null once the session ended (logout, revocation). */
   readonly identity: () => string | null;
+  /** IANA zone of the signed-in organization; null falls back to the device zone. */
+  readonly timeZone: () => string | null;
   readonly rules: () => Promise<TrackRules>;
   readonly texts: () => Promise<{ readonly title: string; readonly body: string }>;
   readonly versions: () => Promise<{ readonly rules: string; readonly catalog: string }>;
@@ -68,6 +78,7 @@ export function reconcileOnChange(input: {
 interface Active {
   readonly owner: string;
   readonly shiftId: string;
+  readonly openedAt: number;
   last: TrackFix | null;
   lastCutAt: number;
 }
@@ -130,11 +141,35 @@ export class TrackRecorder {
 
   async #record(active: Active, fixes: readonly RawFix[]): Promise<void> {
     const rules = await this.#deps.rules();
-    const kept = this.#filter(active, fixes, rules);
+    const endsAt = this.#dayEnd(active, rules);
+    const kept = this.#filter(
+      active,
+      fixes.filter((fix) => fix.at < endsAt),
+      rules,
+    );
     await this.#deps.store.append(active.owner, active.shiftId, kept);
     if (kept.length > 0) this.#publish({ revision: this.#snapshot.revision + 1 });
-    if (this.#deps.now() - active.lastCutAt >= rules.uploadIntervalSeconds * 1000)
-      await this.#cut(active.owner);
+    if (this.#deps.now() >= endsAt) await this.#stop(active.owner, "dayEnded");
+    else if (await this.#isCutDue(active, rules)) await this.#cut(active.owner);
+  }
+
+  #dayEnd(active: Active, rules: TrackRules): number {
+    return dayEndAfter(active.openedAt, rules.dayEndMinutes, this.#deps.timeZone());
+  }
+
+  /** Moving points go every upload interval; heartbeat-only points wait for IDLE_CUT_MS. */
+  async #isCutDue(active: Active, rules: TrackRules): Promise<boolean> {
+    const now = this.#deps.now();
+    if (now - active.lastCutAt < rules.uploadIntervalSeconds * 1000) return false;
+    const unsent = await this.#deps.store.unsent(active.owner, active.shiftId);
+    const first = unsent[0];
+    if (first === undefined) return false;
+    const heartbeatMs = rules.stillHeartbeatSeconds * 1000;
+    // The filter keeps a fix sooner than a heartbeat only when it moved.
+    const hasMoved = unsent.some(
+      (point, index) => index > 0 && point.at - (unsent[index - 1]?.at ?? 0) < heartbeatMs,
+    );
+    return hasMoved || now - first.at >= IDLE_CUT_MS;
   }
 
   /** Fixes up to the close of the owner's last (closed) shift, then cut at once. */
@@ -144,12 +179,7 @@ export class TrackRecorder {
     if (shiftId === null) return;
     const closedAt = await store.closedAt(shiftId);
     if (!Number.isFinite(closedAt)) return;
-    const late: Active = {
-      owner,
-      shiftId,
-      last: await store.lastKept(owner, shiftId),
-      lastCutAt: 0,
-    };
+    const late = { last: await store.lastKept(owner, shiftId) };
     const inShift = fixes.filter((fix) => fix.at <= closedAt);
     const kept = this.#filter(late, inShift, await this.#deps.rules());
     if (kept.length === 0) return;
@@ -157,7 +187,7 @@ export class TrackRecorder {
     await this.#cut(owner);
   }
 
-  #filter(active: Active, fixes: readonly RawFix[], rules: TrackRules): TrackFix[] {
+  #filter(active: Pick<Active, "last">, fixes: readonly RawFix[], rules: TrackRules): TrackFix[] {
     const kept: TrackFix[] = [];
     for (const fix of [...fixes].sort((a, b) => a.at - b.at)) {
       if (!keepFix(active.last, fix, rules)) continue;
@@ -190,24 +220,35 @@ export class TrackRecorder {
       await this.#stop(owner);
       return;
     }
-    if (this.#active === null) {
-      this.#active = {
-        owner,
-        shiftId,
-        last: await store.lastKept(owner, shiftId),
-        lastCutAt: this.#deps.now(),
-      };
-      this.#publish({ revision: this.#snapshot.revision + 1 });
+    const active = this.#active ?? (await this.#activate(owner, shiftId));
+    // Owner decision (#371): a shift left open stops recording at its day end; never restarts.
+    if (this.#deps.now() >= this.#dayEnd(active, await this.#deps.rules())) {
+      await this.#stop(owner, "dayEnded");
+      return;
     }
     if (await this.#deps.native.isRunning()) return;
     await this.#start();
   }
 
-  /** Outside a shift: flush what is left (local, works offline), then stop the service. */
-  async #stop(owner: string | null): Promise<void> {
+  async #activate(owner: string, shiftId: string): Promise<Active> {
+    const { store } = this.#deps;
+    const active: Active = {
+      owner,
+      shiftId,
+      openedAt: await store.openedAt(shiftId),
+      last: await store.lastKept(owner, shiftId),
+      lastCutAt: this.#deps.now(),
+    };
+    this.#active = active;
+    this.#publish({ revision: this.#snapshot.revision + 1 });
+    return active;
+  }
+
+  /** Outside a shift or past its day end: flush what is left (local, offline), stop the service. */
+  async #stop(owner: string | null, notice: TrackNotice = null): Promise<void> {
     if (owner !== null) await this.#cut(owner);
     if (await this.#deps.native.isRunning()) await this.#deps.native.stop();
-    this.#publish({ notice: null });
+    this.#publish({ notice });
   }
 
   async #start(): Promise<void> {

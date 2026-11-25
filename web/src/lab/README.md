@@ -190,7 +190,17 @@ The W35 numeric field and secondary photo-count button share a row when space
 allows. Moving to photo counting skips numeric blur validation so an empty
 focused field cannot shift the button before its first click.
 
-The upload dropzone starts immediately after choosing or dropping a valid file.
+Choosing or dropping a valid photo starts uploading immediately. While the upload
+step is visible, the whole page (including the workspace and body) intercepts
+drag/drop events to prevent browser navigation. A full-viewport drop overlay uses
+a drag-depth counter to stay visible while crossing child elements, then clears
+on drop or final leave. Listeners are removed when the upload step unmounts.
+Drops read file items before falling back to `files`, use the first image among
+multiple files, and announce that choice in a short note. URI/HTML-only drops,
+unsupported formats and oversized files produce specific localized inline alerts.
+Empty/generic MIME types require JPEG, PNG or WebP magic bytes in the first 12
+bytes; the detected MIME is applied before upload. JPEG signatures also support
+`.jfif` and `.jpe` files. File extensions alone never establish an image format.
 Native file inputs stay hidden: Choose file permits gallery selection without
 `capture`; a separate Take photo input uses `capture="environment"` only on
 touch/coarse-pointer devices. A thumbnail and stage progress accompany upload;
@@ -223,7 +233,9 @@ The settings Panel (S) is a compact 300 px sheet with a scrollable body and a
 fixed header/footer; narrow screens use a bottom sheet. Its tinted summary shows
 the plural-aware mark total, mark-derived Box/Point/Mixed mode, density per Mpx,
 image resolution and zoom using the current locale. Configuration includes a
-Box/Point toggle, box sliders (1 px arrows, 10 px with Shift), five token-color
+Box/Point toggle, box sliders grouped under Single-click box with a hint that
+these image-pixel dimensions apply only to a single click (dragging draws any size),
+unique accessible Width/Height names (1 px arrows, 10 px with Shift), five token-color
 radio swatches with a check/ring, and the grid switch. Grid size appears only
 when enabled: square cells use image pixels (50–1000 px, step 10, default 310 px)
 and remain anchored to the paper through zoom/pan. Previously the grid divided
@@ -262,7 +274,11 @@ Successful metadata writes cannot clear a failed photo write or claim draft reco
 Successful submission removes the draft; session end and organization changes
 purge the database, and opening it purges drafts older than 72 hours.
 Reopening explicitly asks to recover or discard; recovery reuploads/reverifies
-the same photo before saving. Active elapsed time excludes hidden tabs and time
+the same photo with its retained client UUID before saving. Upload admission
+retains the pending photo across a same-session check instead of silently dropping
+the recovery action. Progress remains visible until verification completes;
+failures expose Retry, which resends the photo without resetting the restored
+marks or their fresh undo history. Active elapsed time excludes hidden tabs and time
 more than 60 seconds after the last interaction.
 API responses and image download URLs are not persisted. Tips are remembered
 per user in localStorage and remain accessible through Actions. Save freezes the
@@ -289,7 +305,12 @@ for that event, so no custom in-app copy or modal can replace it.
 | Add/move/delete/undo/redo and bounded mark history | `annotation-state.test.ts` |
 | First-click/keyboard navigation from an empty focused numeric field | `count-a11y.test.tsx`, W35 browser journey |
 | Outlined boxes, filled points and constant screen-sized points/handles | `annotation-canvas-draw.test.ts` |
-| Automatic selection/drop, invalid files, upload locks, gallery/camera split and identical retry | `annotation-upload-choice.test.tsx` |
+| Automatic selection, upload locks, gallery/camera split and identical retry | `annotation-upload-choice.test.tsx` |
+| Card/body drops, items/files fallback, first-image note, MIME/header validation, actionable errors, drag-depth highlight and listener cleanup | `annotation-upload-choice.test.tsx` |
+| A valid card drop completes upload and opens the canvas step | `annotation-submit.test.tsx` |
+| Recovery waits for session admission; failed upload retries preserve recovered marks through save | `annotation-submit.test.tsx` |
+| Upload, author one mark, reload, recover the canvas and save the retained mark | `e2e/egg-annotation.spec.ts` |
+| Real browser DataTransfer drop on the body prevents navigation and opens the canvas | `e2e/egg-annotation.spec.ts` |
 | Three-step navigation, shortcut table, remembered tips and nested dialog focus return | `annotation-help.test.tsx` |
 | Nearest corners, click threshold, unchanged edits and resize viewport preservation | `annotation-canvas.test.tsx`, `annotation-coordinates.test.ts`, `annotation-state.test.ts` |
 | Toolbar/compact-menu focus, touch context menu, max-mark announcements, plurals and download lifetime | `annotation-tools.test.tsx`, `annotation-canvas.test.tsx` |

@@ -4,6 +4,7 @@ import styles from "./annotation-settings.module.css";
 
 interface Props {
   label: string;
+  ariaLabel?: string;
   value: number;
   min: number;
   max: number;
@@ -52,6 +53,7 @@ export function AnnotationSizeSlider(props: Props) {
         max={props.max}
         step={props.step ?? 1}
         value={props.value}
+        aria-label={props.ariaLabel}
         aria-valuetext={value}
         style={sliderFill(props)}
         onKeyDown={(event) => {

@@ -25,6 +25,8 @@ export const field = {
   "field.scan.labelPlacedAt":
     "Esta ovitrampa ya está colocada en el punto {point}. Escanea una etiqueta nueva.",
   "field.scan.labelUsed": "Esa etiqueta ya está en otra ovitrampa. Usa una etiqueta nueva.",
+  "field.scan.labelOwn":
+    "Esa es la etiqueta de la ovitrampa que vas a quitar. Escanea la de la ovitrampa nueva.",
   "field.scan.labelUnknown":
     "No encontramos esa etiqueta. Revisa el número que está escrito en grande o usa una etiqueta nueva.",
   "field.scan.bagCode":
@@ -206,7 +208,12 @@ export const field = {
   "field.lifecycle.kind.relocate": "Pedir cambio de lugar",
   "field.lifecycle.kind.remove": "Retirar ovitrampa",
   "field.lifecycle.kind.replace": "Reemplazar ovitrampa",
+  "field.lifecycle.labelQuestion": "Escanea la etiqueta de la ovitrampa nueva",
   "field.lifecycle.listChanged": "Las listas cambiaron. Intenta de nuevo.",
+  "field.lifecycle.newLabel": "Ovitrampa nueva: {code}",
+  "field.lifecycle.newLabelScanned": "Ovitrampa nueva: etiqueta escaneada",
+  "field.lifecycle.noReasons": "No hay motivos descargados.",
+  "field.lifecycle.noReasonsHint": "Conéctate a internet y vuelve a intentar.",
   "field.lifecycle.mistake": "Me equivoqué",
   "field.lifecycle.mistakeHint": "No se borra nada: se cancela con un motivo.",
   "field.lifecycle.mistakeQuestion": "¿Qué se equivocó?",

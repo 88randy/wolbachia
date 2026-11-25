@@ -7,7 +7,12 @@ import { simplifyTrack, metersBetween } from "../src/features/track/simplify-tra
 import type { TrackFix } from "../src/features/track/simplify-track.ts";
 import { keepFix } from "../src/features/track/track-filter.ts";
 import type { RawFix } from "../src/features/track/track-filter.ts";
-import { reconcileOnChange, TrackRecorder } from "../src/features/track/track-recorder.ts";
+import { dayEndAfter } from "../src/features/track/day-end.ts";
+import {
+  IDLE_CUT_MS,
+  reconcileOnChange,
+  TrackRecorder,
+} from "../src/features/track/track-recorder.ts";
 import type { NativeTrackApi, TrackStartOptions } from "../src/features/track/track-recorder.ts";
 import { readTrackRules } from "../src/features/track/track-rules.ts";
 import {
@@ -29,15 +34,16 @@ const north = (meters: number, at: number, accuracyM = 10): TrackFix => ({
   accuracyM,
 });
 
-function insertShiftEvent(db: SqlExecutor, type: "shift.open" | "shift.close", at: number) {
-  return db.runAtomically([
+type ShiftEvent = "shift.open" | "shift.close";
+const shiftEventsOf = (shiftId: string) => (db: SqlExecutor, type: ShiftEvent, at: number) =>
+  db.runAtomically([
     eventInsertStatement(
       {
         id: crypto.randomUUID(),
         type,
         schema_version: 1,
         device_time: new Date(at).toISOString(),
-        shift_id: SHIFT,
+        shift_id: shiftId,
         gps: null,
         rules_version: "r1",
         catalog_version: "c1",
@@ -48,7 +54,7 @@ function insertShiftEvent(db: SqlExecutor, type: "shift.open" | "shift.close", a
       new Date(at).toISOString(),
     ),
   ]);
-}
+const insertShiftEvent = shiftEventsOf(SHIFT);
 
 async function segments(db: SqlExecutor) {
   const rows = await db.query(
@@ -101,6 +107,7 @@ function fixture(
     store: options.store ?? new TrackStore(db),
     native,
     identity: () => state.owner,
+    timeZone: () => "America/Merida",
     rules: () => Promise.resolve(RULES),
     texts: () => Promise.resolve({ title: "t", body: "b" }),
     versions: () => Promise.resolve({ rules: "r1", catalog: "c1" }),
@@ -505,6 +512,81 @@ void test("unlock, late profile hydration and logout each reconcile once", () =>
   emit("unlocked|owner-a");
   emit("login|");
   assert.equal(reconciles, 3);
+});
+
+void test("the day end is the first local day end after the opening, in the organization zone", () => {
+  const at = (iso: string) => Date.parse(iso);
+  // Mérida is UTC-6 all year: opened 08:00, ends 20:00 local the same day.
+  assert.equal(
+    dayEndAfter(at("2026-11-24T14:00:00Z"), 1200, "America/Merida"),
+    at("2026-11-25T02:00:00Z"),
+  );
+  // Opened at 21:00 local, after the day end: it runs until 20:00 the next day.
+  assert.equal(
+    dayEndAfter(at("2026-11-25T03:00:00Z"), 1200, "America/Merida"),
+    at("2026-11-26T02:00:00Z"),
+  );
+  // Opened 00:00 EST on the DST switch day: 20:00 EDT is UTC-4, not UTC-5.
+  assert.equal(
+    dayEndAfter(at("2026-03-08T05:00:00Z"), 1200, "America/New_York"),
+    at("2026-03-09T00:00:00Z"),
+  );
+});
+
+void test("an open shift stops recording at its day end, flushes and never restarts that shift", async () => {
+  const db = await createTestDatabase();
+  const { recorder, calls, state } = fixture(db);
+  const dayEnd = Date.parse("2026-11-25T02:00:00Z"); // 20:00 in Mérida for the T0 opening
+  await insertShiftEvent(db, "shift.open", T0);
+  await recorder.reconcile();
+  await recorder.onFixes([raw(north(0, T0 + 1000))]);
+  // The batch that crosses the day end: the fix before it is kept, the one after is dropped.
+  state.now = dayEnd + 60_000;
+  await recorder.onFixes([raw(north(500, dayEnd - 30_000)), raw(north(900, dayEnd + 30_000))]);
+  assert.deepEqual(calls, ["start", "stop"]);
+  assert.equal(recorder.getSnapshot().notice, "dayEnded");
+  assert.equal(await unsentOf(db, OWNER), 0, "the last segment was flushed before stopping");
+  assert.deepEqual(
+    (await db.query("SELECT recorded_at FROM track_point ORDER BY recorded_at")).map(
+      (row) => row.recorded_at,
+    ),
+    [T0 + 1000, dayEnd - 30_000],
+  );
+  state.now = dayEnd + 2 * 60_000;
+  await recorder.reconcile(); // foreground, still the same day
+  state.now = dayEnd + 12 * 60 * 60_000;
+  await recorder.reconcile(); // next morning, the same shift was never closed
+  assert.deepEqual(calls, ["start", "stop"], "the open shift is not recorded again");
+  assert.equal(recorder.getSnapshot().notice, "dayEnded");
+
+  const next = "22222222-2222-4222-8222-222222222222";
+  await insertShiftEvent(db, "shift.close", state.now);
+  await shiftEventsOf(next)(db, "shift.open", state.now + 1000);
+  state.now += 2000;
+  await recorder.reconcile();
+  assert.deepEqual(calls, ["start", "stop", "start"], "a shift opened afterwards records");
+  assert.equal(recorder.getSnapshot().notice, null);
+});
+
+void test("a still phone sends one segment per idle hour instead of one per upload interval", async () => {
+  const db = await createTestDatabase();
+  const { recorder, state } = fixture(db);
+  await insertShiftEvent(db, "shift.open", T0);
+  await recorder.reconcile();
+  // One heartbeat every 300 s at the same spot, delivered as it comes (13 fixes = 1 hour).
+  for (let beat = 0; beat <= 12; beat += 1) {
+    const at = T0 + 1000 + beat * 300_000;
+    state.now = at;
+    await recorder.onFixes([raw(north(0, at, 8))]);
+    if (state.now - (T0 + 1000) < IDLE_CUT_MS)
+      assert.equal((await segments(db)).length, 0, `nothing cut after ${String(beat)} heartbeats`);
+  }
+  const cut = await segments(db);
+  assert.deepEqual(
+    cut.map((segment) => segment.payload.positions.length),
+    [13],
+  );
+  assert.equal(await unsentOf(db, OWNER), 0);
 });
 
 void test("after 30 days final segments are compacted; the envelope stays immutable otherwise", async () => {

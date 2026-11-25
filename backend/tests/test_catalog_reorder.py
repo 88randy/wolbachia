@@ -216,12 +216,14 @@ def test_two_concurrent_reorders_from_one_version_serialize_to_one_success():
 
 @pytest.mark.django_db
 def test_seed_insert_invalidates_existing_plan_but_idempotent_rerun_does_not(admin, catalog):
-    from catalogs.seeds import seed_default_catalogs
+    from catalogs.seeds import OPEN_CATALOG_ITEMS, seed_default_catalogs
 
+    # Each newly seeded item (Other plus the default reasons) changes this existing catalog.
+    seeded = 1 + len(OPEN_CATALOG_ITEMS[catalog.slug])
     seed_default_catalogs(catalog.organization)
     catalog.refresh_from_db()
-    assert catalog.revision == 1  # The newly seeded Other changes this existing catalog.
+    assert catalog.revision == seeded
     assert reorder(admin, catalog, [], version=0).status_code == 409
     seed_default_catalogs(catalog.organization)
     catalog.refresh_from_db()
-    assert catalog.revision == 1
+    assert catalog.revision == seeded

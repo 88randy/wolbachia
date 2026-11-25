@@ -257,6 +257,7 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "track_upload_interval_seconds": (300, "s", 60, 3600),
         "track_simplify_tolerance_m": (5, "m", 0, 50),
         "track_high_accuracy": (0, "count", 0, 1),
+        "track_day_end_minutes": (1200, "min", 600, 1439),
     }
     parameters = RuleParameter.objects.filter(organization=organization).prefetch_related(
         "versions"

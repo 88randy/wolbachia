@@ -1,14 +1,16 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
-import { apiError, makeVoidReasonItems } from "../test/fake-api";
+import { apiError, FAKE_IDENTITY, makeVoidReasonItems } from "../test/fake-api";
 import { BAG, COUNT, candidate, count, openCount, outcome, pageOf } from "./count-test-helpers";
 import type { AnnotationCanvasProps } from "./annotation-canvas-types";
 import { uploadAnnotationPhoto } from "./annotation-upload";
-import { writeAnnotationDraft } from "./annotation-draft";
+import { readAnnotationDraft, writeAnnotationDraft } from "./annotation-draft";
+import { begin, commitKnown } from "../session/session-controller";
+import type { Me } from "../session/me";
 
 vi.mock("./annotation-draft", () => ({
-  readAnnotationDraft: () => Promise.resolve(undefined),
+  readAnnotationDraft: vi.fn(() => Promise.resolve(undefined)),
   writeAnnotationDraft: vi.fn(() => Promise.resolve()),
   writeAnnotationDraftMarks: () => Promise.resolve(),
   annotationDraftGeneration: () => 0,
@@ -46,6 +48,7 @@ vi.mock("./EggAnnotationCanvas", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(readAnnotationDraft).mockResolvedValue(undefined);
   sessionStorage.clear();
   localStorage.clear();
   URL.createObjectURL = vi.fn(() => "blob:annotation-test");
@@ -73,6 +76,82 @@ async function prepareAnnotation() {
   await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
   return screen.findByRole("button", { name: "Add egg" });
 }
+
+function recoverablePhoto() {
+  const recovered = {
+    version: 1 as const,
+    file: new File(["photo"], "recovered-paddle.png", { type: "image/png" }),
+    clientId: "00000000-0000-4000-8000-000000000034",
+    marks: [{ kind: "point" as const, x: 50, y: 60 }],
+  };
+  vi.mocked(readAnnotationDraft).mockResolvedValueOnce(recovered);
+  return recovered;
+}
+
+test("recovery waits for a pending session check and then opens the canvas with its marks", async () => {
+  const recovered = recoverablePhoto();
+  const { app } = await openAnnotation({ path: "/lab/egg-counts/B-031/annotate" });
+  const recover = await screen.findByRole("button", { name: "Recuperar borrador" });
+  const me = app.queryClient.getQueryData<Me>(["me"]);
+  if (!me) throw new Error("Missing current session");
+  let verification: ReturnType<typeof begin>;
+  act(() => {
+    verification = begin(app.queryClient, "verify");
+  });
+  await userEvent.click(recover);
+  expect(uploadAnnotationPhoto).not.toHaveBeenCalled();
+  expect(screen.getByRole("progressbar", { name: "Pasos de la carga completados" })).toBeDefined();
+  act(() => {
+    commitKnown(app.queryClient, verification, { me, attestation: FAKE_IDENTITY });
+  });
+  await waitFor(() => {
+    expect(uploadAnnotationPhoto).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ file: recovered.file, clientId: recovered.clientId }),
+    );
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
+  expect(await screen.findByRole("button", { name: "Add egg" })).toBeDefined();
+  await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+  await userEvent.click(screen.getByRole("button", { name: "Terminar" }));
+  expect((await screen.findByRole("dialog")).textContent).toContain("1 puntos");
+});
+
+test("retrying a recovered photo preserves its marks through saving", async () => {
+  const recovered = recoverablePhoto();
+  vi.mocked(uploadAnnotationPhoto).mockRejectedValueOnce(new TypeError("Upload unavailable"));
+  const { api } = await openAnnotation({
+    path: "/lab/egg-counts/B-031/annotate",
+    routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => outcome() },
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Recuperar borrador" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
+  await screen.findByRole("button", { name: "Add egg" });
+  await userEvent.click(screen.getByRole("button", { name: "Terminar" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Guardar conteo y siguiente" }));
+  await waitFor(() => {
+    expect(api.requests.find((request) => request.method === "POST")?.body).toMatchObject({
+      value: 1,
+      annotation: { marks: recovered.marks },
+    });
+  });
+  expect(uploadAnnotationPhoto).toHaveBeenLastCalledWith(
+    expect.objectContaining({ file: recovered.file, clientId: recovered.clientId }),
+  );
+});
+
+test("a photo dropped on the upload card opens the canvas step", async () => {
+  await openAnnotation({ path: "/lab/egg-counts/B-031/annotate" });
+  const heading = await screen.findByRole("heading", { name: "Arrastra la foto aquí" });
+  const card = heading.closest("section");
+  if (!card) throw new Error("Upload card is missing");
+  fireEvent.drop(card, {
+    dataTransfer: { files: [new File(["photo"], "paddle.png", { type: "image/png" })] },
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Omitir" }));
+  expect(await screen.findByRole("button", { name: "Add egg" })).toBeDefined();
+  expect(screen.queryByRole("heading", { name: "Arrastra la foto aquí" })).toBeNull();
+});
 
 test("submits mixed marks as the official value and confirms only after the server asks", async () => {
   const { api } = await openAnnotation({

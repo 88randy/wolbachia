@@ -104,6 +104,35 @@ async function storedDraftKeys(page: Page) {
   );
 }
 
+async function storedDraftMarkCount(page: Page) {
+  return page.evaluate(
+    async ({ databaseName, storeName, key }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(databaseName, 2);
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        request.onerror = () => {
+          reject(new Error("Unable to open fixture database", { cause: request.error }));
+        };
+      });
+      const count = await new Promise<number>((resolve, reject) => {
+        const request = database.transaction(storeName).objectStore(storeName).get(key);
+        request.onsuccess = () => {
+          const draft = request.result as { marks?: unknown[] } | undefined;
+          resolve(draft?.marks?.length ?? 0);
+        };
+        request.onerror = () => {
+          reject(new Error("Unable to read fixture draft", { cause: request.error }));
+        };
+      });
+      database.close();
+      return count;
+    },
+    { databaseName: DRAFT_DATABASE, storeName: DRAFT_STORE, key: DRAFT_KEY },
+  );
+}
+
 test("W35 opening purges photos and marks older than 72 hours across draft identities", async ({
   page,
 }) => {
@@ -253,6 +282,55 @@ test("W35 recovers 1,000 authored marks explicitly and keeps editing responsive"
   await expect(page.locator(COUNTER)).toContainText("1000");
   await page.screenshot({ path: testInfo.outputPath("W35-1000-marks.png"), fullPage: true });
   await expectNoAxeViolations(page);
+});
+
+test("W35 recovers an uploaded photo and one mark after reload and saves the count", async ({
+  page,
+}) => {
+  const text = (key: MessageKey) => messages["es-MX"][key];
+  const commands = await mockAnnotation(page);
+  await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
+  await page
+    .getByLabel(text("labAnnotation.upload.picker"), { exact: true })
+    .setInputFiles(await syntheticPhoto(page));
+  await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
+  const canvas = page
+    .getByRole("application", { name: text("labAnnotation.canvas.label") })
+    .locator("canvas[tabindex='0']");
+  await expect(canvas).toBeVisible();
+  await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
+    0,
+  );
+  await canvas.focus();
+  await page.keyboard.press("d");
+  await page.keyboard.press("Enter");
+  const oneMark = text("labAnnotation.editor.counterOne").replace("{count}", "1");
+  await expect(page.locator(COUNTER)).toHaveText(oneMark);
+  await expect.poll(() => storedDraftMarkCount(page)).toBe(1);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.reload();
+  const recovery = page.getByRole("dialog", { name: text("labAnnotation.recover.title") });
+  await expect(recovery).toBeVisible();
+  await recovery.getByRole("button", { name: text("labAnnotation.recover.accept") }).click();
+  await expect(recovery).toHaveCount(0);
+  await expect(canvas).toBeVisible();
+  await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.locator(COUNTER)).toHaveText(oneMark);
+  await page
+    .getByRole("button", { name: text("labAnnotation.editor.finish"), exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: text("labAnnotation.summary.save"), exact: true })
+    .click();
+  await expect.poll(() => commands.length).toBe(1);
+  expect(commands[0]?.value).toBe(1);
+  expect(commands[0]?.annotation?.marks).toHaveLength(1);
+  expect(commands[0]?.annotation?.marks[0]?.kind).toBe("point");
+  await expect(page).toHaveURL(/\/lab\/egg-counts(?:\?|$)/);
+  await expect.poll(() => storedDraftKeys(page)).toEqual([]);
 });
 
 function candidate(code: string): Schemas["LabQueueCandidate"] {
@@ -447,6 +525,54 @@ async function syntheticPhoto(page: Page) {
   };
 }
 
+async function startPhotoDrag(page: Page) {
+  const photo = await syntheticPhoto(page);
+  const transfer = await page.evaluateHandle(
+    ({ source, name, type }) => {
+      const bytes = Uint8Array.from(atob(source), (character) => character.charCodeAt(0));
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([bytes], name, { type }));
+      return dataTransfer;
+    },
+    { source: photo.buffer.toString("base64"), name: photo.name, type: photo.mimeType },
+  );
+  const prevented = await transfer.evaluate((dataTransfer) =>
+    ["dragenter", "dragover"].map(
+      (eventType) =>
+        !document.body.dispatchEvent(
+          new DragEvent(eventType, { dataTransfer, bubbles: true, cancelable: true }),
+        ),
+    ),
+  );
+  expect(prevented).toEqual([true, true]);
+  return transfer;
+}
+
+async function dropPhotoOnBody(page: Page, language: "es-MX" | "en" = "es-MX") {
+  const transfer = await startPhotoDrag(page);
+  const overlay = page.getByText(messages[language]["labAnnotation.upload.dropHere"], {
+    exact: true,
+  });
+  await expect(overlay).toBeVisible();
+  expect(
+    await overlay.evaluate((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return [x, y, width === innerWidth, height === innerHeight];
+    }),
+  ).toEqual([0, 0, true, true]);
+  await expectNoAxeViolations(page);
+  expect(
+    await transfer.evaluate(
+      (dataTransfer) =>
+        !document.body.dispatchEvent(
+          new DragEvent("drop", { dataTransfer, bubbles: true, cancelable: true }),
+        ),
+    ),
+  ).toBe(true);
+  await expect(overlay).toHaveCount(0);
+  await transfer.dispose();
+}
+
 test("W35 unsaved photo keeps focus in its leave dialog and restores browser history on stay", async ({
   page,
 }, testInfo) => {
@@ -509,17 +635,19 @@ test("W35 unsaved photo keeps focus in its leave dialog and restores browser his
   expect(commands).toEqual([]);
 });
 
-test("W35 right mouse drag pans a point without deleting and releases the grabbing cursor", async ({
+test("W35 body photo drop opens the canvas and right mouse drag pans without deleting", async ({
   page,
 }) => {
   const text = (key: MessageKey) => messages["es-MX"][key];
   await mockAnnotation(page);
   await page.goto(`/lab/egg-counts/${BAG_CODE}/annotate`);
-  await page
-    .getByLabel(text("labAnnotation.upload.picker"), { exact: true })
-    .setInputFiles(await syntheticPhoto(page));
+  await expect(
+    page.getByRole("button", { name: text("labAnnotation.upload.choose"), exact: true }),
+  ).toBeVisible();
+  await dropPhotoOnBody(page);
   await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
   const canvas = page.getByRole("application").locator("canvas[tabindex='0']");
+  await expect(canvas).toBeVisible();
   await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
     0,
   );
@@ -608,7 +736,7 @@ async function expectWorkspaceLayout(page: Page, canvas: ReturnType<Page["locato
 
 async function exerciseSettingsControls(page: Page, text: (key: MessageKey) => string) {
   const panel = page.getByRole("dialog", { name: text("labAnnotation.editor.panel"), exact: true });
-  const width = panel.getByRole("slider", { name: text("labAnnotation.editor.defaultWidth") });
+  const width = panel.getByRole("slider", { name: text("labAnnotation.editor.defaultWidthLabel") });
   await width.focus();
   await page.keyboard.press("ArrowRight");
   await expect(width).toHaveValue("13");
@@ -698,7 +826,7 @@ for (const theme of ["light", "dark"] as const) {
       await expect(picker).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
       await expect(picker).not.toHaveAttribute("capture");
       await expect(picker).toBeHidden();
-      await picker.setInputFiles(await syntheticPhoto(page));
+      await dropPhotoOnBody(page, language);
       await page
         .getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true })
         .click();
@@ -728,7 +856,7 @@ for (const theme of ["light", "dark"] as const) {
       await page.keyboard.press("g");
       const beforeSettings = await canvas.boundingBox();
       await page.keyboard.press("s");
-      await expect(page.getByLabel(text("labAnnotation.editor.defaultWidth"))).toBeVisible();
+      await expect(page.getByLabel(text("labAnnotation.editor.defaultWidthLabel"))).toBeVisible();
       await expect(
         page.getByRole("switch", { name: text("labAnnotation.editor.gridLabel"), exact: true }),
       ).toBeChecked();

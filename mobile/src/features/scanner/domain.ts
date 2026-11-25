@@ -15,6 +15,7 @@ export type ScannerError =
   | "storage"
   | "labelUsed"
   | "labelUnknown"
+  | "labelOwn"
   | "bagCode"
   | "bagUsed";
 export type ScannerResult =
@@ -24,8 +25,11 @@ export interface ScannerInput {
   readonly value: string;
   readonly isManual: boolean;
   readonly expected?: QrKind;
-  /** Placing a new trap: the label becomes the identity of the draft instead of opening a capture. */
-  readonly bindsLabel?: boolean;
+  /**
+   * Placing or replacing a trap: the label becomes the identity of the new trap in that draft
+   * instead of opening a capture.
+   */
+  readonly bindsLabel?: "place" | "replace";
 }
 
 /** A QR identity is never authority. Only an unambiguous current local projection may route. */

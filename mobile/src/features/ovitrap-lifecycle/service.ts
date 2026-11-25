@@ -25,6 +25,9 @@ import type {
   LifecycleCompletion,
 } from "./types.ts";
 import { relocationSuggestion } from "./thresholds.ts";
+import { resolveLabel } from "../ovitrap-check/label-pool.ts";
+/** Outcome of scanning or typing the label of the new trap when replacing. */
+export type ReplacementLabelResult = "read" | "invalid" | "unknown" | "used" | "own";
 import { readCachedAdvisory } from "./advisory.ts";
 import type { AdvisoryView } from "./advisory.ts";
 /** A denied interactive read carries only its ORIGINAL request completion. */
@@ -347,6 +350,38 @@ export class LifecycleService {
       return { ...(await this.#snapshot(turn)), isUpdateApplied: true };
     });
   }
+  /** Replacing: the scanned or typed label of the new trap becomes `replacement_id`. */
+  bindReplacementLabel(
+    value: string,
+    isManual: boolean,
+    eventId: string | null,
+  ): Promise<Snapshot & { readonly labelResult: ReplacementLabelResult }> {
+    return this.#write(eventId, async (state, turn, operation) => {
+      const draft = editable(state);
+      if (draft.kind !== "replace") throw new LifecycleGateError("scope");
+      const label = resolveLabel(value, isManual, (await this.#deps.labelPool?.()) ?? []);
+      if ("failure" in label)
+        return { ...(await this.#snapshot(turn)), labelResult: label.failure };
+      const labelResult = await this.#freeLabel(label.id, draft);
+      if (labelResult === "read")
+        await this.#persist(
+          {
+            ...draft,
+            replacementId: label.id,
+            replacementCode: label.code,
+            labelScanned: true,
+            manualCapture: draft.manualCapture || isManual,
+          },
+          turn,
+          operation,
+        );
+      return { ...(await this.#snapshot(turn)), labelResult };
+    });
+  }
+  async #freeLabel(id: string, draft: LifecycleDraft): Promise<"read" | "own" | "used"> {
+    if (id === draft.ovitrapId) return "own";
+    return (await this.#deps.store.isLabelTaken(id, draft.eventId)) ? "used" : "read";
+  }
   refreshGps(eventId: string | null): Promise<Snapshot> {
     return this.#write(eventId, async (state, turn, operation) => {
       const draft = editable(state);
@@ -430,6 +465,24 @@ export class LifecycleService {
   refresh(eventId: string | null): Promise<Snapshot> {
     return this.#write(eventId, async (_state, turn, operation) => {
       await this.#deps.refresh?.(turn, operation);
+      return this.#snapshot(turn);
+    });
+  }
+  /**
+   * Downloads the current catalog and rules when online and moves an open draft onto them, so a
+   * list fixed on the server reaches a courier who already began. Offline keeps the last copy.
+   */
+  updateConfiguration(eventId: string | null): Promise<Snapshot> {
+    return this.#write(eventId, async (state, turn, operation) => {
+      try {
+        await this.#deps.refresh?.(turn, operation);
+      } catch (error) {
+        if (isSessionError(error)) throw error;
+      }
+      const draft = state.event ? null : state.draft;
+      const config = await this.#deps.store.configuration(turn.handle);
+      if (draft && canAdopt(draft, config))
+        await this.#persist({ ...draft, ...config, reviewAcknowledged: false }, turn, operation);
       return this.#snapshot(turn);
     });
   }
@@ -527,6 +580,20 @@ function configurationChanged(
   );
 }
 
+/** A newer list replaces the draft's copy only while the chosen reason is still offered. */
+function canAdopt(draft: LifecycleDraft, config: import("./types.ts").Configuration): boolean {
+  const reasons = config.catalog?.[draft.kind];
+  if (!reasons || !configurationChanged(draft, config)) return false;
+  return !draft.reasonCode || reasons.some((item) => item.code === draft.reasonCode);
+}
+function isSessionError(error: unknown): boolean {
+  return (
+    error instanceof LifecycleGateError ||
+    error instanceof RemoteSessionEnded ||
+    error instanceof StaleCaptureError ||
+    (error instanceof ApiError && error.status === 403)
+  );
+}
 async function readTurnIsCurrent(turn: LifecycleSourceTurn | null): Promise<boolean> {
   if (turn === null) return true;
   try {

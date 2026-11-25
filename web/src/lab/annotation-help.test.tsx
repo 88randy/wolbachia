@@ -58,8 +58,8 @@ test("walks the three-step guide, opens a separate shortcut table and remembers 
 });
 
 test.each([
-  ["Win32", "Ctrl + Z", "Ctrl + Mayús + Z"],
-  ["MacIntel", "⌘ + Z", "⌘ + Mayús + Z"],
+  ["Win32", "Ctrl+Z", "Ctrl+Mayús+Z"],
+  ["MacIntel", "⌘+Z", "⌘+Mayús+Z"],
 ])(
   "shows complete annotation gestures and platform modifiers on %s",
   async (platform, undo, redo) => {
@@ -75,7 +75,7 @@ test.each([
       within(table).getByRole("row", { name: "Mover mientras se mantiene Espacio" }),
     ).toBeDefined();
     expect(
-      within(table).getByRole("row", { name: "Mover con clic derecho Mantener y arrastrar" }),
+      within(table).getByRole("row", { name: "Mover con clic derecho Arrastrar" }),
     ).toBeDefined();
     expect(within(table).getByRole("row", { name: "Cerrar panel Esc" })).toBeDefined();
     expect(within(table).getByRole("row", { name: `Deshacer ${undo}` })).toBeDefined();

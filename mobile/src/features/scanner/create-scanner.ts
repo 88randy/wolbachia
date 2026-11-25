@@ -1,6 +1,7 @@
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
 import type { OvitrapService } from "../ovitrap-check/service.ts";
+import type { LifecycleService } from "../ovitrap-lifecycle/service.ts";
 import { LabelPoolStore } from "../ovitrap-check/label-pool.ts";
 import { ScannerService } from "./service.ts";
 import type { ScannerResource } from "./resource-source.ts";
@@ -12,9 +13,13 @@ import { sampleScannerRoute } from "./sample-route.ts";
 export function createScanner(
   db: SqlExecutor,
   bundle: DayBundleService,
-  captures: { readonly ovitrap: OvitrapService; readonly samples?: SampleService },
+  captures: {
+    readonly ovitrapCheck: OvitrapService;
+    readonly ovitrapLifecycle?: LifecycleService;
+    readonly samples?: SampleService;
+  },
 ) {
-  const { ovitrap, samples } = captures;
+  const { ovitrapCheck: ovitrap, ovitrapLifecycle: lifecycle, samples } = captures;
   const labels = new LabelPoolStore(db);
   return new ScannerService({
     sample: samples
@@ -24,6 +29,7 @@ export function createScanner(
     resources: async (turn) => withPoolCodes(await readScannerResources(db, turn), labels),
     bag: (input, turn) => resolveBagEntry(db, turn, input),
     ovitrap,
+    lifecycle,
   });
 }
 

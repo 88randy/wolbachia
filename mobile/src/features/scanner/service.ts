@@ -1,6 +1,7 @@
 import type { OvitrapService } from "../ovitrap-check/service.ts";
 import type { LifecycleSourceReader } from "../ovitrap-lifecycle/source-context.ts";
 import type { LifecycleSourceTurn } from "../ovitrap-lifecycle/types.ts";
+import type { LifecycleService, ReplacementLabelResult } from "../ovitrap-lifecycle/service.ts";
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
 import { RemoteSessionEnded } from "../../auth/session-requests.ts";
@@ -23,6 +24,7 @@ interface Dependencies {
     OvitrapService,
     "startCheck" | "enterBag" | "bindLabel" | "usedPointCode" | "draftBuffer" | "update"
   >;
+  readonly lifecycle?: LifecycleService;
 }
 interface OpenInput {
   readonly input: ScannerInput;
@@ -31,7 +33,13 @@ interface OpenInput {
 }
 export type ScannerDestination =
   | { readonly route: Route }
+  /** Done: return to the screen that opened the scanner. */
+  | { readonly back: true }
   | { readonly error: import("./domain.ts").ScannerError; readonly pointCode?: string | null };
+/** What the scanner says for each refused replacement label. */
+export const REPLACEMENT_SCAN_ERRORS: Readonly<
+  Record<Exclude<ReplacementLabelResult, "read">, import("./domain.ts").ScannerError>
+> = { invalid: "invalid", unknown: "labelUnknown", used: "labelUsed", own: "labelOwn" };
 /** Resolves only current downloaded scope; opening a capture awaits its existing durable writer. */
 export class ScannerService {
   readonly #deps: Dependencies;
@@ -59,6 +67,7 @@ export class ScannerService {
   }
   open(request: OpenInput): Promise<ScannerDestination> {
     const { input, eventId, isCurrent } = request;
+    if (input.bindsLabel === "replace") return this.#bindReplacement(input, eventId, isCurrent);
     if (input.bindsLabel) return this.#bindLabel(input, eventId, isCurrent);
     const coded = codeScannerRoute(input);
     if (coded) return Promise.resolve(coded);
@@ -100,6 +109,25 @@ export class ScannerService {
       return { error: "labelUsed", pointCode };
     }
     return { error: result === "unknown" ? "labelUnknown" : "invalid" };
+  }
+  /** Replacing: the label of the new trap follows the same rules as placing, then returns to the wizard. */
+  async #bindReplacement(
+    input: ScannerInput,
+    eventId: string | null,
+    isCurrent: () => boolean,
+  ): Promise<ScannerDestination> {
+    const { lifecycle } = this.#deps;
+    if (!lifecycle || eventId === null) return { error: "unavailable" };
+    await lifecycle.draftBuffer.persist(lifecycle, eventId);
+    const { labelResult } = await lifecycle.bindReplacementLabel(
+      input.value,
+      input.isManual,
+      eventId,
+    );
+    if (!isCurrent()) return { error: "unavailable" };
+    return labelResult === "read"
+      ? { back: true }
+      : { error: REPLACEMENT_SCAN_ERRORS[labelResult] };
   }
   /** The bag step of the open capture: camera and typed code follow the same rule (`resolveBagEntry`). */
   async #enterBag({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {

@@ -1,6 +1,5 @@
 import { PendingDraftError } from "../ovitrap-check/ports.ts";
 import { ShiftBlockedError } from "../ovitrap-check/shift-authorization.ts";
-import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
 import type { Dependencies } from "./ports.ts";
 import type {
   CurrentLifecycleDraft,
@@ -23,6 +22,10 @@ const EMPTY = {
   evidence: [],
   discardedEvidence: [],
   reviewAcknowledged: false,
+  // Replacing: the new trap's label is bound later by scanning or typing its sticker.
+  replacementId: null,
+  labelScanned: false,
+  replacementCode: null,
 } as const;
 export function pendingDraft(
   current: StoredLifecycle,
@@ -33,23 +36,6 @@ export function pendingDraft(
   if (current.draft.kind !== input.kind || current.draft.ovitrapId !== input.ovitrapId)
     throw new PendingDraftError();
   return current.draft;
-}
-async function replacementIdentity(deps: Dependencies, kind: LifecycleKind, eventId: string) {
-  const id = kind === "replace" ? deps.uuid() : null;
-  if (
-    id &&
-    (!UUID_PATTERN.test(id) ||
-      id === eventId ||
-      (await deps.store.physical(id)) ||
-      (
-        await deps.store.db.query(
-          "SELECT 1 FROM lifecycle_courier_projection WHERE kind='ovitrap' AND id=?",
-          [id],
-        )
-      ).length)
-  )
-    throw new Error("New physical identity must be unused.");
-  return id;
 }
 /** Only the explicit new-start writer supplies the fresh event UUID and validated original source. */
 function requireActiveSource(source: LifecycleSource, ovitrapId: string): void {
@@ -77,7 +63,6 @@ export async function startDraft(
     eventId: freshEventId,
     schemaVersion: 2,
     source: audit,
-    replacementId: await replacementIdentity(deps, input.kind, freshEventId),
     deviceTime,
     shiftId,
     kind: input.kind,
