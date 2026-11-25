@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { AnnotationExport } from "./annotation-export-query";
-import { apiError, createFakeApi, makeMe } from "../test/fake-api";
+import { createFakeApi, makeMe } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 
@@ -87,44 +87,78 @@ describe("W72 annotation training exports", () => {
     });
   });
 
-  test("keeps downloads disabled until ready and downloads through the authorized endpoint", async () => {
+  test("uses a cookie-authenticated direct download link without buffering the ZIP", async () => {
     const rows = ["queued", "running", "failed", "ready"].map((status, index) =>
       exportRow(
         status as AnnotationExport["status"],
         `00000000-0000-4000-8000-00000000007${String(index)}`,
       ),
     );
-    const ready = rows[3];
-    const createUrl = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:annotation-export");
-    const revokeUrl = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
-    const { api } = await openExports({
-      rows,
-      routes: {
-        [`GET ${EXPORT_PATH}${ready?.id ?? ""}/download/`]: new Response("archive", {
-          headers: {
-            "Content-Type": "application/zip",
-            "Content-Disposition": 'attachment; filename="aedesvision.zip"',
-          },
-        }),
-      },
-    });
+    const createUrl = vi.spyOn(URL, "createObjectURL");
+    const { api } = await openExports({ rows });
     const table = await screen.findByRole("table", { name: "Exportaciones" });
-    const buttons = within(table).getAllByRole("button", { name: "Descargar" });
-    expect(buttons.map((button) => button.getAttribute("aria-disabled"))).toEqual([
-      "true",
-      "true",
-      "true",
-      null,
-    ]);
-    await userEvent.click(buttons[0] as HTMLElement);
+    expect(within(table).getAllByRole("button", { name: "Descargar" })).toHaveLength(3);
+    const link = within(table).getByRole("link", { name: "Descargar" });
+    expect(link.getAttribute("href")).toBe(`${EXPORT_PATH}${rows[3]?.id ?? ""}/download/`);
+    expect(link.hasAttribute("download")).toBe(true);
+    expect(createUrl).not.toHaveBeenCalled();
     expect(api.requests.some((item) => item.path.endsWith("/download/"))).toBe(false);
-    await userEvent.click(buttons[3] as HTMLElement);
-    await waitFor(() => {
-      expect(createUrl).toHaveBeenCalledTimes(1);
+  });
+
+  test("regenerates an expired archive with the same filters", async () => {
+    const expired = { ...exportRow("expired"), format: "yolo" as const, include_voided: true };
+    const { api } = await openExports({
+      rows: [expired],
+      routes: { [`POST ${EXPORT_PATH}`]: Response.json(exportRow("queued"), { status: 201 }) },
     });
-    expect(revokeUrl).toHaveBeenCalledWith("blob:annotation-export");
-    expect(api.requests.some((item) => item.path.endsWith("/download/"))).toBe(true);
+    await screen.findByText("Expirada");
+    await userEvent.click(screen.getByRole("button", { name: "Volver a generar" }));
+    await waitFor(() => {
+      expect(api.requests.some((item) => item.method === "POST")).toBe(true);
+    });
+    expect(api.requests.find((item) => item.method === "POST")?.body).toEqual({
+      date_from: expired.date_from,
+      date_to: expired.date_to,
+      author: expired.author,
+      include_voided: true,
+      format: "yolo",
+    });
+  });
+
+  test.each([
+    ["2026-11-25", "", "Selecciona la fecha inicial y la fecha final."],
+    ["2026-11-25", "2026-11-24", "La fecha final debe ser igual o posterior a la inicial."],
+    ["2024-01-01", "2025-01-01", "Selecciona un periodo de hasta 366 días, incluidos ambos días."],
+  ])("places the date error on the final field for %s through %s", async (from, to, message) => {
+    await openExports();
+    await screen.findByRole("button", { name: "Generar exportación" });
+    setDate("Fecha inicial", from);
+    setDate("Fecha final", to);
+    await userEvent.click(screen.getByRole("button", { name: "Generar exportación" }));
+    expect(await screen.findByText(message)).toBeDefined();
+    const culprit = screen.getByLabelText("Fecha final");
+    expect(culprit.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Fecha inicial").getAttribute("aria-invalid")).toBe(null);
+    expect(document.activeElement).toBe(culprit);
+  });
+
+  test("shows the photo notice before a request and invalidates only export history", async () => {
+    const { app } = await openExports({
+      routes: { [`POST ${EXPORT_PATH}`]: Response.json(exportRow("queued"), { status: 201 }) },
+    });
+    await screen.findByText(/Las fotos pueden mostrar códigos o etiquetas escritos a mano/);
+    const identity = makeMe();
+    const prefix = ["org", identity.user.id, identity.organization?.slug ?? "", "lab"];
+    const queueKey = [...prefix, "queue"];
+    const exportKey = [...prefix, "annotation-exports", 7];
+    app.queryClient.setQueryData(queueKey, { untouched: true });
+    app.queryClient.setQueryData(exportKey, { results: [] });
+    setDate("Fecha inicial", "2026-11-01");
+    setDate("Fecha final", "2026-11-25");
+    await userEvent.click(screen.getByRole("button", { name: "Generar exportación" }));
+    await screen.findByText("Exportación solicitada. Puedes revisar su estado en la tabla.");
+    expect(app.queryClient.getQueryState(queueKey)?.isInvalidated).toBe(false);
+    expect(app.queryClient.getQueryState(exportKey)?.isInvalidated).toBe(true);
   });
 
   test("uses the people picker for the author and retains filters after the max-image response", async () => {
@@ -138,9 +172,16 @@ describe("W72 annotation training exports", () => {
           previous: null,
           results: [{ id: author, display_name: "Synthetic annotator" }],
         }),
-        [`POST ${EXPORT_PATH}`]: apiError(400, "validation_error", {
-          fields: { date_to: [{ code: "annotation_export_too_many_images" }] },
-        }),
+        [`POST ${EXPORT_PATH}`]: Response.json(
+          {
+            code: "validation_error",
+            detail: "Synthetic image cap.",
+            fields: {
+              date_to: [{ code: "annotation_export_too_many_images", params: { max_images: 123 } }],
+            },
+          },
+          { status: 400 },
+        ),
       },
     });
     await screen.findByRole("button", { name: "Generar exportación" });
@@ -149,9 +190,28 @@ describe("W72 annotation training exports", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "Autor (opcional)" }));
     await userEvent.click(await screen.findByRole("option", { name: "Synthetic annotator" }));
     await userEvent.click(screen.getByRole("button", { name: "Generar exportación" }));
-    await screen.findByText(/El conjunto supera 5,000 imágenes/);
+    await screen.findByText(/El conjunto supera 123 imágenes/);
+    expect(screen.getByLabelText("Fecha final").getAttribute("aria-invalid")).toBe("true");
     expect(api.requests.find((item) => item.method === "POST")?.body).toMatchObject({ author });
     expect(screen.getByLabelText<HTMLInputElement>("Fecha inicial").value).toBe("2026-11-01");
+  });
+
+  test("shows the retained author filter with a resolved name and no raw identifier", async () => {
+    const author = "00000000-0000-4000-8000-000000000080";
+    await openExports({
+      rows: [{ ...exportRow("ready"), author }],
+      permissions: ["egg_annotation.export", "user.lookup"],
+      routes: {
+        [`GET /api/v1/lookups/users/${author}/`]: Response.json({
+          id: author,
+          display_name: "Synthetic annotator",
+        }),
+      },
+    });
+    const table = await screen.findByRole("table", { name: "Exportaciones" });
+    expect(await within(table).findByText("Synthetic annotator")).toBeDefined();
+    expect(within(table).getByText("Autor (opcional):")).toBeDefined();
+    expect(within(table).queryByText(author)).toBe(null);
   });
 
   test("gates the route and laboratory card by the export permission", async () => {

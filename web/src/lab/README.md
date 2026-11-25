@@ -5,19 +5,30 @@
 `/lab/annotation-exports` and the Laboratory home card require
 `egg_annotation.export`. The form requests COCO or YOLO archives of verified
 manual annotations; it never builds training datasets in the browser. Inclusive
-dates use the organization's time zone, with at most 366 days and 5,000 images.
+dates use the organization's time zone. Backend limits on days, image count and
+verified image bytes are rendered from API error params on the relevant field.
 The optional author control reuses the existing names-only people picker when
 the session may read it; otherwise the author filter is omitted. Voided count
 annotations are excluded unless explicitly requested. Points remain pixel
 observations in `points.json`, including images without any boxes.
 
-The generated API client submits each job explicitly and downloads its ZIP through
-the authenticated download endpoint. Requests use the shared session guard and
+The generated API client submits each job explicitly. Web authentication uses
+same-origin session cookies (`createWebApiClient`), so a native `<a download>`
+streams ZIP bytes directly through the same-origin authenticated endpoint without
+holding the archive in JavaScript memory. No bearer token or object URL is used.
+The backend resolves the export's organization for headerless navigation and
+rechecks active membership and current export permission before delivery.
+Requests use the shared session guard and
 organization-scoped query policy. Unconfirmed submissions retain inputs and ask
 the user to inspect the table before trying again. History uses server paging and
 newest-first order. TanStack Query's `refetchInterval` runs every three seconds
 only while the current page contains a queued or running job; terminal and empty
-pages stop polling. Download controls explain why they are unavailable until ready.
+pages stop polling. Ready archives expire under the server retention policy; an
+expired row shows “Expired” and can request a new export with the same filters.
+Creating a job invalidates only annotation export history for the current identity.
+Before generating, the screen explains that metadata, file names and manifest
+omit personal data, while photos may contain handwritten codes or labels.
+Download controls explain why they are unavailable until ready.
 
 W72 is the next unused screen code; the original W1–W71 design export has no asset
 for it. It follows the existing shared card, form, segmented choice, searchable
@@ -31,7 +42,8 @@ and [React state](https://react.dev/reference/react/useState). No new dependency
 | Inclusive range, missing/invalid/reversed dates, leap-year 366-day limit | `annotation-export-domain.test.ts` |
 | Poll only while visible jobs are queued/running; stop for terminal/empty pages | `annotation-export-domain.test.ts` |
 | Form validation/focus and exact COCO/YOLO/voided request | `W72Page.test.tsx` |
-| Ready-only download and authenticated binary request | `W72Page.test.tsx` |
+| Ready-only native download, expired regeneration, isolated history invalidation and photo notice | `W72Page.test.tsx` |
+| Server-limit interpolation and date field ownership | `annotation-export-error.test.ts`, `W72Page.test.tsx` |
 | Permission-gated route, export-only home card and screen axe scan | `W72Page.test.tsx` |
 
 Browser light/dark layout, zoom, narrow widths and assistive-technology/device

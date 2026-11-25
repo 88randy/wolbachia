@@ -19,7 +19,9 @@ describe("annotation dataset export rules", () => {
   test("polls only when a visible export is queued or running", () => {
     expect(exportPollInterval(undefined)).toBe(false);
     expect(exportPollInterval([])).toBe(false);
-    expect(exportPollInterval([{ status: "ready" }, { status: "failed" }])).toBe(false);
+    expect(
+      exportPollInterval([{ status: "ready" }, { status: "failed" }, { status: "expired" }]),
+    ).toBe(false);
     expect(exportPollInterval([{ status: "queued" }, { status: "ready" }])).toBe(3000);
     expect(exportPollInterval([{ status: "running" }])).toBe(3000);
   });

@@ -12,7 +12,11 @@ import { InlineNotice } from "../ui/InlineNotice";
 import { Switch } from "../ui/Switch";
 import type { LabScope } from "./lab-query";
 import type { ExportDateError } from "./annotation-export-domain";
-import { validateExportDates } from "./annotation-export-domain";
+import {
+  exportDateErrorField,
+  MAX_EXPORT_DAYS,
+  validateExportDates,
+} from "./annotation-export-domain";
 import { useAnnotationExportCreate } from "./use-annotation-export-create";
 
 const AUTHOR_FILTER = {
@@ -34,7 +38,14 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
   const [format, setFormat] = useState<"coco" | "yolo">("coco");
   const [error, setError] = useState<ExportDateError | null>(null);
   const fromRef = useRef<HTMLInputElement>(null);
+  const toRef = useRef<HTMLInputElement>(null);
   const command = useAnnotationExportCreate(scope);
+  const errorField = exportDateErrorField(from);
+  const message =
+    error === null ? undefined : t(`annotationExport.error.${error}`, { maxDays: MAX_EXPORT_DAYS });
+  const fieldError = (field: "date_from" | "date_to") =>
+    (field === errorField ? message : undefined) ??
+    (command.failure?.field === field ? t(command.failure.key, command.failure.params) : undefined);
   const canPickAuthor = holdsAny(scope.identity.permissions, PERSON_LOOKUP.permission);
   return (
     <Card title={t("annotationExport.form.title")} headingLevel={2}>
@@ -46,19 +57,25 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
           const invalid = validateExportDates(from, to);
           setError(invalid);
           if (invalid !== null) {
-            fromRef.current?.focus();
+            (errorField === "date_from" ? fromRef : toRef).current?.focus();
             return;
           }
-          void command.submit({
-            date_from: from,
-            date_to: to,
-            include_voided: includeVoided,
-            format,
-            ...(canPickAuthor && author ? { author } : {}),
-          });
+          void command
+            .submit({
+              date_from: from,
+              date_to: to,
+              include_voided: includeVoided,
+              format,
+              ...(canPickAuthor && author ? { author } : {}),
+            })
+            .then((failure) => {
+              if (failure?.field === "date_from") fromRef.current?.focus();
+              if (failure?.field === "date_to") toRef.current?.focus();
+            });
         }}
       >
         <p className="m-0 text-sm text-ink-2">{t("annotationExport.form.hint")}</p>
+        <InlineNotice>{t("annotationExport.form.photoNotice")}</InlineNotice>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             ref={fromRef}
@@ -68,13 +85,14 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
             autoComplete="off"
             label={t("annotationExport.form.from")}
             value={from}
-            error={error === null ? undefined : t(`annotationExport.error.${error}`)}
+            error={fieldError("date_from")}
             onChange={(event) => {
               setFrom(event.target.value);
               if (error !== null) setError(validateExportDates(event.target.value, to));
             }}
           />
           <TextField
+            ref={toRef}
             id="annotation-export-to"
             name="date_to"
             type="date"
@@ -82,6 +100,7 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
             label={t("annotationExport.form.to")}
             value={to}
             min={from || undefined}
+            error={fieldError("date_to")}
             onChange={(event) => {
               setTo(event.target.value);
               if (error !== null) setError(validateExportDates(from, event.target.value));
@@ -115,13 +134,9 @@ export function AnnotationExportForm({ scope }: { scope: LabScope }) {
             {command.status === "queued" ? t("annotationExport.form.queued") : null}
           </span>
         </div>
-        {(command.status === "failed" || command.status === "tooMany") && (
+        {command.failure && !command.failure.field && (
           <InlineNotice tone="critical">
-            {t(
-              command.status === "tooMany"
-                ? "annotationExport.error.tooMany"
-                : "annotationExport.error.failed",
-            )}
+            {t(command.failure.key, command.failure.params)}
           </InlineNotice>
         )}
       </form>

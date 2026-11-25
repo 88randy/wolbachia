@@ -7,7 +7,9 @@ export const annotationExport = {
     "Genera archivos COCO o YOLO con imágenes, cajas y puntos separados.",
   "annotationExport.form.title": "Nueva exportación",
   "annotationExport.form.hint":
-    "Selecciona hasta 366 días y 5,000 imágenes. Las fechas incluyen ambos días y usan la zona horaria de la organización. Los puntos se guardan por separado, sin convertirlos en cajas.",
+    "Las fechas incluyen ambos días y usan la zona horaria de la organización. Los puntos se guardan por separado, sin convertirlos en cajas.",
+  "annotationExport.form.photoNotice":
+    "No se incluyen datos personales en los metadatos, nombres de archivo ni manifiesto. Las fotos pueden mostrar códigos o etiquetas escritos a mano; revísalas antes de compartir el conjunto.",
   "annotationExport.form.from": "Fecha inicial",
   "annotationExport.form.to": "Fecha final",
   "annotationExport.form.author": "Autor (opcional)",
@@ -30,18 +32,24 @@ export const annotationExport = {
   "annotationExport.list.pointCount": "Puntos",
   "annotationExport.list.status": "Estado",
   "annotationExport.list.download": "Descargar",
+  "annotationExport.list.regenerate": "Volver a generar",
   "annotationExport.list.notReady": "Disponible cuando esté lista.",
   "annotationExport.status.queued": "En cola",
   "annotationExport.status.running": "En preparación",
   "annotationExport.status.ready": "Lista",
   "annotationExport.status.failed": "Fallida",
+  "annotationExport.status.expired": "Expirada",
   "annotationExport.error.required": "Selecciona la fecha inicial y la fecha final.",
   "annotationExport.error.invalid": "Selecciona fechas válidas.",
   "annotationExport.error.range": "La fecha final debe ser igual o posterior a la inicial.",
   "annotationExport.error.tooLong":
-    "Selecciona un periodo de hasta 366 días, incluidos ambos días.",
+    "Selecciona un periodo de hasta {maxDays} días, incluidos ambos días.",
   "annotationExport.error.tooMany":
-    "El conjunto supera 5,000 imágenes. Reduce el periodo o elige un autor y vuelve a generar.",
+    "El conjunto supera {maxImages} imágenes. Reduce el periodo o elige un autor y vuelve a generar.",
+  "annotationExport.error.tooLarge":
+    "El conjunto supera {maxBytes} bytes. Reduce el periodo o elige un autor y vuelve a generar.",
+  "annotationExport.error.inProgress":
+    "Hay exportaciones en preparación. Espera a que terminen y vuelve a generar.",
   "annotationExport.error.failed":
     "No se confirmó la solicitud. Revisa la tabla antes de volver a generar para evitar duplicados.",
   "annotationExport.error.task":

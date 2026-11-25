@@ -15,6 +15,7 @@ const STATUS_TONE = {
   running: "info",
   ready: "success",
   failed: "critical",
+  expired: "neutral",
 } as const satisfies Record<AnnotationExport["status"], Tone>;
 
 export function useAnnotationExportColumns(scope: LabScope): DataTableColumn<AnnotationExport>[] {

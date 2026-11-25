@@ -9,7 +9,9 @@ export const annotationExport: Record<keyof typeof esAnnotationExport, string> =
     "Generate COCO or YOLO archives with images, boxes and separate points.",
   "annotationExport.form.title": "New export",
   "annotationExport.form.hint":
-    "Select up to 366 days and 5,000 images. Both dates are included in the organization's time zone. Points are stored separately and are never converted into boxes.",
+    "Both dates are included in the organization's time zone. Points are stored separately and are never converted into boxes.",
+  "annotationExport.form.photoNotice":
+    "Metadata, file names and the manifest contain no personal data. Photos may show handwritten codes or labels; review them before sharing the dataset.",
   "annotationExport.form.from": "Start date",
   "annotationExport.form.to": "End date",
   "annotationExport.form.author": "Author (optional)",
@@ -32,17 +34,23 @@ export const annotationExport: Record<keyof typeof esAnnotationExport, string> =
   "annotationExport.list.pointCount": "Points",
   "annotationExport.list.status": "Status",
   "annotationExport.list.download": "Download",
+  "annotationExport.list.regenerate": "Generate again",
   "annotationExport.list.notReady": "Available when ready.",
   "annotationExport.status.queued": "Queued",
   "annotationExport.status.running": "Preparing",
   "annotationExport.status.ready": "Ready",
   "annotationExport.status.failed": "Failed",
+  "annotationExport.status.expired": "Expired",
   "annotationExport.error.required": "Select both the start date and end date.",
   "annotationExport.error.invalid": "Select valid dates.",
   "annotationExport.error.range": "The end date must be on or after the start date.",
-  "annotationExport.error.tooLong": "Select up to 366 days, including both dates.",
+  "annotationExport.error.tooLong": "Select up to {maxDays} days, including both dates.",
   "annotationExport.error.tooMany":
-    "The dataset exceeds 5,000 images. Shorten the period or choose an author and generate again.",
+    "The dataset exceeds {maxImages} images. Shorten the period or choose an author and generate again.",
+  "annotationExport.error.tooLarge":
+    "The dataset exceeds {maxBytes} bytes. Shorten the period or choose an author and generate again.",
+  "annotationExport.error.inProgress":
+    "Exports are being prepared. Wait for them to finish and generate again.",
   "annotationExport.error.failed":
     "The request was not confirmed. Check the table before generating again to avoid duplicates.",
   "annotationExport.error.task":
