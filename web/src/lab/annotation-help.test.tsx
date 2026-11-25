@@ -75,7 +75,7 @@ test.each([
       within(table).getByRole("row", { name: "Mover mientras se mantiene Espacio" }),
     ).toBeDefined();
     expect(
-      within(table).getByRole("row", { name: "Mover con clic derecho Mantener y arrastrar" }),
+      within(table).getByRole("row", { name: "Mover con clic derecho Arrastrar" }),
     ).toBeDefined();
     expect(within(table).getByRole("row", { name: "Cerrar panel Esc" })).toBeDefined();
     expect(within(table).getByRole("row", { name: `Deshacer ${undo}` })).toBeDefined();
