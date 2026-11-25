@@ -1,4 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
+import type { MessageKey } from "@wolbachia/i18n";
+import { eventTypeKey } from "../../sync/inbox-model.ts";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
 import type { OutboxStatus } from "../../outbox/outbox-status.ts";
 
@@ -110,6 +112,66 @@ export function serverHistory(
     isServerDecision: true,
     observation: null,
   };
+}
+/**
+ * Office verdicts on an own event: exact decision kinds only (lab facts about a bag are not a
+ * verdict on the capture) with a verdict status; any other server fact stays a separate row.
+ */
+const DECISION_KINDS: readonly string[] = ["review_decision", "relocation_proposal"];
+const DECISION_STATUSES: readonly HistoryEntry["status"][] = [
+  "voided",
+  "reviewed",
+  "rejected",
+  "observed",
+];
+const instant = (time: string | null) => {
+  const value = time === null ? NaN : Date.parse(time);
+  return Number.isFinite(value) ? value : -Infinity;
+};
+/** Later decision wins; equal times fall back to the id so the result is deterministic. */
+const isLater = (left: HistoryEntry, right: HistoryEntry) =>
+  instant(left.time) - instant(right.time) || left.id.localeCompare(right.id);
+/**
+ * A server decision on one of the courier's own visible events folds into that event's row
+ * (P29 and P33): the latest decision gives its status, reason and author, and the separate
+ * decision row is not listed. Decisions without a visible original keep their own row.
+ */
+export function foldDecisions(entries: readonly HistoryEntry[]): readonly HistoryEntry[] {
+  const originals = new Set(entries.filter((entry) => !entry.isServerDecision).map((e) => e.id));
+  const isFolded = (entry: HistoryEntry) =>
+    entry.isServerDecision &&
+    DECISION_KINDS.includes(entry.kind) &&
+    entry.sourceId !== null &&
+    originals.has(entry.sourceId) &&
+    DECISION_STATUSES.includes(entry.status);
+  const latest = new Map<string, HistoryEntry>();
+  for (const decision of entries.filter(isFolded)) {
+    const key = decision.sourceId ?? "";
+    const current = latest.get(key);
+    if (current === undefined || isLater(decision, current) > 0) latest.set(key, decision);
+  }
+  return entries
+    .filter((entry) => !isFolded(entry))
+    .map((entry) => {
+      const decision = entry.isServerDecision ? undefined : latest.get(entry.id);
+      if (decision === undefined) return entry;
+      return {
+        ...entry,
+        status: decision.status,
+        reason: decision.reason ?? entry.reason,
+        author: decision.author ?? entry.author,
+      };
+    });
+}
+/** Server history kinds that name the field event they concern. */
+const SERVER_KIND_TYPES: Readonly<Record<string, string>> = {
+  relocation_proposal: "ovitrap.relocate",
+  community_activity: "community.activity",
+};
+/** Row title: the event type when known (local `a.b` types or a typed server kind), else the office note. */
+export function historyTitleKey(kind: string): MessageKey {
+  const type = SERVER_KIND_TYPES[kind] ?? kind;
+  return type.includes(".") ? eventTypeKey(type) : "mobile.history.serverFact";
 }
 /** This index searches only known local code/identity fields, never arbitrary private payload text. */
 export function filterHistory(
