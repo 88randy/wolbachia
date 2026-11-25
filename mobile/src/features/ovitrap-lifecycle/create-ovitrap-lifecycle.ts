@@ -22,6 +22,7 @@ import { createForegroundGps } from "./create-foreground-gps.ts";
 import { LifecycleAdvisory } from "./advisory.ts";
 import { createScopedApiClient } from "../../api/create-scoped-api-client.ts";
 import { lifecycleTrainingGuards } from "./training-guard.ts";
+import { LabelPoolStore } from "../ovitrap-check/label-pool.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly engine: SyncEngine;
@@ -97,6 +98,7 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     gps: deps.gps ?? gps,
     cancelNative: gps.cancel,
+    labelPool: () => new LabelPoolStore(deps.db).read(),
     selectTask: deps.selectTask,
     refreshAdvisory: (draft, turn, operation) => advisory.refresh(draft, turn, operation),
     ...lifecycleEvidence({ port: deps.evidence, store, attachments: deps.attachments }),

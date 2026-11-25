@@ -24,6 +24,8 @@ export const field = {
   "field.scan.question.label": "Scan the ovitrap label",
   "field.scan.labelPlacedAt": "This ovitrap is already placed at point {point}. Scan a new label.",
   "field.scan.labelUsed": "That label is already on another ovitrap. Use a new label.",
+  "field.scan.labelOwn":
+    "That is the label of the ovitrap you are taking out. Scan the label of the new one.",
   "field.scan.labelUnknown":
     "We could not find that label. Check the number printed large on it or use a new label.",
   "field.scan.bagCode": "We could not read this bag's code. Type the code printed on it.",
@@ -204,7 +206,10 @@ export const field = {
   "field.lifecycle.kind.relocate": "Ask to move it",
   "field.lifecycle.kind.remove": "Remove ovitrap",
   "field.lifecycle.kind.replace": "Replace ovitrap",
+  "field.lifecycle.labelQuestion": "Scan the label of the new ovitrap",
   "field.lifecycle.listChanged": "The lists changed. Try again.",
+  "field.lifecycle.newLabel": "New ovitrap: {code}",
+  "field.lifecycle.newLabelScanned": "New ovitrap: label scanned",
   "field.lifecycle.noReasons": "No reasons downloaded.",
   "field.lifecycle.noReasonsHint": "Connect to the internet and try again.",
   "field.lifecycle.mistake": "I made a mistake",

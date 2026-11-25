@@ -29,6 +29,18 @@ export interface StoredCapture {
   readonly draftVersion: string | null;
 }
 /** SQLite is the only source of saved status; local projections retain every captured version. */
+/** A placement never takes a label a saved replacement already put on its new trap. */
+function replacementLabelGuard(draft: Draft): readonly SqlStatement[] {
+  if (draft.mode !== "place") return [];
+  return [
+    {
+      sql: `INSERT INTO lifecycle_guard(slot,value) VALUES(1,CASE WHEN EXISTS(
+        SELECT 1 FROM lifecycle_capture WHERE kind='replace' AND json_extract(draft,'$.replacementId')=?)
+        THEN 0 ELSE 1 END) ON CONFLICT(slot) DO UPDATE SET value=excluded.value`,
+      params: [draft.ovitrapId],
+    },
+  ];
+}
 export class OvitrapStore {
   readonly #db: SqlExecutor;
   constructor(db: SqlExecutor) {
@@ -188,6 +200,14 @@ export class OvitrapStore {
     );
     return row ? (JSON.parse(readText(row, "draft")) as Draft) : null;
   }
+  /** Placing: a label the open replacement draft already bound is not free. */
+  async isReplacementLabel(id: string): Promise<boolean> {
+    const rows = await this.#db.query(
+      "SELECT 1 FROM lifecycle_draft WHERE event_id IS NULL AND json_extract(draft,'$.replacementId')=? LIMIT 1",
+      [id],
+    );
+    return rows.length > 0;
+  }
   async lifecycleSource(id: string, point: Draft["point"] = null) {
     const physical = await physicalOvitrap(this.#db, id);
     const [row] = await this.#db.query(
@@ -252,6 +272,7 @@ export class OvitrapStore {
     if (!week) throw new CaptureBlockedError("weekContext");
     return [
       ...this.#lineage(draft),
+      ...replacementLabelGuard(draft),
       {
         sql: `INSERT INTO ovitrap_capture(event_id, ovitrap_id, mode, epi_week, draft)
           VALUES (?, (SELECT ? FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND draft=?), ?, ?, ?)`,

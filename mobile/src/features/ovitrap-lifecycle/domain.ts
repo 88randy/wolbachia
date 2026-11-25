@@ -73,7 +73,10 @@ function evidenceGate(draft: LifecycleDraft): string | null {
 }
 function physicalGate(draft: LifecycleDraft): string | null {
   if (!draft.gps || (draft.kind === "relocate" && !draft.proposedLocation)) return "gps";
-  if (draft.kind === "replace" && (!draft.replacementId || !UUID_PATTERN.test(draft.replacementId)))
+  if (
+    draft.kind === "replace" &&
+    (!draft.labelScanned || !draft.replacementId || !UUID_PATTERN.test(draft.replacementId))
+  )
     return "identity";
   if (
     draft.kind === "remove" &&
