@@ -183,9 +183,9 @@ def test_catalogs_have_the_expected_initial_items() -> None:
             expected.append("other")
         if catalog.slug == "paddle-type":
             expected.insert(0, "standard")
-        if catalog.slug == "void-reason":
+        expected = {
             # Plus the reasons the write-off form reads from this catalog.
-            expected = [
+            "void-reason": [
                 "data-entry-error",
                 "duplicate-record",
                 "wrong-location",
@@ -193,7 +193,18 @@ def test_catalogs_have_the_expected_initial_items() -> None:
                 "damaged",
                 "lost",
                 "other",
-            ]
+            ],
+            "replacement-reason": ["destroyed", "damaged", "other"],
+            "relocation-reason": ["closed-house", "resident-refused", "unsafe-location", "other"],
+            "removal-reason": [
+                "end-of-period",
+                "quadrant-closed",
+                "resident-request",
+                "supervisor-instruction",
+                "other",
+            ],
+            "damage-reason": ["broken", "weather", "animal", "vandalism", "other"],
+        }.get(catalog.slug, expected)
         assert codes_in_catalog == expected
     other = CatalogItem.objects.filter(organization=organization, is_other=True).first()
     assert (other.label_es, other.label_en, other.is_active) == (
@@ -261,6 +272,41 @@ def test_seed_keeps_admin_edits_to_catalog_labels() -> None:
     item.refresh_from_db()
     assert (item.label_es, item.is_active) == ("Edited", False)
     assert Catalog.objects.get(organization=organization, slug="void-reason").label_es == "Editado"
+
+
+def test_apply_adds_missing_lifecycle_reasons_without_touching_existing_items(monkeypatch) -> None:
+    from catalogs.seeds import OPEN_CATALOG_ITEMS
+
+    # An organization seeded when the lifecycle lists only had "Other".
+    older = {"void-reason": OPEN_CATALOG_ITEMS["void-reason"]}
+    monkeypatch.setattr("catalogs.seeds.OPEN_CATALOG_ITEMS", older)
+    organization = create_organization(SPEC)
+    monkeypatch.undo()
+    reasons = CatalogItem.objects.filter(
+        catalog__organization=organization, catalog__slug="replacement-reason"
+    )
+    other = reasons.get(code="other")
+    CatalogItem.objects.create(
+        organization=organization,
+        catalog=other.catalog,
+        code="flooded",
+        label_es="Inundada",
+        label_en="Flooded",
+        sort=5,
+        is_active=False,
+    )
+
+    assert "replacement-reason" in run_command("--organization", organization.slug)
+    assert list(reasons.values_list("code", flat=True)) == ["flooded", "other"]
+    run_command("--organization", organization.slug, "--apply")
+    run_command("--organization", organization.slug, "--apply")
+
+    assert list(reasons.values_list("code", "label_es", "is_active")) == [
+        ("flooded", "Inundada", False),
+        ("destroyed", "Destruida", True),
+        ("damaged", "Dañada", True),
+        ("other", "Otro (especificar)", True),
+    ]
 
 
 def test_seed_does_not_cross_organizations() -> None:
