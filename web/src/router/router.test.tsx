@@ -5,6 +5,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { RouterProvider } from "@tanstack/react-router";
+import { CancelledError } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
@@ -125,15 +126,18 @@ describe("area routes", () => {
   });
 });
 
-async function renderThrowingRoute() {
+async function renderThrowingRoute(where: "component" | "guard" = "component") {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const rootRoute = createRootRoute();
   let shouldThrow = true;
   const brokenRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/",
+    beforeLoad: () => {
+      if (where === "guard" && shouldThrow) throw new CancelledError();
+    },
     component: () => {
-      if (shouldThrow) throw new Error("boom");
+      if (where === "component" && shouldThrow) throw new Error("boom");
       return <h1>recovered</h1>;
     },
   });
@@ -167,6 +171,16 @@ describe("route error state", () => {
 
   test("retry renders the screen again", async () => {
     const fix = await renderThrowingRoute();
+    await screen.findByRole("button", { name: "Reintentar" });
+
+    fix();
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(await screen.findByRole("heading", { name: "recovered" })).toBeDefined();
+  });
+
+  test("retry runs a failed guard again instead of only resetting the boundary", async () => {
+    const fix = await renderThrowingRoute("guard");
     await screen.findByRole("button", { name: "Reintentar" });
 
     fix();
