@@ -59,7 +59,15 @@ function nextChangeAt(state: DayState): string | null {
   return state?.meta?.next_change_at ?? null;
 }
 function useDayProgress(state: DayState, location: ReturnType<typeof useDayLocation>, now: Date) {
-  const progress = buildDay({ tasks: state?.tasks ?? [], work: state?.work ?? [], location, now });
+  const { auth } = useServices();
+  const { profile } = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
+  const progress = buildDay({
+    tasks: state?.tasks ?? [],
+    work: state?.work ?? [],
+    location,
+    now,
+    epiWeek: profile?.organization?.epi_week ?? null,
+  });
   const selected = progress.tasks.find((row) => row.task.id === state?.navigation?.pointId) ?? null;
   return { ...progress, selected };
 }

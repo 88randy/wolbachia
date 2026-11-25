@@ -65,6 +65,8 @@ async function pendingPoints(day: DayService) {
     ...snapshot,
     location: { kind: "unavailable" },
     now: new Date(),
+    // Pending points follow server completion only; local work never changes them.
+    epiWeek: null,
   }).pendingTasks.map(({ task }) => ({ taskId: task.id, pointCode: task.point_code }));
 }
 function notifyLocalClose(deps: Dependencies): void {

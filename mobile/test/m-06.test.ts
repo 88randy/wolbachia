@@ -121,6 +121,7 @@ void test("AC cold start: cached assignments, risk and manifests survive an offl
   await assert.rejects(offline.refresh());
   const cached = await offline.read();
   const day = buildDay({
+    epiWeek: null,
     tasks: cached.tasks,
     work: [],
     location: { kind: "denied" },
@@ -276,7 +277,7 @@ void test("AC GPS: denied, unavailable and stale fixes keep risk/code order with
     { kind: "granted", fix: { lat: 0, lng: 0, accuracy_m: 12, fixedAt: 0 } },
   ];
   for (const location of states) {
-    const day = buildDay({ tasks: cache.tasks, work: [], location, now: FIXED_NOW });
+    const day = buildDay({ epiWeek: null, tasks: cache.tasks, work: [], location, now: FIXED_NOW });
     assert.deepEqual(
       day.tasks.map((row) => row.task.point_code),
       ["OV-012", "OV-001"],
@@ -370,6 +371,7 @@ void test("Regression: historical or explicitly different-task work cannot compl
   );
   const overlay = new OutboxWorkOverlay(db);
   const day = buildDay({
+    epiWeek: null,
     tasks: (await store.read()).tasks,
     work: await overlay.read(),
     location: { kind: "denied" },
@@ -759,6 +761,7 @@ void test("AC ordering: high risk precedes nearest fresh fix and distance preced
     FIXED_NOW,
   );
   const day = buildDay({
+    epiWeek: null,
     tasks: (await store.read()).tasks,
     work: [],
     location: {
@@ -1689,6 +1692,7 @@ void test("Review2 producer: real bootstrap and delta rows preserve unlocated ta
   cached = await fixture.store.read();
   assert.equal(cached.meta?.unreadable_rows, 0);
   const day = buildDay({
+    epiWeek: null,
     tasks: cached.tasks,
     work: [],
     location: {

@@ -9,7 +9,10 @@ no migration.
 organization zone (invalid or missing zone: `DEFAULT_TIME_ZONE`), keeps today and
 the 29 previous days (`CALENDAR_WINDOW_DAYS`, within `LOCAL_RETENTION_MS`) plus dates up to the last downloaded
 task, and lays out month grids from the epi week start (`mmwr` Sunday, `iso` or
-missing Monday). `calendarStatus` follows the issue's status table; D2 accepted
+missing Monday). #374: the rest of the current epi week is always in the window (an
+empty later day says "Sin tareas este día"), and an incomplete task stays `scheduled` until
+its epi week ends, then reads `missed` (or `unconfirmed`), using `day/epi-week.ts`.
+`calendarStatus` follows the issue's status table; D2 accepted
 decisions arrive from P29 as `reviewed`. An unparsable device time is listed last
 on today and never marks the grid.
 
@@ -38,4 +41,4 @@ from `TrackRecorder.linesForDay` (one line per shift, owner-only).
 - No design board exists for P33: visuals follow S13 (P28/P29 cards and pills) and S05 (P9/P10).
 
 Tests: `calendar-domain.test.ts`, `calendar-store.test.ts`, `calendar-reads.test.ts`,
-`calendar-ui.test.ts`, `track-day-lines.test.ts`.
+`calendar-ui.test.ts`, `track-day-lines.test.ts`, `task-week.test.ts`.

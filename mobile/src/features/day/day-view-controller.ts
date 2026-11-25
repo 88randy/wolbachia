@@ -162,6 +162,8 @@ export function dayViewPhase(
     work: view.state.work,
     location: { kind: "unavailable" },
     now: new Date(0),
+    // The phase counts server completion only; local work never changes it.
+    epiWeek: null,
   });
   if (day.total === 0) return "empty";
   return day.completed === day.total ? "complete" : "content";

@@ -1,5 +1,6 @@
 import { DEFAULT_TIME_ZONE } from "../../sync/format-time.ts";
 import { captureLocalDate } from "../day/capture-local-date.ts";
+import { epiWeekEnd, weekStartDay } from "../day/epi-week.ts";
 import { displayPointCode } from "../day/point-code.ts";
 import type { AssignedTask, CachedTask } from "../day/types.ts";
 import type { HistoryEntry, UnscopedEntry } from "../history/domain.ts";
@@ -84,10 +85,13 @@ export function resolveTimeZone(timeZone: string | null): string {
     : DEFAULT_TIME_ZONE;
 }
 
-/** Status of a task on its date; local capture never decides completion (server only). */
-function taskStatus(row: CachedTask, today: string): CalendarStatus {
+/**
+ * Status of a task; local capture never decides completion (server only). #374: a weekly task
+ * stays "scheduled" until its epi week ends, then reads "missed" (or "unconfirmed").
+ */
+function taskStatus(row: CachedTask, today: string, epiWeek: string | null): CalendarStatus {
   if (row.serverCompletion === true) return "done";
-  if (row.task.date >= today) return "scheduled";
+  if (today <= epiWeekEnd(row.task.date, epiWeek)) return "scheduled";
   return row.serverCompletion === false ? "missed" : "unconfirmed";
 }
 
@@ -95,19 +99,20 @@ function taskStatus(row: CachedTask, today: string): CalendarStatus {
 export function calendarStatus(
   item: HistoryEntry | UnscopedEntry | CachedTask,
   today: string,
+  epiWeek: string | null,
 ): CalendarStatus {
-  if ("task" in item) return taskStatus(item, today);
+  if ("task" in item) return taskStatus(item, today, epiWeek);
   // Only a delivered void voids; a rejected or in-review one keeps its own state.
   if (item.kind === "record.void" && item.status === "sent") return "voided";
   return item.status;
 }
 
-function taskItem(row: CachedTask, today: string): CalendarItem {
+function taskItem(row: CachedTask, input: CalendarInput): CalendarItem {
   return {
     id: row.task.id,
     kind: row.task.action,
     time: null,
-    status: calendarStatus(row, today),
+    status: calendarStatus(row, input.today, input.epiWeek),
     codes: [displayPointCode(row.task.point_code)],
     isScoped: true,
     source: "task",
@@ -119,7 +124,7 @@ function activityItems(input: CalendarInput): readonly CalendarItem[] {
     id: entry.id,
     kind: entry.kind,
     time: entry.time,
-    status: calendarStatus(entry, input.today),
+    status: calendarStatus(entry, input.today, input.epiWeek),
     codes: entry.codes,
     isScoped: true,
     source: "history",
@@ -127,7 +132,7 @@ function activityItems(input: CalendarInput): readonly CalendarItem[] {
   }));
   const unscoped = input.unscoped.map((entry): CalendarItem => ({
     ...entry,
-    status: calendarStatus(entry, input.today),
+    status: calendarStatus(entry, input.today, input.epiWeek),
     codes: [],
     isScoped: false,
     source: "local",
@@ -153,7 +158,7 @@ function itemsByDate(input: CalendarInput) {
   const push = (date: string, item: CalendarItem) => {
     dated.set(date, [...(dated.get(date) ?? []), item]);
   };
-  for (const row of sortedTasks(input.tasks)) push(row.task.date, taskItem(row, input.today));
+  for (const row of sortedTasks(input.tasks)) push(row.task.date, taskItem(row, input));
   for (const item of activityItems(input)) {
     const date =
       item.time !== null && Number.isFinite(Date.parse(item.time))
@@ -166,7 +171,7 @@ function itemsByDate(input: CalendarInput) {
 }
 
 function monthWeeks(first: string, last: string, epiWeek: string | null): readonly CalendarMonth[] {
-  const weekStart = epiWeek === "mmwr" ? 0 : 1;
+  const weekStart = weekStartDay(epiWeek);
   const months: CalendarMonth[] = [];
   for (let month = first.slice(0, 7); month <= last.slice(0, 7);) {
     const start = `${month}-01`;
@@ -184,7 +189,7 @@ function monthWeeks(first: string, last: string, epiWeek: string | null): readon
 
 /**
  * The month grids and their days: past = today and the 29 previous local days; future = the
- * dates of downloaded tasks. Days outside are laid out empty with `isInWindow: false`: the
+ * rest of the current epi week plus the dates of downloaded tasks. Days outside are laid out empty with `isInWindow: false`: the
  * outbox never deletes, so older facts must not light up the grid.
  */
 export function buildCalendar(input: CalendarInput): {
@@ -193,8 +198,9 @@ export function buildCalendar(input: CalendarInput): {
 } {
   const { dated, undated } = itemsByDate(input);
   const first = addDays(input.today, 1 - CALENDAR_WINDOW_DAYS);
-  const last =
-    [input.today, ...input.tasks.map((row) => row.task.date)].sort().pop() ?? input.today;
+  // #374: the rest of the open epi week is always shown, even before its tasks exist.
+  const weekEnd = epiWeekEnd(input.today, input.epiWeek);
+  const last = [weekEnd, ...input.tasks.map((row) => row.task.date)].sort().pop() ?? weekEnd;
   const months = monthWeeks(first, last, input.epiWeek);
   const days = [...new Set(months.flatMap((month) => month.weeks.flat()))].map(
     (date): CalendarDay => {

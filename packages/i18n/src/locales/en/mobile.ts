@@ -1309,6 +1309,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.calendar.outsideWindow": "This day is not kept on the phone",
   "mobile.calendar.outsideWindowLabel": "{date}: this day is not kept on the phone",
   "mobile.calendar.noActivity": "No activity this day",
+  "mobile.calendar.noTasks": "No tasks this day",
   "mobile.calendar.tasks": "Tasks",
   "mobile.calendar.activity": "Activity",
   "mobile.calendar.seeRoute": "See route",
