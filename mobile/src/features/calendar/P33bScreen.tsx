@@ -7,6 +7,7 @@ import { useOrganizationTimeZone } from "../../sync/use-organization-time-zone.t
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { ScreenScaffold } from "../../ui/ScreenScaffold.tsx";
+import { Skeleton } from "../../ui/Skeleton.tsx";
 import { resolveTimeZone } from "./domain.ts";
 import { calendarFormat } from "./calendar-format.ts";
 import { useDayLines } from "./use-day-lines.ts";
@@ -26,12 +27,20 @@ export function P33bScreen({ route }: FeatureScreenProps<"calendarTrack">) {
     <ScreenScaffold isScrollable={false} header={<AppHeader title={title} />}>
       {lines !== null && lines.length === 0 ? (
         <View className="px-4 pt-3">
-          <InfoNotice tone="info" message={t("mobile.calendar.routePruned")} />
+          <InfoNotice tone="info" message={t("mobile.calendar.noRoute")} />
         </View>
       ) : null}
-      <View className="flex-1">
-        <MapView lines={lines ?? undefined} showDirections={false} />
-      </View>
+      {/* `initialViewState` applies on first load only: mount the map once the lines are read. */}
+      {lines === null ? (
+        <View className="gap-3 p-4">
+          <Skeleton />
+          <Skeleton isShort />
+        </View>
+      ) : (
+        <View className="flex-1">
+          <MapView lines={lines} showDirections={false} />
+        </View>
+      )}
     </ScreenScaffold>
   );
 }

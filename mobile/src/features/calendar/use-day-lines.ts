@@ -4,16 +4,16 @@ import type { LngLatPair } from "../../maps/map-types.ts";
 
 export type DayLines = readonly (readonly LngLatPair[])[];
 /** What P33 shows about a day's route; `hidden` for future or not-kept days. */
-export type DayRoute = "loading" | "lines" | "pruned" | "none" | "hidden";
+export type DayRoute = "loading" | "lines" | "notYet" | "none" | "hidden";
 
 /**
- * No lines: a local `shift.open` that day means the points were pruned; without one there was
- * no route at all (#373 behavior 7).
+ * Inside the window points are never pruned (`CALENDAR_WINDOW_DAYS` <= track retention), so no
+ * lines means no route; a shift open today simply has fewer than two fixes yet.
  */
-export function dayRouteOf(lines: DayLines | null, hadShift: boolean): DayRoute {
+export function dayRouteOf(lines: DayLines | null, isShiftOpenToday: boolean): DayRoute {
   if (lines === null) return "loading";
   if (lines.length > 0) return "lines";
-  return hadShift ? "pruned" : "none";
+  return isShiftOpenToday ? "notYet" : "none";
 }
 
 /** The owner's lines of one local date (null = loading); re-read when the live track grows. */

@@ -15,8 +15,8 @@ export function DayRouteAction({
   const t = useT();
   if (route === "lines")
     return <SecondaryButton icon={Route} label={t("mobile.calendar.seeRoute")} onPress={onOpen} />;
-  if (route === "pruned")
-    return <InfoNotice tone="info" message={t("mobile.calendar.routePruned")} />;
+  if (route === "notYet")
+    return <InfoNotice tone="info" message={t("mobile.calendar.routeNotYet")} />;
   if (route === "none") return <InfoNotice tone="info" message={t("mobile.calendar.noRoute")} />;
   return null;
 }

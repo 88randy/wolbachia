@@ -7,7 +7,7 @@ import { buildCalendar } from "../src/features/calendar/domain.ts";
 import type { CalendarItem, CalendarStatus } from "../src/features/calendar/domain.ts";
 import { monthCells } from "../src/features/calendar/calendar-cells.ts";
 import { calendarFormat } from "../src/features/calendar/calendar-format.ts";
-import { isStaleDay } from "../src/features/calendar/calendar-reads.ts";
+import { DAY_CHECK_MS, isStaleDay, watchToday } from "../src/features/calendar/calendar-reads.ts";
 import type { CalendarView } from "../src/features/calendar/service.ts";
 import { dayRouteOf } from "../src/features/calendar/use-day-lines.ts";
 import type { CachedTask } from "../src/features/day/types.ts";
@@ -320,10 +320,11 @@ void test("P33 route action: 'Ver recorrido' with lines, otherwise why there is 
   const button = pressables(route("lines"))[0];
   assert.equal(button?.props.accessibilityLabel, m["mobile.calendar.seeRoute"]);
   assert.ok(minHeightOf(button) >= 48);
-  assert.ok(texts(route("pruned")).includes(m["mobile.calendar.routePruned"]));
+  assert.ok(texts(route("notYet")).includes(m["mobile.calendar.routeNotYet"]));
   assert.ok(texts(route("none")).includes(m["mobile.calendar.noRoute"]));
   assert.deepEqual(route("hidden"), []);
-  // The day's own shift.open tells a pruned route from a day without one.
+  // Points are never pruned inside the window: no lines is "none", or "not yet" while today's
+  // shift is open with fewer than two fixes.
   assert.equal(dayRouteOf(null, true), "loading");
   assert.equal(
     dayRouteOf(
@@ -337,7 +338,7 @@ void test("P33 route action: 'Ver recorrido' with lines, otherwise why there is 
     ),
     "lines",
   );
-  assert.equal(dayRouteOf([], true), "pruned");
+  assert.equal(dayRouteOf([], true), "notYet");
   assert.equal(dayRouteOf([], false), "none");
 });
 
@@ -347,4 +348,49 @@ void test("P33 an open calendar re-reads once the organization's date changes (m
   assert.equal(isStaleDay(view, new Date("2026-11-26T05:59:00Z")), false);
   assert.equal(isStaleDay(view, new Date("2026-11-26T06:01:00Z")), true);
   assert.equal(isStaleDay(null, new Date("2026-11-26T06:01:00Z")), false);
+});
+
+void test("P33 the calendar re-reads on foreground and on the minute check only after midnight", () => {
+  let foreground = (): void => undefined;
+  let tick = (): void => undefined;
+  let interval = 0;
+  let stopped = 0;
+  let now = new Date("2026-11-26T05:59:00Z"); // 23:59 in Merida
+  let loads = 0;
+  const reads = {
+    getSnapshot: () => ({
+      view: { today: TODAY, timeZone: "America/Merida" } as CalendarView,
+      hasError: false,
+    }),
+    load: () => {
+      loads += 1;
+      return Promise.resolve();
+    },
+  };
+  const stop = watchToday(reads, {
+    onForeground: (listener) => {
+      foreground = listener;
+      return () => {
+        stopped += 1;
+      };
+    },
+    every: (ms, callback) => {
+      interval = ms;
+      tick = callback;
+      return () => {
+        stopped += 1;
+      };
+    },
+    now: () => now,
+  });
+  assert.equal(interval, DAY_CHECK_MS);
+  tick();
+  assert.equal(loads, 0, "same local day: no re-read");
+  now = new Date("2026-11-26T06:01:00Z");
+  tick();
+  assert.equal(loads, 1, "the date changed: re-read");
+  foreground();
+  assert.equal(loads, 2, "back in the foreground: re-read");
+  stop();
+  assert.equal(stopped, 2);
 });

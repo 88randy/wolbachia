@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { useServices } from "../../app/services-context.ts";
-import { CalendarReads, isStaleDay } from "./calendar-reads.ts";
-
-/** How often an open calendar checks whether the organization's date changed (midnight). */
-const DAY_CHECK_MS = 60_000;
+import { CalendarReads, watchToday } from "./calendar-reads.ts";
 
 /** Re-reads when the app returns to the foreground or the local date changes. */
 function useTodayRefresh(reads: CalendarReads) {
-  useEffect(() => {
-    const foreground = AppState.addEventListener("change", (state) => {
-      if (state === "active") void reads.load();
-    });
-    const timer = setInterval(() => {
-      if (isStaleDay(reads.getSnapshot().view, new Date())) void reads.load();
-    }, DAY_CHECK_MS);
-    return () => {
-      foreground.remove();
-      clearInterval(timer);
-    };
-  }, [reads]);
+  useEffect(
+    () =>
+      watchToday(reads, {
+        onForeground: (listener) => {
+          const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") listener();
+          });
+          return () => {
+            subscription.remove();
+          };
+        },
+        every: (ms, tick) => {
+          const timer = setInterval(tick, ms);
+          return () => {
+            clearInterval(timer);
+          };
+        },
+        now: () => new Date(),
+      }),
+    [reads],
+  );
 }
-
 /**
  * P33 data on the P29 sources: auth/bundle changes hide the view before re-reading; sync
  * results re-read stale-while-revalidate (same identity only, see `CalendarReads`).

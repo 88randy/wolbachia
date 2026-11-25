@@ -66,10 +66,8 @@ function routeFor(
   lines: ReturnType<typeof useDayLines>,
 ): DayRoute {
   if (day === undefined || today === null || !day.isInWindow || day.date > today) return "hidden";
-  return dayRouteOf(
-    lines,
-    day.items.some((item) => item.kind === "shift.open"),
-  );
+  const has = (kind: string) => day.items.some((item) => item.kind === kind);
+  return dayRouteOf(lines, day.date === today && has("shift.open") && !has("shift.close"));
 }
 
 /** P33 screen model: grid cells, the selected day's rows, its route state and the actions. */

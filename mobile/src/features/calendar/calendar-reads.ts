@@ -6,6 +6,31 @@ export function isStaleDay(view: CalendarView | null, now: Date): boolean {
   return view !== null && captureLocalDate(now.toISOString(), view.timeZone) !== view.today;
 }
 
+/** How often an open calendar checks whether the organization's date changed (midnight). */
+export const DAY_CHECK_MS = 60_000;
+
+/** Platform hooks of `watchToday`, injected so tests drive the clock and the foreground. */
+export interface TodayWatchDeps {
+  readonly onForeground: (listener: () => void) => () => void;
+  readonly every: (ms: number, tick: () => void) => () => void;
+  readonly now: () => Date;
+}
+
+/** Re-reads on return to the foreground and once the local date changes; returns the stop. */
+export function watchToday(
+  reads: Pick<CalendarReads, "getSnapshot" | "load">,
+  deps: TodayWatchDeps,
+): () => void {
+  const stopForeground = deps.onForeground(() => void reads.load());
+  const stopTimer = deps.every(DAY_CHECK_MS, () => {
+    if (isStaleDay(reads.getSnapshot().view, deps.now())) void reads.load();
+  });
+  return () => {
+    stopForeground();
+    stopTimer();
+  };
+}
+
 export interface CalendarReadState {
   readonly view: CalendarView | null;
   readonly hasError: boolean;
