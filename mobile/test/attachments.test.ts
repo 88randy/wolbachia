@@ -1480,3 +1480,70 @@ void test("a server-rejected upload is terminal: no retry loop, persisted, repor
     "upload_rejected",
   );
 });
+
+async function enqueueRejectedPhoto(
+  h: Awaited<ReturnType<typeof attachmentHarness>>,
+  event: ReturnType<typeof makeEnvelope>,
+  id: string,
+) {
+  assert.ok(
+    await new EvidenceCapture(h).capture(
+      { capture: () => Promise.resolve({ id, fileRef: h.source }) },
+      event.id,
+    ),
+  );
+  const fence = await h.session.capture();
+  await h.outbox.enqueue(
+    event,
+    h.store.bindingStatements({ eventId: event.id, evidenceIds: [id], fence }),
+  );
+  const attemptVersion = await h.store.beginAttempt(id, fence);
+  assert.ok(attemptVersion);
+  assert.equal(await h.store.saveRejection(id, { fence, attemptVersion }), true);
+}
+const ACCEPTED = { code: "accepted", params: {} };
+
+void test("a rejected receipt photo settles fuel.load, so it and the shift.close behind it are sent", async (test) => {
+  const h = await attachmentHarness(test);
+  const shiftId = "99999999-9999-4999-8999-999999999999";
+  const fuel = makeEnvelope({
+    type: "fuel.load",
+    shift_id: shiftId,
+    payload: { receipt_upload_id: ID },
+  });
+  const close = makeEnvelope({ type: "shift.close", shift_id: shiftId, payload: {} });
+  await enqueueRejectedPhoto(h, fuel, ID);
+  await h.outbox.enqueue(close);
+  const selection = await h.session.selection();
+  assert.deepEqual(
+    (await h.outbox.claimPending(50, selection)).map((event) => event.envelope.id),
+    [fuel.id],
+  );
+  await h.outbox.settle([{ id: fuel.id, action: "accept", result: ACCEPTED }]);
+  assert.deepEqual(
+    (await h.outbox.claimPending(50, selection)).map((event) => event.envelope.id),
+    [close.id],
+  );
+});
+
+void test("a rejected photo settles the ovitrap capture and does not block its later void or replacement", async (test) => {
+  const h = await attachmentHarness(test);
+  const capture = makeEnvelope({ payload: { ovitrap_id: "trap-1", evidence_ids: [ID] } });
+  const voided = makeEnvelope({
+    type: "record.void",
+    voids_event_id: capture.id,
+    payload: { reason_code: "other", reason: "Incorrect captured target" },
+  });
+  const replace = makeEnvelope({
+    type: "ovitrap.replace",
+    payload: { ovitrap_id: "trap-1", replacement_id: "trap-2", evidence_ids: [] },
+  });
+  await enqueueRejectedPhoto(h, capture, ID);
+  for (const event of [voided, replace]) await h.outbox.enqueue(event);
+  assert.deepEqual(
+    (await h.outbox.claimPending(50, await h.session.selection())).map(
+      (event) => event.envelope.id,
+    ),
+    [capture.id, voided.id, replace.id],
+  );
+});
