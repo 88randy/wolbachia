@@ -6,7 +6,7 @@ import { useSyncSnapshot } from "../sync/use-sync.ts";
 export function useEvidenceSummary() {
   const { attachments } = useServices();
   const snapshot = useSyncSnapshot();
-  const [summary, setSummary] = useState({ pending: 0, hasError: false });
+  const [summary, setSummary] = useState({ pending: 0, hasError: false, rejected: 0 });
   useEffect(() => {
     let isCurrent = true;
     void attachments.store
@@ -15,7 +15,7 @@ export function useEvidenceSummary() {
         if (isCurrent) setSummary(next);
       })
       .catch(() => {
-        if (isCurrent) setSummary({ pending: 0, hasError: true });
+        if (isCurrent) setSummary({ pending: 0, hasError: true, rejected: 0 });
       });
     return () => {
       isCurrent = false;
