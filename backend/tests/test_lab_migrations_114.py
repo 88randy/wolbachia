@@ -171,6 +171,8 @@ SHIPMENT_ADDITIVE_TRIGGERS = {
 
 ANNOTATION_ADDITIVE_TRIGGERS = {
     ("uploads_attachmentlink", "egg_annotation_attachment"),
+    ("uploads_uploadsanitizationfailure", "uploads_sanitization_failure_insert"),
+    ("uploads_uploadsanitizationfailure", "uploads_sanitization_failure_guard"),
 }
 
 
