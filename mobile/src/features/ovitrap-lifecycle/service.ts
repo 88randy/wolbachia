@@ -25,6 +25,9 @@ import type {
   LifecycleCompletion,
 } from "./types.ts";
 import { relocationSuggestion } from "./thresholds.ts";
+import { resolveLabel } from "../ovitrap-check/label-pool.ts";
+/** Outcome of scanning or typing the label of the new trap when replacing. */
+export type ReplacementLabelResult = "read" | "invalid" | "unknown" | "used" | "own";
 import { readCachedAdvisory } from "./advisory.ts";
 import type { AdvisoryView } from "./advisory.ts";
 /** A denied interactive read carries only its ORIGINAL request completion. */
@@ -346,6 +349,38 @@ export class LifecycleService {
       await this.#persist({ ...editable(state), ...patch }, turn, operation);
       return { ...(await this.#snapshot(turn)), isUpdateApplied: true };
     });
+  }
+  /** Replacing: the scanned or typed label of the new trap becomes `replacement_id`. */
+  bindReplacementLabel(
+    value: string,
+    isManual: boolean,
+    eventId: string | null,
+  ): Promise<Snapshot & { readonly labelResult: ReplacementLabelResult }> {
+    return this.#write(eventId, async (state, turn, operation) => {
+      const draft = editable(state);
+      if (draft.kind !== "replace") throw new LifecycleGateError("scope");
+      const label = resolveLabel(value, isManual, (await this.#deps.labelPool?.()) ?? []);
+      if ("failure" in label)
+        return { ...(await this.#snapshot(turn)), labelResult: label.failure };
+      const labelResult = await this.#freeLabel(label.id, draft);
+      if (labelResult === "read")
+        await this.#persist(
+          {
+            ...draft,
+            replacementId: label.id,
+            replacementCode: label.code,
+            labelScanned: true,
+            manualCapture: draft.manualCapture || isManual,
+          },
+          turn,
+          operation,
+        );
+      return { ...(await this.#snapshot(turn)), labelResult };
+    });
+  }
+  async #freeLabel(id: string, draft: LifecycleDraft): Promise<"read" | "own" | "used"> {
+    if (id === draft.ovitrapId) return "own";
+    return (await this.#deps.store.isLabelTaken(id, draft.eventId)) ? "used" : "read";
   }
   refreshGps(eventId: string | null): Promise<Snapshot> {
     return this.#write(eventId, async (state, turn, operation) => {

@@ -9,6 +9,7 @@ import { ChoiceRow } from "../field-ui/ChoiceRow.tsx";
 import { StepQuestion } from "../field-ui/StepQuestion.tsx";
 import { catalogLabel } from "../ovitrap-check/labels.ts";
 import { P15Screen } from "./P15Screen.tsx";
+import { newLabelMessage } from "./labels.ts";
 import { P16Screen } from "./P16Screen.tsx";
 import { P17Screen } from "./P17Screen.tsx";
 import type { LifecycleProps } from "./model.ts";
@@ -18,6 +19,13 @@ function Extra(props: LifecycleProps) {
   if (props.draft.kind === "replace") return <P15Screen />;
   if (props.draft.kind === "relocate") return <P16Screen {...props} />;
   return <P17Screen />;
+}
+
+/** Replacing: the code of the new trap's label, so the courier checks it before saving. */
+function NewLabelLine({ draft }: Pick<LifecycleProps, "draft">) {
+  const t = useT();
+  if (draft.kind !== "replace" || !draft.labelScanned) return null;
+  return <AppText variant="bodyStrong">{newLabelMessage(t, draft)}</AppText>;
 }
 
 /** Last page: what you are about to save, the location, and the review notice when it applies. */
@@ -37,6 +45,7 @@ export function LifecycleConfirmPage(props: LifecycleProps) {
         </AppText>
         <AppText variant="bodyStrong">{t(`field.lifecycle.kind.${draft.kind}`)}</AppText>
         {reason ? <AppText>{catalogLabel(reason, locale)}</AppText> : null}
+        <NewLabelLine draft={draft} />
         {draft.recovery ? (
           <AppText>{t(`field.lifecycle.recovery.${draft.recovery}`)}</AppText>
         ) : null}

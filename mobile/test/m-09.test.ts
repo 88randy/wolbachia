@@ -250,7 +250,16 @@ async function begin(h: Awaited<ReturnType<typeof harness>>, kind: LifecycleDraf
     previous.draft?.eventId ?? null,
   );
   assert.ok(state.draft);
-  return state.draft;
+  if (kind !== "replace" || state.draft.labelScanned) return state.draft;
+  // A fresh printed label the pool does not know yet, scanned like on the phone.
+  const bound = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${h.deps.uuid()}`,
+    false,
+    state.draft.eventId,
+  );
+  assert.equal(bound.labelResult, "read");
+  assert.ok(bound.draft);
+  return bound.draft;
 }
 async function complete(h: Awaited<ReturnType<typeof harness>>, draft: LifecycleDraft) {
   await h.service.update(
@@ -330,21 +339,15 @@ void test("AC1: replacement retains fixed point code/lineage and reserves fresh 
   const [event] = await h.outbox.claimPending(10);
   assert.equal(event?.envelope.payload.replacement_id, first.replacementId);
   assert.equal(event.envelope.payload.ovitrap_id, SOURCE);
-  assert.ok(next.draft?.replacementId);
-  const reserved = next.draft.replacementId;
-  const ids = [h.deps.uuid(), reserved];
-  const restarted = new LifecycleService({
-    ...h.deps,
-    uuid: () => ids.shift() ?? "invalid",
-    shiftId: () => Promise.resolve("66666666-6666-4666-8666-666666666666"),
-  });
-  await assert.rejects(
-    restarted.start(
-      { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
-      next.draft.eventId,
-    ),
+  assert.ok(next.draft);
+  assert.equal(next.draft.replacementId, null, "the new trap waits for its scanned label");
+  assert.equal(
+    (await h.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [first.eventId]))[0]
+      ?.id,
+    first.replacementId,
+    "the saved replacement reserved exactly its scanned label",
   );
-  assert.equal((await h.store.read()).draft?.eventId, next.draft.eventId);
+  const reserved = first.replacementId;
   const placement = makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: reserved });
   await h.store.capture.begin(placement);
   await assert.rejects(
@@ -1178,6 +1181,7 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
       const pages = [
         ...(kind === "remove" ? ["LifecycleRecoveryPage"] : []),
         "LifecycleReasonPage",
+        ...(kind === "replace" ? ["LifecycleLabelPage"] : []),
         "LifecyclePhotoPage",
         "LifecycleConfirmPage",
       ];
@@ -1202,7 +1206,11 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         fontScale,
         stubs: {
           react: {
-            useState: (value: unknown) => [typeof value === "number" ? lastPage : value, noop],
+            // The wizard resumes from a lazy initializer; force its last page.
+            useState: (value: unknown) => [
+              typeof value === "number" || typeof value === "function" ? lastPage : value,
+              noop,
+            ],
           },
           "use-auto-gps.ts": { useAutoGps: () => undefined },
         },
@@ -3245,3 +3253,63 @@ async function deniedAdvisoryAction(
   assert.equal(errors, change === "none" ? 1 : 0);
   await h.credentials.runExclusive((tx) => tx.grantUnlock(h.credentials.unlockGate()));
 }
+
+void test("Replacement binds the printed label: typed OVT code and scanned QR become replacement_id", async () => {
+  const h = await harness();
+  const label = { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000118", code: "OVT-0118" };
+  const service = new LifecycleService({ ...h.deps, labelPool: () => Promise.resolve([label]) });
+  const started = await service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const eventId = started.draft.eventId;
+  assert.equal(started.draft.replacementId, null);
+  assert.equal(started.draft.labelScanned, false);
+  const typed = await service.bindReplacementLabel("ovt-118", true, eventId);
+  assert.equal(typed.labelResult, "read");
+  assert.equal(typed.draft?.replacementId, label.id);
+  assert.equal(typed.draft.replacementCode, label.code);
+  assert.equal(typed.draft.manualCapture, true);
+  const scanned = await service.bindReplacementLabel(`wbf:1:ovitrap:${label.id}`, false, eventId);
+  assert.equal(scanned.labelResult, "read");
+  assert.ok(scanned.draft);
+  assert.equal(scanned.draft.replacementCode, label.code);
+  await complete({ ...h, service }, scanned.draft);
+  await service.save(eventId);
+  const [event] = await h.outbox.claimPending(10);
+  assert.equal(event?.envelope.payload.replacement_id, label.id);
+  assert.equal(event.envelope.payload.ovitrap_id, SOURCE);
+  assert.deepEqual(
+    (await h.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [eventId])).map(
+      (row) => row.id,
+    ),
+    [label.id],
+  );
+});
+
+void test("Replacement refuses a used label, the old trap's own label and unknown or unreadable codes", async () => {
+  const h = await harness();
+  const first = await begin(h, "replace");
+  await complete(h, first);
+  await h.service.save(first.eventId);
+  assert.ok(first.replacementId);
+  const next = await h.service.start(
+    { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
+    first.eventId,
+  );
+  assert.ok(next.draft);
+  const eventId = next.draft.eventId;
+  const bind = async (value: string, isManual: boolean) =>
+    (await h.service.bindReplacementLabel(value, isManual, eventId)).labelResult;
+  assert.equal(await bind(`wbf:1:ovitrap:${first.replacementId}`, false), "own");
+  assert.equal(await bind(`wbf:1:ovitrap:${SOURCE}`, false), "used");
+  assert.equal(await bind(SOURCE, true), "used");
+  assert.equal(await bind("OVT-0999", true), "unknown");
+  assert.equal(await bind("not a label", false), "invalid");
+  const draft = (await h.store.read()).draft;
+  assert.equal(draft?.replacementId, null);
+  assert.equal(draft.labelScanned, false);
+  await complete(h, draft);
+  await assert.rejects(h.service.save(eventId), /identity/);
+});

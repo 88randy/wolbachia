@@ -8,8 +8,9 @@ import type { QrKind } from "../ovitrap-check/types.ts";
 import { ScannerControls } from "./ScannerControls.tsx";
 import { ScannerPreview } from "./ScannerPreview.tsx";
 import { useM07 } from "./use-m-07.ts";
+import type { ScannerInput } from "./domain.ts";
 
-function questionKind(expected: QrKind | undefined, bindsLabel: boolean) {
+function questionKind(expected: QrKind | undefined, bindsLabel: ScannerInput["bindsLabel"]) {
   if (bindsLabel) return "label";
   if (expected === "bag" || expected === "ovitrap") return expected;
   return "any";
@@ -19,11 +20,11 @@ function questionKind(expected: QrKind | undefined, bindsLabel: boolean) {
 export function P11Screen({
   expected,
   eventId,
-  bindsLabel = false,
+  bindsLabel,
 }: {
   readonly expected?: QrKind;
   readonly eventId?: string | null;
-  readonly bindsLabel?: boolean;
+  readonly bindsLabel?: ScannerInput["bindsLabel"];
 }) {
   const t = useT();
   const model = useM07(expected, eventId, bindsLabel);

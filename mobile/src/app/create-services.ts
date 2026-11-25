@@ -118,7 +118,7 @@ export async function createServices(): Promise<AppServices> {
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
   const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId, track });
-  const scanner = createScanner(db, bundle, { ovitrap: captures.ovitrapCheck, ...forms });
+  const scanner = createScanner(db, bundle, { ...captures, ...forms });
   const reads = createReadScreens({ db, auth, tokens, requests, bundle, deviceId, attachments });
   return { ...shared, ...captures, scanner, engine, shiftOpen, day, track, ...forms, ...reads };
 }

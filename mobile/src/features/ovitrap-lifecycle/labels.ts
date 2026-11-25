@@ -1,10 +1,20 @@
 import type { MessageKey } from "@wolbachia/i18n";
-import type { LifecycleKind, RecoveryState, RelocationProposal } from "./types.ts";
+import type { Translate } from "../../i18n/translate.ts";
+import type { LifecycleDraft, LifecycleKind, RecoveryState, RelocationProposal } from "./types.ts";
 export const KIND_LABEL: Record<LifecycleKind, MessageKey> = {
   replace: "mobile.lifecycle.replace",
   relocate: "mobile.lifecycle.relocate",
   remove: "mobile.lifecycle.remove",
 };
+/** "Ovitrampa nueva: OVT-0118"; a scanned label the pool does not know has no printed code here. */
+export function newLabelMessage(
+  t: Translate,
+  draft: Pick<LifecycleDraft, "replacementCode">,
+): string {
+  return draft.replacementCode
+    ? t("field.lifecycle.newLabel", { code: draft.replacementCode })
+    : t("field.lifecycle.newLabelScanned");
+}
 export const RECOVERY_LABEL: Record<RecoveryState, MessageKey> = {
   recovered: "mobile.lifecycle.recovered",
   unrecovered: "mobile.lifecycle.unrecovered",

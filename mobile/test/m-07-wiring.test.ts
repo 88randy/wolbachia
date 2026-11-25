@@ -43,7 +43,7 @@ async function scannerHarness(overrides: Parameters<typeof harness>[1] = {}) {
     ...local,
     body,
     bundle,
-    scanner: createScanner(local.db, bundle, { ovitrap: local.service }),
+    scanner: createScanner(local.db, bundle, { ovitrapCheck: local.service }),
   };
 }
 
