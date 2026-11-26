@@ -662,25 +662,27 @@ test("W35 body photo drop opens the canvas and right mouse drag pans without del
   const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
   await page.mouse.click(center.x, center.y);
   await expect(page.locator(COUNTER)).toContainText("1");
-  const contextMenuPrevented = canvas.evaluate(
-    (element) =>
-      new Promise<boolean>((resolve) => {
-        document.addEventListener(
-          "contextmenu",
-          (event) => {
-            if (event.target === element) resolve(event.defaultPrevented);
-          },
-          { once: true },
-        );
-      }),
-  );
+  // Linux fires contextmenu on the right button press, Windows on release: the listener must be
+  // registered (awaited) before the press, and read back afterwards.
+  await canvas.evaluate((element) => {
+    const store = window as unknown as { contextMenuPrevented?: Promise<boolean> };
+    store.contextMenuPrevented = new Promise<boolean>((resolve) => {
+      document.addEventListener("contextmenu", (event) => {
+        if (event.target === element) resolve(event.defaultPrevented);
+      });
+    });
+  });
+  const contextMenuPrevented = () =>
+    page.evaluate(
+      () => (window as unknown as { contextMenuPrevented?: Promise<boolean> }).contextMenuPrevented,
+    );
   await page.mouse.down({ button: "right" });
   await expect(canvas).toHaveCSS("cursor", "grab");
   await expect(page.locator(COUNTER)).toContainText("1");
   await page.mouse.move(center.x + 50, center.y + 30, { steps: 5 });
   await expect(canvas).toHaveCSS("cursor", "grabbing");
   await page.mouse.up({ button: "right" });
-  expect(await contextMenuPrevented).toBe(true);
+  expect(await contextMenuPrevented()).toBe(true);
   await expect(canvas).toHaveCSS("cursor", "crosshair");
   await expect(page.locator(COUNTER)).toContainText("1");
   await page.mouse.click(center.x + 50, center.y + 30, { button: "right" });

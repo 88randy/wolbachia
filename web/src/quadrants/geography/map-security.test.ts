@@ -11,7 +11,8 @@ describe("map provider configuration and strict CSP", () => {
   test("allows only the configured origin for map requests and blob workers", () => {
     const headers = mapSecurityHeaders(template, "https://tiles.example.org/{z}/{x}/{y}.png");
     expect(headers).toContain("connect-src 'self' https://tiles.example.org;");
-    expect(headers).toContain("img-src 'self' data: https://tiles.example.org;");
+    // blob: lets locally chosen photos (W35 annotation, bag trace photos) render; no remote origins.
+    expect(headers).toContain("img-src 'self' data: blob: https://tiles.example.org;");
     expect(headers).toContain("worker-src 'self' blob:;");
     expect(headers).not.toContain("tile.openstreetmap.org");
     expect(headers).not.toContain("https:;");
