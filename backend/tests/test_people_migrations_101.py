@@ -61,6 +61,31 @@ SHIPMENT_ADDITIVE_TRIGGERS = {
     "uploads_material_request_parent_guard",
 }
 
+# Egg annotation (lab 0015-0018, uploads 0012/0014) and PCR (lab 0010/0011) guards restored
+# through People's lab/uploads dependents.
+ANNOTATION_PCR_ADDITIVE_TRIGGERS = {
+    "annotation_export_complete",
+    "annotation_export_download_immutable",
+    "annotation_export_immutable",
+    "annotation_export_item",
+    "annotation_export_item_immutable",
+    "annotation_export_request",
+    "annotation_export_status",
+    "annotation_export_status_immutable",
+    "egg_annotation_attachment",
+    "egg_annotation_complete",
+    "egg_annotation_immutable",
+    "egg_annotation_insert",
+    "lab_pcrbatch_guard",
+    "lab_pcrbatchevent_guard",
+    "lab_pcrbatchsample_guard",
+    "lab_pcrreport_guard",
+    "lab_pcrresult_guard",
+    "lab_pcrresultvoid_guard",
+    "uploads_sanitization_failure_guard",
+    "uploads_sanitization_failure_insert",
+}
+
 
 def trigger_definitions():
     with connection.cursor() as cursor:
@@ -161,6 +186,7 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
                 "lab_sample_source_void_guard",
             }
             | SHIPMENT_ADDITIVE_TRIGGERS
+            | ANNOTATION_PCR_ADDITIVE_TRIGGERS
         )
         assert set(upgraded) - set(baseline) == additions
         assert Training.objects.count() == Certification.objects.count() == 0
