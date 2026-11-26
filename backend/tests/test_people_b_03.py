@@ -426,9 +426,21 @@ def test_completion_notice_routing_is_current_before_deferred_reassessment_and_e
     assert attempts.status_code == 200, attempts.data
     assert attempts.data["count"] == 2
     assert attempts.data["results"][0]["id"] == passed["evaluation"]["attempt_id"]
-    retained = client.get("/api/v1/evaluations/?include_voided=true").data["results"]
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from people.models import EvaluationRubricVersion
+
+    with CaptureQueriesContext(connection) as queries:
+        retained = client.get("/api/v1/evaluations/?include_voided=true").data["results"]
+    # Joined into the list query: no per-row lookup of the rubric version.
+    assert sum("people_evaluationrubricversion" in q["sql"] for q in queries) == 1
     original = next(row for row in retained if row["id"] == passed["id"])
     assert original["is_voided"]
+    assert (
+        original["rubric_version_number"]
+        == EvaluationRubricVersion.objects.get(pk=original["rubric_version_id"]).version
+    )
     assert original["void"]["id"] == voided["id"]
     assert original["current"]["id"] == corrected["evaluation"]["attempt_id"]
 

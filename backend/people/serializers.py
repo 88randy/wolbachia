@@ -395,6 +395,9 @@ class EvaluationVoidReadSerializer(OrgScopedModelSerializer):
 class EvaluationReadSerializer(OrgScopedModelSerializer):
     subject_id = serializers.UUIDField(read_only=True)
     rubric_version_id = serializers.UUIDField(read_only=True)
+    rubric_version_number = serializers.IntegerField(
+        source="rubric_version.version", read_only=True
+    )
     center_id = serializers.UUIDField(read_only=True)
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
     revision = serializers.IntegerField(source="_read_revision", read_only=True)
@@ -415,6 +418,7 @@ class EvaluationReadSerializer(OrgScopedModelSerializer):
             "id",
             "subject_id",
             "rubric_version_id",
+            "rubric_version_number",
             "center_id",
             "quadrant_id",
             "created_at",
