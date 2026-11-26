@@ -17,7 +17,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import Personnel
 from accounts.permissions import USER_LOOKUP, USER_OPERATIONAL_READ, USER_READ
 from core.pagination import StandardPagination
-from core.permissions import HasAnyPermissionCode
+from core.permissions import HasPermissionCode
 from core.views import OrgScopedViewSetMixin
 from organizations.models import Profile
 from organizations.services import effective_scope
@@ -44,7 +44,7 @@ class UserLookupViewSet(
 ):
     queryset = Personnel.objects.all()
     serializer_class = UserLookupSerializer
-    permission_classes = [IsAuthenticated, HasAnyPermissionCode]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
     required_any_permissions = {"list": LOOKUP_CODES, "retrieve": LOOKUP_CODES}
     lookup_field = "membership__user_id"
     lookup_url_kwarg = "pk"
