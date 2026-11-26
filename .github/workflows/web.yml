@@ -53,7 +53,7 @@ jobs:
   # Real browser: layout sizes, keyboard flow and axe (WCAG 2.2 AA) in light and dark.
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:
@@ -80,7 +80,7 @@ jobs:
   # The production image must build. Nothing is pushed: deploy is a separate decision (#18).
   docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:

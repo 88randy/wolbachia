@@ -60,6 +60,10 @@ jobs:
             timeout: 25
           - shard: regular
             timeout: 25
+          - shard: migrations-material
+            timeout: 25
+          - shard: migrations-session-audit
+            timeout: 25
     defaults:
       run:
         working-directory: backend
