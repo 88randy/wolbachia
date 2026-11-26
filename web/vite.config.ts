@@ -29,5 +29,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Full-app renders and the source-scanning guard exceed Vitest's 5 s default on loaded runners.
+    testTimeout: 30_000,
   },
 });

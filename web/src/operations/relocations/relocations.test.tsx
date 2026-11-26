@@ -56,7 +56,14 @@ describe("W31 relocation decisions", () => {
     const route = `POST /api/v1/relocations/${PROPOSAL_ID}/approve/`;
     const { api } = await open({
       [LIST]: () =>
-        page([proposal({ new_location: hasConflict ? [-99.12, 19.42] : [-99.11, 19.41] })]),
+        page([
+          proposal({
+            new_location: {
+              type: "Point",
+              coordinates: hasConflict ? [-99.12, 19.42] : [-99.11, 19.41],
+            },
+          }),
+        ]),
       [route]: () => {
         hasConflict = true;
         return Response.json(
@@ -78,7 +85,7 @@ describe("W31 relocation decisions", () => {
     );
     await userEvent.click(within(dialog).getByRole("button", { name: "Aprobar reubicación" }));
     await within(dialog).findByText(/La propuesta cambió/);
-    await within(dialog).findByText("[-99.12,19.42]");
+    await within(dialog).findByText("19.42000, -99.12000");
     expect(within(dialog).getByLabelText<HTMLTextAreaElement>("Motivo de la decisión").value).toBe(
       "Retained reviewer reason",
     );
@@ -102,7 +109,7 @@ describe("W31 relocation decisions", () => {
   test("read-only access exposes original evidence and hides decision controls", async () => {
     await open({}, ["relocation.read"]);
     const dialog = await screen.findByRole("dialog", { name: "Decidir reubicación" });
-    await within(dialog).findByText("[-99.1,19.4]");
+    await within(dialog).findByText("19.40000, -99.10000");
     expect(within(dialog).queryByRole("button", { name: "Aprobar reubicación" })).toBeNull();
     expect(within(dialog).queryByLabelText("Motivo de la decisión")).toBeNull();
   });
@@ -154,7 +161,7 @@ describe("W31 relocation decisions", () => {
       });
       dialog = screen.getByRole("dialog", { name: "Decidir reubicación" });
       await within(dialog).findByRole("alert");
-      expect(within(dialog).queryByText("[-99.1,19.4]")).toBeNull();
+      expect(within(dialog).queryByText("19.40000, -99.10000")).toBeNull();
       expect(within(dialog).queryByLabelText("Motivo de la decisión")).toBeNull();
       api.setRoute(LIST, page());
       api.setRoute("GET /api/v1/me/", Response.json(me));

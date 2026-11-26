@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
+import type { BoundFunctions, queries } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Schemas } from "@wolbachia/api-client";
 import { createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
@@ -285,13 +286,15 @@ export async function chooseMenuAction(name: string | RegExp) {
   await userEvent.click(await menuItem(name));
 }
 
+type Dialog = BoundFunctions<typeof queries>;
+
 /** Chooses an option of a Combobox (the app dropdown) by its visible label. */
-export async function pickOption(dialog: ReturnType<typeof within>, name: string, label: string) {
+export async function pickOption(dialog: Dialog, name: string, label: string) {
   await userEvent.click(dialog.getByRole("combobox", { name }));
   await userEvent.click(await screen.findByRole("option", { name: label }));
 }
 /** Picks a day (`YYYY-MM-DD`) in a DateField calendar. */
-export async function pickDay(dialog: ReturnType<typeof within>, label: string, iso: string) {
+export async function pickDay(dialog: Dialog, label: string, iso: string) {
   await userEvent.click(dialog.getByRole("button", { name: new RegExp(label) }));
   const cell = await waitFor(() => {
     const found = document.querySelector<HTMLElement>(`[data-day="${iso}"] button`);
