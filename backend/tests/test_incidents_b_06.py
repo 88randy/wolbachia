@@ -202,6 +202,7 @@ def test_reported_workspace_uses_declared_nested_read_representations(monkeypatc
         "verified_at": AT,
         "content_type": "image/jpeg",
         "size_bytes": 12,
+        "filename": "evidence-20261106-2359.jpg",
     }
     redacted = {
         "id": uuid4(),
@@ -210,6 +211,7 @@ def test_reported_workspace_uses_declared_nested_read_representations(monkeypatc
         "verified_at": None,
         "content_type": None,
         "size_bytes": None,
+        "filename": None,
     }
     projection = {
         "type_snapshot": snapshot,
