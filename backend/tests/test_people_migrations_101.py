@@ -65,16 +65,16 @@ SHIPMENT_ADDITIVE_TRIGGERS = {
 # through People's lab/uploads dependents.
 ANNOTATION_PCR_ADDITIVE_TRIGGERS = {
     "annotation_export_complete",
-    "annotation_export_download_immutable",
-    "annotation_export_immutable",
+    "lab_eggannotationexportdownload_guard",
+    "lab_eggannotationexport_guard",
     "annotation_export_item",
-    "annotation_export_item_immutable",
+    "lab_eggannotationexportitem_guard",
     "annotation_export_request",
     "annotation_export_status",
-    "annotation_export_status_immutable",
+    "lab_eggannotationexportstatus_guard",
     "egg_annotation_attachment",
     "egg_annotation_complete",
-    "egg_annotation_immutable",
+    "lab_eggannotation_guard",
     "egg_annotation_insert",
     "lab_pcrbatch_guard",
     "lab_pcrbatchevent_guard",
@@ -82,7 +82,7 @@ ANNOTATION_PCR_ADDITIVE_TRIGGERS = {
     "lab_pcrreport_guard",
     "lab_pcrresult_guard",
     "lab_pcrresultvoid_guard",
-    "uploads_sanitization_failure_guard",
+    "uploads_uploadsanitizationfailure_guard",
     "uploads_sanitization_failure_insert",
 }
 

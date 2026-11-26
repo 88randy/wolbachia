@@ -14,7 +14,7 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 
 from core.pagination import StandardPagination
-from core.permissions import HasAnyPermissionCode
+from core.permissions import HasPermissionCode
 from core.serializers import OrgScopedModelSerializer
 from core.views import OrgScopedViewSetMixin
 from geography.models import Block, Quadrant, QuadrantVersion
@@ -64,7 +64,7 @@ class QuadrantLookupViewSet(
 ):
     queryset = Quadrant.objects.all()
     serializer_class = QuadrantLookupSerializer
-    permission_classes = [IsAuthenticated, HasAnyPermissionCode]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
     required_any_permissions = {"list": LOOKUP_CODES, "retrieve": LOOKUP_CODES}
     pagination_class = StandardPagination
     filter_backends = [SearchFilter, OrderingFilter]
@@ -109,7 +109,7 @@ class BlockLookupViewSet(
 
     queryset = Block.objects.all()
     serializer_class = BlockLookupSerializer
-    permission_classes = [IsAuthenticated, HasAnyPermissionCode]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
     required_any_permissions = {"list": LOOKUP_CODES, "retrieve": LOOKUP_CODES}
     pagination_class = StandardPagination
     filter_backends = [SearchFilter, OrderingFilter]

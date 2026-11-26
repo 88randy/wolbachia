@@ -102,9 +102,9 @@ def test_authenticated_schema_metadata_does_not_require_inventory_option_targets
         "page_size",
     }
     for path, extra in (
-        ("/api/v1/courier-assignments/", {"courier", "assignment"}),
+        ("/api/v1/courier-assignments/", {"courier", "assignment", "status"}),
         ("/api/v1/reconciliations/", {"courier", "assignment"}),
-        ("/api/v1/write-offs/", {"kind"}),
+        ("/api/v1/write-offs/", {"kind", "reason_code"}),
     ):
         assert {
             parameter["name"]
