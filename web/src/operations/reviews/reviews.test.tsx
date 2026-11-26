@@ -251,11 +251,16 @@ test.each([503, 403, 404])(
     await screen.findByRole("alert");
     if (status === 503) {
       expect(screen.getByText(receipt.reason)).toBeDefined();
-      // The receipt shows who confirmed the effect; the hash is no longer printed.
+      // Who confirmed the effect is in plain view; the sealed hash waits behind the receipt.
       expect(screen.getByText(/^Efecto confirmado por/)).toBeDefined();
+      expect(screen.queryByText("test-hash")).toBeNull();
+      await userEvent.click(screen.getByRole("button", { name: "Recibo del efecto confirmado" }));
+      expect(screen.getByText("test-hash")).toBeDefined();
+      expect(screen.getByRole("button", { name: "Copiar huella" })).toBeDefined();
     } else {
       expect(screen.queryByText(receipt.reason)).toBeNull();
       expect(screen.queryByText(/^Efecto confirmado por/)).toBeNull();
+      expect(screen.queryByRole("button", { name: "Recibo del efecto confirmado" })).toBeNull();
       expect(screen.queryByLabelText("Motivo de la decisión")).toBeNull();
     }
     expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);

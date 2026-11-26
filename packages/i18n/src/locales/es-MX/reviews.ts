@@ -34,6 +34,9 @@ export const reviews = {
   "reviews.workspace.operational": "Decisión operativa",
   "reviews.workspace.incidentReceipt": "Referencia del incidente creado: {id}",
   "reviews.workspace.receipt": "Recibo del efecto confirmado",
+  "reviews.workspace.payloadHash": "Huella del contenido (SHA-256)",
+  "reviews.workspace.copyHash": "Copiar huella",
+  "reviews.workspace.hashCopied": "Huella copiada",
   "reviews.workspace.decisionEvidence": "Referencias de evidencia de la decisión",
   "reviews.workspace.noDecisions":
     "Aún no hay decisiones. Revisa la evidencia original antes de decidir.",

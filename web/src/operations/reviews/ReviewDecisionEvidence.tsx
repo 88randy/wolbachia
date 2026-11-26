@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { nameOrDash } from "../../lookups/use-reference-names";
 import type { Review } from "./review-query";
+import { ReviewReceiptFingerprint } from "./ReviewReceiptFingerprint";
 
 export function ReviewDecisionEvidence({ decision }: { decision: Review["timeline"][number] }) {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export function ReviewDecisionEvidence({ decision }: { decision: Review["timelin
           })}
         </p>
       )}
+      {receipt?.payload_sha256 && <ReviewReceiptFingerprint hash={receipt.payload_sha256} />}
       {evidenceCount > 0 && <p>{t("reviews.workspace.evidenceCount", { count: evidenceCount })}</p>}
     </>
   );

@@ -35,7 +35,6 @@ export const orgAdmin = {
   "orgAdmin.scope.remove": "Remove reference",
   "orgAdmin.scope.unavailable":
     "Code unavailable in your scope. Check the code or ask an administrator for access.",
-  "orgAdmin.revision.current": "Current revision: ",
   "orgAdmin.revision.refresh": "Read current revision",
   "orgAdmin.revision.compare":
     "Compare the current configuration with your edits before continuing. Your edits are retained.",

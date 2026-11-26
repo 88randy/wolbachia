@@ -33,7 +33,10 @@ export const reviews = {
   "reviews.workspace.auditOnly": "Audit only; pending operational resolution",
   "reviews.workspace.operational": "Operational decision",
   "reviews.workspace.incidentReceipt": "Created incident reference: {id}",
-  "reviews.workspace.receipt": "Known effect receipt",
+  "reviews.workspace.receipt": "Confirmed effect receipt",
+  "reviews.workspace.payloadHash": "Content fingerprint (SHA-256)",
+  "reviews.workspace.copyHash": "Copy fingerprint",
+  "reviews.workspace.hashCopied": "Fingerprint copied",
   "reviews.workspace.decisionEvidence": "Decision evidence references",
   "reviews.workspace.noDecisions":
     "No decisions yet. Review the original evidence before deciding.",
