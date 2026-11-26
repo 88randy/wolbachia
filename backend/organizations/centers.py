@@ -9,6 +9,7 @@ import re
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
+from uuid import UUID
 
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from rest_framework.exceptions import NotFound
@@ -103,7 +104,7 @@ def require_center_authority(center: Center, actor: User, permission: str) -> No
         raise NotFound
 
 
-def lock_share_active_center(center_id: object) -> None:
+def lock_share_active_center(center_id: UUID | str) -> None:
     """Shared try-lock on a destination center: it cannot be deactivated meanwhile (429)."""
     try:
         with connection.cursor() as cursor:

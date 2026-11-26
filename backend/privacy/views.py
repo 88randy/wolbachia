@@ -1,7 +1,7 @@
 """Regulatory endpoints (W57-W59) and the public portal (W69-W71). Thin: services do the work."""
 
 from datetime import timedelta
-from typing import Any
+from typing import Any, cast
 
 from django.db.models import Q
 from django.http import Http404, HttpResponse
@@ -276,7 +276,7 @@ class ArcoRequestViewSet(
         received = data.get("received_on") or localdate(request.organization)  # type: ignore[attr-defined]
         created = ArcoRequest.objects.create(
             organization=request.organization,  # type: ignore[attr-defined]
-            created_by=request.user,
+            created_by=cast(User, request.user),
             request_type=data["request_type"],
             requester_reference=data["requester_reference"].strip(),
             received_on=received,

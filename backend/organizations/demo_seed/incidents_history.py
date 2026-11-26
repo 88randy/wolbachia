@@ -1,5 +1,6 @@
 """A handful of field incidents reported and worked through the incident services (writes)."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from unittest.mock import patch
 
@@ -100,7 +101,7 @@ def _follow_up(item: DemoIncident, incident: Incident, supervisor: UploadActor) 
 def ensure_incidents(
     organization: Organization,
     members: dict[str, Membership],
-    quadrants: dict[str, object],
+    quadrants: Mapping[str, object],
 ) -> int:
     """Report the demo incidents once; the notice task is not queued (no broker needed)."""
     if Incident.objects.filter(organization=organization).exists():
