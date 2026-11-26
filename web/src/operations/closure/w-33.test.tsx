@@ -42,9 +42,15 @@ describe("W33 authoritative closure readiness", () => {
     expect(within(blockers).getByText("Ovitrampa no recuperada")).toBeDefined();
     expect(within(blockers).getByText("Retiro sin confirmar")).toBeDefined();
     expect(within(blockers).getByText("Incidente que bloquea el cierre")).toBeDefined();
-    expect(within(blockers).getByText(/removal.resolve/)).toBeDefined();
-    expect(within(blockers).getByText(/field_event.sync/)).toBeDefined();
-    expect(within(blockers).getByText(/incident.close/)).toBeDefined();
+    // Technical permission names are no longer printed: each blocker names who can resolve it.
+    expect(
+      within(blockers).getAllByText(
+        "Lo resuelve la persona de supervisión responsable de este pendiente.",
+      ),
+    ).toHaveLength(3);
+    expect(
+      within(blockers).queryByText(/removal.resolve|field_event.sync|incident.close/),
+    ).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Cerrar cuadrante" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(0);
@@ -138,7 +144,8 @@ describe("W33 authoritative closure readiness", () => {
         ),
       },
     });
-    await screen.findByText("Referencia: PRIVATE-PHYSICAL-1");
+    // The blocker reference is no longer printed, so wait for the blocker itself.
+    await screen.findByText("Retiro sin confirmar");
     api.setRoute(
       "GET /api/v1/me/",
       Response.json({
