@@ -332,11 +332,9 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveCount(0);
   await expectNoAxeViolations(page);
-  // The hub no longer links to the lots list; the breadcrumb does.
-  await page
-    .getByRole("navigation", { name: "Ruta de navegación" })
-    .getByRole("link", { name: "Lotes", exact: true })
-    .click();
+  // The hub links to the lots list.
+  await page.locator('a[href="/inventory"]').first().click();
+  await page.getByRole("link", { name: /^Lotes/ }).click();
   await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveValue(
     "Private admission browser draft",

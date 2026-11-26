@@ -60,6 +60,11 @@ export const hub = {
     "Los tipos de insumo que manejas: paletas, bolsas, huevos y sus reglas de uso.",
   "hub.inventory.setup.supplies.empty": "No hay insumos. Registra el primero.",
   "hub.inventory.setup.supplies.count": "Registrados: {count}",
+  "hub.inventoryLots.title": "Lotes",
+  "hub.inventoryLots.text":
+    "Todos los lotes recibidos, con su caducidad, estado y datos de seguridad.",
+  "hub.inventoryLots.empty": "Todavía no hay lotes.",
+  "hub.inventoryLots.count": "Registrados: {count}",
 
   "hub.operations.description": "Turnos, revisiones y reubicaciones del trabajo de campo.",
   "hub.operations.reviews": "Registros que necesitan una decisión.",

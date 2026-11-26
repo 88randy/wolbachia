@@ -1,4 +1,4 @@
-import { MapPin, PackageOpen, QrCode } from "lucide-react";
+import { Boxes, MapPin, PackageOpen, QrCode } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { HubCardItem } from "../components/templates/HubCard";
 import { HubGrid } from "../components/templates/HubGrid";
@@ -45,6 +45,19 @@ export function InventoryHome() {
             ? t("hub.inventory.setup.supplies.empty")
             : facts.supplies !== undefined
               ? t("hub.inventory.setup.supplies.count", { count: facts.supplies })
+              : undefined,
+      },
+      can("lot.read") && {
+        id: "lots",
+        icon: Boxes,
+        link: { to: "/inventory/lots" },
+        title: t("hub.inventoryLots.title"),
+        description: t("hub.inventoryLots.text"),
+        meta:
+          facts.lots === 0
+            ? t("hub.inventoryLots.empty")
+            : facts.lots !== undefined
+              ? t("hub.inventoryLots.count", { count: facts.lots })
               : undefined,
       },
       can("lot.read") && {
