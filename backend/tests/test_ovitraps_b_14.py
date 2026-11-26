@@ -654,5 +654,5 @@ def test_code_qr_for_paddles_and_motorcycles() -> None:
 
     assert parse_code_qr("wbf:1:motorcycle:M-03") == ("motorcycle", "M-03")
     assert parse_code_qr("wbf:1:paddle:P-7") == ("paddle", "P-7")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid QR identity"):
         parse_code_qr("wbf:1:lot:M-03")

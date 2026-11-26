@@ -56,7 +56,7 @@ def prime_author_names(
         cache[user_id] = resolved.get(user_id, "")
 
 
-def _user_id_of(item: Any, field: str) -> str | None:
+def _user_id_of(item: object, field: str) -> str | None:
     if "." in field:  # a path through relations, e.g. "recipient_membership.user"
         *path, last = field.split(".")
         for part in path:
@@ -73,7 +73,7 @@ def _user_id_of(item: Any, field: str) -> str | None:
 
 
 def _organization_id_of(
-    serializer: serializers.Field[Any, Any, Any, Any], item: Any
+    serializer: serializers.Field[Any, Any, Any, Any], item: object
 ) -> UUID | str | None:
     request = serializer.context.get("request")
     organization = getattr(request, "organization", None)
@@ -92,7 +92,7 @@ class AuthorNameField(serializers.Field[Any, Any, Any, Any]):
         super().__init__(read_only=True, source="*", allow_null=True)
         self.source_field = source_field
 
-    def to_representation(self, value: Any) -> str | None:
+    def to_representation(self, value: object) -> str | None:
         user_id = _user_id_of(value, self.source_field)
         if user_id is None:
             return None
@@ -101,7 +101,7 @@ class AuthorNameField(serializers.Field[Any, Any, Any, Any]):
             self._load(value, cache)
         return cache.get(user_id) or None
 
-    def _load(self, item: Any, cache: dict[str, str]) -> None:
+    def _load(self, item: object, cache: dict[str, str]) -> None:
         """Resolve the ids of the whole list being serialized in one go (no N+1)."""
         items: list[Any] = [item]
         root = self.root

@@ -164,7 +164,7 @@ def _append_payload(ctx: ProducerContext, payload: dict[str, Any]) -> None:
     )
 
 
-def _receipt(
+def _receipt(  # noqa: PLR0913 -- batch, producer, assessment and its revision form one receipt
     batch: BatchContext, ctx: ProducerContext, assessment: dict[str, Any], revision: str
 ) -> EligibilityAssessmentReceipt:
     if batch.observed_session_id is None or batch.observed_pair_id is None:

@@ -134,6 +134,6 @@ def test_geography_lists_do_not_grow_with_rows(api_client: APIClient, resource: 
         row["current_version"] for row in body if row["code"].startswith(("QG", "BG", "PG"))
     ]
     assert versions
-    assert {version.get("revision", version.get("version")) for version in versions} == {
-        2
-    }, "the list shows the latest version of every row"
+    assert {version.get("revision", version.get("version")) for version in versions} == {2}, (
+        "the list shows the latest version of every row"
+    )

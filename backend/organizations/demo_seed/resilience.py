@@ -3,11 +3,9 @@
 import re
 import time
 from collections.abc import Callable
-from typing import TypeVar
 
 from django.db import connection
 
-T = TypeVar("T")
 BUSY_ERROR = re.compile(r"(Busy|InProgress)Error$")
 ATTEMPTS = 6
 PAUSE_SECONDS = 3.0
@@ -32,7 +30,7 @@ def release_stale_sessions() -> int:
         return int(cursor.fetchone()[0])
 
 
-def retrying(step: Callable[[], T]) -> T:
+def retrying[T](step: Callable[[], T]) -> T:
     """Run `step`, retrying the try-lock "busy / in progress" errors with a growing pause."""
     for attempt in range(1, ATTEMPTS + 1):
         try:

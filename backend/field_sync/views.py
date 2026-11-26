@@ -27,8 +27,8 @@ from field_sync.exceptions import DeviceMismatchError, SyncInProgressError
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC, BodySizeWithinLimit
 from field_sync.selectors import producer_context
 from field_sync.serializers import (
-    FieldZoneSerializer,
     BootstrapSerializer,
+    FieldZoneSerializer,
     SyncBatchSerializer,
     SyncResponseSerializer,
     build_envelopes,
