@@ -144,9 +144,8 @@ test("W64 named chain, evidence and blockers roundtrip uses reviewed revision an
   const user = userEvent.setup();
   const form = await screen.findByRole("form", { name: "Configuración del tipo" });
   expect(
-    (await within(form).findByRole<HTMLSelectElement>("combobox", { name: "Responsable terminal" }))
-      .value,
-  ).toBe(W64_OWNERS[2].membership_id);
+    (await within(form).findByRole("combobox", { name: "Responsable terminal" })).textContent,
+  ).toContain(W64_OWNERS[2].label);
   await user.clear(within(form).getByLabelText("Fotos para cerrar"));
   await user.type(within(form).getByLabelText("Fotos para cerrar"), "3");
   await user.click(within(form).getByRole("checkbox", { name: "Cierre de cuadrante" }));

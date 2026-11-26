@@ -11,10 +11,11 @@ import {
   ID,
   PERSON,
   VERSION,
-  OLD_VERSION,
   OBSERVED,
   ME,
   EVALUATION,
+  pickSubject,
+  openTab,
   page,
 } from "./evaluation-test-helpers";
 
@@ -32,7 +33,7 @@ test.each([
       },
     });
     const { form } = await submitEvaluation();
-    const saved = await form.findByText("El servidor registró la evaluación.");
+    const saved = await form.findByText("Evaluación registrada.");
     const result = within(saved.closest('[role="status"]') as HTMLElement);
     expect(result.getByText(label)).toBeDefined();
     if (score) expect(result.getByText(score)).toBeDefined();
@@ -42,7 +43,7 @@ test.each([
       center: ID,
       quadrant: null,
       rubric_version: VERSION,
-      observed_at: OBSERVED,
+      observed_at: "2026-11-09T18:00:00.000Z",
       section_scores: { presentation: "80", execution: null, coverage: "50" },
       critical_responses: { safety: null },
     });
@@ -51,15 +52,13 @@ test.each([
 
 test("keyboard validation retains fields and confirmation returns focus without sending", async () => {
   const { api } = await openEvaluations();
-  const { user, form } = await fillEvaluation();
-  await user.clear(form.getByRole("textbox", { name: "Persona (UUID)" }));
+  const { user, form } = await fillEvaluation({ skipSubject: true });
   const trigger = form.getByRole("button", { name: "Revisar y guardar" });
   trigger.focus();
   await user.keyboard("{Enter}");
   expect(await screen.findByRole("alert")).toBeDefined();
   expect(form.getByRole<HTMLInputElement>("spinbutton", { name: "Presentación" }).value).toBe("80");
-  await user.click(form.getByRole("textbox", { name: "Persona (UUID)" }));
-  await user.paste(PERSON);
+  await pickSubject(user, form);
   await user.click(trigger);
   expect(document.activeElement).toBe(
     within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }),
@@ -78,9 +77,7 @@ test("a failed immutable command retains input and needs deliberate review befor
   });
   const { user, form } = await submitEvaluation();
   await form.findByText(/No pudimos confirmar el registro/);
-  expect(form.getByRole<HTMLInputElement>("textbox", { name: "Persona (UUID)" }).value).toBe(
-    PERSON,
-  );
+  expect(form.getByRole("combobox", { name: "Persona" }).textContent).toContain("Synthetic person");
   await user.click(form.getByRole("button", { name: "Revisar y guardar" }));
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
   expect(screen.queryByRole("dialog")).toBeNull();
@@ -89,7 +86,7 @@ test("a failed immutable command retains input and needs deliberate review befor
 test("a create-only user sees their receipt but never reads private history or notice information", async () => {
   const { api } = await openEvaluations({ permissions: ["evaluation.create"] });
   await submitEvaluation();
-  await screen.findByText("El servidor registró la evaluación.");
+  await screen.findByText("Evaluación registrada.");
   expect(
     api.requests.some(
       (request) => request.path.startsWith("/api/v1/evaluations/") && request.method === "GET",
@@ -124,12 +121,13 @@ test("history retains old rubric identity, raw critical observation and truthful
     },
   });
   const history = await screen.findByRole("region", { name: "Historial de evaluaciones" });
-  expect(await within(history).findByText(OLD_VERSION)).toBeDefined();
+  expect(await within(history).findByText("Consultar intentos")).toBeDefined();
   expect(within(history).getByText(/Synthetic retained void reason/)).toBeDefined();
   const attempts = await screen.findByRole("region", { name: "Intentos conservados" });
   expect(await within(attempts).findByText("72.1234")).toBeDefined();
   expect(within(attempts).getByText("Falla crítica de seguridad")).toBeDefined();
-  expect(screen.getByText(/todavía no permite consultar el recibo/)).toBeDefined();
+  await openTab("Avisos a recursos humanos");
+  expect(await screen.findByText(/guardar una evaluación no confirma el envío/)).toBeDefined();
   expect(screen.queryByRole("region", { name: "Nueva evaluación" })).toBeNull();
   expect(
     api.requests.find((request) => request.path.startsWith("/api/v1/evaluations/?"))?.path,
@@ -138,7 +136,8 @@ test("history retains old rubric identity, raw critical observation and truthful
 
 test("a scope change denies a foreign contextual deep link and removes obsolete private cache", async () => {
   const app = await openEvaluations({ path: `/people/evaluations?center=${ID}` });
-  await screen.findByText(OLD_VERSION);
+  await openTab("Historial");
+  await screen.findByText("Consultar intentos");
   app.api.setRoute(
     "GET /api/v1/me/",
     Response.json({
@@ -150,7 +149,7 @@ test("a scope change denies a foreign contextual deep link and removes obsolete 
     await app.queryClient.refetchQueries({ queryKey: ["me"] });
   });
   await screen.findByText(/No tienes acceso a este contexto/);
-  expect(screen.queryByText(OLD_VERSION)).toBeNull();
+  expect(screen.queryByText("Consultar intentos")).toBeNull();
   expect(
     app.queryClient
       .getQueryCache()
@@ -183,7 +182,7 @@ test("late mutation success cannot publish or invalidate after a different organ
     release(Response.json(receipt("pass", "100"), { status: 201 }));
     await pending;
   });
-  expect(screen.queryByText("El servidor registró la evaluación.")).toBeNull();
+  expect(screen.queryByText("Evaluación registrada.")).toBeNull();
   expect(app.api.requests.length).toBe(reads);
   expect(currentRevision()).toBe(revision);
 });
@@ -207,6 +206,7 @@ test("a foreign quadrant without a center is denied before any private list or a
 
 test("an authorized empty notice-policy page exposes missing recipient configuration without claiming delivery", async () => {
   const { api } = await openEvaluations({ permissions: ["evaluation.read", "training.manage"] });
+  await openTab("Avisos a recursos humanos");
   const notice = await screen.findByRole("region", { name: "Aviso a recursos humanos" });
   expect(await within(notice).findByText(/No hay configuración de destinatario/)).toBeDefined();
   expect(
@@ -223,7 +223,9 @@ test("a denied observation retires private draft fields instead of retaining an 
   await openEvaluations({ routes: { "POST /api/v1/evaluations/": apiError(404, "not_found") } });
   const { form } = await submitEvaluation();
   await form.findByText(/No pudimos confirmar el registro/);
-  expect(form.getByRole<HTMLInputElement>("textbox", { name: "Persona (UUID)" }).value).toBe("");
+  expect(form.getByRole("combobox", { name: "Persona" }).textContent).toContain(
+    "Elige de la lista",
+  );
   expect(form.getByRole<HTMLInputElement>("spinbutton", { name: "Presentación" }).value).toBe("");
 });
 
@@ -257,14 +259,12 @@ test("scope broadening keeps permitted RAM input while fencing the previous auth
   await act(async () => {
     await app.queryClient.refetchQueries({ queryKey: ["me"] });
   });
-  expect(form.getByRole<HTMLInputElement>("textbox", { name: "Persona (UUID)" }).value).toBe(
-    PERSON,
-  );
+  expect(form.getByRole("combobox", { name: "Persona" }).textContent).toContain("Synthetic person");
   await act(async () => {
     release(Response.json(receipt("pass", "100"), { status: 201 }));
     await pending;
   });
-  expect(screen.queryByText("El servidor registró la evaluación.")).toBeNull();
+  expect(screen.queryByText("Evaluación registrada.")).toBeNull();
   expect(form.getByRole<HTMLInputElement>("spinbutton", { name: "Presentación" }).value).toBe("80");
   expect(form.getByText(/No pudimos confirmar el registro/)).toBeDefined();
 });
