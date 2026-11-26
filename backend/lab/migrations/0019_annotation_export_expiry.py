@@ -30,22 +30,24 @@ BEGIN
 END; $$;
 """
 
+# One DO block is one statement: atomic and lock-bounded when autocommitting, and it never
+# issues BEGIN/COMMIT, which would commit an enclosing transaction (tests, outer atomic blocks).
 EXPAND_SQL = """
-BEGIN;
-SET LOCAL lock_timeout = '2s';
-ALTER TABLE lab_eggannotationexportstatus DROP CONSTRAINT lab_annotation_export_state;
-ALTER TABLE lab_eggannotationexportstatus ADD CONSTRAINT lab_annotation_export_state
-  CHECK (status IN ('queued','running','ready','failed','expired')) NOT VALID;
-COMMIT;
+DO $$ BEGIN
+  SET LOCAL lock_timeout = '2s';
+  ALTER TABLE lab_eggannotationexportstatus DROP CONSTRAINT lab_annotation_export_state;
+  ALTER TABLE lab_eggannotationexportstatus ADD CONSTRAINT lab_annotation_export_state
+    CHECK (status IN ('queued','running','ready','failed','expired')) NOT VALID;
+END $$;
 """
 
 REVERSE_SQL = """
-BEGIN;
-SET LOCAL lock_timeout = '2s';
-ALTER TABLE lab_eggannotationexportstatus DROP CONSTRAINT lab_annotation_export_state;
-ALTER TABLE lab_eggannotationexportstatus ADD CONSTRAINT lab_annotation_export_state
-  CHECK (status IN ('queued','running','ready','failed')) NOT VALID;
-COMMIT;
+DO $$ BEGIN
+  SET LOCAL lock_timeout = '2s';
+  ALTER TABLE lab_eggannotationexportstatus DROP CONSTRAINT lab_annotation_export_state;
+  ALTER TABLE lab_eggannotationexportstatus ADD CONSTRAINT lab_annotation_export_state
+    CHECK (status IN ('queued','running','ready','failed')) NOT VALID;
+END $$;
 """
 
 
