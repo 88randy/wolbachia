@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TextField } from "../forms/TextField";
+import { DateField } from "../ui/DateField";
 import { fieldKeys } from "./inventory-fields";
 export interface InventoryTextProps {
   name: string;
@@ -16,6 +17,24 @@ export function InventoryTextField(props: InventoryTextProps) {
   const [isTouched, setTouched] = useState(false);
   const error =
     isTouched && props.required && !props.value.trim() ? t("inventory.state.required") : undefined;
+  if (props.type === "date")
+    return (
+      <DateField
+        id={`inventory-${props.name}`}
+        label={t(fieldKeys[props.name] ?? "inventory.field.name")}
+        value={props.value}
+        disabled={props.disabled}
+        error={error}
+        onChange={props.onChange}
+        {...(props.required
+          ? {}
+          : {
+              onClear: () => {
+                props.onChange("");
+              },
+            })}
+      />
+    );
   return (
     <TextField
       id={`inventory-${props.name}`}

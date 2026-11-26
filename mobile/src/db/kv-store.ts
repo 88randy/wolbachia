@@ -14,6 +14,8 @@ export const KV_KEYS = {
   apiBaseUrlOverride: "api_base_url_override",
   themePreference: "theme_preference",
   locale: "locale",
+  ovitrapLabels: "ovitrap_labels",
+  diagnosticLog: "diagnostic_log",
 } as const;
 
 /** Small key-value settings kept in the same SQLite file as the outbox. */

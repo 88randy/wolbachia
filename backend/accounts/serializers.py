@@ -125,3 +125,24 @@ class PasswordResetConfirmSerializer(serializers.Serializer[Any]):
         except DjangoValidationError as error:
             raise serializers.ValidationError({"new_password": get_error_detail(error)}) from error
         return {**attrs, "user": user}
+
+
+class PasswordChangeSerializer(serializers.Serializer[Any]):
+    current_password = serializers.CharField(
+        max_length=PASSWORD_MAX_LENGTH, trim_whitespace=False, write_only=True
+    )
+    new_password = serializers.CharField(
+        max_length=PASSWORD_MAX_LENGTH, trim_whitespace=False, write_only=True
+    )
+
+    @sensitive_variables()
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs["new_password"] == attrs["current_password"]:
+            raise serializers.ValidationError(
+                {"new_password": serializers.ErrorDetail("Must differ.", code="password_unchanged")}
+            )
+        try:
+            validate_password(attrs["new_password"], self.context.get("user"))
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"new_password": get_error_detail(error)}) from error
+        return attrs

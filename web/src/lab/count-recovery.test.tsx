@@ -22,7 +22,7 @@ test("a confirmed high count replays the complete command after a lost response"
     },
   });
   await userEvent.type(
-    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
     "1200{Enter}",
   );
   await screen.findByRole("button", { name: "Confirmar conteo alto" });
@@ -39,7 +39,10 @@ test("a confirmed high count replays the complete command after a lost response"
 
 test("background queue changes do not move the active numeric draft", async () => {
   const { api, app } = await openCount();
-  await userEvent.type(await screen.findByRole("textbox", { name: "Huevos de laboratorio" }), "12");
+  await userEvent.type(
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
+    "12",
+  );
   api.setRoute("GET /api/v1/egg-counts/queue/", pageOf([{ ...candidate("B-032"), id: "bag-32" }]));
   await act(async () => {
     await app.queryClient.invalidateQueries({
@@ -48,7 +51,7 @@ test("background queue changes do not move the active numeric draft", async () =
   });
   expect(screen.getByRole("heading", { name: "B-031" })).toBeDefined();
   expect(
-    screen.getByRole<HTMLInputElement>("textbox", { name: "Huevos de laboratorio" }).value,
+    screen.getByRole<HTMLInputElement>("textbox", { name: "¿Cuántos huevos contaste?" }).value,
   ).toBe("12");
 });
 
@@ -59,7 +62,7 @@ test("a count response from a departed session cannot advance the queue", async 
   });
   const { api } = await openCount({ routes: { [`POST /api/v1/bags/${BAG}/counts/`]: () => held } });
   await userEvent.type(
-    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
     "12{Enter}",
   );
   await waitFor(() => {

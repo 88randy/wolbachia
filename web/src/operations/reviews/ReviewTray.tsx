@@ -1,4 +1,4 @@
-import { Link, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
@@ -27,11 +27,7 @@ export function ReviewTray({ scope }: { scope: ReviewScope }) {
         controller={controller}
         getRowId={(row) => row.id}
         data={operationTableData(query, table.state.page, REVIEW_PAGE_SIZE)}
-        rowActions={(row) => (
-          <Link to="/operations/reviews" search={{ ...search, item: row.id }}>
-            {t("reviews.workspace.open", { id: row.event_id })}
-          </Link>
-        )}
+        rowLink={(row) => ({ to: "/operations/reviews", search: { ...search, item: row.id } })}
       />
     </>
   );

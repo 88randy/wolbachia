@@ -246,7 +246,7 @@ describe("sign out", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "No hay conexión con el servidor",
+      "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
     );
     expect(app.router.state.location.pathname).toBe("/");
     expect(getOrganizationSlug()).toBe("norte");

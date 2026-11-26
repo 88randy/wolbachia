@@ -13,22 +13,32 @@ class HasPermissionCode(BasePermission):
     A view declares `required_permissions = {"<action>": "<resource>.<action>"}` (viewset actions:
     list, retrieve, create, update, partial_update, plus custom ones such as void). The user's
     codes are the union of the active profiles of the request's membership, which the view must
-    resolve first (`OrgScopedViewSetMixin` does). Fails closed: an action missing from the map,
-    a view without the map, or a request without membership is denied.
+    resolve first (`OrgScopedViewSetMixin` does). A narrow lookup may instead declare
+    `required_any_permissions = {"<action>": (codes...)}`: any one of the codes grants access
+    (a narrow code or the broad read code) and the view scopes rows by the union of their grants.
+    Fails closed: an action missing from both maps, a view without them, or a request without
+    membership is denied.
     """
 
     def has_permission(self, request: Request, view: APIView) -> bool:
+        action = getattr(view, "action", None) or ""
         required_by_action: Mapping[str, str] = getattr(view, "required_permissions", {})
-        required = required_by_action.get(getattr(view, "action", None) or "")
+        any_of: tuple[str, ...] = getattr(view, "required_any_permissions", {}).get(action, ())
         membership = getattr(request, "membership", None)
-        if required is None or membership is None:
+        if membership is None:
             return False
-        return effective_scope(membership).allows(required)
+        scope = effective_scope(membership)
+        required = required_by_action.get(action)
+        if required is not None:
+            return scope.allows(required)
+        return any(scope.allows(code) for code in any_of)
 
     def has_object_permission(self, request: Request, view: APIView, instance: object) -> bool:
-        required = getattr(view, "required_permissions", {}).get(getattr(view, "action", ""))
+        action = getattr(view, "action", "")
+        required = getattr(view, "required_permissions", {}).get(action)
         if required is None:
-            return False
+            # Narrow lookups: the view's queryset already scopes by the union of the any-of codes.
+            return bool(getattr(view, "required_any_permissions", {}).get(action))
         center = getattr(instance, "center_id", None)
         if getattr(getattr(instance, "_meta", None), "label_lower", "") == "organizations.center":
             center = getattr(instance, "pk", None)

@@ -11,6 +11,7 @@ export const incidentTypes = {
     "There is no connection. Your input is retained; reconnect and verify the current configuration before saving.",
   "incidentTypes.form.verifying":
     "The authorized configuration is being verified. Wait for a current response before saving.",
+  "incidentTypes.column.type": "Incident type",
   "incidentTypes.field.code": "Exact code",
   "incidentTypes.field.label": "Name",
   "incidentTypes.field.icon": "Icon",

@@ -1,5 +1,6 @@
 import { createShiftClose } from "../features/shift-close/create-shift-close.ts";
 import type { ShiftCloseService } from "../features/shift-close/service.ts";
+import { createForegroundGps } from "../features/ovitrap-lifecycle/create-foreground-gps.ts";
 import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
 import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
@@ -17,12 +18,15 @@ import { createAuth } from "../auth/create-auth.ts";
 import { CredentialStore } from "../auth/credential-store.ts";
 import { nativeSecrets } from "../auth/native-secrets.ts";
 import { readEndedSession } from "../auth/session-journal.ts";
+import { createDayAssignments } from "../features/ovitrap-check/day-assignment.ts";
 import type { AuthController } from "../auth/auth-controller.ts";
 import type { SessionRequests } from "../auth/session-requests.ts";
 import appManifest from "../../package.json";
 import type { TokenStore } from "../auth/token-store.ts";
 import { BUILD_API_BASE_URL, LAN_HTTP_FLAG, allowsPrivateLanHttp } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
+import { diagnosticSink } from "../features/diagnostics/diagnostic-sink.ts";
+import { diagnostics } from "../features/diagnostics/diagnostic-log.ts";
 import { KvStore } from "../db/kv-store.ts";
 import { openDatabase } from "../db/open-database.ts";
 import { OutboxRepository } from "../outbox/outbox-repository.ts";
@@ -48,15 +52,20 @@ import { createSamples } from "../features/samples/create-samples.ts";
 import type { SampleService } from "../features/samples/service.ts";
 import { createHistory } from "../features/history/service.ts";
 import type { HistoryService } from "../features/history/service.ts";
+import { createCalendar } from "../features/calendar/create-calendar.ts";
+import type { CalendarService } from "../features/calendar/service.ts";
 import { createTraining } from "../features/training/create-training.ts";
 import type { TrainingService } from "../features/training/service.ts";
 import { SettingsService } from "../screens/settings/settings-service.ts";
+import { createTrack } from "../features/track/create-track.ts";
+import type { TrackRecorder } from "../features/track/track-recorder.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly samples: SampleService;
   readonly releases: ReleaseService;
   readonly history: HistoryService;
+  readonly calendar: CalendarService;
   readonly training: TrainingService;
   readonly settings: SettingsService;
   readonly scanner: ScannerService;
@@ -70,6 +79,7 @@ export interface AppServices {
   readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
   readonly shiftClose: ShiftCloseService;
+  readonly track: TrackRecorder;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -87,6 +97,7 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
+  void diagnostics.attach(diagnosticSink(kv));
   const outbox = new OutboxRepository(db, () => new Date());
   const { server, credentials } = await loadIdentity(kv, outbox);
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
@@ -105,20 +116,39 @@ export async function createServices(): Promise<AppServices> {
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
-  const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
+  const { track, shiftOpen } = createShift({ db, engine, tokens, requests, auth, deviceId });
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
-  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
-  const scanner = createScanner(db, bundle, { ovitrap: captures.ovitrapCheck, ...forms });
+  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId, track });
+  const scanner = createScanner(db, bundle, { ...captures, ...forms });
   const reads = createReadScreens({ db, auth, tokens, requests, bundle, deviceId, attachments });
-  return { ...shared, ...captures, scanner, engine, shiftOpen, day, ...forms, ...reads };
+  return { ...shared, ...captures, scanner, engine, shiftOpen, day, track, ...forms, ...reads };
+}
+/** The opening starts the courier track; the track's reconcile owns every later start or stop. */
+function createShift(
+  deps: Pick<AppServices, "engine" | "tokens" | "auth" | "deviceId"> & {
+    readonly db: SqlExecutor;
+    readonly requests: SessionRequests;
+    readonly tokens: CredentialStore;
+  },
+) {
+  const track = createTrack({ ...deps, credentials: deps.tokens, uuid: randomUUID });
+  const shiftOpen = createShiftOpen({ ...deps, uuid: randomUUID, onOpened: track.reconcile });
+  return { track, shiftOpen };
 }
 function createReadScreens(
   deps: Parameters<typeof createTraining>[0] & { readonly attachments: Attachments },
 ) {
+  const history = createHistory({ ...deps, current: deps.attachments.session.deps.current });
   return {
-    history: createHistory({ ...deps, current: deps.attachments.session.deps.current }),
+    history,
+    calendar: createCalendar({
+      history,
+      bundle: deps.bundle,
+      auth: deps.auth,
+      current: deps.attachments.session.deps.current,
+    }),
     training: createTraining(deps),
     settings: new SettingsService({ ...deps, appVersion: appManifest.version }),
   };
@@ -136,12 +166,20 @@ function captureIdentity(
 }
 
 function createCaptures(
-  deps: Parameters<typeof createOvitrapCheck>[0] & { tokens: CredentialStore },
+  deps: Parameters<typeof createOvitrapCheck>[0] & {
+    tokens: CredentialStore;
+    auth: AuthController;
+  },
   bundle: DayBundleService,
   day: DayService,
 ) {
   return {
-    ovitrapCheck: createOvitrapCheck(deps),
+    ovitrapCheck: createOvitrapCheck({
+      ...deps,
+      gps: createForegroundGps(day.location),
+      assignments: createDayAssignments({ bundle, auth: deps.auth }),
+      recoverCapture: bundle.recoverCaptureContext,
+    }),
     ovitrapLifecycle: createOvitrapLifecycle({
       ...deps,
       bundle,

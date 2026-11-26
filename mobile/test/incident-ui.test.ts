@@ -6,7 +6,7 @@ import type { IncidentDraft, IncidentState } from "../src/features/incidents/typ
 import type { OutboxEvent } from "../src/outbox/outbox-event.ts";
 import type { OutboxStatus } from "../src/outbox/outbox-status.ts";
 import { IncidentEditBuffer, incidentEditBuffer } from "../src/features/incidents/edit-buffer.ts";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, flattenStyle, minHeightOf } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
 
 const FEATURE = "mobile/src/features/incidents/";
@@ -92,13 +92,7 @@ function press(node: RenderNode | undefined) {
   assert.equal(typeof node.props.onPress, "function");
   (node.props.onPress as () => void)();
 }
-function targetHeight(node: RenderNode): number {
-  const style =
-    typeof node.props.style === "function"
-      ? (node.props.style as (input: { pressed: boolean }) => unknown)({ pressed: false })
-      : node.props.style;
-  return Number(flattenStyle(style).minHeight);
-}
+const targetHeight = minHeightOf;
 
 void test("P23 host matrix preserves Other details, photo Undo and bottom Save at 130 percent", () => {
   for (const locale of ["es-MX", "en"] as const)
@@ -140,7 +134,8 @@ void test("P23 host matrix preserves Other details, photo Undo and bottom Save a
       assert.equal(input.props.editable, true);
       (input.props.onChangeText as (value: string) => void)("raw input retained");
       assert.equal(description, "raw input retained");
-      assert.ok(texts(form).includes(messages[locale]["mobile.incidents.otherHint"]));
+      // A report always asks for its description (including "Other"), so the form names it.
+      assert.ok(texts(form).includes(messages[locale]["mobile.incidents.description"]));
       assert.ok(
         form.some(
           (node) =>
@@ -260,25 +255,32 @@ void test("P23 type search uses configured labels and keeps Other last without i
     label: "Synthetic unsafe area",
     is_other: false,
   };
-  const props = {
-    types: [TYPE, regular],
-    selected: TYPE.current_version_id,
-    query: "",
-    onQuery: () => undefined,
-    choose: () => undefined,
+  const props = { types: [TYPE, regular] };
+  const edits: unknown[][] = [];
+  const model = {
+    state: state({ types: props.types }),
+    isBusy: false,
+    run: (operation: () => Promise<void>) => operation(),
+    service: {
+      edit: (...args: unknown[]) => {
+        edits.push(args);
+        return Promise.resolve();
+      },
+    },
   };
-  const options = render(`${FEATURE}IncidentTypeOptions.tsx`, "IncidentTypeOptions", props);
+  const options = render(`${FEATURE}IncidentTypePicker.tsx`, "IncidentTypePicker", { model });
+  const tiles = options.filter((node) => node.props.accessibilityRole === "radio");
   assert.deepEqual(
-    options
-      .filter((node) => node.type === "Pressable")
-      .map((node) => node.props.accessibilityLabel),
+    tiles.map((node) => node.props.accessibilityLabel),
     [regular.label, TYPE.label],
   );
-  const empty = render(`${FEATURE}IncidentTypeOptions.tsx`, "IncidentTypeOptions", {
-    ...props,
-    query: "no match",
+  assert.ok(tiles.every((node) => minHeightOf(node) >= 48));
+  press(tiles[0]);
+  assert.deepEqual(edits, [["type", regular.current_version_id, DRAFT.eventId]]);
+  const empty = render(`${FEATURE}IncidentTypePicker.tsx`, "IncidentTypePicker", {
+    model: { ...model, state: state({ types: [] }) },
   });
-  assert.ok(texts(empty).includes(messages.en["mobile.incidents.noTypeMatches"]));
+  assert.ok(texts(empty).includes(messages.en["mobile.incidents.noTypes"]));
 });
 
 void test("P23 persistent editor buffer retains failed raw text across remount and blocks Save until retry succeeds", async () => {

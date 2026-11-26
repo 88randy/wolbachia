@@ -14,16 +14,16 @@ export interface Preferences {
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
-  scheme: "system",
+  scheme: "light",
   locale: defaultLocale,
   textSize: "system",
 };
 
 const LOCALES: readonly Locale[] = ["es-MX", "en"];
 
-/** Keep explicit choices; an unset/unknown value follows the system. */
+/** Keep explicit choices; an unset/unknown value uses the light theme (owner decision, 2026-11-10). */
 export function parseScheme(value: string | null): ThemePreference {
-  return value === "dark" || value === "light" ? value : "system";
+  return value === "dark" || value === "system" ? value : "light";
 }
 
 export function resolveScheme(

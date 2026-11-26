@@ -20,6 +20,7 @@ export const NOTIFICATION_TABLE: TableQueryConfig = {
     {
       kind: "select",
       key: "unread",
+      presentation: "segmented",
       labelKey: "notifications.filter.unread",
       options: [
         { value: "true", labelKey: "notifications.inbox.unread" },

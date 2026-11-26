@@ -1,7 +1,8 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { TextField } from "../../forms/TextField";
-import { EVIDENCE_MAX_LENGTH } from "./geometry";
+import { EVIDENCE_MAX_LENGTH, parseLocation } from "./geometry";
+import { MapPointPicker } from "../../map-picker/MapPointPicker";
 import type { ResolutionDraft } from "./geometry";
 interface Props {
   value: ResolutionDraft;
@@ -19,18 +20,18 @@ export function ResolutionInputs({ value, onChange }: Props) {
       onChange({ ...value, evidence: event.target.value });
     },
   };
-  const location = {
-    id: id + "-location",
-    label: t("geography.field.location"),
-    value: value.location ?? "",
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-      onChange({ ...value, location: event.target.value });
-    },
-  };
   return (
     <>
       <TextField {...evidence} />
-      {value.decision === "move" && <TextField {...location} />}
+      {value.decision === "move" && (
+        <MapPointPicker
+          label={t("geography.field.location")}
+          value={parseLocation(value.location ?? "")}
+          onChange={(location) => {
+            onChange({ ...value, location: location.join(",") });
+          }}
+        />
+      )}
     </>
   );
 }

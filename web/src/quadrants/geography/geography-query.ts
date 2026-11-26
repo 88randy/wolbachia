@@ -2,6 +2,7 @@ import { centerQuery, centerIdentity } from "../../centers/center-filter";
 import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../../session/org-scoped-query";
+import type { WholePage } from "./geography-table";
 import type { TableState } from "../../data-table/table-types";
 import { listParams, resourceParams, PAGE_SIZE } from "./geography-table";
 import { coversRecord } from "./permissions";
@@ -92,7 +93,7 @@ export function historyOptions(
 export function blocksOptions(
   scope: GeographyScope,
   quadrant: string,
-  pageOrState: number | TableState,
+  pageOrState: number | TableState | WholePage,
 ) {
   return orgScopedQueryOptions(scope.identity, {
     key: [GEOGRAPHY, scope.context, "blocks", quadrant, pageOrState],

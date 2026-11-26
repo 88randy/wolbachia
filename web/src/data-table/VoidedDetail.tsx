@@ -1,3 +1,5 @@
+import { isUuid } from "../lookups/entity-sources";
+import { EntityName } from "../lookups/EntityName";
 import { Ban } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import styles from "./data-table.module.css";
@@ -20,7 +22,14 @@ export function VoidedDetail({ info }: { info: VoidInfo }) {
         <span>{t("table.voided.reason", { reason: info.reason })}</span>
         {info.note !== undefined && <span>{info.note}</span>}
       </span>
-      <span>{t("table.voided.author", { author: info.author })}</span>
+      {isUuid(info.author) ? (
+        <span>
+          {t("table.voided.author", { author: "" })}
+          <EntityName kind="user" id={info.author} />
+        </span>
+      ) : (
+        <span>{t("table.voided.author", { author: info.author })}</span>
+      )}
       {info.when !== undefined && <span>{t("table.voided.when", { when: info.when })}</span>}
     </div>
   );

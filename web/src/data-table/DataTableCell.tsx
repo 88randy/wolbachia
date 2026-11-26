@@ -1,3 +1,5 @@
+import { isUuid } from "../lookups/entity-sources";
+import { EmptyValue } from "../ui/EmptyValue";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -23,12 +25,13 @@ export function DataTableCell({
   children,
   before,
 }: DataTableCellProps) {
+  const safe = isUuid(children) ? <EmptyValue /> : children;
   const content =
     link === undefined ? (
-      children
+      safe
     ) : (
       <Link {...link} className={styles.link}>
-        {children}
+        {safe}
       </Link>
     );
   return (

@@ -71,6 +71,171 @@ No bytes are read beneath Lab locks. A void-only supervisor can read the minimal
 exact-target context and its bound evidence without receiving list/history/queue,
 count-create or general upload authority.
 
+## Manual egg annotation (W35)
+
+The existing count and count-replacement commands accept an optional `annotation`
+with `upload_id`, `marks`, `tool_version` and optional active `elapsed_seconds`.
+The value is the number of marks, including mixed boxes and points; an explicitly
+different numeric value is rejected. Empty marks are an authored zero. Numeric
+commands retain their prior canonical input and behavior. The same UUID replay,
+CAS revision, implausible-count confirmation, queue response and transaction apply.
+There is no separate counting command or mobile transport.
+
+`EggAnnotation` retains the exact count, Bag, actor and verified image dimensions.
+Pixel coordinates have a top-left origin and must be strict JSON integers. Points
+require `0 <= x < width`, `0 <= y < height`; boxes additionally require positive
+`w`/`h` and `x+w <= width`, `y+h <= height`. The server rejects out-of-bounds marks;
+the UI clamps its gestures to the image before submitting. There are at most 5000
+marks per annotation, checked before individual mark validation. Facade command
+JSON bodies above 2 MiB return `413 payload_too_large` before JSON parsing.
+The upload must have purpose `egg_annotation`, be verified, owned by the current
+actor and device, and unbound. No storage or image decoding occurs under Lab locks.
+
+Count, annotation and the `egg_annotation` attachment parent commit atomically.
+Same-organization/source/image/count guards and insert-only triggers protect SQL
+writes. A correction creates a new annotation and keeps the voided predecessor.
+`GET /egg-counts/{id}/annotation/` and paged `/egg-annotations/` (exact `code`,
+`author`, `created_from`, exclusive `created_before`) use current `egg_count.read`,
+paired scope and independent-QA blindness before filtering/page. Images use the
+existing authorized attachment download with before/after-I/O access checks.
+Numeric disclosure is recorded even when only the image is downloaded.
+
+`tests/test_egg_annotations.py` covers mark validation, count equality/mismatch,
+atomic rollback, explicit confirmation/replay, correction retention, permissions,
+organization isolation and immutable persistence; the module belongs once to
+`regular-lab`. Migrations `0015`/`0016` retain facts; uploads `0012`/`0013` add a
+nullable parent, metadata default and separately validated constraints.
+Reversal refuses populated annotations or their upload purpose.
+
+## Training dataset exports (W72)
+
+`EggAnnotationExport` is an immutable organization-scoped request with retained
+`EggAnnotationExportItem` selection and voided flags. Separate immutable
+`EggAnnotationExportStatus` facts derive `queued -> running -> ready | failed`
+and `ready -> expired`;
+the worker claims each queued request once under its row lock. A request fixes
+its selected annotation UUIDs before dispatch, so later annotations or voids do
+not silently change a queued dataset. `EggAnnotationExportDownload` records the
+authenticated actor and UTC timestamp of every authorized download.
+
+Every endpoint under `/api/v1/lab/egg-annotation-exports/` requires
+`egg_annotation.export`, registered through `lab.permissions.ADMIN_CODES` in
+`organizations/defaults.py`. It is admin-only by default, like Lab method
+management and recount adjudication; routine entomologists are not granted bulk
+data transfer. Every admin with this permission can see and download every
+export in the organization, including another requester's export, subject to
+current whole paired scope and independent-QA visibility. Each download is logged.
+`seed_organization_defaults --apply` adds this new code to
+eligible seeded admin profiles using the existing non-restoration policy.
+Selection applies organization and current whole paired export scope, dates,
+author and voided policy, without the independent-QA visibility filter. Creating
+an export is an explicit numeric disclosure: within the same User/Organization
+transaction that seals its selection, bulk insert an `annotation_export`
+`LabNumericDisclosure` for the requester and every included count, ignoring
+existing actor/count receipts. This makes the requester ineligible for blind
+recounts of those Bags (`lab_recount_disclosed`), even before the worker runs or
+if generation later fails. W72 explains this consequence before generation.
+Queued policy `egg-annotation-export-v2` identifies requests with atomic creation
+disclosure; their requester polls need no totals publication. Historical requests
+retain the receipt on first numeric delivery, even if a new worker finishes them.
+Other readers retain current paired
+scope and blind visibility before list counts, paging or archive access; an
+eligible blind counter cannot open somebody else's export to reveal counts.
+An authorized new reader without a recount grant still receives the existing
+idempotent disclosure receipt on numeric delivery, protecting later grants.
+Losing access to any selected count hides the entire export.
+Download checks current identity and authority,
+then checks the sealed size with stat and verifies SHA-256 while streaming. A
+digest mismatch aborts the stream rather than delivering a successful completion.
+
+Creation takes inclusive organization-local `date_from`/`date_to` (at most 366
+days), optional same-organization author User UUID, `include_voided` (default
+false) and `format: coco | yolo`. The limit is 5,000 selected images;
+`annotation_export_too_many_images` identifies an oversized request. The documented
+`MAX_EXPORT_BYTES` constant also caps the sum of selected verified image sizes at
+2 GiB (2,147,483,648 bytes); `annotation_export_too_many_bytes` includes `max_bytes`.
+The create transaction holds the existing organization arbiter: at most one
+queued/running request per requester and two per organization. A conflicting
+request returns `annotation_export_in_progress`. Counts refer
+to the immutable selected annotations, including one image for each point-only
+annotation. Empty selections produce valid empty archives. Failures retain
+`annotation_export_failed` without exposing exception text. A worker refuses an
+inactive requester or one whose current permission has been removed with
+`annotation_export_requester_unauthorized`.
+
+`recover_annotation_exports` runs every minute and appends
+`annotation_export_timed_out` failure facts for queued/running requests older
+than the 1,860-second hard time limit plus a 120-second margin. The task keeps
+the project's existing early acknowledgment policy; persisted requests and beat
+recovery cover lost messages, worker restarts and hard kills.
+`expire_annotation_exports` runs hourly. `ANNOTATION_EXPORT_RETENTION_DAYS`
+is an environment-configurable setting (default 7 days), measured from the ready
+fact. Expiry removes only archive bytes and appends `expired`; requests,
+selection, ready facts and download receipts remain. Expired downloads return
+`annotation_export_expired`; W72 can regenerate the same filters.
+
+The Celery task builds one ZIP into a temporary file. JSON arrays are separately
+spooled to disk and selected rows are iterated in batches of 200. Images come only
+from the existing verified sanitized upload, with size/SHA-256 checked; originals
+with EXIF are never included. The same private storage backend stores completed
+archives at private `dataset/<random UUID>.zip` keys, with an immutable result
+size and SHA-256. A temporary name in the same directory is atomically published
+with `os.replace`, so interrupted copies never expose a partial final object.
+Failure after storage discards the unreferenced ZIP. This archive stream does not change the individual upload's
+10 MiB cap. No whole dataset is buffered in memory and no storage I/O holds SQL
+locks. Downloads stream an attachment with `private, no-store` and `nosniff`.
+The web uses its existing session cookie and a same-origin download anchor;
+ZIP bytes never enter a JavaScript Blob. Headerless cookie navigation resolves
+only a current active membership of the export's organization and rechecks normal
+export permission/scope. Generation uses the `export` throttle; downloads have
+their own `export_download` scope at 30/hour. HEAD does not log a download.
+
+COCO contains `annotations.json` and `images/<annotation public UUID>.<ext>`.
+Detection annotations retain pixel `bbox: [x,y,w,h]`, area, `iscrowd: 0`, and
+category 1 `aedes_egg`; image/annotation IDs are consistent integers. Metadata
+identifies AedesVision, export UUID and UTC creation time; licenses are empty.
+YOLO contains the same images, corresponding `labels/<UUID>.txt` with class 0
+and normalized center/width/height to six decimals, `classes.txt`, and `data.yaml`
+with `train: images`, `val: images`, `nc: 1`, `names: [aedes_egg]` and no `path`.
+The dataset is unsplit: the YAML comment and README require consumers to create
+an independent training/validation split. These keys and relative directory
+values follow the [Ultralytics dataset documentation](https://docs.ultralytics.com/datasets/detect/);
+the [official loader](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/data/utils.py)
+uses the YAML directory when `path` is omitted and accepts list class names.
+Images use `ZIP_STORED`; JSON, YAML, CSV and text use deflate.
+
+Both formats include `points.json` with
+`{"images":[{"image_id":1,"file_name":"images/<UUID>.<ext>","points":[[x,y],...]}]}`.
+Points remain top-left-origin pixel points and never become boxes. Point-only
+images have empty YOLO label files. `manifest.csv` contains only image filename,
+annotation public UUID, count UUID, box count, point count, captured voided flag
+and UTC annotation time. `README.txt` explains schema, coordinates, counts,
+filters and the voided policy. No author UUID/name, organization ID, location,
+Bag/ovitrap code or original filename leaves in archive metadata; the author
+filter is described only as applied/not applied.
+There are no personal data in metadata, file names or manifest. Photos themselves
+may show handwritten codes or labels; both the archive README and W72 display
+this notice before sharing or training.
+
+Migrations `0017_egg_annotation_exports` and `0018_egg_annotation_export_guards`
+add new tables, same-organization links, sealed selections and insert-only/state
+transition guards. `0019_annotation_export_expiry` expands the retained states;
+expiry facts prevent reversal. Populated export history prevents table removal. The format and
+private stream tests live in `tests/test_annotation_export_archive.py`; API,
+eager-task and PostgreSQL invariants live in `tests/test_annotation_exports.py`.
+Migration `0020_annotation_export_disclosure` expands only the existing numeric
+surface guard and model choices; rollback refuses retained export disclosures.
+The existing migration owner verifies forward and reverse guards. Bulk insertion
+uses Django's documented [conflict handling](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#bulk-create)
+and the choice-only change uses [separate database/state operations](https://docs.djangoproject.com/en/5.2/ref/migration-operations/#separatedatabaseandstate).
+See [the API contract](../../docs/api-conventions.md#training-dataset-exports-w72)
+and decisions 177/178. Format references:
+[COCO](https://cocodataset.org/#format-data),
+[COCO reference API](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py),
+[Ultralytics detection datasets](https://docs.ultralytics.com/datasets/detect/),
+[Python ZIP streams](https://docs.python.org/3.13/library/zipfile.html) and
+[temporary files](https://docs.python.org/3.13/library/tempfile.html).
+
 ## Corrections and independent QA
 
 `corrections.py` appends a canonical-catalog reason plus a normalized note of at

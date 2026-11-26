@@ -30,6 +30,7 @@ export const count = (overrides: Partial<Schemas["LabCount"]> = {}): Schemas["La
   source_proof: {},
   created_at: "2026-11-03T15:00:00Z",
   created_by: "counter-31",
+  created_by_name: "Ana Contadora",
   voided: false,
   expected_revision: 1,
   current_revision: 1,

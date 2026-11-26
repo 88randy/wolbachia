@@ -3,6 +3,7 @@ import type { Schemas, operations } from "@wolbachia/api-client";
 import { inventoryScopedOptions } from "../inventory-read-context";
 import type { useInventoryContext } from "../use-inventory-context";
 import type { TableState } from "../../data-table/table-types";
+import { PERSON_NAME_PERMISSIONS, holdsAny } from "../../lookups/lookup-permissions";
 import { allocationRouteScope } from "./allocation-scope";
 
 export type AllocationScope = ReturnType<typeof useInventoryContext>;
@@ -60,6 +61,31 @@ export function suggestionOptions(scope: AllocationScope, date: string, courier:
   });
 }
 
+type DeliveryQuery = NonNullable<operations["courier_assignments_list"]["parameters"]["query"]>;
+
+export function deliveryListOptions(scope: AllocationScope, state: TableState) {
+  const query = listParams(state) as DeliveryQuery;
+  return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
+    key: ["allocation", "deliveries", query],
+    queryFn: async ({ signal }) =>
+      unwrap(await scope.client.GET("/api/v1/courier-assignments/", { params: { query }, signal })),
+  });
+}
+
+/** One-row read of how many deliveries are in a status ("" is all), for the tab counts. */
+export function deliveryCountOptions(scope: AllocationScope, status: string) {
+  const query = {
+    page_size: 1,
+    ...(status ? { status: status as NonNullable<DeliveryQuery["status"]> } : {}),
+  };
+  return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
+    key: ["allocation", "deliveries", "count", status],
+    queryFn: async ({ signal }) =>
+      unwrap(await scope.client.GET("/api/v1/courier-assignments/", { params: { query }, signal }))
+        .count,
+  });
+}
+
 export function assignmentOptions(scope: AllocationScope, date: string, courier: string) {
   return inventoryScopedOptions(allocationRouteScope(scope, ASSIGNMENTS_ROUTE), {
     key: ["allocation", "assignment", date, courier],
@@ -112,17 +138,34 @@ export function lotDirectoryOptions(scope: AllocationScope, route: string) {
   });
 }
 
+/** A person from the names-only lookup; `profiles` carries `courier` when the person is one. */
+export interface CourierEntry {
+  id: string;
+  display_name: string;
+  profiles: readonly string[];
+}
+
+/** Names only (`/lookups/users/`): the broad personnel read is not needed to name a courier. */
 export function courierDirectoryOptions(scope: AllocationScope, route: string) {
-  return inventoryScopedOptions(allocationRouteScope(scope, route), {
+  const options = inventoryScopedOptions(allocationRouteScope(scope, route), {
     key: ["allocation", "couriers", "directory"],
-    queryFn: async ({ signal }) =>
+    queryFn: async ({ signal }): Promise<CourierEntry[]> =>
       unwrap(
-        await scope.client.GET("/api/v1/users/operational/", {
-          params: { query: { is_active: true, page_size: 100 } },
+        await scope.client.GET("/api/v1/lookups/users/", {
+          params: { query: { page_size: 100 } },
           signal,
         }),
-      ).results,
+      ).results.map((person) => ({
+        id: person.id,
+        display_name: person.display_name,
+        profiles: person.is_courier ? ["courier"] : [],
+      })),
   });
+  // Without a lookup permission the request would be a 403: do not send it.
+  return {
+    ...options,
+    enabled: options.enabled && holdsAny(scope.identity.permissions, PERSON_NAME_PERMISSIONS),
+  };
 }
 
 /** Signature state needs the reconciliation read; without that permission it is reported unknown. */
@@ -140,6 +183,8 @@ export function assignmentFrameOptions(scope: AllocationScope, assignmentId: str
   return {
     ...options,
     enabled:
-      options.enabled && scope.identity.permissions?.includes("inventory.reconcile") === true,
+      options.enabled &&
+      assignmentId !== "" &&
+      scope.identity.permissions?.includes("inventory.reconcile") === true,
   };
 }

@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
@@ -14,6 +15,8 @@ export function ReviewAccept(props: ReviewActionsProps) {
       actionLabel={t("reviews.workspace.accept")}
       trigger={
         <Button
+          size="lg"
+          leadingIcon={<Check aria-hidden="true" />}
           disabled={props.isBlocked || !props.canAccept}
           onClick={() => {
             reviewed.current = props.frame;

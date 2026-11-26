@@ -64,12 +64,20 @@ export function buildDay(input: {
   readonly work: readonly LocalWork[];
   readonly location: LocationState;
   readonly now: Date;
+  /** Organization epi-week convention (profile): weekly tasks take captures all week (#374). */
+  readonly epiWeek: string | null;
 }) {
   const location = currentLocation(input.location, input.now);
   const fix = location.kind === "granted" ? location.fix : null;
   const visible = input.tasks.map((row) => row.task);
   const tasks = input.tasks
-    .map((row) => overlay(row, taskWork(row.task, input.work, visible), fix))
+    .map((row) =>
+      overlay(
+        row,
+        taskWork(row.task, input.work, { visibleTasks: visible, epiWeek: input.epiWeek }),
+        fix,
+      ),
+    )
     .sort(compare);
   return {
     tasks,

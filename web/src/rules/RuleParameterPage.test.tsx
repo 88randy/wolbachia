@@ -2,7 +2,7 @@ import { invalidateRuleParameters } from "./rules-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { simulateLogin, simulateSignOut } from "../test/simulate-session";
 import { isSessionExpired } from "../session/session-events";
 import { apiError, makeMe } from "../test/fake-api";
@@ -22,6 +22,14 @@ const NAME = "Distancia máxima al punto";
 const CREATED = makeVersion({ id: "2", status: "scheduled", effective_date: "2026-11-10" });
 const REASON = "Ajuste acordado con entomología";
 
+// The calendar opens on the current month: freeze the clock (Date only) so day 10 is 10 Nov 2026.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 10, 4, 12) });
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
+
 const created = () => Response.json(CREATED, { status: 201 });
 const refused = (field: string, code: string, params: Record<string, unknown> = {}) =>
   Response.json(
@@ -31,8 +39,11 @@ const refused = (field: string, code: string, params: Record<string, unknown> = 
 
 async function fill(user: ReturnType<typeof userEvent.setup>, value: string, date = "2026-11-10") {
   await user.type(await screen.findByLabelText(/Valor nuevo/), value);
-  const dateField = screen.getByLabelText(/Vigente desde \(obligatorio\)/);
-  await user.type(dateField, date);
+  await user.click(screen.getByRole("button", { name: /Vigente desde \(obligatorio\)/ }));
+  const day = String(Number(date.slice(8)));
+  await user.click(
+    await screen.findByRole("button", { name: new RegExp(`\\b${day} de noviembre`) }),
+  );
   await user.type(screen.getByLabelText(/Motivo del cambio/), REASON);
 }
 
@@ -103,13 +114,14 @@ describe("rule parameter page: permissions of its parts", () => {
     expect(screen.getByRole("heading", { name: "Historial de versiones" })).toBeDefined();
   });
 
-  test("without rule_parameter_version.read there is no history and it is not requested", async () => {
+  test("rule_parameter.read alone (every profile holds it) does not open the screen", async () => {
     const { api } = await openParameterPage({
       me: makeMe({ permissions: ["rule_parameter.read", "rule_parameter_version.create"] }),
     });
-    await screen.findByRole("heading", { name: "Nueva versión" });
 
-    expect(screen.queryByRole("heading", { name: "Historial de versiones" })).toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "No tienes acceso a esta sección" }),
+    ).toBeDefined();
     expect(requestsTo(api, "GET", VERSIONS_PATH_API)).toHaveLength(0);
   });
 });

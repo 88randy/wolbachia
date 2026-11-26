@@ -37,17 +37,17 @@ export const conditions = {
   "conditions.state.missingRange":
     "Las lecturas sin límites históricos permanecen en la tabla y se excluyen de la gráfica.",
   "conditions.state.chartScope":
-    "Gráfica y tabla muestran la misma página del servidor. Cada lectura conserva sus límites permitidos; no corresponden a la configuración de hoy.",
+    "La gráfica y la tabla muestran los mismos datos. Cada lectura conserva sus límites permitidos; no corresponden a la configuración de hoy.",
   "conditions.state.hold":
     "Una lectura normal posterior no libera un bloqueo pendiente. Los enlaces a incidentes aparecen solo cuando tienes permiso para consultarlos.",
-  "conditions.state.saved": "Lectura guardada en el servidor",
+  "conditions.state.saved": "Lectura guardada",
   "conditions.state.review":
-    "Revisa el historial actual del servidor antes de otra captura manual. Conservamos tus datos.",
+    "Revisa el historial actual antes de otra captura manual. Conservamos tus datos.",
   "conditions.state.invalid": "Revisa este valor y vuelve a guardar.",
   "conditions.state.verifying":
     "Espera el estado autorizado actual antes de registrar una lectura.",
   "conditions.state.offline":
     "No hay conexión. Conserva estos datos y reconecta antes de registrarlos.",
   "conditions.state.uncertain":
-    "No pudimos confirmar el resultado. Revisa el historial del servidor antes de iniciar otra captura; esta lectura no se reenviará automáticamente.",
+    "No pudimos confirmar el resultado. Revisa el historial antes de iniciar otra captura; esta lectura no se reenviará automáticamente.",
 } as const satisfies AreaCatalog<"conditions">;

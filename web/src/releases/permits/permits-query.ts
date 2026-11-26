@@ -20,11 +20,6 @@ export const PERMIT_TYPES_TABLE: TableQueryConfig = {
   pageSize: PERMITS_PAGE_SIZE,
   defaultOrdering: "code",
   sortableIds: ["code", "name", "created_at"],
-  sortOptions: [
-    { value: "code", labelKey: "permits.types.columnCode" },
-    { value: "name", labelKey: "permits.types.columnName" },
-    { value: "created_at", labelKey: "permits.types.columnCreated" },
-  ],
   supportsVoided: false,
   filters: [{ kind: "text", key: "search", maxLength: 100, labelKey: "permits.types.search" }],
 };
@@ -34,10 +29,6 @@ export const PERMITS_TABLE: TableQueryConfig = {
   pageSize: PERMITS_PAGE_SIZE,
   defaultOrdering: "-created_at",
   sortableIds: ["code", "created_at"],
-  sortOptions: [
-    { value: "code", labelKey: "permits.column.code" },
-    { value: "created_at", labelKey: "permits.column.validity" },
-  ],
   supportsVoided: false,
   filters: [{ kind: "text", key: "search", maxLength: 100, labelKey: "permits.list.search" }],
 };
@@ -94,7 +85,7 @@ export function permitFormChoicesOptions(client: ApiClient, identity: SessionIde
       const query = { page: 1, page_size: OPTIONS_PAGE_SIZE };
       const [types, quadrants] = await Promise.all([
         client.GET("/api/v1/permit-types/", { params: { query }, signal }),
-        client.GET("/api/v1/quadrants/", { params: { query }, signal }),
+        client.GET("/api/v1/lookups/quadrants/", { params: { query }, signal }),
       ]);
       return { types: unwrap(types).results, quadrants: unwrap(quadrants).results };
     },

@@ -8,13 +8,15 @@ import { historyOptions } from "./geography-query";
 import type { GeographyScope } from "./use-w-15";
 import { PAGE_SIZE } from "./geography-table";
 import { useHistoryColumns } from "./use-history-columns";
+import { useGeographyCodes } from "./use-point-codes";
 interface Props {
   scope: GeographyScope;
   quadrant: string;
 }
 export function QuadrantHistory({ scope, quadrant }: Props) {
   const { t } = useTranslation();
-  const columns = useHistoryColumns();
+  const codes = useGeographyCodes(scope, quadrant);
+  const columns = useHistoryColumns(codes.point);
   const { controller } = useHistoryController({ isPoint: false, userId: scope.me.user.id });
   const query = useQuery(historyOptions(scope, quadrant, controller.state));
   return (

@@ -345,3 +345,13 @@ def test_review_action_keeps_cookie_csrf_pinned_bearer_and_server_terminal_state
     assert pinned.status_code == 201, pinned.data
     assert pinned.data["audit_only"] is True
     assert item.decisions.count() == 2
+
+
+def test_list_query_count_does_not_grow_with_rows(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    from tests.query_budget import assert_constant_queries
+
+    client = supervisor_client(org_a, make_member)
+
+    assert_constant_queries(client, REVIEW_ITEMS, lambda n: items_in(org_a, n))

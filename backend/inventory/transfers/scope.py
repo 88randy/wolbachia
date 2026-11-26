@@ -98,8 +98,10 @@ def paired_query(grant: Any, center: str, quadrant: str) -> Q:  # noqa: ANN401 -
 def visible_transfers(actor: UploadActor, permission: str) -> QuerySet[Any]:
     from inventory.transfers.models import Transfer, TransferLine
 
-    query = Transfer.objects.filter(organization=actor.organization).select_related(
-        "origin", "destination"
+    query = (
+        Transfer.objects.filter(organization=actor.organization)
+        .select_related("origin", "destination")
+        .prefetch_related("lines__lot")
     )
     allowed = Q(pk__in=[])
     for index, (codes, grant) in enumerate(current_scope(actor).grants):

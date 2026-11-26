@@ -1,10 +1,14 @@
 import { Link, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { ApiError } from "@wolbachia/api-client";
 import { Card } from "../ui/Card";
+import { DetailPage } from "../components/templates/DetailPage";
+import { InlineNotice } from "../ui/InlineNotice";
+import { StatusPill } from "../ui/StatusPill";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { ErrorState } from "../ui/ErrorState";
 import { Button } from "../ui/Button";
@@ -21,11 +25,11 @@ import { useInventoryWrite } from "./use-inventory-write";
 import { LotSafetySummary } from "./lots/LotSafetySummary";
 import { LocationStock } from "./locations/LocationStock";
 import type { InventoryKind, InventoryRecord as RecordValue } from "./inventory-links";
-import page from "../styles/page.module.css";
 import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
 import { InventoryContextNotice } from "./InventoryContextNotice";
+import { PrintLabelLink } from "../labels/PrintLabelLink";
 const updatePermission = {
   supplies: "supply_type.update",
   lots: "lot.update",
@@ -126,7 +130,12 @@ function RecordBack({ kind }: { kind: InventoryKind }) {
     ),
   );
   return (
-    <Link to={lists[kind]} search={search}>
+    <Link
+      to={lists[kind]}
+      search={search}
+      className="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-action"
+    >
+      <ArrowLeft aria-hidden="true" className="size-4" />
       {t("inventory.action.back")}
     </Link>
   );
@@ -142,6 +151,59 @@ function RecordEditor({ kind, model, record, onSaved }: ContentProps & { onSaved
     />
   );
 }
+function recordTitle(record: RecordValue): string {
+  if ("label" in record) return record.label;
+  if ("name" in record) return record.name;
+  return record.code;
+}
+function RecordStatus({ record }: { record: RecordValue }) {
+  const { t } = useTranslation();
+  if ("status" in record)
+    return (
+      <StatusPill tone={record.status === "available" ? "success" : "warning"}>
+        {t(`inventory.status.${record.status}`)}
+      </StatusPill>
+    );
+  if ("is_active" in record)
+    return (
+      <StatusPill tone={record.is_active ? "success" : "neutral"}>
+        {t(record.is_active ? "inventory.status.active" : "inventory.status.inactive")}
+      </StatusPill>
+    );
+  return null;
+}
+function LocationRecord(props: ContentProps & { refresh: () => void; onSaved: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Card title={t("inventory.section.locationRecord")}>
+        <RecordEditor {...props} />
+      </Card>
+      <Card title={t("inventory.section.stockAndMovements")}>
+        <RecordFacts record={props.record} />
+      </Card>
+    </>
+  );
+}
+function RecordCard(props: ContentProps & { refresh: () => void; onSaved: () => void }) {
+  const { t } = useTranslation();
+  if ("geometry" in props.record) return <LocationRecord {...props} />;
+  return (
+    <Card title={t("inventory.section.currentRecord")}>
+      <div className={styles.content}>
+        <RecordFacts record={props.record} />
+        <RecordEditor {...props} />
+        {!props.model.readonly && (
+          <RetireSupply
+            record={props.record}
+            verifying={props.model.query.isFetching}
+            refresh={props.refresh}
+          />
+        )}
+      </div>
+    </Card>
+  );
+}
 function RecordContent(props: ContentProps) {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
@@ -152,25 +214,30 @@ function RecordContent(props: ContentProps) {
     setSaved(true);
   };
   return (
-    <section className={[page.page, styles.content].join(" ")}>
-      <Card title={props.record.code} headingLevel={1}>
-        <div className={styles.actions}>
+    <DetailPage
+      code={props.record.code}
+      title={recordTitle(props.record)}
+      status={<RecordStatus record={props.record} />}
+      actions={
+        <>
           <RecordBack kind={props.kind} />
+          <PrintAction kind={props.kind} code={props.record.code} />
           <RefreshAction refresh={refresh} />
-        </div>
-        <p role="status">{saved ? t("inventory.state.saved") : ""}</p>
-        <RecordFacts record={props.record} />
-        <RecordEditor {...props} onSaved={accepted} />
-        {!props.model.readonly && (
-          <RetireSupply
-            record={props.record}
-            verifying={props.model.query.isFetching}
-            refresh={refresh}
-          />
-        )}
-      </Card>
-    </section>
+        </>
+      }
+      notices={
+        saved ? <InlineNotice tone="success">{t("inventory.state.saved")}</InlineNotice> : null
+      }
+    >
+      <RecordCard {...props} refresh={refresh} onSaved={accepted} />
+    </DetailPage>
   );
+}
+const PRINTABLE = { lots: "lot", locations: "location" } as const;
+/** Deep link to the label tool (W19) with this record ticked; supplies have no label. */
+function PrintAction({ kind, code }: { kind: InventoryKind; code: string }) {
+  if (kind === "supplies") return null;
+  return <PrintLabelLink kind={PRINTABLE[kind]} code={code} />;
 }
 function RefreshAction({ refresh }: { refresh: () => void }) {
   const { t } = useTranslation();
@@ -184,8 +251,6 @@ function RecordFacts({ record }: { record: RecordValue }) {
   return (
     <>
       {"supply_version" in record && <LotSafetySummary lot={record} />}
-      {"label" in record && <p>{record.label}</p>}
-      {"name" in record && <p>{record.name}</p>}
       {"geometry" in record && <LocationStock location={record} />}
     </>
   );

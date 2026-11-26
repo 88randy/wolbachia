@@ -1,35 +1,28 @@
-import { radius, spacing } from "@wolbachia/tokens";
-import type { Theme } from "@wolbachia/tokens";
-import { Pressable, StyleSheet } from "react-native";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
+import { Check } from "lucide-react-native";
+import { Pressable, View } from "react-native";
+import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    action: {
-      minHeight: 56,
-      padding: spacing[1.5],
-      borderRadius: radius.md,
-      borderWidth: 2,
-      borderColor: theme.color.action,
-      backgroundColor: theme.color.surface,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    selected: { backgroundColor: theme.color.status.info.bg },
-    disabled: {
-      borderColor: theme.color.border.default,
-      backgroundColor: theme.color.disabled.background,
-    },
-  });
+import { KIT_ICON_STROKE } from "../../ui/kit-styles.ts";
+
 interface Props {
   readonly label: string;
   readonly onPress: () => void;
   readonly disabled?: boolean;
   readonly selected?: boolean;
 }
-/** Explicit action label/state for TalkBack, with wrapping text and a 56 dp minimum target. */
+
+function frame(disabled: boolean, selected: boolean | undefined): string {
+  if (disabled) return "border-line bg-surface-muted";
+  return selected ? "border-action bg-action" : "border-line-strong bg-surface";
+}
+
+/**
+ * Option button of the courier flows: 56 dp minimum, wrapping text. Selected is FILLED blue with a
+ * check mark (never only an outline), so it reads the same in every wizard.
+ */
 export function ShiftAction({ label, onPress, disabled = false, selected }: Props) {
-  const styles = useStyles(createStyles);
+  const { theme } = useTheme();
+  const color = selected && !disabled ? theme.color.onAction : theme.color.text.primary;
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,9 +30,16 @@ export function ShiftAction({ label, onPress, disabled = false, selected }: Prop
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.action, selected ? styles.selected : null, disabled ? styles.disabled : null]}
+      className={`min-h-14 flex-row items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 active:opacity-80 ${frame(disabled, selected)}`}
     >
-      <AppText variant="button">{label}</AppText>
+      {selected ? (
+        <View accessible={false} importantForAccessibility="no-hide-descendants">
+          <Check color={color} size={22} strokeWidth={KIT_ICON_STROKE + 0.5} />
+        </View>
+      ) : null}
+      <AppText variant="button" style={{ color, flexShrink: 1 }}>
+        {label}
+      </AppText>
     </Pressable>
   );
 }

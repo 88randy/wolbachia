@@ -7,6 +7,7 @@ const PAGE_SIZE = 200;
 export function centersOptions(client: ApiClient, identity: SessionIdentity) {
   return orgScopedQueryOptions(identity, {
     key: ["centers"],
+    placeholderAcrossCenters: true,
     queryFn: async ({ signal }) => {
       const centers = [];
       let page = 1;

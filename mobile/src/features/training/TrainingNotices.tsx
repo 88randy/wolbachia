@@ -1,6 +1,6 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import type { useTraining } from "./use-training.ts";
 
 type Model = ReturnType<typeof useTraining>;
@@ -25,6 +25,6 @@ function accessNotices({ source }: Model): MessageKey[] {
 export function TrainingNotices({ model }: { readonly model: Model }) {
   const t = useT();
   return [...readNotices(model), ...accessNotices(model)].map((key) => (
-    <Notice key={key} tone="info" icon="alert" message={t(key)} />
+    <InfoNotice key={key} tone="info" message={t(key)} />
   ));
 }

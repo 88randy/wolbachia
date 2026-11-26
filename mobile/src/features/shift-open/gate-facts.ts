@@ -1,6 +1,7 @@
 import type { SqlExecutor, SqlRow, SqlStatement } from "../../db/sql.ts";
 import { readOptionalText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
+import { readRequiresOfflineMap } from "./catalog-snapshot.ts";
 import type { ChecklistCatalog, MapPreparation, OpenShiftDraft } from "./domain.ts";
 import type { StoredShift } from "./store.ts";
 
@@ -10,7 +11,8 @@ const SOURCE = `FROM (SELECT 1) singleton
   LEFT JOIN shift_open_state s ON s.slot=1
   LEFT JOIN outbox_event e ON e.id=json_extract(s.draft,'$.openingEventId')
   LEFT JOIN kv c ON c.key='${SHIFT_CATALOG_KEY}'
-  LEFT JOIN kv m ON m.key='${SHIFT_MAP_KEY}'`;
+  LEFT JOIN kv m ON m.key='${SHIFT_MAP_KEY}'
+  LEFT JOIN kv r ON r.key='shift_open_rules'`;
 const FACTS = [
   ["s.draft", "shift_draft"],
   ["s.opening_event_id", "state_opening_id"],
@@ -19,6 +21,7 @@ const FACTS = [
   ["e.result_code", "opening_result_code"],
   ["c.value", "gate_catalog"],
   ["m.value", "gate_map"],
+  ["r.value", "gate_rules"],
   [
     "(SELECT device_time FROM outbox_event closing WHERE closing.type='shift.close' AND closing.shift_id=e.shift_id ORDER BY closing.seq LIMIT 1)",
     "locally_closed_at",
@@ -28,6 +31,7 @@ const FACTS = [
 export interface ShiftGateFacts extends StoredShift {
   readonly catalog: ChecklistCatalog | null;
   readonly map: MapPreparation | null;
+  readonly requiresOfflineMap: boolean;
   readonly guard: SqlStatement;
   readonly locallyClosedAt: string | null;
 }
@@ -41,6 +45,7 @@ export async function readShiftGateFacts(db: SqlExecutor): Promise<ShiftGateFact
     opening: readOptionalText(row, "opening_id") === null ? null : toOutboxEvent(row),
     catalog: parseSaved(readOptionalText(row, "gate_catalog")) as ChecklistCatalog | null,
     map: parseSaved(readOptionalText(row, "gate_map")) as MapPreparation | null,
+    requiresOfflineMap: readRequiresOfflineMap(parseSaved(readOptionalText(row, "gate_rules"))),
     guard: originalGuard(row),
     locallyClosedAt: readOptionalText(row, "locally_closed_at"),
   };

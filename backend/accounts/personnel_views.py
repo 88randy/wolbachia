@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import F, OuterRef, QuerySet, Subquery
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_variables
@@ -14,26 +14,35 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import BaseThrottle, ScopedRateThrottle
 
-from accounts.models import AccessLog, Personnel
-from accounts.personnel_selectors import operational_projection, scoped_access_log, scoped_personnel
+from accounts.models import AccessLog, Personnel, User
+from accounts.personnel_selectors import (
+    filter_access_log,
+    operational_projections,
+    scoped_access_log,
+    scoped_personnel,
+)
 from accounts.personnel_serializers import (
+    AccessLogFilterSerializer,
     AccessLogSerializer,
     OperationalPersonnelSerializer,
+    PersonnelDeactivateSerializer,
     PersonnelFilterSerializer,
-    PersonnelRevisionSerializer,
     PersonnelSerializer,
     PersonnelWriteSerializer,
     RfcRevealSerializer,
+    TemporaryPasswordSerializer,
 )
 from accounts.personnel_services import (
     create_personnel,
     deactivate_personnel,
+    issue_temporary_password,
     reveal_personnel_rfc,
     update_personnel,
 )
 from core.pagination import StreamCursorPagination
 from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
+from privacy.names import person_name
 from uploads.access import actor_from_request
 
 
@@ -58,6 +67,7 @@ class PersonnelViewSet(
         "partial_update": "user.update",
         "deactivate": "user.deactivate",
         "reveal_rfc": "user.reveal_rfc",
+        "temporary_password": "user.update",
         "operational": "user.operational_read",
     }
 
@@ -66,6 +76,8 @@ class PersonnelViewSet(
         self.throttle_scope = None
         if self.action == "reveal_rfc":
             self.throttle_scope = "rfc_reveal"
+        elif self.action == "temporary_password":
+            self.throttle_scope = "temporary_password"  # noqa: S105 -- a throttle scope name
         elif (
             self.action in {"create", "partial_update"}
             and isinstance(self.request.data, Mapping)
@@ -87,7 +99,12 @@ class PersonnelViewSet(
                     rows = rows.filter(**{f"{name}_id": query.validated_data[name]})
             if "is_active" in query.validated_data:
                 rows = rows.filter(membership__is_active=query.validated_data["is_active"])
-        return rows
+        latest_deactivation = AccessLog.objects.filter(
+            target=OuterRef("pk"), action=AccessLog.Action.DEACTIVATE
+        ).order_by("-created_at", "-id")
+        return rows.annotate(
+            last_deactivation_reason=Subquery(latest_deactivation.values("reason")[:1])
+        )
 
     @extend_schema(parameters=[PersonnelFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -112,16 +129,17 @@ class PersonnelViewSet(
         )
         return Response(PersonnelSerializer(person).data)
 
-    @extend_schema(request=PersonnelRevisionSerializer, responses=PersonnelSerializer)
+    @extend_schema(request=PersonnelDeactivateSerializer, responses=PersonnelSerializer)
     @action(detail=True, methods=["post"])
     def deactivate(self, request: Request, pk: str | None = None) -> Response:
         person = self.get_object()
-        payload = PersonnelRevisionSerializer(data=request.data)
+        payload = PersonnelDeactivateSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         person = deactivate_personnel(
             actor_from_request(request),
             person.membership.user_id,
             payload.validated_data["expected_revision"],
+            payload.validated_data["reason"],
         )
         return Response(PersonnelSerializer(person).data)
 
@@ -135,6 +153,24 @@ class PersonnelViewSet(
             RfcRevealSerializer({"rfc": rfc}).data, headers={"Cache-Control": "no-store"}
         )
 
+    @extend_schema(request=None, responses=TemporaryPasswordSerializer)
+    @action(detail=True, methods=["post"], url_path="temporary-password")
+    @sensitive_variables()
+    def temporary_password(self, request: Request, pk: str | None = None) -> Response:
+        """Shown once; the user must replace it at the next sign in."""
+        person = self.get_object()
+        user_id = person.membership.user_id
+        password = issue_temporary_password(actor_from_request(request), user_id)
+        expires_at = User.objects.values_list("temporary_password_expires_at", flat=True).get(
+            pk=user_id
+        )
+        return Response(
+            TemporaryPasswordSerializer(
+                {"temporary_password": password, "expires_at": expires_at}
+            ).data,
+            headers={"Cache-Control": "no-store"},
+        )
+
     @extend_schema(
         parameters=[PersonnelFilterSerializer], responses=OperationalPersonnelSerializer(many=True)
     )
@@ -142,10 +178,10 @@ class PersonnelViewSet(
     def operational(self, request: Request) -> Response:
         rows = self.get_queryset()
         page = self.paginate_queryset(rows)
-        data = [
-            operational_projection(person, request.membership)  # type: ignore[attr-defined]
-            for person in (page if page is not None else rows)
-        ]
+        data = operational_projections(
+            list(page if page is not None else rows),
+            request.membership,  # type: ignore[attr-defined]
+        )
         serialized = OperationalPersonnelSerializer(data, many=True).data
         return self.get_paginated_response(serialized) if page is not None else Response(serialized)
 
@@ -160,4 +196,12 @@ class AccessLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Ge
     def get_queryset(self) -> QuerySet[AccessLog]:
         if getattr(self, "swagger_fake_view", False):
             return AccessLog.objects.none()
-        return scoped_access_log(self.request.membership)  # type: ignore[attr-defined]
+        rows = scoped_access_log(self.request.membership)  # type: ignore[attr-defined]
+        rows = filter_access_log(rows, self.request.query_params)
+        return rows.annotate(
+            actor_name=person_name("created_by_id"), target_name=F("target__display_name")
+        )
+
+    @extend_schema(parameters=[AccessLogFilterSerializer], responses=AccessLogSerializer(many=True))
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)

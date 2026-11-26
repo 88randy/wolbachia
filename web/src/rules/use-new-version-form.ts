@@ -10,13 +10,18 @@ import { useFocusAlert } from "../forms/use-focus-alert";
 import { useSessionGuard } from "../session/use-session-guard";
 import { createVersion } from "./create-version";
 import type { FieldIssue, ServerBounds, VersionField, VersionOutcome } from "./create-version";
+import { optionKindOf } from "./parameter-labels";
 import { invalidateRuleParameters } from "./rules-query";
 import type { RuleParameter } from "./rules-query";
 import { boundsOf, createVersionSchema } from "./version-schema";
 import type { VersionValues } from "./version-schema";
 
 const FIELD_ORDER: readonly VersionField[] = ["value", "effectiveFrom", "reason"];
-const EMPTY: VersionValues = { value: "", effectiveFrom: "", reason: "" };
+/** A blank form; an option parameter starts on its current option so the control always holds one. */
+function blankFor(parameter: RuleParameter): VersionValues {
+  const value = optionKindOf(parameter.key) === undefined ? "" : String(parameter.value ?? 0);
+  return { value, effectiveFrom: "", reason: "" };
+}
 
 /** A refusal that is not about one field: shown in the form's alert. */
 type Refusal = Exclude<VersionOutcome, { ok: true } | { reason: "fields" | "stale" }>;
@@ -44,19 +49,25 @@ function showFieldIssues(
   return issues.value?.bounds;
 }
 
+interface SettleContext {
+  form: UseFormReturn<VersionValues>;
+  queryClient: QueryClient;
+  /** What the form holds again once a version is saved. */
+  blank: VersionValues;
+}
+
 /**
  * What the form does with the answer. A saved version empties the form and refreshes every query
  * of the rules (the list, the parameter and its history) before it says so.
  */
 async function settle(
   outcome: VersionOutcome,
-  form: UseFormReturn<VersionValues>,
-  queryClient: QueryClient,
+  { form, queryClient, blank }: SettleContext,
 ): Promise<Result | undefined> {
   // A stale answer changes nothing: no form reset, no refresh, no message.
   if (!outcome.ok && outcome.reason === "stale") return undefined;
   if (outcome.ok) {
-    form.reset(EMPTY);
+    form.reset(blank);
     await invalidateRuleParameters(queryClient);
     return { kind: "saved" };
   }
@@ -92,7 +103,7 @@ function useVersionForm(parameter: RuleParameter) {
   const schema = useMemo(() => createVersionSchema(boundsOf(parameter)), [parameter]);
   return useForm<VersionValues>({
     resolver: zodResolver(schema),
-    defaultValues: EMPTY,
+    defaultValues: blankFor(parameter),
     mode: "onBlur",
   });
 }
@@ -124,7 +135,7 @@ export function useNewVersionForm(parameter: RuleParameter) {
     setResult(IDLE);
     const outcome = await send(values);
     isSending.current = false;
-    const next = await settle(outcome, form, queryClient);
+    const next = await settle(outcome, { form, queryClient, blank: blankFor(parameter) });
     if (next !== undefined) setResult(next);
   });
   const onSubmit = (event: SyntheticEvent) => {

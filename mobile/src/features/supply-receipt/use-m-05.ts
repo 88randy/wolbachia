@@ -31,9 +31,7 @@ function useReceiptSubscription(input: {
 function useReceiptState(buffer: ReceiptEditBuffer) {
   const { supplyReceipt } = useServices();
   const [state, setState] = useState<ReceiptState | null>(null);
-  const [errorKey, setError] = useState<MessageKey | null>(
-    buffer.hasPending ? "mobile.storage.saveFailed" : null,
-  );
+  const [errorKey, setError] = useState<MessageKey | null>(null);
   const sequence = useRef(0);
   const invalidate = useCallback(() => {
     sequence.current++;

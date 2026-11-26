@@ -12,7 +12,7 @@
 .footer > button {
   width: 100%;
   min-width: calc(var(--space-6) * 2);
-  min-height: var(--web-control-md);
+  min-height: var(--web-control-lg);
 }
 .footer[data-compact="true"] {
   display: flex;

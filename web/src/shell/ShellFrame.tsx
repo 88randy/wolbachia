@@ -1,14 +1,14 @@
 import { Outlet } from "@tanstack/react-router";
-import { useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useSessionExpired } from "../session/use-session-expired";
-import { sessionState, subscribeToRevision } from "../session/session-revision";
+import { useVisibleSessionState } from "../session/use-visible-session-state";
 import { SessionBlocker } from "../states/SessionBlocker";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
 import { useSessionChanges } from "../session/use-session-changes";
 import styles from "./AppShell.module.css";
 import { MAIN_ID } from "./ids";
 import { OfflineBanner } from "./OfflineBanner";
+import { RefreshIndicator } from "./RefreshIndicator";
 import { ShellSidebar } from "./ShellSidebar";
 import { SkipLink } from "./SkipLink";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -22,7 +22,7 @@ export function ShellFrame({ children }: { children?: ReactNode }) {
   const sidebar = useResizableSidebar(isCompact);
   useFocusMainOnNavigation();
   useSessionChanges();
-  const state = useSyncExternalStore(subscribeToRevision, sessionState);
+  const state = useVisibleSessionState();
   const isExpired = useSessionExpired();
   return (
     <div className={styles.shell}>
@@ -33,6 +33,7 @@ export function ShellFrame({ children }: { children?: ReactNode }) {
         <div className={styles.column}>
           <TopBar />
           <main id={MAIN_ID} className={styles.main} tabIndex={-1} inert={state !== "known"}>
+            <RefreshIndicator />
             <Breadcrumbs />
             {children ?? <Outlet />}
           </main>

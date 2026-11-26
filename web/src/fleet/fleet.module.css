@@ -160,3 +160,9 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* Wider modal for the two-column operation forms; element + class beats the shared dialog width. */
+dialog.wide {
+  width: min(40rem, calc(100vw - var(--space-3)));
+  max-height: calc(100vh - var(--space-4));
+}

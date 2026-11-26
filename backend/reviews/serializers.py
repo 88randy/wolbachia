@@ -137,6 +137,7 @@ class ReviewDecisionSerializer(OrgScopedModelSerializer):
     audit_only = serializers.BooleanField(read_only=True)
     safety_disposition = ReviewSafetyDispositionSerializer(read_only=True, allow_null=True)
     incident_id = serializers.SerializerMethodField()
+    incident_code = serializers.SerializerMethodField()
     evaluation = ReviewEvaluationSerializer(read_only=True)
     effect_receipt = ReviewEffectReceiptSerializer(read_only=True, allow_null=True)
 
@@ -158,6 +159,7 @@ class ReviewDecisionSerializer(OrgScopedModelSerializer):
             "created_at",
             "safety_disposition",
             "incident_id",
+            "incident_code",
             "effect_receipt",
         ]
         read_only_fields = fields
@@ -167,6 +169,12 @@ class ReviewDecisionSerializer(OrgScopedModelSerializer):
 
         link = ReviewIncidentLink.objects.filter(decision=obj).first()
         return None if link is None else str(link.incident_id)
+
+    def get_incident_code(self, obj: ReviewDecision) -> str | None:
+        from reviews.models import ReviewIncidentLink
+
+        link = ReviewIncidentLink.objects.filter(decision=obj).select_related("incident").first()
+        return None if link is None else link.incident.code
 
 
 class ShiftDecisionSerializer(OrgScopedModelSerializer):

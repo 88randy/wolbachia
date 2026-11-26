@@ -4,7 +4,6 @@ import { DataTable } from "../data-table/DataTable";
 import { IncidentFilters } from "./IncidentFilters";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
-import { InlineNotice } from "../ui/InlineNotice";
 import { incidentListOptions, INCIDENT_PAGE_SIZE } from "./incidents-query";
 import type { Incident } from "./incidents-query";
 import { useIncidentScope } from "./use-incident-scope";
@@ -27,7 +26,6 @@ export function IncidentTray() {
   );
   return (
     <>
-      <InlineNotice tone="info">{t("incidents.workspace.defaultView")}</InlineNotice>
       <IncidentFilters scope={scope} controller={controller} />
       <DataTable
         caption={t("incidents.workspace.title")}

@@ -1,14 +1,16 @@
 """Structural input validation never consults today's mutable method or result state."""
 
-from typing import Any
+from typing import Any, cast
 
 from drf_spectacular.extensions import OpenApiSerializerExtension
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail
 
+from core.author_names import AuthorNamesMixin
 from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
+from lab.annotation_serializers import EggAnnotationPayloadSerializer
 from lab.models import (
     LabMethod,
     LabMethodVerification,
@@ -98,7 +100,17 @@ class CountValuesSerializer(StrictPayloadSerializer):
         return attrs
 
 
-class CountWriteSerializer(LabCommandSerializer, CountValuesSerializer):
+class AnnotatedCountValuesSerializer(CountValuesSerializer):
+    value = ObservationIntegerField(required=False)
+    annotation = EggAnnotationPayloadSerializer(required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        from lab.annotations import annotation_count_values
+
+        return super().validate(annotation_count_values(attrs))
+
+
+class CountWriteSerializer(LabCommandSerializer, AnnotatedCountValuesSerializer):
     expected_revision = serializers.IntegerField(min_value=0, required=False, default=0)
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
@@ -121,7 +133,7 @@ class RejectionWriteSerializer(LabCommandSerializer, RejectionValuesSerializer):
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
 
-class CountCorrectionValuesSerializer(CountValuesSerializer):
+class CountCorrectionValuesSerializer(AnnotatedCountValuesSerializer):
     measurement_kind = serializers.ChoiceField(
         choices=["physical_measurement", "data_correction"], required=False
     )
@@ -217,27 +229,41 @@ class LabMethodSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+def _method_verification(version: LabMethodVersion) -> LabMethodVerification | None:
+    prefetched = getattr(version, "read_verifications", None)
+    if prefetched is not None:
+        return None if not prefetched else cast(LabMethodVerification, prefetched[0])
+    return version.verifications.first()
+
+
 class LabMethodVersionSerializer(OrgScopedModelSerializer):
     verification = serializers.SerializerMethodField()
     availability = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_verification(self, version: LabMethodVersion) -> dict[str, Any] | None:
-        current = version.verifications.first()
-        return None if current is None else dict(LabMethodVerificationSerializer(current).data)
+        current = _method_verification(version)
+        if current is None:
+            return None
+        # Sharing the context keeps one author-name cache for the whole page.
+        return dict(LabMethodVerificationSerializer(current, context=self.context).data)
 
     @extend_schema_field(serializers.CharField())
     def get_availability(self, version: LabMethodVersion) -> str:
         from core.time import server_now
 
-        current = (
-            version.method.versions.filter(effective_from__lte=server_now())
-            .order_by("-effective_from", "-revision")
-            .first()
-        )
-        if current is None or current.pk != version.pk:
+        if hasattr(version, "read_current_method_version_id"):
+            current_id = getattr(version, "read_current_method_version_id", None)
+        else:
+            current_id = (
+                version.method.versions.filter(effective_from__lte=server_now())
+                .order_by("-effective_from", "-revision")
+                .values_list("pk", flat=True)
+                .first()
+            )
+        if current_id != version.pk:
             return "not_current"
-        verification = version.verifications.first()
+        verification = _method_verification(version)
         if verification is None:
             return "unverified"
         return (
@@ -351,10 +377,12 @@ class LabMaterialSerializer(serializers.Serializer[Any]):
     reason = serializers.ChoiceField(choices=["bag_disposed", "paddle_reused"], allow_null=True)
 
 
-class LabCountSerializer(serializers.Serializer[Any]):
+class LabCountSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
+    annotation_id = serializers.UUIDField(allow_null=True, required=False)
     bag_id = serializers.UUIDField()
+    bag_code = serializers.CharField(required=False)
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
     ordinal = serializers.IntegerField(min_value=1)
     viable_eggs = serializers.IntegerField(allow_null=True)
@@ -374,7 +402,7 @@ class LabCountSerializer(serializers.Serializer[Any]):
     is_current = serializers.BooleanField(required=False)
 
 
-class LabRejectionSerializer(serializers.Serializer[Any]):
+class LabRejectionSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
@@ -413,10 +441,11 @@ class LabVoidOutcomeSerializer(serializers.Serializer[Any]):
     queue_snapshot = LabQueueSnapshotSerializer()
 
 
-class LabReceiptSerializer(serializers.Serializer[Any]):
+class LabReceiptSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     reading_id = serializers.UUIDField()
     bag_id = serializers.UUIDField(allow_null=True)
+    bag_code = serializers.CharField(allow_null=True, required=False)
     kind = serializers.ChoiceField(choices=["bag", "no_paddle"])
     created_at = serializers.DateTimeField()
     created_by = serializers.UUIDField()
@@ -461,6 +490,7 @@ class LabReceptionOutcomeSerializer(serializers.Serializer[Any]):
 class LabDiscrepancySerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
+    bag_code = serializers.CharField(required=False)
     source_event_id = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=["missing", "no_reading"])
     reason = serializers.CharField(allow_blank=True)
@@ -488,7 +518,7 @@ class LabVoidContextSerializer(serializers.Serializer[Any]):
     blocked_by = serializers.ListField(child=serializers.DictField())
 
 
-class LabIndependentCandidateSerializer(serializers.Serializer[Any]):
+class LabIndependentCandidateSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
     id = serializers.UUIDField()
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
@@ -503,7 +533,7 @@ class LabIndependentCandidateSerializer(serializers.Serializer[Any]):
     created_by = serializers.UUIDField()
 
 
-class LabIndependentResolutionSerializer(serializers.Serializer[Any]):
+class LabIndependentResolutionSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
     final_attempt_id = serializers.UUIDField()

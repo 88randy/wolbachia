@@ -1,9 +1,7 @@
 import type { Schemas } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
-import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 
 type Review = Schemas["ReviewHistoryEntry"];
 function outcomeKey(review: Review): MessageKey | null {
@@ -26,10 +24,5 @@ export function FuelReviewOutcome({ review }: { readonly review: Review | null }
   const t = useT();
   const key = review === null ? null : outcomeKey(review);
   if (key === null || review === null) return null;
-  return (
-    <View>
-      <Notice tone="info" icon="list" message={t(key)} />
-      {review.reason ? <AppText selectable>{review.reason}</AppText> : null}
-    </View>
-  );
+  return <InfoNotice tone="info" message={review.reason ? `${t(key)} ${review.reason}` : t(key)} />;
 }

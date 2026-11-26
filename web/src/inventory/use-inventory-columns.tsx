@@ -1,3 +1,4 @@
+import { EmptyValue } from "../ui/EmptyValue";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
@@ -7,6 +8,7 @@ import { useFormatDateTime } from "../format/use-format-date-time";
 import { blockerKeys } from "./inventory-fields";
 import { inventoryRecordLink } from "./inventory-links";
 import { formatInventoryQuantity } from "./format-inventory-quantity";
+import { formatCalendarDate } from "../format/format-date";
 import { useLanguage } from "../i18n/use-language";
 import { useCan } from "../session/use-can";
 import { useSearch } from "@tanstack/react-router";
@@ -24,7 +26,7 @@ function identityColumns(kind: InventoryKind, search: Record<string, string>): C
     {
       id: "code",
       headerKey: "inventory.field.code",
-      cell: (row) => row.code,
+      cell: (row) => <span className="whitespace-nowrap">{row.code}</span>,
       link: (row) => ({ ...inventoryRecordLink(kind, row.code), search }),
     },
     {
@@ -76,13 +78,16 @@ function lotQuantity({ language, t, canReadLocation, custody }: Context): Column
   };
 }
 function lotColumns(context: Context): Column[] {
-  const { t, format } = context;
+  const { t, format, language } = context;
   return [
     {
       id: "expiry",
       headerKey: "inventory.field.expiry",
-      cell: (row) =>
-        "expiry" in row && row.expiry ? format(row.expiry) : t("inventory.state.unconfigured"),
+      cell: (row) => {
+        if ("expiry_date" in row && row.expiry_date)
+          return formatCalendarDate(row.expiry_date, language);
+        return "expiry" in row && row.expiry ? format(row.expiry) : <EmptyValue />;
+      },
     },
     lotQuantity(context),
     statusColumn(t),
@@ -152,7 +157,8 @@ export function useInventoryColumns(kind: InventoryKind): Column[] {
     {
       id: "unit",
       headerKey: "inventory.field.unit",
-      cell: (row: InventoryRecord) => ("unit" in row ? row.unit : null),
+      cell: (row: InventoryRecord) =>
+        "unit" in row ? (row.unit === "piece" ? t("transfers.new.unit.piece") : row.unit) : null,
     },
     statusColumn(t),
   ];

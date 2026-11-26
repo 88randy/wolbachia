@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { nameOrDash } from "../../lookups/use-reference-names";
 import { TransferEvidence } from "./TransferEvidence";
 import type { ReceptionLineProps } from "./ReceptionLine";
 export function ReceptionMissingPhoto({ line, model, scope }: ReceptionLineProps) {
@@ -11,7 +12,7 @@ export function ReceptionMissingPhoto({ line, model, scope }: ReceptionLineProps
   return (
     <TransferEvidence
       scope={scope}
-      label={t("transfers.line.photo", { id: line.piece_id ?? line.lot_id })}
+      label={t("transfers.line.photo", { id: nameOrDash(line.lot_code) })}
       isBlocked={model.write.isBusy || model.write.isFrozen}
       onVerified={verifyPhoto}
     />

@@ -29,7 +29,8 @@ function showFieldIssues(
 export function useCatalogForm(editor: CatalogEditor, item?: CatalogItem) {
   const form = useForm<CatalogValues>({
     resolver: zodResolver(catalogCreateSchema),
-    mode: "onBlur",
+    mode: "onSubmit",
+    reValidateMode: "onBlur",
     defaultValues: defaultsOf(item),
   });
   const [error, setError] = useState<MessageKey | null>(null);

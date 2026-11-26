@@ -1,13 +1,11 @@
 import { useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { CountFeedback } from "./CountFeedback";
-import { CorrectionFields } from "./CorrectionFields";
+import { CorrectionCountFields } from "./CorrectionCountFields";
 import { CorrectionFormActions } from "./CorrectionFormActions";
 import { useCorrectionForm } from "./use-correction-form";
 import type { CorrectionOptions } from "./use-correction-form";
 import styles from "./lab.module.css";
 export function CorrectionForm(props: CorrectionOptions & { onCancel: () => void }) {
-  const { t } = useTranslation();
   const form = useCorrectionForm(props);
   const element = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -28,8 +26,7 @@ export function CorrectionForm(props: CorrectionOptions & { onCancel: () => void
         void form.submit(kind === "confirm");
       }}
     >
-      <CorrectionFields form={form} />
-      <div role="alert">{form.hasReasonError && t("lab.correction.noteHint")}</div>
+      <CorrectionCountFields form={form} count={props.count} />
       <CountFeedback failure={form.write.failure} scope={props.scope} />
       <CorrectionFormActions form={form} onCancel={props.onCancel} />
     </form>

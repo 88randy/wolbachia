@@ -6,13 +6,13 @@ FolderTabs, dialogs and tokens. It adds no shared widget, backend writer or gran
 
 ## Routes and ownership
 
-| Route | Screen / action |
-| --- | --- |
-| `/inventory` | Entry links permitted by the accepted session |
-| `/inventory/supplies[/:code]` | W8 catalog, named attributes/protocol, create/update/deactivate |
-| `/inventory/lots` | W9 server-filtered lots, expiry and blocker facets |
+| Route                                          | Screen / action                                                  |
+| ---------------------------------------------- | ---------------------------------------------------------------- |
+| `/inventory`                                   | Entry links permitted by the accepted session                    |
+| `/inventory/supplies[/:code]`                  | W8 catalog, named attributes/protocol, create/update/deactivate  |
+| `/inventory/lots`                              | W9 server-filtered lots, expiry and blocker facets               |
 | `/inventory/lots/new`, `/inventory/lots/:code` | W10 incomplete draft, completion, exact retained pins and status |
-| `/inventory/locations[/:code]` | W11 geometry, responsible Membership, stock and signed ledger |
+| `/inventory/locations[/:code]`                 | W11 geometry, responsible Membership, stock and signed ledger    |
 
 Codes are human navigation identities. The client resolves relation codes to
 authorized master UUIDs before API filtering; it never substitutes a User UUID for
@@ -163,16 +163,16 @@ Browser/contrast/manual qualification is separate from local Node evidence.
 
 ## Verification ownership (§9)
 
-| Criterion | Cheapest owning proof |
-| --- | --- |
-| Null/exact pins, unknown arrays, URL facets/order/page/back links, decimal precision | `inventory-query.test.ts` |
-| Named catalog configuration, no invented nullable defaults, read-only action gate | `supplies/supplies.test.tsx` |
-| Draft completion, actual blockers, 409 preservation, explicit adoption, Retry-After | `lots/lots.test.tsx` |
-| Closed placement/owner payload, whitespace rejection, exact ledger links, lost-response coordinate reconciliation | `locations/locations.test.tsx` |
-| Same accepted map/list page and missing-WebGL fallback | `inventory-map.test.tsx` |
-| ABA, current-read draft restoration/retirement, unknown/foreign deep links, reauth without replay | `inventory-session.test.tsx` |
-| Router/client/CSRF/organization wiring and real MapLibre worker | One `e2e/inventory.spec.ts` journey |
-| 320 px, all web typography tokens +30%, both locales/themes, axe and keyboard focus/return | One four-combination matrix in that browser spec |
+| Criterion                                                                                                         | Cheapest owning proof                            |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Null/exact pins, unknown arrays, URL facets/order/page/back links, decimal precision                              | `inventory-query.test.ts`                        |
+| Named catalog configuration, no invented nullable defaults, read-only action gate                                 | `supplies/supplies.test.tsx`                     |
+| Draft completion, actual blockers, 409 preservation, explicit adoption, Retry-After                               | `lots/lots.test.tsx`                             |
+| Closed placement/owner payload, whitespace rejection, exact ledger links, lost-response coordinate reconciliation | `locations/locations.test.tsx`                   |
+| Same accepted map/list page and missing-WebGL fallback                                                            | `inventory-map.test.tsx`                         |
+| ABA, current-read draft restoration/retirement, unknown/foreign deep links, reauth without replay                 | `inventory-session.test.tsx`                     |
+| Router/client/CSRF/organization wiring and real MapLibre worker                                                   | One `e2e/inventory.spec.ts` journey              |
+| 320 px, all web typography tokens +30%, both locales/themes, axe and keyboard focus/return                        | One four-combination matrix in that browser spec |
 
 Backend authorization, SQL filtering before count/page and PostgreSQL parity are
 owned by #270; frontend mocks do not implement or prove those policies.

@@ -1,5 +1,8 @@
 import type { ui as esMX } from "../es-MX/ui.ts";
 export const ui: Record<keyof typeof esMX, string> = {
+  "ui.picker.search": "Search by name",
+  "ui.picker.empty": "No matches",
+  "ui.picker.loading": "Loading…",
   "ui.actions.more": "More actions",
   "ui.actions.createFirst": "Create the first record",
   "ui.actions.clearFilters": "Clear filters",
@@ -8,6 +11,7 @@ export const ui: Record<keyof typeof esMX, string> = {
   "ui.actions.review": "Review",
   "ui.actions.dismiss": "Dismiss notice",
   "ui.states.refreshing": "Updating…",
+  "ui.states.noValue": "No value",
   "ui.states.noData": "There are no records yet. Create the first one to get started.",
   "ui.states.noResults": "No records match these filters. Clear them to see more records.",
   "ui.states.loadError": "We could not load this section. Retry to refresh it.",
@@ -19,4 +23,14 @@ export const ui: Record<keyof typeof esMX, string> = {
   "ui.preview.voided": "Demo void recorded",
   "ui.toast.label": "Notifications",
   "ui.toast.blocking": "Notifications that need attention",
+  "ui.signaturePad.placeholder": "Sign here",
+  "ui.signaturePad.clear": "Clear",
+  "ui.dateField.clear": "Remove the date",
+  "ui.signaturePad.ready": "Signature ready",
+  "ui.signaturePad.hint": "Sign with your finger or the mouse.",
+  "ui.signaturePad.tooShort": "The signature is too short. Sign again.",
+  "ui.signaturePad.failed": "The signature could not be saved. Try again.",
+  "ui.signaturePad.signer": "Signature: {name}",
+  "ui.signaturePad.noPermission":
+    "Your profile cannot save signatures. Ask an administrator to give you that permission.",
 };

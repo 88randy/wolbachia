@@ -7,9 +7,11 @@ import type { Area, AreaId } from "./areas";
 import { can } from "../session/can";
 import type { Me } from "../session/me";
 import { loadMe } from "../session/me-query";
+import { isPlatformOnly, PLATFORM_HOME } from "../session/platform";
 import type { RouterContext } from "./router-context";
 
 const HOME = "/";
+const CHANGE_PASSWORD = "/change-password";
 
 /** Thrown by an area's guard when the user lacks its permission; the area renders "no permission". */
 export class ForbiddenError extends Error {
@@ -54,20 +56,40 @@ function signIn(args: GuardArgs, notice?: "no-membership"): never {
  * sign in, remembering where they were going. Used by every route behind the session.
  */
 export async function requireSession(args: GuardArgs): Promise<Me> {
+  let me: Me;
   try {
-    return await loadMe(args.context.queryClient, args.context.client);
+    me = await loadMe(args.context.queryClient, args.context.client);
   } catch (error) {
     if (!(error instanceof ApiError)) throw error;
     if (error.status === 401) return signIn(args);
     if (error.code === NO_ACTIVE_MEMBERSHIP) return signIn(args, "no-membership");
     throw error;
   }
+  // A temporary password must be replaced first; the API refuses everything else meanwhile.
+  if (me.must_change_password && !args.location.href.startsWith(CHANGE_PASSWORD)) {
+    const target = args.location.href;
+    return leaveFor(
+      redirect({ to: CHANGE_PASSWORD, search: target === HOME ? {} : { redirect: target } }),
+    );
+  }
+  return me;
+}
+
+/** The change-password screen: a session is needed, and only while a change is pending. */
+export async function requirePasswordChange(args: GuardArgs): Promise<void> {
+  const me = await requireSession(args);
+  if (!me.must_change_password) leaveFor(redirect({ to: HOME }));
 }
 
 /** Like `requireSession`, and a user who still has to choose an organization goes to do so. */
 export async function requireOrganization(args: GuardArgs): Promise<{ me: Me }> {
   const me = await requireSession(args);
   if (me.organization !== null) return { me };
+  // A platform admin without any organization works only in the platform area.
+  if (isPlatformOnly(me)) {
+    if (args.location.href.startsWith(PLATFORM_HOME)) return { me };
+    return leaveFor(redirect({ to: PLATFORM_HOME }));
+  }
   const target = args.location.href;
   return leaveFor(
     redirect({ to: "/select-organization", search: target === HOME ? {} : { redirect: target } }),
@@ -77,6 +99,7 @@ export async function requireOrganization(args: GuardArgs): Promise<{ me: Me }> 
 /** A single organization needs no chooser: whoever has only one never sees the screen. */
 export async function requireOrganizationChoice(args: GuardArgs): Promise<void> {
   const me = await requireSession(args);
+  if (isPlatformOnly(me)) leaveFor(redirect({ to: PLATFORM_HOME }));
   if (me.organization !== null && me.organizations.length < 2) leaveFor(redirect({ to: HOME }));
 }
 

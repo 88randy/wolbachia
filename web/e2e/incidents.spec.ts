@@ -63,7 +63,12 @@ for (const theme of THEMES) {
       await page.setViewportSize({ width: MOBILE_WIDTH, height: MOBILE_HEIGHT });
       await page.getByRole("link", { name: "I-0033", exact: true }).focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByRole("heading", { level: 1, name: /I-0033/ })).toBeVisible();
+      // The title is the incident type; the human code sits above it and in the breadcrumb.
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page).toHaveURL(/\/incidents\/I-0033$/);
+      await expect(
+        page.locator('[aria-current="page"]').filter({ hasText: "I-0033" }),
+      ).toBeVisible();
       await expect(page.getByText("Original report", { exact: true })).toBeVisible();
       await expect(page.getByText("Escalation audit", { exact: true })).toBeVisible();
       await expectNoHorizontalScroll(page);

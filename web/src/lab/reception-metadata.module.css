@@ -20,7 +20,6 @@
 }
 .facts dd {
   margin: var(--space-1) 0 0;
-  font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-variant-numeric);
   overflow-wrap: anywhere;
 }

@@ -24,7 +24,8 @@ from inventory.models import (
     SupplyTypeVersion,
 )
 from inventory.policy import BIOLOGICAL_FIELDS, LotSafety
-from inventory.selectors import lot_safety
+from inventory.selectors import lot_safety_batch
+from organizations.scope import EffectiveScope
 from ovitraps.payloads import StrictPayloadSerializer
 from uploads.access import actor_from_request, current_scope
 
@@ -95,7 +96,17 @@ class SupplyWriteSerializer(StrictPayloadSerializer):
     requires_insecticide_free = serializers.BooleanField(allow_null=True, required=False)
     expiry_required = serializers.BooleanField(allow_null=True, required=False)
     specification = serializers.CharField(max_length=4000, allow_blank=True, required=False)
+    gtin = serializers.CharField(max_length=14, allow_blank=True, required=False)
     protocol = ProtocolWriteSerializer(required=False)
+
+    def validate_gtin(self, value: str) -> str:
+        """Store one canonical GTIN-14: digits only (8, 12, 13 or 14 long), left-padded with zeros."""
+        text = value.strip()
+        if text == "":
+            return ""
+        if not text.isascii() or not text.isdigit() or len(text) not in (8, 12, 13, 14):
+            raise serializers.ValidationError("A GTIN has 8, 12, 13 or 14 digits.", code="invalid")
+        return text.zfill(14)
 
 
 @extend_schema_field(
@@ -276,6 +287,7 @@ class SupplySerializer(OrgScopedModelSerializer):
             "requires_insecticide_free",
             "expiry_required",
             "specification",
+            "gtin",
             "is_active",
             "protocol",
             "created_by",
@@ -290,6 +302,10 @@ class LocationSerializer(OrgScopedModelSerializer):
     version = serializers.UUIDField(source="pk", read_only=True)
     center = serializers.UUIDField(source="location.center_id", read_only=True)
     quadrant = serializers.UUIDField(source="location.quadrant_id", read_only=True, allow_null=True)
+    # Display only: readers without quadrant.read (warehouse) still see which quadrant it is.
+    quadrant_code = serializers.CharField(
+        source="location.quadrant.code", read_only=True, allow_null=True, default=None
+    )
     geometry = PointField(read_only=True)
     owner_label = serializers.SerializerMethodField()
 
@@ -305,6 +321,7 @@ class LocationSerializer(OrgScopedModelSerializer):
             "revision",
             "center",
             "quadrant",
+            "quadrant_code",
             "name",
             "kind",
             "geometry",
@@ -392,7 +409,15 @@ class LotSerializer(OrgScopedModelSerializer):
     def _safety(self, version: LotVersion) -> LotSafety:
         cache = self.safety_cache
         if version.pk not in cache:
-            cache[version.pk] = lot_safety(version, location=self.context.get("custody_location"))
+            page = getattr(self.parent, "instance", None)
+            batch = [
+                row
+                for row in (page if isinstance(page, list | tuple) else [version])
+                if isinstance(row, LotVersion) and row.pk not in cache
+            ]
+            cache.update(
+                lot_safety_batch(batch or [version], location=self.context.get("custody_location"))
+            )
         return cache[version.pk]
 
     @extend_schema_field(serializers.UUIDField(allow_null=True))
@@ -405,8 +430,7 @@ class LotSerializer(OrgScopedModelSerializer):
     def get_created_by(self, version: LotVersion) -> str | None:
         if "request" not in self.context:
             return None
-        actor = actor_from_request(self.context["request"])
-        original = current_scope(actor).allows(
+        original = self.reader_scope.allows(
             "lot.read",
             str(version.lot.center_id),
             str(version.lot.quadrant_id) if version.lot.quadrant_id else None,
@@ -416,6 +440,11 @@ class LotSerializer(OrgScopedModelSerializer):
     @cached_property
     def safety_cache(self) -> dict[UUID, LotSafety]:
         return {}
+
+    @cached_property
+    def reader_scope(self) -> EffectiveScope:
+        """Loaded once: a list reuses one child serializer for every row."""
+        return current_scope(actor_from_request(self.context["request"]))
 
     @extend_schema_field({"type": "string", "enum": ["draft", "available", "blocked"]})
     def get_status(self, version: LotVersion) -> str:
@@ -709,8 +738,10 @@ class MovementSerializer(OrgScopedModelSerializer):
     def get_source_transfer(self, movement: StockMovement) -> dict[str, str] | None:
         from inventory.transfers.scope import allows_transfer_vector, transfer_contexts
 
+        if "request" not in self.context:
+            return None
         event = movement.operation.transfer_event
-        if event is None or "request" not in self.context:
+        if event is None:
             return None
         actor = actor_from_request(self.context["request"])
         if not allows_transfer_vector(

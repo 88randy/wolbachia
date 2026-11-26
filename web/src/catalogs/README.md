@@ -76,7 +76,6 @@ buttons use the shared `Button`, including in-button submission progress. Codes 
 timestamps use the mono token. Link tabs retain their URL semantics; native dialog
 focus, validation, confirmation and submission logic are unchanged.
 
-
 Issue #218 separates the query observer from the identity/slug-scoped editor. Catalog tabs keep
 the page and query mounted; previous rows are placeholders only under orgScopedQueryOptions.
 All controls are blocked until the target snapshot is verified. Row edit/availability actions

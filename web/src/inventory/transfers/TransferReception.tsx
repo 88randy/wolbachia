@@ -1,25 +1,39 @@
+import { useTranslation } from "react-i18next";
+import { Disclosure } from "../../ui/Disclosure";
 import { TransferScanner } from "./TransferScanner";
 import { ReceptionLine } from "./ReceptionLine";
 import { useTransferReception } from "./use-transfer-reception";
 import type { TransferRecordProps } from "./TransferRecord";
-import styles from "./transfers.module.css";
 import { useReceptionControls } from "./use-reception-controls";
 import { TransferReceiptSignature } from "./TransferReceiptSignature";
 import { TransferReceiptResult } from "./TransferReceiptResult";
+
+/** Receive line by line: everything starts as "arrived as expected"; the person fixes the rest. */
 export function TransferReception(props: TransferRecordProps) {
+  const { t } = useTranslation();
   const model = useTransferReception(props);
   const controls = useReceptionControls(props.transfer, model);
   return (
-    <section className={styles.reception}>
-      <div className={styles.capture}>
-        <TransferScanner model={model} isBlocked={controls.isScanBlocked} />
-        <ul className={styles.lines}>
-          {props.transfer.lines.map((line) => (
-            <ReceptionLine key={line.id} line={line} scope={props.scope} model={model} />
-          ))}
-        </ul>
-      </div>
-      <div className={styles.capture}>
+    <section className="flex min-w-0 flex-col gap-5">
+      <p className="m-0 text-sm text-ink-2">{t("transfers.receive.intro")}</p>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        {props.transfer.lines.map((line) => (
+          <ReceptionLine
+            key={line.id}
+            line={line}
+            scope={props.scope}
+            model={model}
+            transfer={props.transfer}
+            isBlocked={controls.isScanBlocked}
+          />
+        ))}
+      </ul>
+      <Disclosure title={t("transfers.receive.extras")}>
+        <div className="max-w-md">
+          <TransferScanner model={model} isBlocked={controls.isScanBlocked} />
+        </div>
+      </Disclosure>
+      <div className="flex min-w-0 flex-col gap-3 border-t border-line pt-4">
         <TransferReceiptSignature
           scope={props.scope}
           model={model}

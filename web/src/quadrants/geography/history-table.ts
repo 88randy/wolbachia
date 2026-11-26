@@ -16,12 +16,16 @@ const DATES: FilterDefinition[] = [
     kind: "text",
     labelKey: "refresh.filters.effectiveFrom",
     maxLength: 40,
+    input: "date-from",
+    dateFormat: "datetime",
   },
   {
     key: "effective_from_before",
     kind: "text",
     labelKey: "refresh.filters.effectiveBefore",
     maxLength: 40,
+    input: "date-to",
+    dateFormat: "datetime",
   },
 ];
 const POINT_STATUS: FilterDefinition = {

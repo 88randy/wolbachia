@@ -36,6 +36,7 @@ function assignment() {
         id: id(8),
         plan_revision: 1,
         manifest_hash: "a".repeat(64),
+        warehouse_signed: false,
         lines: [
           { id: id(9), assignment_line_id: id(5), quantity: "2.000000", transit_policy_id: null },
         ],

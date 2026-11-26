@@ -2,6 +2,7 @@ import type { Locale } from "@wolbachia/i18n";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { createMemoryHistory } from "@tanstack/react-router";
+import type { AnyRoute } from "@tanstack/react-router";
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
@@ -10,9 +11,18 @@ import { createWebApiClient } from "../api/create-web-api-client";
 import { createAppQueryClient } from "../api/query-client";
 import { App } from "../app/App";
 import { setupI18n } from "../i18n/setup-i18n";
-import { createAppRouter } from "../router/router";
+import { createAppRouter, routeTree } from "../router/router";
 import type { Me } from "../session/me";
 import { apiError, createFakeApi, makeMe } from "./fake-api";
+
+function preloadScreens(route: AnyRoute): unknown[] {
+  const component = route.options.component as { preload?: () => unknown } | undefined;
+  const children = Object.values((route.children ?? {}) as Record<string, AnyRoute>);
+  return [component?.preload?.(), ...children.flatMap(preloadScreens)];
+}
+// Screens are lazy route chunks. Load them all when a test file imports this helper, as the
+// static imports did, so the first navigation of a test does not spend its timeout on them.
+await Promise.all(preloadScreens(routeTree));
 
 interface RenderAppOptions {
   /** Address to open, e.g. `/incidents`. */

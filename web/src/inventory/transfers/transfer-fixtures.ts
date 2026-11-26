@@ -23,6 +23,7 @@ export function transferLine(
   return {
     id: TRANSFER_LINE_ID,
     lot_id: INVENTORY_LOT,
+    lot_code: "L-001",
     piece_id: null,
     unit_version_id: "15200000-0000-4000-8000-000000000005",
     quantity: "1",

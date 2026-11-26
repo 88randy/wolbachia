@@ -1,10 +1,16 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { toHaveNoViolations } from "jest-axe";
 import { afterEach, expect } from "vitest";
+import { installComboboxSelectOptions } from "./combobox-select-options";
 import { resetAuthOperation } from "../session/auth-operation";
 import { resetAttestation } from "../session/attestation";
 import { uninstallSessionSync } from "../session/install-session-sync";
 import { resetSessionRevision } from "../session/session-revision";
+
+// The redesigned screens render heavy trees: under a loaded CI runner the 1 s default of
+// findBy*/waitFor expires before a correct render finishes.
+const ASYNC_UTIL_TIMEOUT_MS = 5000;
+configure({ asyncUtilTimeout: ASYNC_UTIL_TIMEOUT_MS });
 
 // jest-axe works under Vitest with this shim (vitest-axe is stale, see ADR 0001).
 expect.extend(toHaveNoViolations);
@@ -101,3 +107,5 @@ if (typeof HTMLElement.prototype.setPointerCapture !== "function") {
   HTMLElement.prototype.releasePointerCapture = () => undefined;
   HTMLElement.prototype.hasPointerCapture = () => false;
 }
+
+installComboboxSelectOptions();

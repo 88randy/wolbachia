@@ -1,5 +1,6 @@
 """Immutable lab facts; current disposition is derived from a retained revision chain."""
 
+import uuid
 from typing import ClassVar
 
 from django.db import models
@@ -75,6 +76,14 @@ class BagReceipt(LabFact):
         "reading__ovitrap__sampling_point__block__quadrant__center_id"
     )
     scope_quadrant_lookup: ClassVar[str] = "reading__ovitrap__sampling_point__block__quadrant_id"
+
+    class Meta(LabFact.Meta):
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_bagreceipt_org_id_uniq"
+            ),
+        ]
 
 
 class ReceptionDiscrepancy(LabFact):
@@ -180,6 +189,146 @@ class LabMethodVerification(LabFact):
         ]
 
 
+class EggAnnotation(LabFact):
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    bag = models.ForeignKey(
+        "ovitraps.Bag", on_delete=models.PROTECT, related_name="egg_annotations"
+    )
+    count = models.OneToOneField(
+        "EggCountAttempt", on_delete=models.PROTECT, related_name="annotation"
+    )
+    image_upload = models.OneToOneField(
+        "uploads.Upload", on_delete=models.PROTECT, related_name="egg_annotation"
+    )
+    image_width = models.PositiveIntegerField()
+    image_height = models.PositiveIntegerField()
+    marks = models.JSONField()
+    box_count = models.PositiveIntegerField()
+    point_count = models.PositiveIntegerField()
+    tool_version = models.CharField(max_length=64)
+    elapsed_seconds = models.PositiveIntegerField(null=True)
+
+    class Meta(LabFact.Meta):
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_eggannotation_org_id_uniq"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(image_width__gt=0, image_height__gt=0),
+                name="egg_annotation_image_dimensions",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(box_count__lte=5000, point_count__lte=5000),
+                name="egg_annotation_mark_limit",
+            ),
+        ]
+
+
+class EggAnnotationExport(LabFact):
+    """One immutable request and selection; state changes append separate facts."""
+
+    date_from = models.DateField()
+    date_to = models.DateField()
+    author = models.ForeignKey(
+        "accounts.User", null=True, on_delete=models.PROTECT, related_name="+"
+    )
+    include_voided = models.BooleanField(default=False)
+    format = models.CharField(max_length=4, choices=[("coco", "coco"), ("yolo", "yolo")])
+
+    class Meta(LabFact.Meta):
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_annotation_export_org_id"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(date_to__gte=models.F("date_from")),
+                name="lab_annotation_export_dates",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(format__in=["coco", "yolo"]),
+                name="lab_annotation_export_format",
+            ),
+        ]
+
+
+class EggAnnotationExportItem(LabFact):
+    export = models.ForeignKey(EggAnnotationExport, on_delete=models.PROTECT, related_name="items")
+    annotation = models.ForeignKey(
+        EggAnnotation, on_delete=models.PROTECT, related_name="export_items"
+    )
+    voided = models.BooleanField()
+
+    class Meta(LabFact.Meta):
+        constraints = [
+            *LabFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["export", "annotation"], name="lab_annotation_export_item_once"
+            ),
+        ]
+
+
+class EggAnnotationExportStatus(LabSystemFact):
+    export = models.ForeignKey(
+        EggAnnotationExport, on_delete=models.PROTECT, related_name="statuses"
+    )
+    status = models.CharField(
+        max_length=7,
+        choices=[(value, value) for value in ("queued", "running", "ready", "failed", "expired")],
+    )
+    revision = models.PositiveSmallIntegerField()
+    image_count = models.PositiveIntegerField(default=0)
+    box_count = models.PositiveIntegerField(default=0)
+    point_count = models.PositiveIntegerField(default=0)
+    error_code = models.CharField(max_length=64, blank=True)
+    object_key = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveBigIntegerField(null=True)
+    sha256 = models.CharField(max_length=64, blank=True)
+
+    class Meta(LabSystemFact.Meta):
+        ordering = ["-revision"]
+        constraints = [
+            *LabSystemFact.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["export", "status"], name="lab_annotation_export_state_once"
+            ),
+            models.UniqueConstraint(
+                fields=["export", "revision"], name="lab_annotation_export_revision_once"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["queued", "running", "ready", "failed", "expired"]),
+                name="lab_annotation_export_state",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="ready", size_bytes__gt=0, size_bytes__isnull=False, error_code=""
+                    )
+                    & ~models.Q(object_key="")
+                    & ~models.Q(sha256="")
+                )
+                | (
+                    ~models.Q(status="ready")
+                    & models.Q(object_key="", size_bytes__isnull=True, sha256="")
+                ),
+                name="lab_annotation_export_result",
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(status="failed") & ~models.Q(error_code=""))
+                | (~models.Q(status="failed") & models.Q(error_code="")),
+                name="lab_annotation_export_error",
+            ),
+        ]
+
+
+class EggAnnotationExportDownload(LabFact):
+    export = models.ForeignKey(
+        EggAnnotationExport, on_delete=models.PROTECT, related_name="downloads"
+    )
+
+
 class EggCountAttempt(LabFact):
     receipt = models.ForeignKey(BagReceipt, on_delete=models.PROTECT, related_name="counts")
     bag = models.ForeignKey("ovitraps.Bag", on_delete=models.PROTECT, related_name="lab_counts")
@@ -200,6 +349,9 @@ class EggCountAttempt(LabFact):
 
     class Meta(LabFact.Meta):
         constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="lab_eggcountattempt_org_id_uniq"
+            ),
             *LabFact.Meta.constraints,
             models.UniqueConstraint(fields=["bag", "ordinal"], name="lab_count_ordinal"),
             models.CheckConstraint(
@@ -418,4 +570,14 @@ from lab.shipments.models import (  # noqa: E402, I001 -- register same-app ship
     ShipmentSource as ShipmentSource,
     ShipmentVoid as ShipmentVoid,
     UiebShipment as UiebShipment,
+)
+
+from lab.pcr.models import (  # noqa: E402, I001 -- register same-app PCR facts after shared bases.
+    ExternalLab as ExternalLab,
+    PcrBatch as PcrBatch,
+    PcrBatchEvent as PcrBatchEvent,
+    PcrBatchSample as PcrBatchSample,
+    PcrReport as PcrReport,
+    PcrResult as PcrResult,
+    PcrResultVoid as PcrResultVoid,
 )

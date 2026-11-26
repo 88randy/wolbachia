@@ -7,6 +7,7 @@ from drf_spectacular.extensions import OpenApiSerializerExtension
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from inventory.allocations.permissions import INTENT_KINDS
 from inventory.allocations.policy import validate_supply_note
 from ovitraps.payloads import StrictPayloadSerializer
@@ -207,7 +208,8 @@ class SupplyReceivePayload(StrictPayloadSerializer):
     expected_revision = serializers.IntegerField(min_value=0)
     plan_revision = serializers.IntegerField(min_value=1)
     release_id = serializers.UUIDField()
-    signature_upload_id = serializers.UUIDField()
+    # Null only when the release already carries the warehouse-screen signature.
+    signature_upload_id = serializers.UUIDField(allow_null=True, default=None)
     actual_lines = serializers.ListSerializer[dict[str, Any]](
         child=ActualSupplyLineSerializer(), allow_empty=False, max_length=MAX_SUPPLY_ITEMS
     )
@@ -306,6 +308,12 @@ class SupplyQuerySerializer(SupplyDateRangeQuerySerializer):
     assignment = serializers.UUIDField(required=False)
 
 
+class AssignmentQuerySerializer(SupplyQuerySerializer):
+    status = serializers.ChoiceField(
+        choices=["planned", "released", "cancelled", "received"], required=False
+    )
+
+
 class SupplySuggestionQuerySerializer(serializers.Serializer[Any]):
     date = serializers.DateField()
     courier = serializers.UUIDField(required=False)
@@ -313,6 +321,7 @@ class SupplySuggestionQuerySerializer(serializers.Serializer[Any]):
 
 class WriteOffQuerySerializer(SupplyDateRangeQuerySerializer):
     kind = serializers.ChoiceField(choices=["lot", "bag"], required=False)
+    reason_code = serializers.CharField(max_length=64, required=False)
 
 
 class TransitPolicySerializer(StrictPayloadSerializer):
@@ -354,6 +363,26 @@ class SupplyFrameSerializer(serializers.Serializer[Any]):
     lines = SupplyFrameLineSerializer(many=True)
 
 
+class AssignmentSignatureSerializer(serializers.Serializer[Any]):
+    state = serializers.ChoiceField(choices=["signed", "pending_phone"])
+    channel = serializers.ChoiceField(
+        choices=["warehouse_screen", "courier_device"], allow_null=True
+    )
+    captured_by = serializers.CharField(allow_null=True)
+
+
+class AssignmentLifecycleSerializer(serializers.Serializer[Any]):
+    signature = AssignmentSignatureSerializer(allow_null=True)
+    status = serializers.ChoiceField(choices=["planned", "released", "cancelled", "received"])
+    release_id = serializers.UUIDField(allow_null=True)
+    released_at = serializers.DateTimeField(allow_null=True)
+    released_by_name = serializers.CharField(allow_null=True)
+    cancelled_at = serializers.DateTimeField(allow_null=True)
+    cancelled_by_name = serializers.CharField(allow_null=True)
+    cancel_reason_code = serializers.CharField(allow_null=True)
+    cancel_reason = serializers.CharField(allow_null=True)
+
+
 class SupplyAssignmentReadSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     courier_id = serializers.UUIDField()
@@ -364,6 +393,7 @@ class SupplyAssignmentReadSerializer(serializers.Serializer[Any]):
     version_id = serializers.UUIDField()
     planning_proof = serializers.DictField()
     lines = AssignmentLineSerializer(many=True)
+    lifecycle = AssignmentLifecycleSerializer(required=False)
 
 
 class AssignmentOutcomeSerializer(serializers.Serializer[Any]):
@@ -432,7 +462,7 @@ class JustificationOutcomeSerializer(serializers.Serializer[Any]):
     justification = SupplyJustificationSerializer()
 
 
-class WriteOffAuditSerializer(serializers.Serializer[Any]):
+class WriteOffAuditSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     owner_id = serializers.UUIDField()
     date = serializers.DateField()
     reason_code = serializers.CharField()
@@ -549,6 +579,7 @@ class SupplyReleaseBundleSerializer(serializers.Serializer[Any]):
     id = serializers.UUIDField()
     plan_revision = serializers.IntegerField(min_value=1)
     manifest_hash = serializers.CharField()
+    warehouse_signed = serializers.BooleanField()
     lines = SupplyReleasedLineSerializer(many=True)
 
 
@@ -557,12 +588,19 @@ class SupplyReceiptBundleSerializer(serializers.Serializer[Any]):
     event_id = serializers.UUIDField()
     source_event_id = serializers.UUIDField()
     release_id = serializers.UUIDField()
-    signature_upload_id = serializers.UUIDField()
+    signature_upload_id = serializers.UUIDField(allow_null=True)
     voided = serializers.BooleanField()
     lines = ActualSupplyLineSerializer(many=True)
 
 
+class SupplyBundleLineSerializer(AssignmentLineSerializer):
+    """A courier bundle line also carries the supply name, so the phone never shows a number."""
+
+    name = serializers.CharField(required=False)
+
+
 class SupplyBundleSerializer(SupplyAssignmentReadSerializer):
+    lines = SupplyBundleLineSerializer(many=True)
     organization_id = serializers.UUIDField()
     center_id = serializers.UUIDField()
     quadrant_id = serializers.UUIDField(allow_null=True)

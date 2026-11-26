@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 
 from core.exceptions import FieldValidationError
 from core.snapshots import snapshot_hash
-from core.time import server_now
+from core.time import localdate, server_now
 from core.void_reason import validate_void_reason, visible_length
 from inventory.access import scoped_inventory
 from inventory.allocations.scope import require_contexts
@@ -123,7 +123,7 @@ def record_notification(
     with inventory_transaction(actor):
         request = get_object_or_404(request_rows(actor, "material_request.notify"), pk=identifier)
         _require_open(request)
-        if values["date"] > server_now().date():
+        if values["date"] > localdate(actor.organization):
             raise FieldValidationError("date", "future_date")
         uploads = verified_request_evidence(actor, request, values["evidence_ids"])
         for upload in uploads:

@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from core.fields import OrgScopedPrimaryKeyRelatedField
+from core.models import OrgScopedModel
 from core.serializers import OrgScopedModelSerializer
 from geography.geometry import validate_location, validate_polygon
 from geography.models import (
@@ -19,7 +20,12 @@ from geography.models import (
     QuadrantVersion,
     SamplingPoint,
 )
-from geography.selectors import block_version_at, point_version_at, quadrant_version_at
+from geography.selectors import (
+    CURRENT_VERSIONS_ATTR,
+    block_version_at,
+    point_version_at,
+    quadrant_version_at,
+)
 from organizations.models import Center
 from organizations.selectors import filter_by_effective_scope
 
@@ -83,7 +89,21 @@ class GeographyRelatedField(OrgScopedPrimaryKeyRelatedField):
             raise NotFound from error
 
 
+def author_name(record: OrgScopedModel) -> str | None:
+    """Display name of the author (read-only); never an id on screen."""
+    user = record.created_by
+    if user is None:
+        return None
+    return user.get_full_name() or user.get_username()
+
+
 class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
+
     class Meta:
         model = ExcludedPointResolution
         fields = [
@@ -93,6 +113,7 @@ class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
             "decision",
             "evidence",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields
@@ -102,15 +123,24 @@ class QuadrantVersionSerializer(OrgScopedModelSerializer):
     geometry = PolygonField(read_only=True)
     point_resolutions = ExcludedPointResolutionSerializer(many=True, read_only=True)
 
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
+
     class Meta:
         model = QuadrantVersion
         fields = [
             "id",
             "quadrant",
             "geometry",
+            "area_m2",
+            "perimeter_m",
             "revision",
             "effective_from",
             "created_by",
+            "created_by_name",
             "created_at",
             "point_resolutions",
         ]
@@ -120,15 +150,24 @@ class QuadrantVersionSerializer(OrgScopedModelSerializer):
 class BlockVersionSerializer(OrgScopedModelSerializer):
     geometry = PolygonField(read_only=True)
 
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
+
     class Meta:
         model = BlockVersion
         fields = [
             "id",
             "block",
             "geometry",
+            "area_m2",
+            "perimeter_m",
             "revision",
             "effective_from",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields
@@ -136,6 +175,12 @@ class BlockVersionSerializer(OrgScopedModelSerializer):
 
 class PointVersionSerializer(OrgScopedModelSerializer):
     location = LocationField(read_only=True)
+
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
 
     class Meta:
         model = PointVersion
@@ -147,6 +192,7 @@ class PointVersionSerializer(OrgScopedModelSerializer):
             "effective_from",
             "is_retired",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields
@@ -160,11 +206,14 @@ class QuadrantSerializer(OrgScopedModelSerializer):
         if written_version := self.context.get("written_version"):
             return dict(QuadrantVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            quadrant_version_at(quadrant, captured_at)
-            if captured_at
-            else quadrant.versions.order_by("-revision").first()
-        )
+        if hasattr(quadrant, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(quadrant, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                quadrant_version_at(quadrant, captured_at)
+                if captured_at
+                else quadrant.versions.select_related("created_by").order_by("-revision").first()
+            )
         return dict(QuadrantVersionSerializer(version).data) if version else None
 
     class Meta:
@@ -181,11 +230,14 @@ class BlockSerializer(OrgScopedModelSerializer):
         if written_version := self.context.get("written_version"):
             return dict(BlockVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            block_version_at(block, captured_at)
-            if captured_at
-            else block.versions.order_by("-revision").first()
-        )
+        if hasattr(block, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(block, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                block_version_at(block, captured_at)
+                if captured_at
+                else block.versions.select_related("created_by").order_by("-revision").first()
+            )
         return dict(BlockVersionSerializer(version).data) if version else None
 
     class Meta:
@@ -196,22 +248,34 @@ class BlockSerializer(OrgScopedModelSerializer):
 
 class SamplingPointSerializer(OrgScopedModelSerializer):
     current_version = serializers.SerializerMethodField()
+    block_code = serializers.CharField(source="block.code", read_only=True)
 
     @extend_schema_field(PointVersionSerializer(allow_null=True))
     def get_current_version(self, point: SamplingPoint) -> dict[str, Any] | None:
         if written_version := self.context.get("written_version"):
             return dict(PointVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
-        version = (
-            point_version_at(point, captured_at)
-            if captured_at
-            else point.versions.order_by("-version").first()
-        )
+        if hasattr(point, CURRENT_VERSIONS_ATTR):  # attached by the list/detail queryset
+            version = next(iter(getattr(point, CURRENT_VERSIONS_ATTR)), None)
+        else:
+            version = (
+                point_version_at(point, captured_at)
+                if captured_at
+                else point.versions.select_related("created_by").order_by("-version").first()
+            )
         return dict(PointVersionSerializer(version).data) if version else None
 
     class Meta:
         model = SamplingPoint
-        fields = ["id", "code", "block", "current_version", "created_by", "created_at"]
+        fields = [
+            "id",
+            "code",
+            "block",
+            "block_code",
+            "current_version",
+            "created_by",
+            "created_at",
+        ]
         read_only_fields = fields
 
 

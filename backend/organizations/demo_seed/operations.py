@@ -1,15 +1,18 @@
 """Demo fleet, quadrant assignments, task schedule and incident types (writes via services)."""
 
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.utils import timezone
 
+from accounts.models import User
 from catalogs.models import Catalog, CatalogItem
 from core.time import local_today
 from geography.models import Quadrant
 from incidents.configuration import write_type
 from organizations.models import Center, Membership, Organization
-from scheduling.models import AssignmentVersion, ScheduledTask
+from rules.models import RuleParameter, RuleParameterVersion
+from scheduling.models import AssignmentVersion
 from scheduling.services import AssignmentChange, change_assignment, generate_schedule
 from shifts.models import Motorcycle
 from shifts.services import create_motorcycle
@@ -31,10 +34,22 @@ INCIDENT_TYPES = (
 )
 # Which courier covers which quadrant (courier username -> quadrant codes).
 ASSIGNMENTS = {
-    "demo-courier-1": ("Q-DEMO-01", "Q-DEMO-02"),
-    "demo-courier-2": ("Q-DEMO-03",),
+    "demo-courier-1": ("Q-MER-01", "Q-MER-02"),
+    "demo-courier-2": ("Q-MER-03",),
+    "demo-courier-3": ("Q-MER-04",),
+    "demo-courier-4": ("Q-MER-05",),
+    "demo-courier-5": ("Q-MER-06", "Q-MER-07"),
+    "demo-courier-6": ("Q-MER-08",),
 }
-MOTORCYCLES = (("M-DEMO-01", "DEMO-001", "C-DEMO-01"), ("M-DEMO-02", "DEMO-002", "C-DEMO-02"))
+# code, plate (synthetic) and center; motorcycle N is ridden by courier N in the history.
+MOTORCYCLES = (
+    ("M-DEMO-01", "YY-1021-A", "C-DEMO-01"),
+    ("M-DEMO-02", "YY-1022-A", "C-DEMO-02"),
+    ("M-DEMO-03", "YY-1023-A", "C-DEMO-01"),
+    ("M-DEMO-04", "YY-1024-A", "C-DEMO-01"),
+    ("M-DEMO-05", "YY-1025-A", "C-DEMO-02"),
+    ("M-DEMO-06", "YY-1026-A", "C-DEMO-01"),
+)
 SLA_SUPERVISOR_SECONDS = 900
 SLA_COORDINATOR_SECONDS = 1800
 
@@ -68,13 +83,8 @@ def ensure_assignments(
 
 
 def ensure_schedule(organization: Organization, admin: Membership) -> None:
-    """Generate this week's placing tasks once, before any ovitrap is placed (writes).
-
-    Skipped when tasks exist: regenerating after placements would need the revisit rule to be in
-    force since the start of the week, which a freshly seeded organization cannot satisfy.
-    """
-    if ScheduledTask.objects.filter(organization=organization).exists():
-        return
+    """Generate this week's missing tasks (writes); the planner skips identities that exist."""
+    _backdate_revisit_rule(organization, admin.user)
     generate_schedule(admin, local_today(organization.timezone, timezone.now()))
 
 
@@ -114,3 +124,48 @@ def ensure_incident_types(
             {key: value for key, value in data.items() if key not in {"code", "label"}},
             other.pk,
         )
+
+
+def _backdate_revisit_rule(organization: Organization, admin: User) -> None:
+    """Make the revisit rule apply since the first demo week, so the history gets weekly checks.
+
+    The planner evaluates the rule at each local midnight of the week; the seeded version starts
+    now, which a fresh organization cannot satisfy once traps with history exist. An earlier
+    version with the same value is a plain insert-only row.
+    """
+    parameter = RuleParameter.objects.get(organization=organization, key="revisit_interval_days")
+    current = parameter.versions.order_by("effective_from").first()
+    start = timezone.now() - timedelta(days=90)
+    if current is None or current.effective_from <= start:
+        return
+    RuleParameterVersion.objects.create(
+        organization=organization,
+        created_by=admin,
+        parameter=parameter,
+        value=current.value,
+        effective_from=start,
+        effective_date=local_today(organization.timezone, start),
+        reason="Demo seed: rule in force since the first demo week",
+    )
+
+
+def ensure_public_portal(organization: Organization, admin: Membership) -> None:
+    """Turn the read-only public portal on with every indicator, so `/portal/<slug>` works.
+
+    A row an admin already configured (enabled, or with chosen indicators) is left as it is.
+    """
+    from privacy.models import PortalSettings
+    from privacy.portal import PORTAL_INDICATORS
+
+    row, created = PortalSettings.objects.get_or_create(
+        organization=organization,
+        defaults={
+            "enabled": True,
+            "indicators": sorted(PORTAL_INDICATORS),
+            "created_by": admin.user,
+        },
+    )
+    if not created and not row.enabled and not row.indicators:
+        row.enabled = True
+        row.indicators = sorted(PORTAL_INDICATORS)
+        row.save(update_fields=["enabled", "indicators", "updated_at"])

@@ -15,17 +15,22 @@ describe("visibleNavGroups", () => {
             "incident.read",
             "notification.read",
             "review_item.read",
-            "rule_parameter.read",
+            "rule_parameter_version.read",
             "motorcycle.read",
             "quadrant.read",
             "location.read",
             "bag.receive",
             "egg_count.read",
             "training.read",
+            "schedule.read",
+            "release.read",
+            "community_activity.read",
+            "analytics.operations.read",
+            "export.run",
           ],
         }),
       ),
-    ).toHaveLength(14);
+    ).toHaveLength(15);
   });
 
   test("a user with no permissions sees Home and pending areas, not Settings or Inventory", () => {
@@ -40,9 +45,13 @@ describe("visibleNavGroups", () => {
   });
 
   test("any one of the Settings codes opens Settings", () => {
-    for (const code of ["catalog.read", "rule_parameter.read", "device.read"]) {
+    for (const code of ["catalog.read", "rule_parameter_version.read", "device.read"]) {
       expect(idsOf(makeMe({ permissions: [code] }))).toContain("settings");
     }
+  });
+
+  test("rule_parameter.read (held by every profile) does not open Settings", () => {
+    expect(idsOf(makeMe({ permissions: ["rule_parameter.read"] }))).not.toContain("settings");
   });
 
   test("profile names grant nothing: an admin profile without permission codes has no Settings", () => {

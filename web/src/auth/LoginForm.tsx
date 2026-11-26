@@ -25,6 +25,7 @@ export function LoginForm({ redirectTo, notice }: LoginFormProps) {
       <LoginFailureAlert failure={failure} ref={alertRef} />
       <LoginFields form={form} hasCredentialError={failure?.kind === "credentials"} />
       <SubmitButton
+        block
         label={t("auth.login.submit")}
         busyLabel={t("auth.login.submitting")}
         isBusy={form.formState.isSubmitting}

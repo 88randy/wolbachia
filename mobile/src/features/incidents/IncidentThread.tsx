@@ -3,7 +3,6 @@ import type { Schemas } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
 
 const EVENT_KEYS: Readonly<Record<Schemas["IncidentEvent"]["action"], MessageKey>> = {
   report: "incidents.event.report",
@@ -19,24 +18,22 @@ const EVENT_KEYS: Readonly<Record<Schemas["IncidentEvent"]["action"], MessageKey
 export function IncidentThread({ incident }: { readonly incident: Schemas["ReportedIncident"] }) {
   const t = useT();
   return (
-    <View>
-      <AppText>{incident.description}</AppText>
-      <AppText variant="bodyStrong" accessibilityRole="header">
-        {t("incidents.workspace.thread")}
-      </AppText>
+    <View className="gap-2">
+      <AppText variant="body">{incident.description}</AppText>
       {incident.timeline.length ? (
         incident.timeline.map((entry) => (
-          <Card key={entry.id}>
+          <View key={entry.id} className="gap-0.5 rounded-2xl bg-surface-muted p-3">
             <AppText variant="bodyStrong">{t(EVENT_KEYS[entry.action])}</AppText>
-            <AppText>{entry.author_display ?? t("incidents.workspace.unavailable")}</AppText>
-            <AppText variant="caption" isMonospace>
-              {entry.created_at}
+            <AppText variant="caption" tone="secondary">
+              {entry.author_display ?? t("incidents.workspace.unavailable")}
             </AppText>
-            {entry.text ? <AppText>{entry.text}</AppText> : null}
-          </Card>
+            {entry.text ? <AppText variant="body">{entry.text}</AppText> : null}
+          </View>
         ))
       ) : (
-        <AppText>{t("incidents.workspace.noEvents")}</AppText>
+        <AppText variant="caption" tone="secondary">
+          {t("incidents.workspace.noEvents")}
+        </AppText>
       )}
     </View>
   );

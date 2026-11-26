@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { classNames } from "../../styles/class-names";
 import { useModalDialog } from "../../session/use-modal-dialog";
 import dialog from "../../void/void-dialog.module.css";
+import { PermitModalClose } from "./PermitModalClose";
 import styles from "./permits.module.css";
 
 interface Props {
@@ -27,9 +28,12 @@ export function PermitModal({ title, description, isBusy, onClose, children }: P
         if (!isBusy) onClose();
       }}
     >
-      <h2 id={id} className={dialog.title}>
-        {title}
-      </h2>
+      <header className="flex items-start justify-between gap-4">
+        <h2 id={id} className={dialog.title}>
+          {title}
+        </h2>
+        <PermitModalClose isBusy={isBusy} onClose={onClose} />
+      </header>
       {description !== undefined && <p className={dialog.hint}>{description}</p>}
       {children}
     </dialog>

@@ -11,7 +11,7 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
   await expect(page).toHaveURL(/\/settings\/catalogs\/intervention-type$/);
   const rows = page.getByRole("table").getByRole("row");
   await expect(rows.last()).toContainText("Otro (especificar)");
-  const search = page.getByRole("textbox", { name: "Buscar código o etiqueta" });
+  const search = page.getByRole("searchbox", { name: "Buscar código o etiqueta" });
   await search.fill("Rociado");
   const filteredRead = page.waitForRequest(
     (request) =>
@@ -25,25 +25,29 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
     "true",
   );
   const availability = page.getByRole("group", { name: "Estado" });
-  await page.getByRole("button", { name: "Limpiar filtros", exact: true }).click();
+  // The search box has its own X button with the same accessible name; this is the chips action.
+  await page.getByRole("button", { name: "Limpiar filtros" }).click();
   await expect(availability.getByRole("button", { name: "Todos", exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await expect(rows.last()).toContainText("Otro (especificar)");
-  const ordering = page.getByRole("combobox", { name: "Ordenar por", exact: true });
+  // Sorting is done on the column headers: ascending, descending, then the default order again.
+  const usage = page.getByRole("button", { name: "En uso", exact: true });
+  const code = page.getByRole("button", { name: "Código", exact: true });
   const sortedRead = page.waitForRequest(
     (request) =>
       request.method() === "GET" &&
       new URL(request.url()).searchParams.get("ordering") === "-usage_count",
   );
-  await ordering.selectOption("-usage_count");
+  await usage.click();
+  await usage.click();
   await sortedRead;
   await expect(page.getByRole("columnheader", { name: /En uso/ })).toHaveAttribute(
     "aria-sort",
     "descending",
   );
-  await ordering.selectOption("");
+  await usage.click();
   await expect(page.getByRole("button", { name: "Reordenar: Rociado" })).toHaveAttribute(
     "aria-disabled",
     "false",
@@ -83,11 +87,11 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
   await expect(handle).toBeFocused();
   await page.keyboard.press("Space");
   await page.keyboard.press("ArrowUp");
-  await ordering.click();
-  await ordering.selectOption("-code");
+  await code.click();
   await expect(handle).toHaveAttribute("aria-pressed", "false");
-  await expect(ordering).toBeFocused();
-  await ordering.selectOption("");
+  await expect(code).toBeFocused();
+  await code.click();
+  await code.click();
   await expect(handle).toHaveAttribute("aria-disabled", "false");
   await handle.dragTo(page.getByRole("button", { name: "Reordenar: Rociado" }));
   await expect(rows.nth(1)).toContainText("Actualizada");

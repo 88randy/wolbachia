@@ -29,12 +29,21 @@ class MeContext:
     scope: dict[str, dict[str, object]] = field(default_factory=default_scope)
     organizations: list[Organization] = field(default_factory=list)
     limits: dict[str, int] = field(default_factory=default_limits)
+    is_platform_admin: bool = False
 
 
 def _active_memberships(user: User) -> QuerySet[Membership]:
     return Membership.objects.filter(
         user=user, is_active=True, organization__is_active=True
     ).select_related("organization")
+
+
+def _for_request(membership: Membership, user: User) -> Membership:
+    """Reuse the request user row (no re-read) and compute the effective scope once."""
+    from organizations.services import memoize_effective_scope
+
+    membership.user = user
+    return memoize_effective_scope(membership)
 
 
 def resolve_active_membership(user: User, organization_slug: str | None) -> Membership:
@@ -49,13 +58,13 @@ def resolve_active_membership(user: User, organization_slug: str | None) -> Memb
         membership = memberships.filter(organization__slug=organization_slug).first()
         if membership is None:
             raise NoActiveMembershipError
-        return membership
+        return _for_request(membership, user)
     candidates = list(memberships[:2])
     if not candidates:
         raise NoActiveMembershipError
     if len(candidates) > 1:
         raise OrganizationHeaderRequiredError
-    return candidates[0]
+    return _for_request(candidates[0], user)
 
 
 def list_active_organizations(user: User) -> list[Organization]:
@@ -113,14 +122,36 @@ def get_scope(membership: Membership) -> dict[str, dict[str, object]]:
 
 
 def get_me_context(user: User, organization_slug: str | None) -> MeContext:
+    from platform_admin.selectors import is_platform_admin
+
     organizations = list_active_organizations(user)
+    platform = is_platform_admin(user)
     try:
         membership = resolve_active_membership(user, organization_slug)
     except OrganizationHeaderRequiredError:
         return MeContext(
-            user=user, organization=None, profiles=[], permissions=[], organizations=organizations
+            user=user,
+            organization=None,
+            profiles=[],
+            permissions=[],
+            organizations=organizations,
+            is_platform_admin=platform,
         )
+    except NoActiveMembershipError:
+        # A platform admin may sign in without any membership: no organization, no permissions,
+        # only the platform endpoints. A named organization is still checked (and refused).
+        if platform and not organization_slug and not organizations:
+            return MeContext(
+                user=user,
+                organization=None,
+                profiles=[],
+                permissions=[],
+                organizations=[],
+                is_platform_admin=True,
+            )
+        raise
     return MeContext(
+        is_platform_admin=platform,
         user=user,
         organization=membership.organization,
         profiles=list_active_profiles(membership),

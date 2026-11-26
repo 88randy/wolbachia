@@ -24,7 +24,7 @@ export function CorrectCountDialog({ scope, count, draftKey }: CorrectCountDialo
           if (!isBusy && canReadReasons) setOpen(open);
         }}
         title={t("lab.correction.title")}
-        description={t("lab.correction.hint") + " " + t("lab.history.bag") + ": " + count.bag_id}
+        description={[count.bag_code, t("lab.correction.hint")].filter(Boolean).join(". ")}
         trigger={<CorrectCountTrigger canReadReasons={canReadReasons} />}
       >
         <CorrectionDialogBody

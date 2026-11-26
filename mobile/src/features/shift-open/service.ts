@@ -4,6 +4,7 @@ import { departureGate, UNAVAILABLE_MAP } from "./domain.ts";
 import type {
   ChecklistCatalog,
   Gate,
+  GateInput,
   MapPreparation,
   MapPreparationSource,
   OpenShiftDraft,
@@ -20,11 +21,15 @@ interface ServiceDeps {
   readonly maps: MapPreparationSource;
   readonly photos: PhotoCapturePort;
   readonly refreshCatalog?: () => Promise<void>;
+  /** Runs after the opening is saved on the phone (starts the courier track). */
+  readonly onOpened?: () => Promise<void>;
 }
 export interface ShiftSnapshot extends StoredShift {
   readonly locallyClosedAt?: string | null;
   readonly catalog: ChecklistCatalog | null;
   readonly map: MapPreparation | null;
+  /** The organization rule: false means a missing offline map only shows a calm note. */
+  readonly requiresOfflineMap: boolean;
   readonly gate: Gate | null;
   readonly canDepart: boolean;
   readonly hasOdometerWarning: boolean;
@@ -34,6 +39,9 @@ function outcomeGate(opening: OutboxEvent | null, gate: Gate | null): Gate | nul
   if (opening?.status === "rejected") return "rejected";
   if (opening?.result?.code === "severe_check") return "severe";
   return gate;
+}
+function draftGate(draft: OpenShiftDraft | null, facts: Omit<GateInput, "draft">): Gate | null {
+  return draft === null ? null : departureGate({ draft, ...facts });
 }
 /** One serialized writer for start/edit/commit prevents duplicate drafts and lost keystrokes. DB slot + event UUID arbitrate across instances. */
 export class ShiftOpenService {
@@ -66,27 +74,27 @@ export class ShiftOpenService {
   }
   async readWithGuard(): Promise<{ snapshot: ShiftSnapshot; guard: SqlStatement }> {
     const { store } = this.#deps;
-    const { catalog, map, guard, locallyClosedAt, ...state } = await store.readGateFacts();
+    const { catalog, map, guard, locallyClosedAt, requiresOfflineMap, ...state } =
+      await store.readGateFacts();
     const lastOdometer =
       state.draft === null ? null : await store.lastOdometer(state.draft.motorcycle_code);
     const gate = locallyClosedAt
       ? "closed"
-      : outcomeGate(
-          state.opening,
-          state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
-        );
+      : outcomeGate(state.opening, draftGate(state.draft, { catalog, map, requiresOfflineMap }));
     return {
       snapshot: {
         ...state,
         locallyClosedAt,
         catalog,
         map,
+        requiresOfflineMap,
         gate,
         lastOdometer,
         canDepart: state.opening !== null && gate === null,
         hasOdometerWarning:
           lastOdometer !== null &&
           state.draft !== null &&
+          state.draft.odometer_km.trim() !== "" &&
           Number(state.draft.odometer_km) < lastOdometer,
       },
       guard,
@@ -96,6 +104,11 @@ export class ShiftOpenService {
     return this.#write(async () => {
       const state = await this.#deps.store.read();
       if (state.draft === null) await this.#deps.store.createDraft(await this.#newDraft());
+      else if (state.opening && (await this.#deps.store.readGateFacts()).locallyClosedAt)
+        await this.#deps.store.replaceClosedDraft(
+          await this.#newDraft(),
+          state.opening.envelope.id,
+        );
       return this.read();
     });
   }
@@ -142,8 +155,10 @@ export class ShiftOpenService {
       return this.read();
     });
   }
-  refreshCatalog(): Promise<void> {
-    return this.#deps.refreshCatalog?.() ?? Promise.resolve();
+  /** Downloads catalog and rules; readers re-evaluate the departure gate with the new rules. */
+  async refreshCatalog(): Promise<void> {
+    await this.#deps.refreshCatalog?.();
+    for (const listener of this.#listeners) listener();
   }
   prepareMap(): Promise<ShiftSnapshot> {
     return this.#write(async () => {
@@ -201,6 +216,7 @@ export class ShiftOpenService {
         throw new Error(`Departure blocked: ${state.gate}`);
       const event = await this.#event(state.draft, state.catalog);
       await this.#deps.engine.enqueue(event, this.#deps.store.openStatements(state.draft));
+      void this.#deps.onOpened?.();
       return this.read();
     });
   }

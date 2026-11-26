@@ -21,7 +21,7 @@ export function useBlockHistoryColumns(): DataTableColumn<Schemas["BlockVersion"
     {
       id: "created_by",
       headerKey: "geography.field.author",
-      cell: (row) => row.created_by ?? t("geography.status.unknown"),
+      cell: (row) => row.created_by_name ?? t("geography.status.unknown"),
     },
     {
       id: "geometry",

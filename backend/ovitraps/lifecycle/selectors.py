@@ -1,5 +1,6 @@
 """Derived physical state, advisory relocation thresholds and chronological provenance."""
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
@@ -123,6 +124,17 @@ def suggest_relocation(ovitrap: Ovitrap, at: datetime | None = None) -> bool:
     """Legacy history bool: missing rules are false; unexpected failures propagate."""
     observation = select_advisory_observation(ovitrap, at or timezone.now())
     return observation is not None and observation.suggested
+
+
+def suggest_relocation_page(ovitraps: Sequence[Ovitrap]) -> dict[object, bool]:
+    """`suggest_relocation` for a page of ovitraps in constant queries, keyed by ovitrap pk."""
+    from ovitraps.lifecycle.advisory_selectors import select_advisory_observations
+
+    observations = select_advisory_observations(ovitraps, timezone.now())
+    return {
+        identifier: observation is not None and observation.suggested
+        for identifier, observation in observations.items()
+    }
 
 
 def relocation_proposals(organization: Organization) -> QuerySet[RelocationProposal]:

@@ -2,10 +2,11 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from core.fields import OrgScopedPrimaryKeyRelatedField
 
 
-class OrgScopedModelSerializer(serializers.ModelSerializer[Any]):
+class OrgScopedModelSerializer(AuthorNamesMixin, serializers.ModelSerializer[Any]):
     """Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
 
     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can

@@ -13,6 +13,7 @@ import type { RecordedRequest } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
 import type { Phone } from "./phones-query";
+import { pickFilterOption } from "../test/filter-bar-helpers";
 
 const ME = "GET /api/v1/me/";
 const DEVICES = "GET /api/v1/devices/";
@@ -119,7 +120,7 @@ describe("phones list (W67)", () => {
     const { api, app } = await open(pageOf([phone()]));
     await screen.findByRole("row", { name: /Teléfono de Luis/ });
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "Revocado");
+    await pickFilterOption(user, "Estado", "Revocado");
 
     await waitFor(() => {
       expect(app.router.state.location.search).toEqual({ is_revoked: "true" });
@@ -555,7 +556,7 @@ describe("settings home links", () => {
   test("links to the phones list when the user may read devices", async () => {
     await open(pageOf([]), "/settings");
 
-    const link = await screen.findByRole("link", { name: "Teléfonos" });
+    const link = await screen.findByRole("link", { name: /^Teléfonos/ });
 
     expect(link.getAttribute("href")).toBe(PHONES);
   });

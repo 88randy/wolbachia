@@ -14,12 +14,13 @@ export function useRubricLookup(scope: EvaluationScope) {
   const query = useQuery({ ...options, enabled: options.enabled && !!code });
   const rubric =
     !query.isPlaceholderData && !isReadDenied(query.error) ? query.data?.results[0] : undefined;
-  const lookup = () => {
+  const choose = (next: string) => {
+    setInput(next);
     void navigate({
       to: ".",
-      search: (previous) => ({ ...previous, rubric_code: input.trim(), rubric_page: "1" }),
+      search: (previous) => ({ ...previous, rubric_code: next, rubric_page: "1" }),
     });
   };
-  return { code, input, setInput, query, rubric, lookup };
+  return { code, input, setInput, query, rubric, choose };
 }
 export type RubricLookupModel = ReturnType<typeof useRubricLookup>;

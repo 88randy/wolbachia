@@ -1,7 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
+from lab.annotation_export_views import EggAnnotationExportViewSet
+from lab.annotation_views import EggAnnotationViewSet
 from lab.independent_qa.views import EggPaddleViewSet, LabQAPolicyViewSet, RecountViewSet
+from lab.pcr.views import ExternalLabViewSet, PcrBatchViewSet
 from lab.shipments.views import MaterialRequestViewSet, UiebShipmentViewSet
 from lab.views import (
     EggCountViewSet,
@@ -14,6 +17,10 @@ from lab.views import (
 )
 
 router = SimpleRouter()
+router.register(
+    "lab/egg-annotation-exports", EggAnnotationExportViewSet, basename="egg-annotation-export"
+)
+router.register("egg-annotations", EggAnnotationViewSet, basename="egg-annotation")
 router.register("uieb-shipments", UiebShipmentViewSet, basename="uieb-shipment")
 router.register("material-requests", MaterialRequestViewSet, basename="material-request")
 router.register("recounts", RecountViewSet, basename="recount")
@@ -31,5 +38,7 @@ router.register(
     ReceptionPolicyViewSet,
     basename="lab-reception-incident-policy",
 )
+router.register("external-labs", ExternalLabViewSet, basename="external-lab")
+router.register("pcr-batches", PcrBatchViewSet, basename="pcr-batch")
 router.register("recount-requests", RecountRequestViewSet, basename="recount-request")
 urlpatterns = [path("", include("lab.samples.urls")), *router.urls]

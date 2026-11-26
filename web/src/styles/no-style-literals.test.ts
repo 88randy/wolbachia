@@ -11,6 +11,53 @@ const SOURCE_FILE = /\.(css|ts|tsx)$/;
 const TEST_FILE = /\.test\.(ts|tsx)$/;
 const BLOCK_COMMENT = /\/\*[\s\S]*?\*\//g;
 
+/**
+ * Known debt, as of 2026-11-11. Entries are `<path relative to web/src, / separators>: <finding>`.
+ * The guard keeps failing for anything NEW; an entry may only be removed (a stale entry fails the
+ * guard too), so the list can only shrink. Most inline styles here are per-instance values that
+ * CSS cannot express (a bar width, a map or diagram position, a chart series color); the rest are
+ * literals to move into tokens. None of them is a reason to allow a new one.
+ */
+const KNOWN_LITERALS: readonly string[] = [
+  "dashboards/ChartTooltipBody.tsx: inline style prop",
+  "lab/AnnotationColorSwatch.tsx: inline style prop",
+  "lab/AnnotationSizeSlider.tsx: inline style prop",
+  "lab/lab.module.css: px font size",
+  "portal/PortalMapCanvas.tsx: inline style prop",
+  "portal/PortalMapLegend.tsx: inline style prop",
+  "styles/global.css: px border radius",
+  "tutorials/FlowDiagram.tsx: inline style prop",
+  "tutorials/FlowEdges.tsx: inline style prop",
+  "tutorials/FlowNodeButton.tsx: inline style prop",
+  "ui/SignaturePad.tsx: hex color",
+  "ui/SignaturePad.tsx: inline style prop",
+  "components/ui/chart.tsx: inline style prop",
+  "components/ui/progress.tsx: inline style prop",
+  "components/ui/sonner.tsx: inline style prop",
+  "components/ui/toggle-group.tsx: inline style prop",
+  "quadrants/editor/EditorMap.tsx: inline style prop",
+  "quadrants/geography/AreaLabels.tsx: inline style prop",
+  "regulatory/arco/ArcoDeadline.tsx: inline style prop",
+];
+/** Disabled controls that dim their text with opacity (known debt, same ratchet as above). */
+const KNOWN_DIMMED: readonly string[] = [
+  "data-table/data-table.module.css: .sortButton:hover .sortIcon",
+  'styles/global.css: input[type="checkbox"]:disabled,\ninput[type="radio"]:disabled',
+  "styles/global.css: select:disabled",
+];
+function relative(found: string): string {
+  return found
+    .replace(SRC_DIR, "")
+    .replace(/^[\\/]/, "")
+    .replaceAll("\\", "/");
+}
+function expectOnlyKnown(found: readonly string[], known: readonly string[]) {
+  const paths = found.map(relative);
+  expect(paths.filter((entry) => !known.includes(entry))).toEqual([]);
+  // A fixed offender must leave the list, so it can never come back unnoticed.
+  expect(known.filter((entry) => !paths.includes(entry))).toEqual([]);
+}
+
 const FORBIDDEN: readonly { name: string; pattern: RegExp }[] = [
   { name: "hex color", pattern: /#[0-9a-fA-F]{3,8}\b/ },
   { name: "rgb()/hsl() color", pattern: /\b(?:rgb|hsl)a?\(/i },
@@ -18,6 +65,11 @@ const FORBIDDEN: readonly { name: string; pattern: RegExp }[] = [
   { name: "px font size", pattern: /font-size\s*:[^;{}]*\d+px/ },
   { name: "px border radius", pattern: /border-radius\s*:[^;{}]*\d+px/ },
   { name: "inline style prop", pattern: /\bstyle\s*=\s*\{/ },
+  // CLAUDE.md Web: minimum text size 12px; Tailwind arbitrary sizes bypass the font-size check.
+  {
+    name: "text below 12px",
+    pattern: /\btext-\[(?:(?:\d|1[01])(?:\.\d+)?px|0?\.(?:[0-6]\d*|7(?:[0-4]\d*)?)rem)\]/,
+  },
 ];
 
 export function findLiterals(source: string): string[] {
@@ -40,9 +92,18 @@ describe("findLiterals (the detector itself)", () => {
     ["font-size: 14px;", "px font size"],
     ["border-radius: 8px;", "px border radius"],
     ["<div style={{ color: tone }} />", "inline style prop"],
+    ['<p className="text-[11px]" />', "text below 12px"],
+    ['<p className="text-[0.7rem]" />', "text below 12px"],
   ])("flags %j", (source, name) => {
     expect(findLiterals(source)).toContain(name);
   });
+
+  test.each(['className="text-xs"', 'className="text-[12px]"', 'className="text-[0.8rem]"'])(
+    "accepts text of 12px or more: %j",
+    (source) => {
+      expect(findLiterals(source)).toEqual([]);
+    },
+  );
 
   test("accepts token variables, ids and comments", () => {
     const source = `/* #FFFFFF */ .a { color: var(--color-text-primary); font-family: var(--font-family); border-radius: var(--radius-sm); } href="#main"`;
@@ -63,7 +124,7 @@ describe("web/src style literals", () => {
       findLiterals(readFileSync(file, "utf8")).map((name) => `${file}: ${name}`),
     );
 
-    expect(offenders).toEqual([]);
+    expectOnlyKnown(offenders, KNOWN_LITERALS);
   });
 
   test("hover, pressed and disabled controls keep their text opaque", () => {
@@ -81,7 +142,7 @@ describe("web/src style literals", () => {
         });
       });
 
-    expect(offenders).toEqual([]);
+    expectOnlyKnown(offenders, KNOWN_DIMMED);
   });
 
   test("destructive buttons keep their own feedback palette regardless of CSS import order", () => {

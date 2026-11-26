@@ -164,7 +164,7 @@ void describe("global states: cause, blocking level and next action", () => {
       [{ hasClockSkew: true }, "clockSkew", "warning", "keepWorkingReview"],
       [{ gps: "off" }, "gpsOff", "warning", "enableLocation"],
       [{ gps: "denied" }, "gpsDenied", "warning", "enableLocation"],
-      [{ gps: "unreliable" }, "gpsUnreliable", "warning", "waitForFix"],
+      [{ gps: "unreliable" }, "gpsUnreliable", "info", "waitForFix"],
       [{ isBatteryLow: true }, "batteryLow", "info", "chargeOrSaveBattery"],
       [{ isOnline: false }, "noSignal", "info", "keepWorkingSaved"],
     ];

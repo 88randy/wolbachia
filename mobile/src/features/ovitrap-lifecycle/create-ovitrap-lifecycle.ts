@@ -1,6 +1,5 @@
 import { unwrap } from "@wolbachia/api-client";
 import { randomUUID } from "expo-crypto";
-import { AppState } from "react-native";
 import { createMobileApiClient } from "../../api/create-api-client.ts";
 import type { CredentialStore } from "../../auth/credential-store.ts";
 import type { TokenStore } from "../../auth/token-store.ts";
@@ -19,10 +18,11 @@ import type { DayBundleService } from "../day/bundle-service.ts";
 import type { LocationSource } from "../day/location.ts";
 import type { Attachments } from "../../attachments/create-attachments.ts";
 import { lifecycleEvidence } from "./evidence-configuration.ts";
-import { ForegroundLifecycleGps } from "./foreground-gps.ts";
+import { createForegroundGps } from "./create-foreground-gps.ts";
 import { LifecycleAdvisory } from "./advisory.ts";
 import { createScopedApiClient } from "../../api/create-scoped-api-client.ts";
 import { lifecycleTrainingGuards } from "./training-guard.ts";
+import { LabelPoolStore } from "../ovitrap-check/label-pool.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly engine: SyncEngine;
@@ -98,6 +98,7 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     gps: deps.gps ?? gps,
     cancelNative: gps.cancel,
+    labelPool: () => new LabelPoolStore(deps.db).read(),
     selectTask: deps.selectTask,
     refreshAdvisory: (draft, turn, operation) => advisory.refresh(draft, turn, operation),
     ...lifecycleEvidence({ port: deps.evidence, store, attachments: deps.attachments }),
@@ -110,23 +111,5 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
 }
 
 function foregroundGps(deps: Dependencies) {
-  return new ForegroundLifecycleGps({
-    source: deps.location,
-    now: () => new Date(),
-    activity: {
-      isActive: () => AppState.currentState === "active",
-      subscribe: (listener) => {
-        const subscription = AppState.addEventListener("change", listener);
-        return () => {
-          subscription.remove();
-        };
-      },
-    },
-    schedule: (callback, delay) => {
-      const timer = setTimeout(callback, delay);
-      return () => {
-        clearTimeout(timer);
-      };
-    },
-  });
+  return createForegroundGps(deps.location);
 }

@@ -12,6 +12,8 @@ USER_UPDATE = "user.update"
 USER_DEACTIVATE = "user.deactivate"
 USER_REVEAL_RFC = "user.reveal_rfc"
 USER_OPERATIONAL_READ = "user.operational_read"
+# Display names only (pickers and "who"); never contact data, devices or trainings.
+USER_LOOKUP = "user.lookup"
 ACCESS_LOG_READ = "access_log.read"
 
 # Granted to the `admin` profile of new organizations.

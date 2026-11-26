@@ -50,7 +50,7 @@ export function FleetHistoryVoidDialog(props: Props) {
   const begin = useSessionGuard();
   return (
     <VoidDialog
-      record={props.row.id}
+      record={props.scope.code}
       limits={limits}
       submit={(choice) => voidHistory({ ...props, cache, begin }, choice)}
       onVoided={props.onClose}

@@ -123,6 +123,8 @@ class Shift(ImmutableMixin, OrgScopedModel):
         {"status", "closed_at_device", "closed_event", "odometer_close_km", "close_note"}
     )
 
+    # Short human code (JOR-0128), allocated when the shift opens: sequential per organization.
+    code = models.CharField(max_length=CODE_MAX_LENGTH, editable=False)
     courier = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -151,6 +153,9 @@ class Shift(ImmutableMixin, OrgScopedModel):
             models.Index(fields=["motorcycle", "-opened_at_device"]),
         ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "code"], name="shift_unique_code_per_organization"
+            ),
             models.UniqueConstraint(
                 fields=["organization", "courier"],
                 condition=Q(status="open"),

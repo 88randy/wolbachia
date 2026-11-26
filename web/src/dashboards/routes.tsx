@@ -1,0 +1,76 @@
+import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import type { RouteComponent } from "@tanstack/react-router";
+import type { MessageKey } from "@wolbachia/i18n";
+import "../router/crumb";
+import { tableSearchSchema } from "../data-table/table-search-schema";
+import { areaHomeRoute } from "../router/area-route";
+import { authenticatedRoute } from "../router/base-routes";
+import { ForbiddenError, requirePermission } from "../router/guards";
+import { canAny } from "../session/can";
+import { AreaErrorState } from "../states/AreaErrorState";
+import { ENTOMOLOGY_READ, OPERATIONS_READ, WOLBACHIA_READ } from "./permissions";
+
+const ComparisonPage = lazyRouteComponent(
+  () => import("./comparison/ComparisonPage"),
+  "ComparisonPage",
+);
+const DashboardsHome = lazyRouteComponent(() => import("./DashboardsHome"), "DashboardsHome");
+const W53Page = lazyRouteComponent(() => import("./dashboard-pages"), "W53Page");
+const W54Page = lazyRouteComponent(() => import("./dashboard-pages"), "W54Page");
+const W55Page = lazyRouteComponent(() => import("./dashboard-pages"), "W55Page");
+
+function dashboardRoute<const Path extends string>(
+  path: Path,
+  permission: string,
+  component: RouteComponent,
+  crumb: MessageKey,
+) {
+  return createRoute({
+    getParentRoute: () => authenticatedRoute,
+    path,
+    staticData: { crumb },
+    validateSearch: tableSearchSchema,
+    beforeLoad: ({ context }) => {
+      requirePermission("dashboards", context.me, permission);
+    },
+    component,
+    errorComponent: AreaErrorState,
+  });
+}
+
+/** Analysis area: home, W55 operations, W53 entomology and W54 Wolbachia prevalence. */
+export const dashboardsRoutes = [
+  areaHomeRoute("dashboards", DashboardsHome),
+  dashboardRoute(
+    "/dashboards/operations",
+    OPERATIONS_READ,
+    W55Page,
+    "analytics.dashboards.operations.title",
+  ),
+  dashboardRoute(
+    "/dashboards/entomology",
+    ENTOMOLOGY_READ,
+    W53Page,
+    "analytics.dashboards.entomology.title",
+  ),
+  dashboardRoute(
+    "/dashboards/wolbachia-prevalence",
+    WOLBACHIA_READ,
+    W54Page,
+    "analytics.dashboards.prevalence.title",
+  ),
+  createRoute({
+    getParentRoute: () => authenticatedRoute,
+    path: "/dashboards/comparison",
+    staticData: { crumb: "comparison.crumb" },
+    validateSearch: tableSearchSchema,
+    beforeLoad: ({ context }) => {
+      // One indicator needs the operations dashboard permission, the others the entomology one.
+      if (!canAny(context.me, [OPERATIONS_READ, ENTOMOLOGY_READ])) {
+        throw new ForbiddenError("dashboards");
+      }
+    },
+    component: ComparisonPage,
+    errorComponent: AreaErrorState,
+  }),
+];

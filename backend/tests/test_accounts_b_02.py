@@ -114,7 +114,7 @@ def test_deactivation_ends_scoped_sessions_and_pending_uploads_without_erasing_a
     client.force_authenticate(setup.actor.user)
     response = client.post(
         f"/api/v1/users/{member.user_id}/deactivate/",
-        {"expected_revision": person.revision},
+        {"expected_revision": person.revision, "reason": "Left the organization"},
         format="json",
     )
     assert response.status_code == 200
@@ -651,6 +651,8 @@ def test_operational_training_marks_scheduled_revocation_only_at_its_effective_b
     context = people_context(org_a, make_member, monkeypatch, settings, tmp_path)
     context.context = PeopleContext(context.center.pk, None)
     context.profile.permission_codes.append("user.create")
+    # Filing an account requires holding all of its permissions (account authority rule).
+    context.profile.permission_codes.extend(context.subject.profiles.get().permission_codes)
     context.profile.save(update_fields=["permission_codes"])
     create_personnel(
         context.actor,

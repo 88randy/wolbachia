@@ -34,12 +34,13 @@ async function open(path = LIST_PATH, me = ADMIN, language?: "en") {
 }
 
 describe("rule parameters list (W62)", () => {
-  test("shows each parameter with its name, key, unit, value in force and since when", async () => {
+  test("shows each parameter with its name, unit, value in force and since when", async () => {
     await open();
 
     const row = await screen.findByRole("row", { name: /Distancia máxima al punto/ });
 
-    expect(within(row).getByText("max_distance_to_point_m")).toBeDefined();
+    // The technical key stays out of the list: the courier-facing name is enough.
+    expect(within(row).queryByText("max_distance_to_point_m")).toBeNull();
     expect(within(row).getByText("metros")).toBeDefined();
     expect(within(row).getByText("50")).toBeDefined();
     expect(within(row).getByText("1 ene 2026")).toBeDefined();
@@ -65,7 +66,7 @@ describe("rule parameters list (W62)", () => {
     });
     await renderApp({ path: LIST_PATH, fetch: api.fetch, me: ADMIN });
 
-    expect(await screen.findAllByText("new_rule_from_backend")).toHaveLength(2);
+    expect(await screen.findByText("new_rule_from_backend")).toBeDefined();
   });
 
   test("the name and the value link to the page of the parameter by its key", async () => {
@@ -114,7 +115,7 @@ describe("rule parameters list (W62)", () => {
 
   test("Settings links to it only for who may read the parameters", async () => {
     await open("/settings");
-    const link = await screen.findByRole("link", { name: "Parámetros de reglas" });
+    const link = await screen.findByRole("link", { name: /^Parámetros de reglas/ });
     expect(link.getAttribute("href")).toBe(LIST_PATH);
   });
 
@@ -122,7 +123,7 @@ describe("rule parameters list (W62)", () => {
     await open("/settings", makeMe({ permissions: ["catalog.read"] }));
     await screen.findByRole("heading", { level: 1, name: "Configuración" });
 
-    expect(screen.queryByRole("link", { name: "Parámetros de reglas" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Parámetros de reglas/ })).toBeNull();
   });
 
   test.each([

@@ -37,7 +37,7 @@ El orquestador (sesión principal) planea, delega, revisa, integra y decide; no 
 **Flujo por issue**
 1. `planner` parte el issue en tareas, interfaces y riesgos.
 2. El implementador trabaja en su propio git worktree y rama (`feat|fix|chore/<n>-<slug>`). Solo se paralelizan issues sin dependencias entre sí ni archivos compartidos.
-3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla y los criterios de aceptación. Nada de instrucciones vagas.
+3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla, los criterios de aceptación y **las skills de su área** (tabla "Required skills by area" en `.claude/agents/README.md`: `ponytail` siempre; Django → `django-expert` y afines; React web → skills de Vercel React + `modern-web-guidance`; React Native → `vercel-react-native-skills`). El agente las invoca, las aplica y las nombra en su reporte; el orquestador también las usa al revisar o integrar. Nada de instrucciones vagas.
 4. **Revisión según riesgo (desde 2026-11-09, para avanzar rápido):**
    - **Riesgo alto** (sync, auth, permisos/aislamiento por organización, migraciones, concurrencia): `code-reviewer` + revisión adversarial de Codex, **máximo 2 rondas**. Después de la segunda, solo bloquea un hallazgo con reproducción concreta; lo demás se abre como issue de seguimiento y se mergea.
    - **Riesgo normal** (pantallas web, UI móvil, docs, tooling): una sola revisión (`code-reviewer` o Codex), sin ronda adversarial.
@@ -136,3 +136,7 @@ docs/           Decisiones (ADR), contratos y notas
 - (tooling) Persist offline guard startup and denied attempts immediately: mypy's fast exit bypasses atexit. Record hook arguments after runpy restores them; a missing exit report is not evidence of an unguarded startup or zero attempts (#126).
 - (tests) Build published-payload expectations through the registered producer codec, then assert domain values/instants. Update affected exact seed, route and schema expectations in the same feature while preserving previous assertions (#126).
 - (integration) JavaScript replacement strings interpret dollar replacement tokens; use a replacement function for literal document content. Verify canonical blobs/prefixes and retained stashes by exact OID when composing concurrent changes (#280).
+- (migrations) Raw SQL in a migration never uses `BEGIN; ... COMMIT;`: it commits the migration's outer transaction. Wrap lock-timeout DDL in `DO $$ BEGIN SET LOCAL lock_timeout='2s'; ... END $$;` (#375, lab 0019).
+- (web) `vite preview` sends no CSP, only the nginx container does. Anything rendered from object URLs needs `blob:` in `img-src`; the docker e2e job is the only gate that sees CSP breakage (#375).
+- (e2e) Register browser listeners with an awaited `evaluate` before the input that fires them: Linux fires `contextmenu` on press, Windows on release, so a non-awaited probe passes locally and times out in CI (#375).
+- (windows) Git Bash rewrites `VITE_API_BASE_URL=/api/v1` into a Windows path; build and run Vite from PowerShell or set `MSYS_NO_PATHCONV=1`. Windows also reserves ports 55451-55550, so compose Postgres for agents starts at 55560 (#375).

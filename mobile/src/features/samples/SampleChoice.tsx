@@ -1,9 +1,9 @@
+import { Check, Circle } from "lucide-react-native";
 import { Pressable } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
+import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Badge } from "../../ui/Badge.tsx";
-import { createSampleStyles } from "./styles.ts";
+import { KIT_ICON_STROKE } from "../../ui/kit-styles.ts";
 import type { SampleChoice as Choice } from "./view-model.ts";
 
 interface Props {
@@ -12,9 +12,13 @@ interface Props {
   readonly disabled: boolean;
   readonly onSelect: (id: string) => void;
 }
+
 export function SampleChoice({ option, isSelected, disabled, onSelect }: Props) {
   const t = useT();
-  const styles = useStyles(createSampleStyles);
+  const { theme } = useTheme();
+  const Icon = isSelected ? Check : Circle;
+  const frame = isSelected ? "border-action bg-action" : "border-line bg-surface";
+  const color = isSelected ? theme.color.onAction : theme.color.text.tertiary;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -24,10 +28,17 @@ export function SampleChoice({ option, isSelected, disabled, onSelect }: Props) 
       onPress={() => {
         onSelect(option.id);
       }}
-      style={[styles.choice, isSelected ? styles.selected : null]}
+      className={`min-h-14 flex-row items-center gap-3 rounded-2xl border-2 px-4 py-3 ${frame}`}
     >
-      <AppText variant="bodyStrong">{option.label}</AppText>
-      {isSelected ? <Badge tone="info" icon="check" label={t("mobile.sample.selected")} /> : null}
+      <Icon color={color} size={24} strokeWidth={KIT_ICON_STROKE} />
+      <AppText variant="bodyStrong" style={{ color }}>
+        {option.label}
+      </AppText>
+      {isSelected ? (
+        <AppText variant="caption" style={{ color }}>
+          {t("courier.choice.selected")}
+        </AppText>
+      ) : null}
     </Pressable>
   );
 }

@@ -51,7 +51,7 @@ for (const language of LANGUAGES) {
       );
       await page.goto("/lab/egg-counts");
       const field = page.getByRole("textbox", {
-        name: language === "en" ? "Laboratory eggs" : "Huevos de laboratorio",
+        name: language === "en" ? "How many eggs did you count?" : "¿Cuántos huevos contaste?",
       });
       await expect(field).toBeFocused();
       await page.evaluate(() => {

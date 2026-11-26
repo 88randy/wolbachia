@@ -3,7 +3,6 @@ import type { sync as source } from "../es-MX/sync.ts";
 
 export const sync: Record<keyof typeof source, string> = {
   // Result of sending a record to the server (phone inbox)
-  "sync.inbox.acceptedTitle": "Sent",
   "sync.inbox.acceptedHint": "The server received this record. You have nothing else to do.",
   "sync.inbox.rejectedTitle": "Not accepted",
   "sync.inbox.rejectedHint":
@@ -41,6 +40,8 @@ export const sync: Record<keyof typeof source, string> = {
     "Your session had already ended when this record was sent, so a supervisor will review it. Sign in again if you need to keep working.",
   "sync.result.shiftAlreadyOpen":
     "You already have an open shift, so a new one was not started. Continue with the open shift or close it first.",
+  "sync.result.centerInactive":
+    "The center of this motorcycle is closed, so the shift was not started. Tell your supervisor.",
   "sync.result.motorcycleInUse":
     "This motorcycle is already in an open shift. Choose another one or tell your supervisor.",
   "sync.result.capturedAfterShiftClose":
@@ -55,6 +56,7 @@ export const sync: Record<keyof typeof source, string> = {
     "This shift is not open on the server. Tell your supervisor if you still need to work.",
   "sync.result.shiftEventNotVoidable":
     "A shift can't be voided from the phone. Ask your supervisor to correct it.",
+  "sync.result.trackSegmentNotVoidable": "The recorded track can't be voided from the phone.",
   "sync.result.odometerDecreased":
     "The odometer reading is lower than the previous one, so a supervisor will review it. You don't need to do anything meanwhile.",
   "sync.result.severeCheck":

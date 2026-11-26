@@ -22,18 +22,18 @@ The shell center preference invalidates context and URL filter chips. B-01 organ
 
 ## Verification map
 
-| Criterion | Evidence |
-| --- | --- |
-| Keyboard matrix payload, last administrator retained, fixed consultation bundle | `w-03.test.tsx` keyboard/refusal case; server role is never optimistically overwritten |
-| Concurrent edits require refresh/review | `w-03.test.tsx` revision conflict case |
-| Center changes clear results/chips without expanding scope; late response ignored; supported API filter precedence | `../../centers/center-selection.test.tsx` barrier journey and paged remembered-selection case; center-filter/center-query regressions for API parameters and table/map results |
-| Pending scope lookup / removed ids / mode changes; delegated revocation | `scope-draft.test.ts` intent invariants; `w-03.test.tsx` deferred search-and-remove-same-center and keyboard revoke regressions |
-| Organization cache revision after navigation; clean/dirty draft synchronization; stale write isolation | `w-03.test.tsx` binds cancellation to the pending pre-save GET, keeps a later navigation GET live and releases the stale response; `organization-cache.test.ts`, `use-organization-draft.test.ts` |
-| Branding, timezone/epi-week roundtrip, invalid upload | `w-03.test.tsx`, `branding.test.ts`, `logo-upload.test.tsx` |
-| Org-only permission access with none/empty centers; missing action denial; scope changes clear old results | `../../router/area-access.test.ts`, `w-03.test.tsx` routes/links/queries and live scope-change cases |
-| Unknown/foreign codes indistinguishable; membership exact scope payload | `w-03.test.tsx` membership case |
-| Post-save focus race, fresh identity and callback after a committed write | Deferred role/membership/organization races in w-03.test.tsx, including a superseded 503 |
-| No replay after reauthentication; draft remains usable | `w-03.test.tsx` 401 journey |
-| Axe, focus/return, live results, light/dark, es-MX/en, expanded text, 320px | Component axe plus `web/e2e/w-03.spec.ts` (CI; deliberately not run locally) |
+| Criterion                                                                                                          | Evidence                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keyboard matrix payload, last administrator retained, fixed consultation bundle                                    | `w-03.test.tsx` keyboard/refusal case; server role is never optimistically overwritten                                                                                                            |
+| Concurrent edits require refresh/review                                                                            | `w-03.test.tsx` revision conflict case                                                                                                                                                            |
+| Center changes clear results/chips without expanding scope; late response ignored; supported API filter precedence | `../../centers/center-selection.test.tsx` barrier journey and paged remembered-selection case; center-filter/center-query regressions for API parameters and table/map results                    |
+| Pending scope lookup / removed ids / mode changes; delegated revocation                                            | `scope-draft.test.ts` intent invariants; `w-03.test.tsx` deferred search-and-remove-same-center and keyboard revoke regressions                                                                   |
+| Organization cache revision after navigation; clean/dirty draft synchronization; stale write isolation             | `w-03.test.tsx` binds cancellation to the pending pre-save GET, keeps a later navigation GET live and releases the stale response; `organization-cache.test.ts`, `use-organization-draft.test.ts` |
+| Branding, timezone/epi-week roundtrip, invalid upload                                                              | `w-03.test.tsx`, `branding.test.ts`, `logo-upload.test.tsx`                                                                                                                                       |
+| Org-only permission access with none/empty centers; missing action denial; scope changes clear old results         | `../../router/area-access.test.ts`, `w-03.test.tsx` routes/links/queries and live scope-change cases                                                                                              |
+| Unknown/foreign codes indistinguishable; membership exact scope payload                                            | `w-03.test.tsx` membership case                                                                                                                                                                   |
+| Post-save focus race, fresh identity and callback after a committed write                                          | Deferred role/membership/organization races in w-03.test.tsx, including a superseded 503                                                                                                          |
+| No replay after reauthentication; draft remains usable                                                             | `w-03.test.tsx` 401 journey                                                                                                                                                                       |
+| Axe, focus/return, live results, light/dark, es-MX/en, expanded text, 320px                                        | Component axe plus `web/e2e/w-03.spec.ts` (CI; deliberately not run locally)                                                                                                                      |
 
 Manual browser focus/contrast/reflow and real-backend integration remain unverified locally. No Docker, commits, push, PR, merge or deployment.

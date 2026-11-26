@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import timedelta
+from decimal import Decimal
 from io import BytesIO
 from typing import Any
 from uuid import UUID, uuid5
@@ -11,10 +12,18 @@ from uuid import UUID, uuid5
 from django.utils import timezone
 from PIL import Image
 
+from core.time import local_day_start, localdate
 from geography.models import Block, PointVersion, Quadrant, SamplingPoint
 from organizations.demo_seed.field import NAMESPACE
-from organizations.models import Membership
-from people.models import ActionTrainingRequirementVersion, Certification, Training, TrainingVersion
+from organizations.models import Membership, Organization
+from people.models import (
+    ActionTrainingRequirementVersion,
+    Certification,
+    EvaluationRubric,
+    EvaluationRubricVersion,
+    Training,
+    TrainingVersion,
+)
 from people.permissions import PeopleContext
 from people.services import PeopleWrite, write_people
 from releases.models import Permit
@@ -30,10 +39,12 @@ from uploads.services import (
     receive_upload,
 )
 
-COURSE_CODE = "TR-DEMO-RELEASE"
-RELEASE_POINT = "Q-DEMO-01-REL-P1"
-RELEASE_BLOCK = "Q-DEMO-01-B2"
+COURSE_CODE = "TR-MER-RELEASE"
+RUBRIC_CODE = "EV-MER-RELEASE"
+RELEASE_POINT = "Q-MER-01-REL-P1"
+RELEASE_BLOCK = "Q-MER-01-B2"
 ACTION = "release.record"
+IDENTITY_KEYS = ("subject_id", "code", "action", "quadrant_id", "training_version_id")
 VALIDITY_DAYS = 90
 CERTIFICATION_DAYS = 60
 
@@ -50,7 +61,8 @@ def _write(actor: UploadActor, operation: str, values: dict[str, Any]) -> Any:  
     """One people command with a stable id; `_target` names the parent record, if any."""
     target = values.get("_target")
     values = {"expected_revision": 0, **{k: v for k, v in values.items() if k != "_target"}}
-    command_id = uuid5(NAMESPACE, f"people:{operation}:{target}:{values.get('subject_id')}")
+    identity = (values.get(key) for key in IDENTITY_KEYS)
+    command_id = uuid5(NAMESPACE, f"people:{operation}:{target}:{':'.join(map(str, identity))}")
     body = json.loads(json.dumps({"command_id": str(command_id), **values}, default=str))
     return write_people(PeopleWrite(actor, command_id, operation, values, body, target))
 
@@ -73,7 +85,9 @@ def _evidence(actor: UploadActor) -> UUID:
 def _ensure_course(actor: UploadActor) -> TrainingVersion:
     course = Training.objects.filter(organization=actor.organization, code=COURSE_CODE).first()
     if course is None:
-        created = _write(actor, "training.create", {"code": COURSE_CODE, "name": "Demo release"})
+        created = _write(
+            actor, "training.create", {"code": COURSE_CODE, "name": "Liberación de mosquitos"}
+        )
         course = Training.objects.get(pk=created["id"])
     existing = TrainingVersion.objects.filter(training=course).first()
     if existing is not None:
@@ -86,6 +100,31 @@ def _ensure_course(actor: UploadActor) -> TrainingVersion:
         "_target": course.pk,
     }
     return TrainingVersion.objects.get(pk=_write(actor, "training.version", values)["id"])
+
+
+def _ensure_rubric(actor: UploadActor) -> None:
+    """One evaluation rubric with a published version, so the evaluation form has a rubric to pick."""
+    rubric = EvaluationRubric.objects.filter(
+        organization=actor.organization, code=RUBRIC_CODE
+    ).first()
+    if rubric is None:
+        created = _write(
+            actor, "rubric.create", {"code": RUBRIC_CODE, "name": "Evaluación de liberación"}
+        )
+        rubric = EvaluationRubric.objects.get(pk=created["id"])
+    if EvaluationRubricVersion.objects.filter(rubric=rubric).exists():
+        return
+    _write(
+        actor,
+        "rubric.version",
+        {
+            "weights": {"presentation": 20, "execution": 50, "coverage": 30},
+            "pass_threshold": Decimal("80"),
+            "critical_checks": ["safe_handling", "correct_point"],
+            "effective_from": timezone.now() - timedelta(days=1),
+            "_target": rubric.pk,
+        },
+    )
 
 
 def _ensure_requirement(
@@ -107,7 +146,10 @@ def _ensure_requirement(
 def _ensure_certification(actor: UploadActor, course: Course, courier: Membership) -> None:
     context, version = course.context, course.version
     if Certification.objects.filter(
-        organization=actor.organization, subject_id=courier.user_id, training_version=version
+        organization=actor.organization,
+        subject_id=courier.user_id,
+        training_version=version,
+        **context.lookups(),
     ).exists():
         return
     values = {
@@ -129,13 +171,16 @@ def ensure_certifications(
     """Course, requirement for the quadrant and one valid certification per courier."""
     context = PeopleContext(quadrant.center_id, quadrant.pk)
     version = _ensure_course(actor)
+    _ensure_rubric(actor)
     _ensure_requirement(actor, context, version)
     for courier in couriers:
         _ensure_certification(actor, Course(context, version), courier)
     return version
 
 
-def _ensure_release_point(actor: UploadActor) -> SamplingPoint:
+def _ensure_release_point(
+    actor: UploadActor, code: str = RELEASE_POINT, block_code: str = RELEASE_BLOCK
+) -> SamplingPoint:
     """The point of the release task, written with the ORM and a version from yesterday.
 
     A release is planned for a day only if the point already existed at that day's local midnight,
@@ -143,10 +188,10 @@ def _ensure_release_point(actor: UploadActor) -> SamplingPoint:
     a point seeded today could only host a release tomorrow.
     """
     organization = actor.organization
-    block = Block.objects.get(organization=organization, code=RELEASE_BLOCK)
+    block = Block.objects.get(organization=organization, code=block_code)
     point, created = SamplingPoint.objects.get_or_create(
         organization=organization,
-        code=RELEASE_POINT,
+        code=code,
         defaults={"block": block, "created_by": actor.user},
     )
     if created:
@@ -158,7 +203,8 @@ def _ensure_release_point(actor: UploadActor) -> SamplingPoint:
             point=point,
             version=1,
             location=[round(east - 0.0004, 6), round(north - 0.0004, 6)],
-            effective_from=timezone.now() - timedelta(days=1, hours=timezone.localtime().hour),
+            effective_from=local_day_start(organization.timezone, localdate(organization))
+            - timedelta(days=1),
         )
     return point
 
@@ -169,7 +215,20 @@ def ensure_release_task(actor: UploadActor, permit: Permit, courier: Membership)
     values = {
         "point_id": point.pk,
         "courier_id": courier.user_id,
-        "due_date": timezone.localdate(),
+        "due_date": localdate(actor.organization),
         "expected_revision": permit_revision(permit),
     }
     schedule_release(actor, permit.pk, values)
+
+
+def course_version(organization: Organization) -> TrainingVersion:
+    """The release course version the demo certifies couriers for."""
+    return TrainingVersion.objects.filter(
+        organization=organization, training__code=COURSE_CODE
+    ).latest("created_at")
+
+
+def ensure_release_points(actor: UploadActor, quadrant_numbers: range) -> None:
+    """One release point in the second block of each given demo quadrant (writes)."""
+    for number in quadrant_numbers:
+        _ensure_release_point(actor, f"Q-MER-{number:02d}-REL-P1", f"Q-MER-{number:02d}-B2")

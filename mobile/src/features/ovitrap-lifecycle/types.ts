@@ -41,7 +41,12 @@ export interface LegacyLifecycleDraft extends Configuration {
   readonly kind: LifecycleKind;
   readonly ovitrapId: string;
   readonly point: Point;
+  /** Replacing: the UUID of the new trap's printed label, set only by scanning or typing it. */
   readonly replacementId: string | null;
+  /** True once that label was scanned or typed; drafts from before the label step lack it. */
+  readonly labelScanned?: boolean;
+  /** The short code printed on that label, when the downloaded pool knows it. */
+  readonly replacementCode?: string | null;
   readonly assignment: Assignment;
   readonly gps: FieldEventEnvelope["gps"];
   readonly proposedLocation: readonly [number, number] | null;

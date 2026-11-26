@@ -200,8 +200,11 @@ def test_clearance_requires_grant_evidence_and_revision(org_a, make_member):
     assert response.status_code == 200
     cleared = response.json()["results"][0]
     proof = cleared["clearance"]
-    assert set(proof) == {"id", "created_at", "reviewer", "reason", "evidence_ids"}
-    assert {key: value for key, value in proof.items() if key != "created_at"} == {
+    assert set(proof) == {"id", "created_at", "reviewer", "reviewer_name", "reason", "evidence_ids"}
+    # The reviewer is also named (a display name), so no client shows an id.
+    assert {
+        key: value for key, value in proof.items() if key not in {"created_at", "reviewer_name"}
+    } == {
         "id": str(stored.pk),
         "reviewer": str(admin.pk),
         "reason": stored.reason,

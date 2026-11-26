@@ -6,7 +6,8 @@ import type { SessionRequests } from "../../auth/session-requests.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { readCatalogSnapshot, readRulesSnapshot } from "./catalog-snapshot.ts";
-import { UNAVAILABLE_MAP } from "./domain.ts";
+import { createMapPreparation } from "./map-preparation.ts";
+import { cameraPhotoPort } from "./odometer-photo-port.ts";
 import { ShiftOpenService } from "./service.ts";
 import { ShiftOpenStore } from "./store.ts";
 
@@ -17,6 +18,7 @@ interface Dependencies {
   readonly requests: SessionRequests;
   readonly uuid: () => string;
   readonly fetch?: (request: Request) => Promise<Response>;
+  readonly onOpened?: () => Promise<void>;
 }
 async function downloadCatalog(deps: Dependencies, store: ShiftOpenStore): Promise<void> {
   const baseUrl = deps.tokens.getOrigin();
@@ -50,7 +52,7 @@ function requireSession(tokens: Dependencies["tokens"], session: Credentials): v
   )
     throw new Error("Catalog session changed.");
 }
-/** One feature wiring point; B-13 and native camera support deliberately remain truthful unavailable ports. */
+/** One feature wiring point; offline city map and camera ports for the shift gate. */
 export function createShiftOpen(deps: Dependencies): ShiftOpenService {
   const store = new ShiftOpenStore(deps.db);
   return new ShiftOpenService({
@@ -58,8 +60,9 @@ export function createShiftOpen(deps: Dependencies): ShiftOpenService {
     engine: deps.engine,
     now: () => new Date(),
     uuid: deps.uuid,
-    maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
-    photos: { capture: () => Promise.resolve({ status: "unavailable" }) },
+    maps: createMapPreparation(() => deps.tokens.getOrigin()),
+    photos: cameraPhotoPort,
     refreshCatalog: () => downloadCatalog(deps, store),
+    ...(deps.onOpened === undefined ? {} : { onOpened: deps.onOpened }),
   });
 }

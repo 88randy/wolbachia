@@ -1,0 +1,43 @@
+/** English messages of the `scan` area: exactly the keys of `../es-MX/scan.ts`. */
+import type { scan as source } from "../es-MX/scan.ts";
+
+export const scan: Record<keyof typeof source, string> = {
+  "scan.camera.open": "Scan with the camera",
+  "scan.camera.title": "Scan with the camera",
+  "scan.camera.videoLabel": "Camera image",
+  "scan.camera.hint": "Hold the label's code in front of the camera. It reads by itself.",
+  "scan.camera.starting": "Opening the camera…",
+  "scan.camera.scanning": "Looking for the code…",
+  "scan.camera.denied":
+    "We do not have permission to use the camera. Allow it in your browser and try again.",
+  "scan.camera.unavailable": "We could not find a camera on this device. Type the code by hand.",
+  "scan.camera.failed": "We could not open the camera. Try again.",
+  "scan.camera.retry": "Try again",
+  "scan.camera.close": "Close",
+  "scan.camera.torchOn": "Turn the light on",
+  "scan.camera.torchOff": "Turn the light off",
+  "scan.camera.read": "Code read: {code}",
+  "scan.kind.lot": "for a lot",
+  "scan.kind.bag": "for a bag",
+  "scan.kind.location": "for a location",
+  "scan.kind.motorcycle": "for a motorcycle",
+  "scan.kind.paddle": "for an egg paddle",
+  "scan.kind.ovitrap": "for an ovitrap",
+  "scan.kind.other": "for another kind of record",
+  "scan.wrongKind": "This label is {found}, not {expected}.",
+  "scan.missing": "We could not find the record of this label. Check that it is the right one.",
+  "scan.lot.title": "Fill in with a code",
+  "scan.lot.hint":
+    "Scan the supplier's label and we fill in the code, expiry, quantity and supply. If you scan one of our own labels, we open that lot.",
+  "scan.lot.label": "Label code",
+  "scan.lot.loading": "Looking…",
+  "scan.lot.filled": "We filled in {fields}. Check everything and save.",
+  "scan.lot.field.code": "the lot code",
+  "scan.lot.field.expiry": "the expiry date",
+  "scan.lot.field.quantity": "the quantity",
+  "scan.lot.field.supply": "the supply",
+  "scan.lot.noSupply": "This barcode is not in the catalog yet. Choose the supply from the list.",
+  "scan.lot.nothing": "We could not get any data from this code. Fill in the form by hand.",
+  "scan.lot.unknown": "We could not find a lot with that code. Check the label.",
+  "scan.lot.failed": "We could not look up the code. Try again.",
+};

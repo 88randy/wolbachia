@@ -19,6 +19,7 @@ export type SessionState = "known" | "reconciling" | "unknown";
 let epoch = 0;
 let state: SessionState = "known";
 let isSignedOut = false;
+let isVerifyOnly = false;
 const listeners = new Set<Listener>();
 
 function emit(): void {
@@ -60,9 +61,19 @@ export function bumpEpoch(): void {
   emit();
 }
 
-/** Controller only. */
-export function setSessionState(next: SessionState): void {
+/**
+ * True while the tab only CHECKS `/me/` (a window focus) and nothing about the session is known to
+ * have changed: no epoch bump, no data cleared. A shell may then wait a moment before it shows
+ * any blocking UI. A leave, or any failure, makes it false.
+ */
+export function isVerifyingOnly(): boolean {
+  return state === "reconciling" && isVerifyOnly;
+}
+
+/** Controller only. `verifyOnly` marks a `reconciling` that is just a check (no change known). */
+export function setSessionState(next: SessionState, verifyOnly = false): void {
   state = next;
+  isVerifyOnly = next === "reconciling" && verifyOnly;
   emit();
 }
 
@@ -76,4 +87,5 @@ export function resetSessionRevision(): void {
   epoch = 0;
   state = "known";
   isSignedOut = false;
+  isVerifyOnly = false;
 }

@@ -86,6 +86,9 @@ class FieldEvent(ImmutableMixin, VoidableMixin, OrgScopedModel):
             models.Index(fields=["organization", "created_by", "server_received_at"]),
         ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="field_sync_fieldevent_org_id_uniq"
+            ),
             *VoidableMixin.Meta.constraints,
             models.CheckConstraint(
                 condition=Q(status__in=EventStatus.values), name="field_event_status_valid"

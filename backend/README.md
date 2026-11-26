@@ -14,6 +14,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - Configuration tables opt in to `core.table_filters`: validated DRF search, explicit strict ordering and stable id ties on lists only. Their [exact query contract](../docs/api-conventions.md#configuration-table-queries-224) preserves scoped parents, existing defaults, protected Other and field snapshots (#224).
 - Reported incidents have scoped workspace filters, protected critical-first order, archived policy/current parent hints and action-paired form options; see [incidents/README.md](incidents/README.md#reported-workspace-reads-304). The default fleet facade and all incident writers remain independent (#304).
 - Django admin is not mounted on purpose (it can delete).
+- **Same organization at the database.** Reads filter `organization` at the root table only (`lab/access.py`), so PostgreSQL itself refuses cross-organization links: the parents of the geography, ovitrap and lab chains (and `FieldEvent`, `Center`) carry `UNIQUE (organization_id, id)` (declared in their `Meta`), and every FK to them also has a composite FK `(organization_id, <fk>) -> parent (organization_id, id)`, `DEFERRABLE INITIALLY DEFERRED` like Django's own FKs. The composite constraints live only in the database (`lab/migrations/0013`, `0014`: added `NOT VALID`, then validated; the list `PAIRS` there is the inventory). A new FK to one of those parents must be added to a new migration of the same shape. Guarded by `tests/test_org_same_fk.py`.
 
 ## Layout
 
@@ -22,6 +23,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `config/` | Settings (`base`, `dev`, `test`, `prod`), URLs, WSGI/ASGI, Celery app |
 | `accounts/` | Shared `User` identity and authentication (#4); membership-private `Personnel`, protected RFC and durable `AccessLog` (#100); device sessions, bearer tokens and final-upload hook |
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
+| `platform_admin/` | Platform role (`PlatformAdmin`), insert-only `PlatformAuditEntry`, `/api/v1/platform/` (the only cross-organization surface) and `create_platform_admin` |
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
@@ -31,6 +33,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `releases/` | Official permit revisions and suspensions, release-device lineage/status, explicit planned release tasks and revalidated single-ledger consumption (B20; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
+| `tracks/` | Courier track (#370): insert-only `TrackSegment` and `TrackViewReceipt`, the `track.segment` sync handler and the reads behind `/shifts/positions/` and `/shifts/{id}/track/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |
 | `core/` | Org-scoped and insert-only base models, snapshots (hash, ETag, `304`), time helpers, base viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |
@@ -169,6 +172,24 @@ uv run python manage.py seed_organization_defaults --organization acme --apply  
 ```
 
 The seeded values come from the design brief and must be validated with the program entomologist; parameters the brief gives no value for have no version (`value: null`, "not configured") until an admin sets one.
+
+## Platform admins: organizations from the web
+
+A platform admin creates and configures organizations in the web app (area "Organizaciones"), so the
+Django admin is never needed. The only CLI step is the first platform admin (it asks for the
+password; nothing is passed as an argument):
+
+```bash
+uv run python manage.py create_platform_admin --username ops --email ops@example.com
+uv run python manage.py revoke_platform_admin --username ops   # audited
+```
+
+The role is separate from organization profiles and grants NO organization data: without a
+membership the user sees only `/api/v1/platform/` (and `/me/` with `organization: null`,
+`is_platform_admin: true`). Every platform action appends an insert-only `PlatformAuditEntry`
+(a database trigger refuses updates and deletes). The endpoints reuse `bootstrap_organization`,
+`seed_default_profiles` and `seed_organization_defaults`, the same services as the commands above.
+See `docs/api-conventions.md` ("Platform administration").
 
 ## Demo data for local end-to-end testing (#358)
 

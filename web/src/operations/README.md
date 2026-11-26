@@ -83,20 +83,42 @@ Compared with design/web/screens/W29-validate-shift.png and B17-Operacion.dc.htm
 
 No backend changes, API generation, new dependencies or grants are included.
 
+## Courier track (W28, W29, #370)
+
+Everything here needs `courier_track.read` from `/me/`; without it nothing is
+requested or shown and W29 keeps the GPS gap notice above.
+
+- W28 (`live/`) polls `GET /api/v1/shifts/positions/` with the list (30 s). Each
+  card shows the last position's age (`<time>` with the phone time on hover); the
+  map draws one dot per courier (icon + name). A position older than 2 ×
+  `track_upload_interval_seconds` (default 300 s, a constant until supervisors can
+  read `/rule-parameters/`) is hollow and dashed and its label carries
+  "hace N min". `?courier=` loads that shift's track once and refreshes it every
+  2 minutes. The courier is a UUID: the name comes from the people lookup.
+- W29 (`track/ShiftTrackCard.tsx`) draws `GET /api/v1/shifts/{id}/track/` as one
+  line per segment (a gap is never a straight jump) with start/end markers, plus
+  the equivalent segment table (start, end, positions) and "Tramos en revisión:
+  N" when `pending_review_count > 0`.
+- History by day is the existing list filter
+  `/operations/shifts?courier=&date_from=&date_to=` plus W29.
+
+Tests: `live/W28Page.test.tsx`, `track/shift-track.test.tsx`,
+`track/track-model.test.ts`, `../quadrants/geography/courier-layers.test.tsx`.
+
 ### Criterion and regression tests
 
-| Requirement | Test in W29Page.test.tsx / shift-validation.test.ts | Limit |
-| --- | --- | --- |
-| Keyboard timeline alternative | real lifecycle list, keyboard-opened dialog, Escape/focus return | GPS/map pending |
-| Observe requires reason | both command journeys refuse empty input; pure reason limits/control/invisible cases | backend remains authoritative |
-| Decision in shift history | approve/observe wait for a returned decision and render refreshed real history | point/W4 projection pending |
-| Open shift | both actions disabled with explanation, no POST | unit/component only |
-| Concurrent validation | 409 retains draft, requires fresh read and explicit reopening, sends new expected_revision | no backend concurrency claim |
-| Missing track | explicit gap and available opening/closing list | no coordinates inferred |
-| Session/permission safety | readonly/revoked permissions, identity switch, same-identity epoch retirement, late owner, GET403/404 redaction | deterministic deferred replies |
-| Unknown outcome | one pending command, no replay; pre-failure read cannot unlock | no real transport certification |
-| Partial/error state | failed refresh keeps facts with writes blocked | denied reads redact |
-| Bilingual/accessibility | shared catalog tests; semantic axe, labeled forms, Cancel focus; browser journey in `web/e2e/shifts.spec.ts` | synthetic API only |
+| Requirement                   | Test in W29Page.test.tsx / shift-validation.test.ts                                                             | Limit                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Keyboard timeline alternative | real lifecycle list, keyboard-opened dialog, Escape/focus return                                                | GPS/map pending                 |
+| Observe requires reason       | both command journeys refuse empty input; pure reason limits/control/invisible cases                            | backend remains authoritative   |
+| Decision in shift history     | approve/observe wait for a returned decision and render refreshed real history                                  | point/W4 projection pending     |
+| Open shift                    | both actions disabled with explanation, no POST                                                                 | unit/component only             |
+| Concurrent validation         | 409 retains draft, requires fresh read and explicit reopening, sends new expected_revision                      | no backend concurrency claim    |
+| Missing track                 | explicit gap and available opening/closing list                                                                 | no coordinates inferred         |
+| Session/permission safety     | readonly/revoked permissions, identity switch, same-identity epoch retirement, late owner, GET403/404 redaction | deterministic deferred replies  |
+| Unknown outcome               | one pending command, no replay; pre-failure read cannot unlock                                                  | no real transport certification |
+| Partial/error state           | failed refresh keeps facts with writes blocked                                                                  | denied reads redact             |
+| Bilingual/accessibility       | shared catalog tests; semantic axe, labeled forms, Cancel focus; browser journey in `web/e2e/shifts.spec.ts`    | synthetic API only              |
 
 The focused Vitest command is:
 

@@ -18,17 +18,51 @@
   gap: var(--space-2);
 }
 .countInput {
-  width: 100%;
+  width: min(100%, 16rem);
   box-sizing: border-box;
-  min-height: var(--web-control-lg);
+  min-height: 84px;
   padding: var(--space-2);
-  border: 1px solid var(--color-border-default);
+  border: 2px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text-primary);
   font-family: var(--font-family-mono);
-  font-size: var(--web-type-title-font-size);
+  font-size: 48px;
+  line-height: 1.1;
+  font-weight: 700;
+  text-align: center;
   font-variant-numeric: tabular-nums;
+}
+.countMethods {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.countMethods > button {
+  align-self: center;
+}
+.countMethods > input {
+  flex: 1 1 12rem;
+}
+.field label {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-font-size);
+  font-weight: 600;
+}
+.field p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
+}
+.field select {
+  max-width: 24rem;
+}
+.countInputCompact {
+  width: min(100%, 12rem);
+  min-height: 56px;
+  font-size: 28px;
+  text-align: left;
 }
 .field select,
 .field textarea {

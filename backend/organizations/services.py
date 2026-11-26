@@ -16,6 +16,7 @@ from organizations.exceptions import (
     AdminUserConflictError,
     GovernmentPermissionError,
     LastAdministratorError,
+    OwnAdministrationError,
     ProfileOrganizationMismatchError,
     StaleRevisionError,
 )
@@ -44,6 +45,7 @@ class OrganizationSpec:
     country: str
     timezone: str
     languages: tuple[str, ...] = (DEFAULT_LANGUAGE,)
+    epi_week: str = "iso"
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,7 @@ def create_organization(spec: OrganizationSpec) -> Organization:
         country=spec.country,
         timezone=spec.timezone,
         languages=list(spec.languages),
+        epi_week=spec.epi_week,
     )
     organization.full_clean()
     with transaction.atomic():
@@ -184,6 +187,20 @@ ORGANIZATION_FIELDS = (
 )
 
 
+SCOPE_MEMO_ATTR = "_request_effective_scope"
+
+
+def memoize_effective_scope(membership: Membership) -> Membership:
+    """Opt a request's membership into computing its effective scope once.
+
+    Only the membership resolved for the request opts in (`resolve_active_membership`); every
+    membership a service loads or locks itself stays uncached, so a write that changes
+    profiles or scope is always re-read from the database.
+    """
+    setattr(membership, SCOPE_MEMO_ATTR, None)
+    return membership
+
+
 def effective_scope(
     membership: Membership, *, profiles: list[Profile] | None = None
 ) -> EffectiveScope:
@@ -191,7 +208,20 @@ def effective_scope(
 
     Supply profiles only when captured with the membership in one SQL statement
     (field bootstrap/sync). That path performs no further configuration reads.
+    A membership opted in with `memoize_effective_scope` computes it once per instance.
     """
+    if profiles is None and hasattr(membership, SCOPE_MEMO_ATTR):
+        cached: EffectiveScope | None = getattr(membership, SCOPE_MEMO_ATTR)
+        if cached is None:
+            cached = _compute_effective_scope(membership, None)
+            setattr(membership, SCOPE_MEMO_ATTR, cached)
+        return cached
+    return _compute_effective_scope(membership, profiles)
+
+
+def _compute_effective_scope(
+    membership: Membership, profiles: list[Profile] | None
+) -> EffectiveScope:
     from organizations.selectors import list_active_profiles
 
     if (
@@ -245,6 +275,16 @@ def lock_organization_configuration(organization_id: UUID) -> Iterator[Organizat
         raise
 
 
+def _lock_user(user_id: UUID | str) -> None:
+    """Serialize with account-wide changes (temporary password); contention is a 429."""
+    try:
+        User.objects.select_for_update(nowait=True, no_key=True).get(pk=user_id)
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in {"55P03", "40P01"}:
+            raise AdministrationBusyError from error
+        raise
+
+
 def _check_revision(current: int, expected: int) -> None:
     if current != expected:
         raise StaleRevisionError
@@ -290,6 +330,26 @@ def _covers_scope(available: WorkScope, requested: WorkScope) -> bool:
     return True
 
 
+def require_account_authority(
+    actor_effective: EffectiveScope, target: Membership, permission: str
+) -> None:
+    """Acting on another user's account never reaches beyond the actor's own authority.
+
+    The target's effective permissions must be a subset of the actor's, and every target grant
+    must lie inside an actor grant that carries `permission`. Otherwise the target is opaque
+    (404). Callers run it under their lock, against the target's current configuration.
+    """
+    target_effective = effective_scope(target)
+    if not target_effective.permissions <= actor_effective.permissions:
+        raise NotFound
+    grants = [scope for codes, scope in actor_effective.grants if permission in codes]
+    if not grants:
+        raise NotFound
+    for codes, scope in target_effective.grants:
+        if codes and not any(_covers_scope(grant, scope) for grant in grants):
+            raise NotFound
+
+
 def _validate_delegation(effective: EffectiveScope, scope: WorkScope, codes: Iterable[str]) -> None:
     for code in codes:
         if code not in effective.permissions:
@@ -310,6 +370,23 @@ def _has_administrator(organization: Organization) -> bool:
     return any(
         effective_scope(member).permissions >= ADMINISTRATION_PERMISSIONS for member in members
     )
+
+
+def _is_administrator(user: User, organization: Organization) -> bool:
+    member = (
+        Membership.objects.filter(user=user, organization=organization, is_active=True)
+        .select_related("user", "organization")
+        .first()
+    )
+    return member is not None and effective_scope(member).permissions >= ADMINISTRATION_PERMISSIONS
+
+
+def _preserve_own_administration(
+    organization: Organization, actor: User, was_administrator: bool
+) -> None:
+    """An administrator never removes their own rights; another administrator must do it."""
+    if was_administrator and not _is_administrator(actor, organization):
+        raise OwnAdministrationError
 
 
 def _preserve_administrator(organization: Organization, had_administrator: bool) -> None:
@@ -388,6 +465,56 @@ class ProfileChange:
     scope: WorkScope
 
 
+@dataclass(frozen=True)
+class ProfileCopy:
+    actor: User
+    source: Profile
+    label_es: str
+    label_en: str
+
+
+def _unique_profile_slug(organization: Organization, label: str) -> str:
+    from django.utils.text import slugify
+
+    base = (slugify(label) or "profile")[:56]
+    slug, number = base, 1
+    while Profile.objects.filter(organization=organization, slug=slug).exists():
+        number += 1
+        slug = f"{base}-{number}"
+    return slug
+
+
+def copy_profile(change: ProfileCopy) -> Profile:
+    """Create a custom profile with another profile's permissions and scope.
+
+    The caller must hold every copied permission over the copied scope (no escalation through
+    a copy). The government bundle stays unique; it is never copied. The copy starts with no
+    members; assigning it is a separate, audited membership change.
+    """
+    with lock_organization_configuration(change.source.organization_id) as organization:
+        effective = _actor_scope(change.actor, organization, "role.update")
+        source = Profile.objects.filter(
+            pk=change.source.pk, organization=organization, is_active=True
+        ).first()
+        if source is None:
+            raise NotFound
+        if source.slug == "government":
+            raise GovernmentPermissionError
+        scope = safe_scope(source.scope)
+        _validate_delegation(effective, scope, source.permission_codes)
+        profile = Profile.objects.create(
+            organization=organization,
+            slug=_unique_profile_slug(organization, change.label_es),
+            label_es=change.label_es,
+            label_en=change.label_en,
+            permission_codes=sorted(set(source.permission_codes)),
+            scope=scope,
+            created_by=change.actor,
+        )
+        _append_revision(profile, "role", _profile_snapshot(profile), change.actor)
+    return profile
+
+
 def update_profile_permissions(profile: Profile, change: ProfileChange) -> Profile:
     """Serialize privilege removal; compare revision and append an immutable audit snapshot."""
     with lock_organization_configuration(profile.organization_id) as organization:
@@ -403,12 +530,14 @@ def update_profile_permissions(profile: Profile, change: ProfileChange) -> Profi
             raise GovernmentPermissionError
         _validate_delegation(effective, scope, change.permissions)
         had_admin = _has_administrator(organization)
+        was_admin = _is_administrator(change.actor, organization)
         _ensure_original_revision(locked, "role", _profile_snapshot(locked))
         locked.permission_codes = sorted(set(change.permissions))
         locked.scope = scope
         locked.revision += 1
         locked.save(update_fields=["permission_codes", "scope", "revision"])
         _preserve_administrator(organization, had_admin)
+        _preserve_own_administration(organization, change.actor, was_admin)
         _append_revision(locked, "role", _profile_snapshot(locked), change.actor)
     return locked
 
@@ -465,10 +594,15 @@ def update_membership(membership: Membership, change: MembershipChange) -> Membe
             Membership.objects.select_for_update().get(pk=membership.pk, organization=organization),
         )
         _check_revision(locked.revision, change.expected_revision)
+        if locked.user_id != change.actor.pk:
+            actor_effective = _actor_scope(change.actor, organization, "role.update")
+            require_account_authority(actor_effective, locked, "role.update")
         had_admin = _has_administrator(organization)
+        was_admin = _is_administrator(change.actor, organization)
         _ensure_original_revision(locked, "membership", _membership_snapshot(locked))
         _apply_membership_change(locked, change)
         _preserve_administrator(organization, had_admin)
+        _preserve_own_administration(organization, change.actor, was_admin)
         _append_revision(locked, "membership", _membership_snapshot(locked), change.actor)
     return locked
 
@@ -495,11 +629,13 @@ def deactivate_personnel_membership(
         if not locked.is_active:
             return locked
         had_admin = _has_administrator(organization)
+        was_admin = _is_administrator(actor, organization)
         _ensure_original_revision(locked, "membership", _membership_snapshot(locked))
         locked.is_active = False
         locked.revision += 1
         locked.save(update_fields=["is_active", "revision"])
         _preserve_administrator(organization, had_admin)
+        _preserve_own_administration(organization, actor, was_admin)
         _append_revision(locked, "membership", _membership_snapshot(locked), actor)
     return locked
 
@@ -510,6 +646,7 @@ def create_managed_membership(
     """Assign an existing shared identity; never creates users or another organization."""
     with lock_organization_configuration(organization.pk) as locked:
         _validate_membership_change(locked, change)
+        _lock_user(user.pk)
         if Membership.objects.filter(user=user, organization=locked).exists():
             raise FieldValidationError("user", "duplicate_membership")
         member = Membership.objects.create(

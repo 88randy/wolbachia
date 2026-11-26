@@ -3,7 +3,7 @@ import type { states as source } from "../es-MX/states.ts";
 
 export const states: Record<keyof typeof source, string> = {
   // Web global states
-  "states.placeholder.body": "This section is still under construction.",
+  "states.placeholder.body": "This section will be available soon.",
   "states.loading.label": "Loading content",
   "states.notFound.title": "We couldn't find this page",
   "states.notFound.body":

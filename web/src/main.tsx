@@ -6,6 +6,7 @@ import "@fontsource/inter/latin-600.css";
 import "@fontsource/inter/latin-700.css";
 import "@wolbachia/tokens/tokens.css";
 import "./styles/global.css";
+import "./styles/tailwind.css";
 import { startApp } from "./app/start-app";
 
 const container = document.getElementById("root");

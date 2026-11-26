@@ -30,7 +30,10 @@ export function reviewReasons(draft: ReviewCapture, now: Date): readonly string[
   if (!isGpsUsable(draft)) reasons.push("gps");
   if (isStale(draft, now)) reasons.push("stale");
   const metres = distance(draft);
-  if (metres !== null && metres > (draft.rules?.maxDistanceM ?? 50)) reasons.push("distance");
+  // A far verdict needs the whole accuracy circle to be outside the allowed distance.
+  const slack = draft.gps?.accuracy_m ?? 0;
+  if (metres !== null && metres - slack > (draft.rules?.maxDistanceM ?? 50))
+    reasons.push("distance");
   if (draft.mode === "check" && draft.point === null) reasons.push("location");
   return reasons;
 }

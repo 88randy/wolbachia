@@ -31,7 +31,7 @@ describe("forgot password", () => {
       await screen.findByRole("heading", { level: 1, name: "Restablece tu contraseña" }),
     ).toBeDefined();
     expect(api.requests).toEqual([]);
-    expect(document.title).toBe("Restablece tu contraseña · Wolbachia");
+    expect(document.title).toBe("Restablece tu contraseña · AedesVision");
   });
 
   test("sends the email in the body and confirms", async () => {
@@ -104,7 +104,7 @@ describe("forgot password", () => {
     await sendEmail("ana@example.org");
 
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "No hay conexión con el servidor",
+      "No hay conexión. Revisa tu señal e inténtalo de nuevo.",
     );
     expect(screen.getByLabelText<HTMLInputElement>("Correo electrónico").value).toBe(
       "ana@example.org",

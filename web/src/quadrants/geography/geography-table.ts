@@ -1,4 +1,5 @@
 import { CENTER_FILTER } from "../../centers/center-filter";
+import { CENTER_LOOKUP } from "../../lookups/lookup-sources";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
 export const PAGE_SIZE = 25;
 export const QUADRANT_TABLE: TableQueryConfig = {
@@ -8,7 +9,7 @@ export const QUADRANT_TABLE: TableQueryConfig = {
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
   filters: [
-    CENTER_FILTER,
+    { ...CENTER_FILTER, input: "lookup", lookup: CENTER_LOOKUP },
     { key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 },
   ],
 };
@@ -18,11 +19,12 @@ export const RECORD_TABLE: TableQueryConfig = {
   sortableIds: [],
   supportsVoided: false,
   filters: [
-    CENTER_FILTER,
     {
       key: "view",
       kind: "select",
       labelKey: "geography.field.view",
+      presentation: "segmented",
+      defaultValue: "history",
       options: [
         { value: "history", labelKey: "geography.history.title" },
         { value: "blocks", labelKey: "geography.blocks.title" },
@@ -48,9 +50,15 @@ export const RESOURCE_TABLE: TableQueryConfig = {
     { key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 },
   ],
 };
+/** One explicit page of a given size (all the rows of a small collection). */
+export interface WholePage {
+  page: number;
+  pageSize: number;
+}
 /** Map/draft validation deliberately requests an unfiltered first page; list views pass URL state. */
-export function resourceParams(pageOrState: number | TableState) {
+export function resourceParams(pageOrState: number | TableState | WholePage) {
   if (typeof pageOrState === "number") return { page: pageOrState, page_size: PAGE_SIZE };
+  if ("pageSize" in pageOrState) return { page: pageOrState.page, page_size: pageOrState.pageSize };
   return {
     ...listParams(pageOrState),
     ...(pageOrState.filters["search"] ? { search: pageOrState.filters["search"] } : {}),

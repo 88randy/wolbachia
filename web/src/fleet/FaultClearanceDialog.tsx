@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { FieldNotes } from "../forms/FieldNotes";
 import { fleetClearFocusId, useFleetDialog } from "./use-fleet-dialog";
@@ -53,21 +54,14 @@ export function FaultClearanceDialog(props: FleetOperationProps & { scope: Fleet
   const title = useId();
   const modal = useFleetDialog(draft.phase !== "idle", operations.close, {
     openerId: fleetClearFocusId(scope.focusOwner, draft.motorcycle, draft.fault?.id ?? ""),
-    fallbackId: `fleet-record-refresh-${draft.motorcycle}`,
     isCurrent: scope.isCurrent,
   });
   const verified =
     draft.files.length > 0 && draft.files.every((file) => !!file.verifiedAt && !!file.uploadId);
   return (
-    <dialog {...modal} className={dialogStyles.dialog} aria-labelledby={title}>
-      <h2 id={title}>{t("fleet.clear.title", { record: draft.motorcycle })}</h2>
+    <dialog {...modal} className={cn(dialogStyles.dialog, styles.wide)} aria-labelledby={title}>
+      <h2 id={title}>{t("fleet.clear.title", { record: scope.code })}</h2>
       <p>{t("fleet.clear.hint")}</p>
-      <p>
-        {t("fleet.clear.fault")}: {draft.fault?.id}
-      </p>
-      <p>
-        {t("fleet.clear.revision")}: {draft.revision}
-      </p>
       <FleetOperationForm draft={draft} operations={operations} verified={verified}>
         <ClearanceReason draft={draft} operations={operations} />
         <FleetFaultEvidence draft={draft} operations={operations} />

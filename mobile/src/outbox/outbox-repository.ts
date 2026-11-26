@@ -2,6 +2,7 @@ import type { SqlExecutor, SqlRow, SqlStatement, SqlValue } from "../db/sql.ts";
 import { eligibleClaim, eligibleRetry } from "../attachments/evidence-eligibility.ts";
 import type { EvidenceSelection } from "../attachments/evidence-eligibility.ts";
 import { readInteger } from "../db/sql.ts";
+import { describeWriteFailure, diagnostics } from "../features/diagnostics/diagnostic-log.ts";
 import {
   readResult,
   readStatus,
@@ -31,11 +32,32 @@ export interface OutboxTransition {
 
 export type OutboxCounts = Readonly<Record<OutboxStatus, number>>;
 
-/** The write failed (for example the phone's storage is full). The event was NOT saved. */
+/** Why a write failed: a full phone is the only case the courier can fix by freeing space. */
+export type OutboxWriteReason = "storage_full" | "shift_closed" | "scope_unavailable" | "other";
+
+const STORAGE_FULL = /SQLITE_FULL|disk is full|disk full|ENOSPC|no space left/i;
+const SCOPE_UNAVAILABLE =
+  /assignment, capture scope or epoch is unavailable|capture scope or epoch is unavailable/i;
+const SHIFT_CLOSED = /NOT NULL constraint failed: outbox_event\.id/i;
+
+function writeReason(cause: unknown): OutboxWriteReason {
+  const text = cause instanceof Error ? `${cause.name} ${cause.message}` : String(cause);
+  if (STORAGE_FULL.test(text)) return "storage_full";
+  if (SCOPE_UNAVAILABLE.test(text)) return "scope_unavailable";
+  return SHIFT_CLOSED.test(text) ? "shift_closed" : "other";
+}
+
+/** The write failed. The event was NOT saved; `reason` says why (never assume the phone is full). */
 export class OutboxWriteError extends Error {
-  constructor(cause: unknown) {
+  readonly reason: OutboxWriteReason;
+  /** Technical line (class, SQLite code, table.column, statement); never values. */
+  readonly diagnostic: string;
+  constructor(cause: unknown, statements: readonly SqlStatement[] = []) {
     super("The event could not be saved on the phone.", { cause });
     this.name = "OutboxWriteError";
+    this.reason = writeReason(cause);
+    this.diagnostic = describeWriteFailure(cause, statements);
+    diagnostics.record(this.diagnostic);
   }
 }
 
@@ -67,18 +89,35 @@ function insertParams(event: FieldEventEnvelope, updatedAt: string): SqlValue[] 
   ];
 }
 
+export interface InsertOptions {
+  /** The courier confirmed a capture made before its shift closed (stale draft: "Yes, I did it that day"). */
+  readonly isLateCapture?: boolean;
+}
+
 /** Reuse the existing outbox insertion for an atomic void-plus-replacement capture. */
-export function eventInsertStatement(event: FieldEventEnvelope, updatedAt: string): SqlStatement {
+export function eventInsertStatement(
+  event: FieldEventEnvelope,
+  updatedAt: string,
+  options: InsertOptions = {},
+): SqlStatement {
   const params = insertParams(event, updatedAt);
   if (!event.shift_id || ["shift.open", "shift.close", "record.void"].includes(event.type))
     return { sql: COLUMNS_SQL, params };
   // The actual insertion arbitrates in-flight captures against local closure, including rejected closes.
+  // A late capture the courier confirmed was made before the close keeps its original time and is
+  // refused only when it is later than the close (the server applies the same rule).
+  const later = options.isLateCapture ? " AND julianday(device_time) < julianday(?)" : "";
   return {
     sql: COLUMNS_SQL.replace(
       "VALUES (?,",
-      "VALUES ((SELECT ? WHERE NOT EXISTS (SELECT 1 FROM outbox_event WHERE type='shift.close' AND shift_id=?)),",
+      `VALUES ((SELECT ? WHERE NOT EXISTS (SELECT 1 FROM outbox_event WHERE type='shift.close' AND shift_id=?${later})),`,
     ),
-    params: [params[0] ?? null, event.shift_id, ...params.slice(1)],
+    params: [
+      params[0] ?? null,
+      event.shift_id,
+      ...(options.isLateCapture ? [event.device_time] : []),
+      ...params.slice(1),
+    ],
   };
 }
 
@@ -96,14 +135,16 @@ export class OutboxRepository {
   }
 
   /** Saves a captured event as `pending`. Throws `OutboxWriteError` when it could not be stored. */
-  async enqueue(event: FieldEventEnvelope, extra: readonly SqlStatement[] = []): Promise<void> {
+  async enqueue(
+    event: FieldEventEnvelope,
+    extra: readonly SqlStatement[] = [],
+    options: InsertOptions = {},
+  ): Promise<void> {
+    const statements = [eventInsertStatement(event, this.#now().toISOString(), options), ...extra];
     try {
-      await this.#db.runAtomically([
-        eventInsertStatement(event, this.#now().toISOString()),
-        ...extra,
-      ]);
+      await this.#db.runAtomically(statements);
     } catch (error) {
-      throw new OutboxWriteError(error);
+      throw new OutboxWriteError(error, statements);
     }
   }
 

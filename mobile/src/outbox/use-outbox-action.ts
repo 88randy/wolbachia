@@ -2,6 +2,7 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { useState } from "react";
 
 import { OutboxWriteError } from "./outbox-repository.ts";
+import { writeErrorKey } from "./write-error-key.ts";
 
 /** Completes a UI action with localized feedback; a rejected write never escapes a void handler. */
 export async function performOutboxAction(action: () => Promise<void>): Promise<MessageKey | null> {
@@ -10,9 +11,7 @@ export async function performOutboxAction(action: () => Promise<void>): Promise<
     return null;
   } catch (error) {
     console.warn("outbox.action_failed", error instanceof Error ? error.name : "unknown");
-    return error instanceof OutboxWriteError
-      ? "mobile.storage.saveFailed"
-      : "mobile.storage.actionFailed";
+    return error instanceof OutboxWriteError ? writeErrorKey(error) : "mobile.storage.actionFailed";
   }
 }
 

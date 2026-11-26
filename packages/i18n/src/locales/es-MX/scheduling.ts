@@ -1,0 +1,315 @@
+/** Mexican Spanish messages of the `scheduling` area: plan, assignment, risk categories, interventions. */
+import type { AreaCatalog } from "../area.ts";
+
+export const scheduling = {
+  "scheduling.home.description":
+    "Cada semana se arma en cinco pasos, en este orden. Aquí ves en qué paso vas y qué sigue.",
+  "scheduling.home.hint":
+    "Primero se carga qué manzanas son más urgentes, luego se reparten los cuadrantes entre los repartidores, se revisa lo programado y, si alguien no alcanza a visitar sus puntos, se pasan a otro repartidor.",
+  "scheduling.home.week": "Semana {week} · del {from} al {to}",
+  "scheduling.home.next": "Sigue: {step}",
+  "scheduling.home.nextBadge": "Sigue este paso",
+  "scheduling.home.waiting":
+    "Los pasos que faltan los hacen otras personas de tu equipo. Aquí puedes ver cómo van.",
+  "scheduling.home.allDone": "Todo está al día esta semana.",
+  "scheduling.home.loading": "Revisando cómo va la semana…",
+  "scheduling.home.stepOf": "Paso {number}",
+  "scheduling.home.state.done": "Listo",
+  "scheduling.home.state.pending": "Pendiente",
+  "scheduling.home.state.attention": "Necesita atención",
+  "scheduling.home.state.optional": "Opcional",
+
+  "scheduling.step.risk.title": "Cargar o confirmar el riesgo de la semana",
+  "scheduling.step.risk.text":
+    "Dile al sistema qué manzanas son más urgentes esta semana: riesgo alto, medio o bajo.",
+  "scheduling.step.risk.done": "Manzanas con riesgo: {count}.",
+  "scheduling.step.risk.pending": "Todavía no se carga el riesgo de esta semana.",
+  "scheduling.step.risk.noPermission":
+    "Tu perfil no puede cargar la lista: pide a quien administra el riesgo que la suba.",
+  "scheduling.step.risk.load": "Cargar lista de riesgo",
+  "scheduling.step.risk.see": "Ver el riesgo",
+  "scheduling.step.assign.title": "Repartir los cuadrantes entre repartidores",
+  "scheduling.step.assign.text":
+    "Decide qué repartidor atiende cada cuadrante. Un cuadrante es una zona de trabajo con varias manzanas.",
+  "scheduling.step.assign.done": "Todos los cuadrantes ({count}) ya tienen repartidor.",
+  "scheduling.step.assign.attention": "Cuadrantes sin repartidor: {count} de {total}.",
+  "scheduling.step.assign.empty": "Todavía no hay cuadrantes para repartir.",
+  "scheduling.step.assign.action": "Repartir cuadrantes",
+  "scheduling.step.assign.see": "Ver el reparto",
+  "scheduling.step.review.title": "Revisar la programación de la semana",
+  "scheduling.step.review.text":
+    "Mira qué puntos visita cada repartidor cada día, de los más urgentes a los menos urgentes.",
+  "scheduling.step.review.done": "Puntos programados: {total} · Por visitar: {pending}.",
+  "scheduling.step.review.pending": "Todavía no se arma la semana: no hay puntos programados.",
+  "scheduling.step.review.build": "Armar la semana",
+  "scheduling.step.review.action": "Ver la programación",
+  "scheduling.step.reassign.title": "Reasignar lo que quedó pendiente",
+  "scheduling.step.reassign.text":
+    "Si un repartidor no alcanzó a visitar sus puntos de un día que ya pasó, pásalos a otro repartidor.",
+  "scheduling.step.reassign.done": "No quedan puntos pendientes de días anteriores.",
+  "scheduling.step.reassign.attention": "Puntos de días anteriores sin visitar: {count}.",
+  "scheduling.step.reassign.none": "Se puede hacer cuando haya puntos programados.",
+  "scheduling.step.reassign.action": "Reasignar pendientes",
+  "scheduling.step.reassign.see": "Ver pendientes",
+  "scheduling.step.intervention.title": "Anotar lo que hicieron otras instituciones",
+  "scheduling.step.intervention.text":
+    "Fumigación u otras acciones de terceros: anótalas para no repetir ni contradecir su trabajo.",
+  "scheduling.step.intervention.done": "Intervenciones registradas: {count}.",
+  "scheduling.step.intervention.empty": "Todavía no hay intervenciones registradas.",
+  "scheduling.step.intervention.action": "Ir a intervenciones",
+
+  "scheduling.courier.none": "Sin repartidor",
+  "scheduling.courier.numbered": "Repartidor {number}",
+  "scheduling.courier.unknown": "Repartidor",
+
+  "scheduling.glossary.load":
+    "Pendientes: puntos que el repartidor todavía no visita. Meta: cuántos puntos puede visitar bien en un día (hoy: {target}).",
+  "scheduling.glossary.risk":
+    "El riesgo dice qué tan urgente es visitar una manzana esta semana. Los puntos de manzanas con riesgo alto se visitan primero.",
+  "scheduling.glossary.reassign":
+    "Reasignar es pasar los puntos que no se visitaron de un repartidor a otro.",
+
+  "scheduling.plan.menu": "Programación semanal",
+  "scheduling.plan.title": "Programación de la semana {week}",
+  "scheduling.plan.description":
+    "Quién visita qué puntos cada día. Elige un número de la tabla para ver el día de ese repartidor.",
+  "scheduling.plan.weekRange": "Del {from} al {to}",
+  "scheduling.plan.matrixTitle": "Puntos pendientes por repartidor y día",
+  "scheduling.plan.matrixHint":
+    "Cada número son los puntos que ese repartidor todavía no visita ese día. En amarillo, con ícono: pasa de la meta ({target} por día).",
+  "scheduling.plan.courier": "Repartidor",
+  "scheduling.plan.previousWeek": "Semana anterior",
+  "scheduling.plan.thisWeek": "Esta semana",
+  "scheduling.plan.nextWeek": "Semana siguiente",
+  "scheduling.plan.noTasks": "Todavía no hay puntos programados esta semana.",
+  "scheduling.plan.noTasksHelp":
+    "Antes de armarla, carga el riesgo de la semana y reparte los cuadrantes. Después presiona «Armar la semana».",
+  "scheduling.plan.noTasksReadOnly":
+    "Cuando quien administra la programación arme la semana, aquí verás los puntos de cada día.",
+  "scheduling.plan.allDone":
+    "No quedan puntos pendientes esta semana: todo lo programado ya se visitó.",
+  "scheduling.plan.noWork": "Sin pendientes ese día",
+  "scheduling.plan.openDay": "{name}, {day}: puntos pendientes {count}",
+  "scheduling.plan.overTarget": "Pasa de la meta",
+  "scheduling.plan.today": "Hoy",
+  "scheduling.plan.pastBanner":
+    "Hay puntos de días anteriores que no se visitaron ({count}). Pásalos a otro repartidor para que no se pierdan.",
+  "scheduling.plan.pastAction": "Reasignar pendientes",
+  "scheduling.plan.pastPick": "Mostrar {name}, {day}",
+  "scheduling.generate.action": "Armar la semana",
+  "scheduling.generate.title": "¿Armar la semana {week}?",
+  "scheduling.generate.consequence":
+    "El sistema programará los puntos de esta semana con el reparto de cuadrantes y el riesgo de hoy. Los puntos que ya estaban programados no cambian.",
+  "scheduling.generate.confirm": "Armar la semana",
+  "scheduling.generate.done": "Listo. Puntos nuevos programados: {count}.",
+  "scheduling.generate.nothing": "La semana ya estaba armada: no hay puntos nuevos.",
+
+  "scheduling.day.title": "{name} · {day}",
+  "scheduling.day.subtitle": "Del más urgente al menos urgente.",
+  "scheduling.day.empty": "Este repartidor no tiene puntos ese día.",
+  "scheduling.day.pick": "Elige un número de la tabla de arriba para ver el día de un repartidor.",
+  "scheduling.day.done": "Hechos: {count}",
+  "scheduling.day.points": "Puntos: {count}",
+  "scheduling.day.noRisk": "Sin riesgo asignado",
+  "scheduling.day.noRiskHelp": "Carga el riesgo de la semana para ordenar por urgencia.",
+  "scheduling.day.unassigned": "Sin repartidor",
+  "scheduling.day.source": "Origen: {source}",
+  "scheduling.day.protocol": "Protocolo: {protocol}",
+  "scheduling.action.check": "Revisar {count}",
+  "scheduling.action.place": "Colocar {count}",
+  "scheduling.action.release": "Liberar {count}",
+  "scheduling.legend.title": "Qué significa cada acción",
+  "scheduling.legend.check": "Revisar: recoger la papeleta de una ovitrampa que ya está puesta.",
+  "scheduling.legend.place": "Colocar: poner una ovitrampa nueva en el punto.",
+  "scheduling.legend.release":
+    "Liberar: soltar mosquitos con Wolbachia en el punto (requiere permiso).",
+  "scheduling.legend.risk": "Urgencia de la manzana:",
+
+  "scheduling.risk.high": "Alto",
+  "scheduling.risk.medium": "Medio",
+  "scheduling.risk.low": "Bajo",
+  "scheduling.risk.none": "Sin categoría",
+  "scheduling.risk.menu": "Riesgo por manzana",
+  "scheduling.risk.title": "Riesgo por manzana · Semana {week}",
+  "scheduling.risk.description":
+    "Qué tan urgente es visitar cada manzana esta semana. Semana que empieza el {day}.",
+  "scheduling.risk.hint":
+    "El riesgo es la urgencia de visitar una manzana. Alto se visita primero. Viene de una lista oficial o de una regla de la empresa.",
+  "scheduling.risk.caption": "Riesgo de cada manzana",
+  "scheduling.risk.blockSearch": "Código de la manzana",
+  "scheduling.risk.block": "Manzana",
+  "scheduling.risk.category": "Riesgo",
+  "scheduling.risk.origin": "De dónde viene",
+  "scheduling.risk.protocol": "Protocolo",
+  "scheduling.risk.sourceOfficial": "Lista oficial",
+  "scheduling.risk.sourceCompany": "Regla de la empresa",
+  "scheduling.risk.import": "Cargar lista de la semana",
+  "scheduling.risk.emptyTitle": "Esta semana todavía no tiene riesgo",
+  "scheduling.risk.emptyHelp":
+    "Sube la lista de la semana para que los puntos se ordenen del más urgente al menos urgente.",
+  "scheduling.risk.emptyReadOnly":
+    "Cuando alguien cargue la lista de la semana, aquí verás el riesgo de cada manzana.",
+  "scheduling.risk.nextStep": "Siguiente paso: repartir los cuadrantes",
+  "scheduling.risk.goAssign": "Repartir cuadrantes",
+
+  "scheduling.import.title": "Cargar el riesgo de la semana",
+  "scheduling.import.subtitle":
+    "Sube una lista con el riesgo de cada manzana. Antes de que cambie algo, verás una vista previa.",
+  "scheduling.import.step1": "¿Qué lista vas a cargar?",
+  "scheduling.import.step1Hint": "Elige de dónde viene la lista y a qué semana aplica.",
+  "scheduling.import.step2": "Sube el archivo",
+  "scheduling.import.step2Hint": "Un archivo CSV con un renglón por manzana.",
+  "scheduling.import.step3": "Revisa antes de aplicar",
+  "scheduling.import.step3Hint":
+    "Todavía no cambia nada. Los cambios se hacen hasta que presiones Aplicar.",
+  "scheduling.import.stepName1": "Origen",
+  "scheduling.import.stepName2": "Archivo",
+  "scheduling.import.stepName3": "Revisión",
+  "scheduling.import.stepsLabel": "Pasos para cargar el riesgo",
+  "scheduling.import.source": "Origen de la lista",
+  "scheduling.import.sourceHelp":
+    "Lista oficial: la que manda la autoridad de salud. Regla de la empresa: la que define tu equipo.",
+  "scheduling.import.week": "Semana a la que aplica",
+  "scheduling.import.weekOption": "Semana {week} · desde el {from}",
+  "scheduling.import.file": "Archivo CSV",
+  "scheduling.import.chooseFile": "Elegir archivo",
+  "scheduling.import.changeFile": "Cambiar archivo",
+  "scheduling.import.noFile": "Todavía no eliges un archivo.",
+  "scheduling.import.needFile": "Elige un archivo para ver la vista previa.",
+  "scheduling.import.formatTitle": "¿Cómo debe ser el archivo?",
+  "scheduling.import.formatHint":
+    "Un renglón por manzana. Columnas: block_code (el código de la manzana), category (el riesgo: low = bajo, medium = medio, high = alto) y protocol (opcional).",
+  "scheduling.import.template": "Descargar plantilla con tus manzanas",
+  "scheduling.import.templateName": "plantilla-riesgo.csv",
+  "scheduling.import.preview": "Ver vista previa",
+  "scheduling.import.apply": "Aplicar",
+  "scheduling.import.summary": "Manzanas que se actualizarán: {count}.",
+  "scheduling.import.summaryByRisk": "Altas: {high} · Medias: {medium} · Bajas: {low}",
+  "scheduling.import.willDo":
+    "Al aplicar, el riesgo de esas manzanas en la semana {week} cambia y los puntos se ordenan con él. Lo anterior queda guardado en el historial.",
+  "scheduling.import.errorsTitle":
+    "Renglones con problemas: {count}. Corrige el archivo y vuelve a subirlo.",
+  "scheduling.import.errorRow": "Renglón {row}:",
+  "scheduling.import.fixFile": "Subir otro archivo",
+  "scheduling.import.confirmTitle": "¿Aplicar el riesgo de la semana {week}?",
+  "scheduling.import.confirmText":
+    "Cambiará el riesgo de las manzanas del archivo ({count}) y los puntos de esa semana se ordenarán con él. Puedes cargar otra lista después; la anterior queda en el historial.",
+  "scheduling.import.applied": "Listo. Manzanas actualizadas: {count}.",
+  "scheduling.import.nextStep": "Siguiente paso",
+  "scheduling.import.nextText": "Ahora reparte los cuadrantes entre los repartidores.",
+  "scheduling.import.seeResult": "Ver el riesgo de la semana",
+  "scheduling.import.goAssign": "Repartir cuadrantes",
+  "scheduling.import.error.invalid_columns": "Los títulos de las columnas no son los esperados.",
+  "scheduling.import.error.invalid_row": "Faltan o sobran columnas.",
+  "scheduling.import.error.unsafe_cell": "Hay un texto que no se puede aceptar.",
+  "scheduling.import.error.invalid_block_code": "El código de la manzana no es válido.",
+  "scheduling.import.error.invalid_category": "El riesgo debe ser low, medium o high.",
+  "scheduling.import.error.invalid_protocol": "El protocolo es demasiado largo.",
+  "scheduling.import.error.duplicate_block": "La manzana aparece más de una vez.",
+  "scheduling.import.error.block_inaccessible": "No tienes acceso a esta manzana o no existe.",
+  "scheduling.import.error.invalid_utf8": "El archivo no se pudo leer. Guárdalo como CSV UTF-8.",
+  "scheduling.import.error.invalid_csv": "El archivo no tiene formato CSV válido.",
+  "scheduling.import.error.empty_import": "El archivo no trae manzanas.",
+  "scheduling.import.error.file_too_large": "El archivo es demasiado grande.",
+  "scheduling.import.error.too_many_rows": "El archivo trae demasiados renglones.",
+  "scheduling.import.error.unknown": "Este renglón no se pudo revisar.",
+
+  "scheduling.reassign.title": "Reasignar los pendientes de {name}",
+  "scheduling.reassign.subtitle":
+    "Reasignar es pasar los puntos que no se visitaron a otro repartidor. Puntos pendientes de {name} en este día: {count}.",
+  "scheduling.reassign.to": "Pasarlos a",
+  "scheduling.reassign.choose": "Elige a quién",
+  "scheduling.reassign.option": "{name} ({load} pendientes ese día)",
+  "scheduling.reassign.fits": "{name} quedaría con {total} puntos, dentro de su meta de {target}.",
+  "scheduling.reassign.over": "{name} quedaría con {total} puntos, más de su meta de {target}.",
+  "scheduling.reassign.noOthers": "No hay otros repartidores a quienes pasar estos puntos.",
+  "scheduling.reassign.blocked": "Solo quien administra la programación puede reasignar.",
+  "scheduling.reassign.apply": "Reasignar puntos ({count})",
+  "scheduling.reassign.confirmTitle": "¿Pasar los puntos pendientes a {to}?",
+  "scheduling.reassign.confirmText":
+    "Los puntos pendientes de {from} ({count}) pasarán a {to}. {from} ya no los verá en su teléfono. Los puntos que ya se visitaron no cambian.",
+  "scheduling.reassign.confirm": "Sí, reasignar",
+  "scheduling.reassign.done": "Listo. Los pendientes ya están con otro repartidor.",
+
+  "scheduling.assign.title": "Cuadrantes por repartidor",
+  "scheduling.assign.description":
+    "Cada columna es un repartidor. Arrastra un cuadrante a otra columna, o usa «Mover a…». Los cambios se guardan al instante y puedes deshacerlos.",
+  "scheduling.assign.hint":
+    "Un cuadrante es una zona de trabajo con varias manzanas. Cada cuadrante lo atiende un repartidor. La barra muestra el día con más pendientes de ese repartidor contra su meta por día.",
+  "scheduling.assign.readOnly":
+    "Solo puedes consultar esta pantalla. Pide a quien administra la programación que haga cambios.",
+  "scheduling.assign.empty": "Todavía no hay cuadrantes para repartir.",
+  "scheduling.assign.emptyHelp":
+    "Los cuadrantes se crean en Geografía. Cuando existan, aquí los repartes entre los repartidores.",
+  "scheduling.assign.emptyAction": "Ir a cuadrantes",
+  "scheduling.assign.columnSummary": "Cuadrantes: {count}",
+  "scheduling.assign.columnEmpty": "Sin cuadrantes. Arrastra uno aquí.",
+  "scheduling.assign.columnDrop": "Suelta aquí para asignar",
+  "scheduling.assign.loadPeak": "Día con más pendientes: {load} de {target}",
+  "scheduling.assign.loadWeek": "Pendientes de la semana: {count}",
+  "scheduling.assign.loadLabel": "Carga de {name} contra su meta",
+  "scheduling.assign.overTarget": "Pasa de la meta",
+  "scheduling.assign.nearTarget": "Casi en la meta",
+  "scheduling.assign.okTarget": "Dentro de la meta",
+  "scheduling.assign.unassignedTitle": "Sin repartidor",
+  "scheduling.assign.unassignedHelp":
+    "Nadie visitará estos cuadrantes hasta que los muevas a un repartidor.",
+  "scheduling.assign.center": "Centro: {name}",
+  "scheduling.assign.drag": "Arrastra para mover",
+  "scheduling.assign.saving": "Guardando…",
+  "scheduling.assign.move": "Mover a…",
+  "scheduling.assign.moveAria": "Mover el cuadrante {code} a otro repartidor",
+  "scheduling.assign.unassign": "Dejar sin repartidor",
+  "scheduling.assign.moved":
+    "{code} ahora es de {name}. Los puntos ya programados esta semana siguen con su repartidor anterior.",
+  "scheduling.assign.movedNone":
+    "{code} quedó sin repartidor. Los puntos ya programados esta semana siguen con su repartidor anterior.",
+  "scheduling.assign.undo": "Deshacer",
+  "scheduling.assign.undone": "Listo, {code} volvió con {name}.",
+  "scheduling.assign.undoneNone": "Listo, {code} volvió a quedar sin repartidor.",
+  "scheduling.assign.pendingNote":
+    "Los puntos ya programados esta semana no cambian solos: para pasarlos a otro repartidor usa «Reasignar pendientes» en la programación.",
+  "scheduling.assign.goPlan": "Ir a la programación",
+
+  "scheduling.error.changed":
+    "Alguien más hizo un cambio. Ya actualizamos la pantalla; inténtalo de nuevo.",
+  "scheduling.error.forbidden": "No tienes permiso para hacer este cambio.",
+
+  "scheduling.intervention.title": "Intervenciones de otras instituciones",
+  "scheduling.intervention.description":
+    "Fumigación, nebulización y larvicida hechos por otras instituciones. Anótalos aquí para no repetir ni contradecir su trabajo.",
+  "scheduling.intervention.hint":
+    "Una intervención es una acción contra el mosquito que hizo otra institución, por ejemplo una fumigación. Se anotan las manzanas y las fechas.",
+  "scheduling.intervention.empty": "Todavía no hay intervenciones registradas",
+  "scheduling.intervention.emptyHelp":
+    "Cuando otra institución fumigue o aplique larvicida, anótalo aquí con las manzanas que cubrió.",
+  "scheduling.intervention.emptyReadOnly":
+    "Cuando alguien registre una intervención, aparecerá aquí.",
+  "scheduling.intervention.new": "Registrar intervención",
+  "scheduling.intervention.newHint":
+    "Anota qué se aplicó, quién lo hizo, cuándo y en qué manzanas. No se puede borrar: si te equivocas, registra otra.",
+  "scheduling.intervention.sectionWhat": "¿Qué se hizo?",
+  "scheduling.intervention.sectionWho": "¿Quién y cuándo?",
+  "scheduling.intervention.sectionWhere": "¿En qué manzanas?",
+  "scheduling.intervention.type": "Tipo de acción",
+  "scheduling.intervention.typePlaceholder": "Elige el tipo",
+  "scheduling.intervention.other": "Descríbelo",
+  "scheduling.intervention.product": "Producto aplicado",
+  "scheduling.intervention.institution": "Institución",
+  "scheduling.intervention.from": "Desde",
+  "scheduling.intervention.to": "Hasta",
+  "scheduling.intervention.dates": "Fechas",
+  "scheduling.intervention.range": "{from} al {to}",
+  "scheduling.intervention.blocks": "Manzanas cubiertas",
+  "scheduling.intervention.blocksColumn": "Manzanas",
+  "scheduling.intervention.blockSearch": "Buscar manzana",
+  "scheduling.intervention.noBlocks": "No hay manzanas con ese texto.",
+  "scheduling.intervention.selected": "Elegidas: {count}",
+  "scheduling.intervention.selectShown": "Elegir las que se ven",
+  "scheduling.intervention.clearSelected": "Quitar todas",
+  "scheduling.intervention.required": "Este dato es obligatorio.",
+  "scheduling.intervention.needBlocks": "Elige al menos una manzana.",
+  "scheduling.intervention.badRange": "La fecha final no puede ser antes de la inicial.",
+  "scheduling.intervention.invalid": "Revisa los datos: alguno no es válido.",
+  "scheduling.intervention.saved": "Intervención registrada.",
+} as const satisfies AreaCatalog<"scheduling">;

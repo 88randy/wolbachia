@@ -31,6 +31,13 @@ async function openShell(page: Page, preferences: Record<string, string> = {}) {
   await expect(page.getByRole("main")).toBeVisible();
 }
 
+// The Home cards repeat the area names, so the sidebar links are looked up inside the navigation.
+function sidebarLink(page: Page, name: string) {
+  return page
+    .getByRole("navigation", { name: "Navegación principal" })
+    .getByRole("link", { name, exact: true });
+}
+
 async function sidebarWidth(page: Page): Promise<number> {
   const box = await page.locator("#sidebar").boundingBox();
   return Math.round(box?.width ?? 0);
@@ -46,7 +53,7 @@ test.describe("shell layout", () => {
 
     await page.reload();
     expect(await sidebarWidth(page)).toBe(COLLAPSED_WIDTH);
-    await expect(page.getByRole("link", { name: "Supervisión" })).toBeVisible();
+    await expect(sidebarLink(page, "Supervisión")).toBeVisible();
   });
 
   test("the top bar reserves its token height for accessible controls", async ({ page }) => {
@@ -68,14 +75,11 @@ test.describe("shell layout", () => {
     await mockApi(page, { me: makeMe({ permissions: ["egg_count.read"] }) });
     await openShell(page);
 
-    await page.getByRole("link", { name: "Laboratorio" }).click();
+    await sidebarLink(page, "Laboratorio").click();
 
     await expect(page).toHaveURL(/\/lab$/);
     await expect(page.getByRole("heading", { level: 1, name: "Laboratorio" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Laboratorio" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    await expect(sidebarLink(page, "Laboratorio")).toHaveAttribute("aria-current", "page");
   });
 });
 
@@ -90,13 +94,14 @@ test.describe("startup", () => {
     // This startup case needs only the Fleet area's exact read grant (#156).
     await mockApi(page, { me: makeMe({ permissions: ["motorcycle.read"] }) });
     await openShell(page);
-    await page.getByRole("link", { name: "Flota" }).click();
+    await sidebarLink(page, "Flota").click();
     await expect(page.getByRole("heading", { level: 1, name: "Flota" })).toBeVisible();
 
     expect(problems).toEqual([]);
   });
 
   test("serves the app on a deep link (single-page fallback)", async ({ page }) => {
+    await mockApi(page, { me: makeMe({ permissions: ["release.read"] }) });
     await page.goto("/releases");
 
     await expect(page.getByRole("heading", { level: 1, name: "Liberaciones" })).toBeVisible();
@@ -155,7 +160,7 @@ test.describe("keyboard", () => {
     await page.keyboard.press("Tab"); // Operation group disclosure
     await expect(page.getByRole("button", { name: "Operación", exact: true })).toBeFocused();
     await page.keyboard.press("Tab"); // Supervision
-    await expect(page.getByRole("link", { name: "Supervisión" })).toBeFocused();
+    await expect(sidebarLink(page, "Supervisión")).toBeFocused();
     await page.keyboard.press("Enter");
 
     await expect(
@@ -199,7 +204,11 @@ test.describe("states and language", () => {
 
     await page.getByRole("button", { name: "ES: cambiar idioma a inglés" }).click();
 
-    await expect(page.getByRole("link", { name: "Supervision" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("navigation", { name: "Main navigation" })
+        .getByRole("link", { name: "Supervision", exact: true }),
+    ).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 });

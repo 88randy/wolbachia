@@ -15,7 +15,6 @@ import { P23Screen } from "../features/incidents/P23Screen.tsx";
 import { P24Screen } from "../features/incidents/P24Screen.tsx";
 import { P29Screen } from "../features/history/P29Screen.tsx";
 import { P30Screen } from "../features/training/P30Screen.tsx";
-import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 
 import { HomeScreen } from "../screens/HomeScreen.tsx";
@@ -23,15 +22,15 @@ import { InboxScreen } from "../screens/InboxScreen.tsx";
 import { SettingsScreen } from "../screens/SettingsScreen.tsx";
 import { StylePreviewScreen } from "../screens/StylePreviewScreen.tsx";
 import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
-import { useTheme } from "../theme/ThemeProvider.tsx";
 import { useNavigation } from "./NavigationProvider.tsx";
 import type { Route } from "./routes.ts";
+import { registeredScreen } from "./screen-registry.ts";
+import "./feature-screens.ts";
 
 const SCREENS = {
   day: P9Screen,
   qrScanner: P11Screen,
   map: P10Screen,
-  ovitrapCapture: OvitrapScreen,
   openShift: OpenShiftScreen,
   closeShift: CloseShiftScreen,
   supplyReceipt: P8Screen,
@@ -47,6 +46,8 @@ const SCREENS = {
 };
 
 function screenFor(route: Route): ReactNode {
+  const Registered = registeredScreen(route.name);
+  if (Registered) return <Registered key={JSON.stringify(route)} route={route as never} />;
   if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
   if (route.name === "supplyDetail") return <P12Screen lotId={route.lotId} />;
   if (route.name === "releaseCapture")
@@ -63,19 +64,14 @@ function screenFor(route: Route): ReactNode {
         eventId={route.eventId}
       />
     );
-  const Screen = SCREENS[route.name];
+  if (route.name === "ovitrapCapture")
+    return <OvitrapScreen key={route.pointId ?? "none"} pointId={route.pointId} />;
+  const Screen = SCREENS[route.name as keyof typeof SCREENS];
   return <Screen />;
 }
 
 /** Shows the top route with status icons matching the surface header. */
 export function ScreenRouter() {
   const { route } = useNavigation();
-  const { scheme } = useTheme();
-  const statusStyle = scheme === "dark" ? "light" : "dark";
-  return (
-    <>
-      <StatusBar style={statusStyle} />
-      {screenFor(route)}
-    </>
-  );
+  return <>{screenFor(route)}</>;
 }

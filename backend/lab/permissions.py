@@ -11,6 +11,7 @@ METHOD_VERIFY = "lab_method.verify"
 RECOUNT_CREATE = "recount.create"
 RECOUNT_ADJUDICATE = "recount.adjudicate"
 PADDLE_REUSE = "egg_paddle.reuse"
+ANNOTATION_EXPORT = "egg_annotation.export"
 ENTOMOLOGIST_CODES = (
     "sample.read",
     "sample.receive",
@@ -31,4 +32,5 @@ ADMIN_CODES = (
     METHOD_VERIFY,
     RECOUNT_ADJUDICATE,
     PADDLE_REUSE,
+    ANNOTATION_EXPORT,
 )

@@ -5,15 +5,17 @@ uses local audit-service imports to avoid a module-initialization cycle.
 """
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.db import transaction
 
 from accounts.permissions import (
     ADMIN_AUTH_PERMISSION_CODES,
     ADMIN_PERSONNEL_PERMISSION_CODES,
+    USER_LOOKUP,
     USER_OPERATIONAL_READ,
 )
+from analytics import permissions as analytics_permissions
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -30,6 +32,7 @@ from geography.permissions import (
     INTERVENTION_CREATE,
     INTERVENTION_READ,
     QUADRANT_CLOSE,
+    QUADRANT_LOOKUP,
     QUADRANT_READ,
 )
 from incidents.permissions import (
@@ -49,6 +52,7 @@ from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from inventory.transfers.permissions import ADMIN_CODES as TRANSFER_ADMIN_CODES
 from inventory.transfers.permissions import SUPERVISOR_CODES as TRANSFER_SUPERVISOR_CODES
 from inventory.transfers.permissions import WAREHOUSE_CODES as TRANSFER_WAREHOUSE_CODES
+from lab.pcr.permissions import CODES as PCR_CODES
 from lab.permissions import ADMIN_CODES as LAB_ADMIN_CODES
 from lab.permissions import COUNT_VOID
 from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
@@ -62,6 +66,8 @@ from ovitraps.permissions import (
 )
 from people.permissions import ADMIN_CODES as PEOPLE_ADMIN_CODES
 from people.permissions import TRAINING_READ
+from privacy.permissions import ADMIN_CODES as PRIVACY_ADMIN_CODES
+from privacy.permissions import REGULATORY_CODES as PRIVACY_REGULATORY_CODES
 from releases.permissions import PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ
 from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
@@ -79,6 +85,7 @@ from shifts.permissions import (
     SHIFT_READ,
     SHIFT_VALIDATE,
 )
+from tracks.permissions import COURIER_TRACK_READ
 from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
@@ -92,6 +99,11 @@ READ_ONLY_CODES = (
 )
 ADMIN_CODES = (
     HOME_READ,
+    # An admin delegates every profile: the narrow lookups must be held to be handed out.
+    USER_LOOKUP,
+    QUADRANT_LOOKUP,
+    *PRIVACY_ADMIN_CODES,
+    *analytics_permissions.ADMIN_CODES,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
@@ -103,6 +115,9 @@ ADMIN_CODES = (
     "community_activity.void",
     *SUPPLY_ADMIN_CODES,
     *LAB_ADMIN_CODES,
+    "shipment.read",
+    "material_request.read",
+    *PCR_CODES,
     *TRANSFER_ADMIN_CODES,
     RELOCATION_DECIDE,
     QUADRANT_CLOSE,
@@ -125,6 +140,9 @@ ADMIN_CODES = (
     "role.read",
     "role.update",
     "center.read",
+    "center.create",
+    "center.update",
+    "center.deactivate",
     CATALOG_READ,
     CATALOG_ITEM_CREATE,
     CATALOG_ITEM_UPDATE,
@@ -143,6 +161,7 @@ ADMIN_CODES = (
     MOTORCYCLE_MANAGE,
     MOTORCYCLE_UNBLOCK,
     MOTORCYCLE_SERVICE_CLEAR,
+    COURIER_TRACK_READ,
 )
 COURIER_CODES = (
     "sample.collect",
@@ -161,6 +180,7 @@ COURIER_CODES = (
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     HOME_READ,
+    *analytics_permissions.SUPERVISOR_CODES,
     USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
@@ -192,6 +212,7 @@ SUPERVISOR_CODES = (
     MOTORCYCLE_READ,
     MOTORCYCLE_UNBLOCK,
     MOTORCYCLE_SERVICE_CLEAR,
+    COURIER_TRACK_READ,
 )
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
@@ -199,16 +220,26 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
         HOME_READ,
+        *analytics_permissions.ENTOMOLOGIST_CODES,
         BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
+        *PCR_CODES,
         FIELD_UPLOAD,
         INTERVENTION_READ,
         INTERVENTION_CREATE,
         *READ_ONLY_CODES,
         *INVENTORY_ENTOMOLOGIST_CODES,
+        # Lab screens W37, W38 and W41: paddle list, UIEB shipments, material requests.
+        "egg_paddle.reuse",
+        "shipment.read",
+        "material_request.read",
         READING_READ,
         SCHEDULE_READ,
         RISK_IMPORT_APPLY,
+        # Quadrant codes and courier names in lab results, the plan and dashboard filters:
+        # names only, never sampling points, contact data or devices (least privilege).
+        QUADRANT_LOOKUP,
+        USER_LOOKUP,
     ),
     "community_promoter": (
         *READ_ONLY_CODES,
@@ -218,9 +249,12 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "admin": ADMIN_CODES,
     "coordinator": (
         HOME_READ,
+        *analytics_permissions.COORDINATOR_CODES,
+        *PCR_CODES,
         USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
+        "review_item.read",
         "community_activity.read",
         "community_activity.void",
         *READ_ONLY_CODES,
@@ -231,9 +265,11 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_CREATE,
         INCIDENT_CLOSE,
         INCIDENT_REASSIGN,
+        COURIER_TRACK_READ,  # W28 courier positions (#370)
     ),
     "warehouse": (
         HOME_READ,
+        USER_OPERATIONAL_READ,  # pick the courier to hand material to
         ALLOCATE,
         RECONCILE,
         WRITE_OFF,
@@ -242,8 +278,22 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *TRANSFER_WAREHOUSE_CODES,
         FIELD_UPLOAD,
     ),
-    "regulatory": (*READ_ONLY_CODES, PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ),
+    "regulatory": (
+        *READ_ONLY_CODES,
+        PERMIT_MANAGE,
+        PERMIT_SUSPEND,
+        QUADRANT_LOOKUP,  # the permit dialog picks quadrants (codes and outlines only)
+        RELEASE_READ,
+        *PRIVACY_REGULATORY_CODES,
+    ),
     "government": ("portal.read",),
+}
+# Codes a past default granted too broadly, withdrawn by the seed. Only where the seed itself
+# granted them (still recorded in `seeded_permission_codes`): a code an admin granted by hand
+# after the withdrawal is never touched again.
+WITHDRAWN_DEFAULT_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
+    "entomologist": (QUADRANT_READ, USER_OPERATIONAL_READ),
+    "regulatory": (QUADRANT_READ,),
 }
 
 
@@ -257,6 +307,7 @@ class PermissionSeedPlan:
 
     grants: Mapping[str, tuple[str, ...]]
     skipped: tuple[str, ...]
+    withdrawals: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -281,29 +332,46 @@ def _new_codes(profile: Profile) -> tuple[str, ...]:
     return tuple(code for code in DEFAULT_PROFILE_PERMISSIONS[profile.slug] if code not in seeded)
 
 
+def _withdrawn_codes(profile: Profile) -> tuple[str, ...]:
+    """Withdrawn defaults the seed granted to this profile and that are no longer defaults."""
+    seeded = set(profile.seeded_permission_codes)
+    current = set(DEFAULT_PROFILE_PERMISSIONS[profile.slug])
+    return tuple(
+        code
+        for code in WITHDRAWN_DEFAULT_PERMISSIONS.get(profile.slug, ())
+        if code in seeded and code not in current
+    )
+
+
 def plan_default_permission_codes(organization: Organization) -> PermissionSeedPlan:
-    """Read-only: the codes `seed_default_permission_codes` would add."""
+    """Read-only: the codes `seed_default_permission_codes` would add and withdraw."""
     grants: dict[str, tuple[str, ...]] = {}
+    withdrawals: dict[str, tuple[str, ...]] = {}
     skipped = []
     for profile in _seedable_profiles(organization):
         if not profile.created_by_seed:
             skipped.append(profile.slug)
-        elif codes := _new_codes(profile):
+            continue
+        if codes := _new_codes(profile):
             grants[profile.slug] = codes
-    return PermissionSeedPlan(grants=grants, skipped=tuple(skipped))
+        if withdrawn := _withdrawn_codes(profile):
+            withdrawals[profile.slug] = withdrawn
+    return PermissionSeedPlan(grants=grants, skipped=tuple(skipped), withdrawals=withdrawals)
 
 
 def seed_default_permission_codes(organization: Organization) -> PermissionSeedPlan:
     """Add default permission codes to the profiles the seed created (writes Profile).
 
     Each code is granted once and recorded in `seeded_permission_codes`, so running it again
-    never re-grants a code an admin revoked, and it never removes a code. Returns what it did.
+    never re-grants a code an admin revoked. It removes only the `WITHDRAWN_DEFAULT_PERMISSIONS`
+    the seed itself granted. Returns what it did.
 
     Every profile is read with `select_for_update()` and the codes to add are computed from that
     locked row, never from an earlier read: a concurrent run or an admin edit that committed in
     between is seen, so a revoked code is not granted again.
     """
     grants: dict[str, tuple[str, ...]] = {}
+    withdrawals: dict[str, tuple[str, ...]] = {}
     skipped = []
     with transaction.atomic():
         Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
@@ -315,23 +383,31 @@ def seed_default_permission_codes(organization: Organization) -> PermissionSeedP
         for profile in locked:
             if not profile.created_by_seed:
                 skipped.append(profile.slug)
-            elif codes := _new_codes(profile):
-                from organizations.services import (
-                    _append_revision,
-                    _ensure_original_revision,
-                    _profile_snapshot,
-                )
+                continue
+            codes, withdrawn = _new_codes(profile), _withdrawn_codes(profile)
+            if not codes and not withdrawn:
+                continue
+            from organizations.services import (
+                _append_revision,
+                _ensure_original_revision,
+                _profile_snapshot,
+            )
 
-                _ensure_original_revision(profile, "role", _profile_snapshot(profile))
-                profile.permission_codes = sorted({*profile.permission_codes, *codes})
-                profile.seeded_permission_codes = sorted({*profile.seeded_permission_codes, *codes})
-                profile.revision += 1
-                profile.save(
-                    update_fields=["permission_codes", "seeded_permission_codes", "revision"]
-                )
-                _append_revision(profile, "role", _profile_snapshot(profile), None)
+            _ensure_original_revision(profile, "role", _profile_snapshot(profile))
+            profile.permission_codes = sorted(
+                {*profile.permission_codes, *codes}.difference(withdrawn)
+            )
+            profile.seeded_permission_codes = sorted(
+                {*profile.seeded_permission_codes, *codes}.difference(withdrawn)
+            )
+            profile.revision += 1
+            profile.save(update_fields=["permission_codes", "seeded_permission_codes", "revision"])
+            _append_revision(profile, "role", _profile_snapshot(profile), None)
+            if codes:
                 grants[profile.slug] = codes
-    return PermissionSeedPlan(grants=grants, skipped=tuple(skipped))
+            if withdrawn:
+                withdrawals[profile.slug] = withdrawn
+    return PermissionSeedPlan(grants=grants, skipped=tuple(skipped), withdrawals=withdrawals)
 
 
 def plan_organization_defaults(organization: Organization) -> DefaultsPlan:

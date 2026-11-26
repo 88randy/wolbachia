@@ -7,7 +7,6 @@ export const sync = {
   "sync.result.capturedAfterQuadrantClose":
     "La captura se hizo después del cierre del cuadrante. No autoriza trabajo nuevo ahí. Contacta a tu supervisor.",
   // Result of sending a record to the server (phone inbox)
-  "sync.inbox.acceptedTitle": "Enviado",
   "sync.inbox.acceptedHint": "El servidor ya recibió este registro. No tienes que hacer nada más.",
   "sync.inbox.rejectedTitle": "No aceptado",
   "sync.inbox.rejectedHint":
@@ -42,6 +41,8 @@ export const sync = {
     "Tu sesión ya había terminado cuando se envió este registro, así que un supervisor lo revisará. Inicia sesión de nuevo si necesitas seguir trabajando.",
   "sync.result.shiftAlreadyOpen":
     "Ya tienes una jornada abierta, así que no se inició otra. Continúa con la jornada abierta o ciérrala primero.",
+  "sync.result.centerInactive":
+    "El centro de esta moto ya está cerrado, así que no se inició la jornada. Avisa a tu supervisor.",
   "sync.result.motorcycleInUse":
     "Esta moto ya está en una jornada abierta. Elige otra o avisa a tu supervisor.",
   "sync.result.capturedAfterShiftClose":
@@ -56,6 +57,8 @@ export const sync = {
     "Esta jornada no está abierta en el servidor. Avisa a tu supervisor si aún necesitas trabajar.",
   "sync.result.shiftEventNotVoidable":
     "Una jornada no se puede anular desde el teléfono. Pide a tu supervisor que la corrija.",
+  "sync.result.trackSegmentNotVoidable":
+    "El recorrido registrado no se puede anular desde el teléfono.",
   "sync.result.odometerDecreased":
     "El kilometraje es menor que el anterior, así que un supervisor lo revisará. No tienes que hacer nada mientras tanto.",
   "sync.result.severeCheck":

@@ -13,7 +13,9 @@ test("settings exposes permitted cards and navigation retains the shell with cur
     [`GET ${ITEMS_PATH}`]: () => pageOf(catalogRows()),
   });
   await renderApp({ path: "/settings", fetch: api.fetch });
-  const header = screen.getByRole("banner");
+  const shellBanner = () =>
+    screen.getAllByRole("banner").find((candidate) => !candidate.closest("main"));
+  const header = shellBanner();
   const main = within(screen.getByRole("main"));
   expect(main.getAllByRole("link").map((link) => link.textContent)).toEqual([
     "CatálogosOrganiza las opciones que usa el equipo en campo.",
@@ -24,6 +26,6 @@ test("settings exposes permitted cards and navigation retains the shell with cur
   expect(await screen.findByRole("table", { name: "Catálogos" })).toBeDefined();
   const trail = screen.getByRole("navigation", { name: "Ruta de navegación" });
   expect(within(trail).getByRole("link", { name: "Configuración" })).toBeDefined();
-  expect(trail.querySelector('[aria-current="page"]')?.textContent).toBe(CATALOG.slug);
-  expect(screen.getByRole("banner")).toBe(header);
+  expect(trail.querySelector('[aria-current="page"]')?.textContent).toBe("Intervenciones");
+  expect(shellBanner()).toBe(header);
 });

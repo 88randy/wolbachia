@@ -37,6 +37,8 @@ export interface Assignment {
   readonly epiWeek: string;
   readonly organization?: Pick<Schemas["MeOrganization"], "timezone" | "epi_week">;
   readonly points: readonly Point[];
+  /** Points where a new trap goes today; when present, the placing picker lists only these. */
+  readonly placePointIds?: readonly string[];
   readonly ovitraps: readonly { id: string; point: Point; isRetired?: boolean }[];
   readonly bags: readonly { id: string; code: string }[];
   readonly reuse: readonly Reuse[];
@@ -57,6 +59,10 @@ export interface Draft {
   readonly assignment: Assignment | null;
   readonly gps: FieldEventEnvelope["gps"];
   readonly manualCapture: boolean;
+  /** Placing: the physical label was scanned, so its UUID is the identity of this ovitrap. */
+  readonly labelScanned?: boolean;
+  /** The courier chose to finish this old draft: it keeps its original time and shift. */
+  readonly isLate?: boolean;
   readonly step: Step;
   readonly finding: string;
   readonly paddlePresent: boolean | null;

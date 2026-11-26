@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { BAG, candidate, count, openCount, outcome, pageOf } from "./count-test-helpers";
@@ -7,13 +7,37 @@ beforeEach(() => {
   window.sessionStorage.clear();
 });
 
+test("opens photo counting on the first pointer click without validating an empty numeric count", async () => {
+  const { app } = await openCount();
+  const input = await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" });
+  await waitFor(() => {
+    expect(document.activeElement).toBe(input);
+  });
+  const photo = screen.getByRole("button", { name: "Contar en foto" });
+  const user = userEvent.setup();
+  await user.tab();
+  expect(document.activeElement).toBe(photo);
+  expect(screen.queryByText("Escribe un entero de cero o más, sin decimales.")).toBeNull();
+  await user.tab({ shift: true });
+  await user.pointer({ target: photo, keys: "[MouseLeft>]" });
+  expect(screen.queryByText("Escribe un entero de cero o más, sin decimales.")).toBeNull();
+  await user.pointer({ target: photo, keys: "[/MouseLeft]" });
+  await waitFor(() => {
+    expect(app.router.state.location.pathname).toBe("/lab/egg-counts/B-031/annotate");
+  });
+});
+
 test("identifies the selected bag in global history and its correction dialog", async () => {
   const otherBag = "00000000-0000-4000-8000-000000000033";
+  const otherCode = "B-033";
   const otherCount = "00000000-0000-4000-8000-000000000034";
   await openCount({
     path: "/lab/count-history",
     routes: {
-      "GET /api/v1/egg-counts/": pageOf([count(), count({ id: otherCount, bag_id: otherBag })]),
+      "GET /api/v1/egg-counts/": pageOf([
+        count(),
+        count({ id: otherCount, bag_id: otherBag, bag_code: otherCode }),
+      ]),
       [`GET /api/v1/egg-counts/${otherCount}/void-context/`]: Response.json({
         id: otherCount,
         kind: "count",
@@ -24,10 +48,11 @@ test("identifies the selected bag in global history and its correction dialog", 
       }),
     },
   });
-  const row = await screen.findByRole("row", { name: new RegExp(otherBag) });
+  const row = await screen.findByRole("row", { name: new RegExp(otherCode) });
   await userEvent.click(within(row).getByRole("button", { name: "Corregir conteo" }));
   const dialog = await screen.findByRole("dialog", { name: "Corregir conteo" });
-  expect(within(dialog).getByText(new RegExp(otherBag))).toBeDefined();
+  // The dialog names the bag by its code, never by its id.
+  expect(within(dialog).getByText(new RegExp(otherCode))).toBeDefined();
 });
 
 test("announces an uncertain save while preserving focus and the numeric draft", async () => {
@@ -38,7 +63,7 @@ test("announces an uncertain save while preserving focus and the numeric draft",
       },
     },
   });
-  const input = await screen.findByRole("textbox", { name: "Huevos de laboratorio" });
+  const input = await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" });
   await userEvent.type(input, "12{Enter}");
   const notice = await screen.findByText(/No se confirmó el guardado/);
   expect(notice.closest('[role="status"]')).not.toBeNull();
@@ -54,16 +79,16 @@ test("announces each saved bag during consecutive keyboard captures", async () =
     },
   });
   await userEvent.type(
-    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
     "12{Enter}",
   );
   let saved = await screen.findByText("Conteo guardado.");
   expect(saved.closest('[role="status"]')?.textContent).toContain("B-031");
   await userEvent.type(
-    await screen.findByRole("textbox", { name: "Huevos de laboratorio" }),
+    await screen.findByRole("textbox", { name: "¿Cuántos huevos contaste?" }),
     "13{Enter}",
   );
-  await screen.findByText("No hay bolsas recibidas pendientes de conteo.");
+  await screen.findByText(/No hay bolsas por contar/);
   saved = screen.getByText("Conteo guardado.");
   expect(saved.closest('[role="status"]')?.textContent).toContain("B-032");
 });

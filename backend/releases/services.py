@@ -112,7 +112,11 @@ def _official_document(actor: UploadActor, values: dict[str, Any]) -> UploadVeri
         source__upload=upload,
         source__organization=actor.organization,
     ).first()
-    if verification is None or AttachmentLink.objects.filter(upload=upload).exists():
+    if (
+        upload.purpose
+        or verification is None
+        or AttachmentLink.objects.filter(upload=upload).exists()
+    ):
         raise ReleaseConflictError("permit_document_not_ready")
     if verification.content_type not in DOCUMENT_CONTENT_TYPES:
         raise FieldValidationError("official_document_id", "permit.document_type_invalid")

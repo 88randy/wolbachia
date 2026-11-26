@@ -5,7 +5,6 @@ export const CONDITION_TABLE: TableQueryConfig = {
   defaultOrdering: "-device_time",
   sortableIds: ["device_time"],
   supportsVoided: false,
-  sortOptions: [{ value: "device_time", labelKey: "conditions.field.deviceTime" }],
   filters: [
     { key: "local_date", labelKey: "conditions.field.localDate", kind: "text", maxLength: 10 },
     {

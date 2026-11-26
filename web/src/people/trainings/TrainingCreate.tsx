@@ -10,6 +10,7 @@ export function TrainingCreate({ scope }: { scope: TrainingScope }) {
       title="trainings.course.create"
       description="trainings.course.createHint"
       fields={IDENTITY_FIELDS}
+      triggerVariant="primary"
       execute={async (draft, signal) =>
         unwrap(
           await scope.client.POST("/api/v1/trainings/", {

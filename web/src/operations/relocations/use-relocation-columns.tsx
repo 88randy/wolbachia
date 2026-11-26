@@ -1,5 +1,6 @@
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useTranslation } from "react-i18next";
+import { nameOrDash } from "../../lookups/use-reference-names";
 import { RelocationStatus } from "./RelocationStatus";
 import type { DataTableColumn } from "../../data-table/table-types";
 import type { Relocation } from "./relocations-query";
@@ -19,7 +20,11 @@ export function useRelocationColumns(): DataTableColumn<Relocation>[] {
       headerKey: "relocations.workspace.reason",
       cell: (row) => relocationReasonLabel(row.reason_label, i18n.language) || row.reason_code,
     },
-    { id: "author", headerKey: "relocations.workspace.author", cell: (row) => row.created_by },
+    {
+      id: "author",
+      headerKey: "relocations.workspace.author",
+      cell: (row) => nameOrDash(row.created_by_name),
+    },
     {
       id: "created_at",
       headerKey: "relocations.workspace.createdAt",

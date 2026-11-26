@@ -4,6 +4,13 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+W35 manual egg annotations add an optional photo/mark payload to the existing
+first-count and count-replacement commands, a discriminated box/point mark union,
+authorized count-annotation and paginated dataset reads, and an annotation-only
+WebP upload purpose with verified image dimensions. Numeric entry and independent
+recount commands retain their contracts. See
+[the annotation contract](../../docs/api-conventions.md#manual-egg-annotations-w35).
+
 #139 adds the read-only permits2 capture facts and optional nullable root
 `sample_capture` snapshot on field bootstrap/changes. The latter exposes scoped
 canonical sources, verified method pins and own reception receipts without granting

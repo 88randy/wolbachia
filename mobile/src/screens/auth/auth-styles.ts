@@ -16,14 +16,6 @@ export const createAuthStyles = (theme: Theme) =>
     },
     ...createAuthFieldStyles(theme),
     field: { gap: spacing[1] },
-    logo: {
-      alignSelf: "flex-start",
-      borderWidth: 2,
-      borderStyle: "dashed",
-      borderColor: theme.color.border.strong,
-      borderRadius: radius.md,
-      padding: spacing[2],
-    },
     spacer: { flex: 1 },
     centered: { textAlign: "center" },
     password: { gap: spacing[1] },
@@ -40,6 +32,8 @@ function createAuthFieldStyles(theme: Theme) {
       backgroundColor: theme.color.surface,
     },
     passwordInput: { flex: 1, minWidth: 0, borderWidth: 0 },
+    passwordInputBox: { flex: 1, minWidth: 0 },
+    passwordToggle: { flexShrink: 0, paddingRight: spacing[1] },
     errorText: { color: theme.color.status.critical.fg },
     invalidField: { borderColor: theme.color.status.critical.fg },
   });

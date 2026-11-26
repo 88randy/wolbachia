@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 import type { SessionIdentity } from "../session/org-scoped-query";
 import { useCan } from "../session/use-can";
 import { isSignedOutSession } from "../session/session-revision";
-import { RULE_PARAMETER_READ } from "./permissions";
+import { RULE_VERSION_READ } from "./permissions";
 import type { RuleParameter } from "./rules-query";
 interface ParameterResult {
   data: RuleParameter | undefined;
@@ -47,7 +47,7 @@ export function useRetainedParameter(
   parameterKey: string,
   result: ParameterResult,
 ) {
-  const canRead = useCan()(RULE_PARAMETER_READ) && !isSignedOutSession();
+  const canRead = useCan()(RULE_VERSION_READ) && !isSignedOutSession();
   const scope = `${identity.userId}|${identity.organizationSlug}|${parameterKey}`;
   const memory = useRef<ParameterSnapshot | undefined>(undefined);
   const previous = memory.current?.scope === scope ? memory.current : undefined;

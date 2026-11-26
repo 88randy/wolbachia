@@ -1,40 +1,36 @@
+import { RotateCw } from "lucide-react-native";
 import { View } from "react-native";
-import { AppFlatList } from "../../ui/AppFlatList.tsx";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { spacing } from "@wolbachia/tokens";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { ScreenHeader } from "../../ui/ScreenHeader.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { TrainingRow } from "./TrainingRow.tsx";
+import { AppFlatList } from "../../ui/AppFlatList.tsx";
+import { AppHeader } from "../../ui/AppHeader.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { TrainingHeader } from "./TrainingHeader.tsx";
+import { TrainingRow } from "./TrainingRow.tsx";
 import { trainingRows } from "./presentation.ts";
 import { useTraining } from "./use-training.ts";
-import { createTrainingStyles } from "./styles.ts";
 
 /** P30 reads locally first. Only the explicit refresh action uses the authenticated API. */
 export function P30Screen() {
-  const model = useTraining(),
-    t = useT(),
-    styles = useStyles(createTrainingStyles);
-  const insets = useSafeAreaInsets();
+  const model = useTraining();
+  const t = useT();
   return (
-    <View style={styles.root}>
-      <ScreenHeader largeTargets title={t("trainings.mobile.title")} />
+    <View className="flex-1 bg-bg">
+      <AppHeader title={t("trainings.mobile.title")} />
       <AppFlatList
         data={trainingRows(model.source)}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.content}
+        className="flex-1"
+        contentContainerClassName="gap-3 p-4 pb-8"
         ListHeaderComponent={<TrainingHeader model={model} />}
         renderItem={({ item }) => (
           <TrainingRow item={item} now={model.now} timeZone={model.timeZone} />
         )}
       />
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing[2] }]}>
-        <Button
-          variant="outline"
+      <View className="border-t border-line bg-surface p-4">
+        <SecondaryButton
+          icon={RotateCw}
           label={t("trainings.mobile.refresh")}
-          disabled={model.isRefreshing}
+          isLoading={model.isRefreshing}
           onPress={() => {
             void model.refresh();
           }}

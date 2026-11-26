@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Now
 
 from core.models import ImmutableMixin, OrgScopedModel
 from organizations.validators import (
@@ -124,13 +125,27 @@ class Center(OrgScopedModel):
     code = models.CharField(max_length=50)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    # Database defaults keep inserts from code that predates these columns working.
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    deactivated_reason = models.CharField(max_length=500, blank=True, db_default="")
 
     class Meta:
         ordering = ["code", "id"]
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="organizations_center_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="center_unique_code_per_organization"
-            )
+            ),
         ]
 
     def __str__(self) -> str:
@@ -153,5 +168,24 @@ class ConfigurationRevision(ImmutableMixin, OrgScopedModel):
             models.UniqueConstraint(
                 fields=["organization", "kind", "target_id", "revision"],
                 name="configuration_revision_unique",
+            )
+        ]
+
+
+class CodeCounter(OrgScopedModel):
+    """The last number handed out for one kind of short human code (LIB-0042) in an organization.
+
+    A row is locked with FOR UPDATE NOWAIT while a code is allocated (see
+    `organizations.codes.allocate_code`), so two writers never get the same number. It is the one
+    mutable table next to the insert-only records: the counter only ever grows.
+    """
+
+    kind = models.CharField(max_length=30)
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "kind"], name="organizations_codecounter_kind"
             )
         ]

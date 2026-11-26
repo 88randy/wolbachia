@@ -2,7 +2,7 @@ import * as Primitive from "@radix-ui/react-dialog";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { ConfirmDialogContent } from "./ConfirmDialogContent";
-import styles from "./ui.module.css";
+import { OVERLAY_CLASS } from "./overlay-classes";
 interface ConfirmDialogProps {
   trigger: ReactNode;
   title: string;
@@ -27,7 +27,7 @@ export function ConfirmDialog({
     <Primitive.Root open={isOpen} onOpenChange={setIsOpen}>
       <Primitive.Trigger asChild>{trigger}</Primitive.Trigger>
       <Primitive.Portal>
-        <Primitive.Overlay className={styles.overlay} />
+        <Primitive.Overlay className={OVERLAY_CLASS} />
         <ConfirmDialogContent
           title={title}
           consequence={consequence}

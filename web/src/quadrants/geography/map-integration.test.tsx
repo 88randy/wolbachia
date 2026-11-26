@@ -43,7 +43,12 @@ vi.mock("react-map-gl/maplibre", () => ({
   },
   Source: () => null,
   Layer: () => null,
+  Marker: () => null,
+  useMap: () => ({ current: undefined }),
 }));
+
+// The center legend reads the centers through the API; the adapter contract does not need it.
+vi.mock("./CenterLegend", () => ({ CenterLegend: () => null }));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -91,7 +96,8 @@ test("configured attribution remains text beside the linked copyright attributio
       <GeographyMap quadrants={[]} />
     </I18nextProvider>,
   );
-  expect(screen.getByText(attribution)).toBeDefined();
+  // The configured text sits after the linked credit in the same line, as plain text.
+  expect(screen.getByText((content) => content.includes(attribution))).toBeDefined();
   expect(container.querySelector("img")).toBeNull();
   expect(screen.getByRole("link").getAttribute("href")).toBe(
     "https://www.openstreetmap.org/copyright",
@@ -103,7 +109,6 @@ test("style failure preserves the coordinate drawing controls and their current 
   vi.stubGlobal("WebGLRenderingContext", vi.fn());
   const onText = vi.fn();
   await renderMap(<MapPanel quadrants={[]} text={"0,0\n2,0\n0,2"} onText={onText} />);
-  fireEvent.click(screen.getByRole("button", { name: messages.en["geography.map.open"] }));
   fireEvent.click(await screen.findByRole("button", { name: "Style failure" }));
   expect(screen.getByRole("status").textContent).toBe(messages.en["geography.map.fallback"]);
   fireEvent.click(screen.getByRole("button", { name: messages.en["geography.map.closeRing"] }));

@@ -1,43 +1,54 @@
-import { StyleSheet, View } from "react-native";
-import { spacing } from "@wolbachia/tokens";
+import { View } from "react-native";
 
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Notice } from "../../ui/Notice.tsx";
-import type { IconName } from "../../ui/icon-paths.ts";
-import { causeKey, levelKey, nextKey } from "./copy.ts";
-import type { BlockingLevel, GlobalState } from "./global-state.ts";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { causeKey, nextKey } from "./copy.ts";
+import { fixActionFor } from "./fix-action.ts";
+import type { GlobalState } from "./global-state.ts";
+import { useSafety } from "./SafetyProvider.tsx";
 
 const MAX_SHOWN = 2;
-const TONES = { blocking: "critical", warning: "warning", info: "info" } as const;
-const ICONS: Readonly<Record<BlockingLevel, IconName>> = {
-  blocking: "ban",
-  warning: "alert",
-  info: "clock",
-};
-const styles = StyleSheet.create({ list: { gap: spacing[1], padding: spacing[1] } });
+const TONES = { blocking: "danger", warning: "warning", info: "info" } as const;
 
 /**
- * Shows the highest-priority global states. Each one states its cause, its level (as text, never
- * color alone) and the next action. Extra states are counted, not hidden silently.
+ * Shows the highest-priority global states, one compact banner each: the cause in plain words
+ * and, when the phone can fix it, a short button on the right. Extra states are counted.
  */
-export function GlobalStateList({ states }: { readonly states: readonly GlobalState[] }) {
+export function GlobalStateList({
+  states,
+  isCalm = false,
+}: {
+  readonly states: readonly GlobalState[];
+  /** Login/unlock: a calm informational note (owner, 2026-11-10). */
+  readonly isCalm?: boolean;
+}) {
   const t = useT();
+  const { recheckLocation } = useSafety();
   if (states.length === 0) return null;
   return (
-    <View style={styles.list}>
-      {states.slice(0, MAX_SHOWN).map((state) => (
-        <Notice
-          key={state.cause}
-          tone={TONES[state.level]}
-          icon={ICONS[state.level]}
-          message={[
-            t(levelKey(state.level)) + ".",
-            t(causeKey(state.cause)),
-            t(nextKey(state.nextAction)),
-          ].join(" ")}
-        />
-      ))}
+    <View className="gap-2 p-2">
+      {states.slice(0, MAX_SHOWN).map((state) => {
+        const fix = fixActionFor(state.cause);
+        const cause = t(causeKey(state.cause));
+        return (
+          <InfoNotice
+            key={state.cause}
+            tone={isCalm ? "info" : TONES[state.level]}
+            message={fix ? cause : `${cause} ${t(nextKey(state.nextAction))}`}
+            action={
+              fix
+                ? {
+                    label: t(fix.labelKey),
+                    onPress: () => {
+                      void fix.run(recheckLocation);
+                    },
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
       {states.length > MAX_SHOWN ? (
         <AppText variant="caption">
           {t("mobile.global.more", { count: states.length - MAX_SHOWN })}

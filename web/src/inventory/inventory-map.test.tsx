@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import type { Schemas } from "@wolbachia/api-client";
 import { openInventory } from "../test/inventory-api";
 import { inventoryLocation, inventoryPage } from "../test/inventory-fixtures";
+import "../test/slow-app-flows";
 vi.mock("./locations/LocationMapCanvas", () => ({
   LocationMapCanvas: ({ locations }: { locations: Schemas["Location"][] }) => (
     <output aria-label="Mapped locations">{locations.map((row) => row.code).join(",")}</output>

@@ -12,7 +12,6 @@ export function ReceptionSummary({ state }: { state: TableState }) {
         <ReceptionSummaryCount state={state} kind="received" />
         {can("reading.read") && <ReceptionSummaryCount state={state} kind="expected" />}
       </div>
-      <p>{t("labReception.summary.hint")}</p>
     </section>
   );
 }

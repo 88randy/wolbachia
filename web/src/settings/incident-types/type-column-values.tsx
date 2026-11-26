@@ -6,7 +6,7 @@ import type { IncidentType, UnconfiguredType } from "./incident-types-query";
 export function typeNameColumn(edit: (code: string) => void): DataTableColumn<IncidentType> {
   return {
     id: "code",
-    headerKey: "incidentTypes.field.code",
+    headerKey: "incidentTypes.column.type",
     cell: (item) => (
       <Button
         id={`type-edit-${item.code}`}
@@ -76,7 +76,7 @@ export function unconfiguredNameColumn(
 ): DataTableColumn<UnconfiguredType> {
   return {
     id: "code",
-    headerKey: "incidentTypes.field.code",
+    headerKey: "incidentTypes.column.type",
     cell: (item) => (
       <Button
         id={`type-configure-${item.code}`}

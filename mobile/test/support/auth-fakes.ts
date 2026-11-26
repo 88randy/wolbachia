@@ -65,6 +65,8 @@ export function loginResponse(): Schemas["MobileLoginResponse"] {
       scope: { centers: { mode: "none", ids: [] }, quadrants: { mode: "none", ids: [] } },
       organizations: [],
       limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
+      is_platform_admin: false,
+      must_change_password: false,
     },
   };
 }

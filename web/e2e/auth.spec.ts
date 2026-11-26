@@ -38,7 +38,7 @@ test.describe("sign-in", () => {
     await signIn(page);
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Hola, Ana Pérez" })).toBeVisible();
   });
 
   test("wrong credentials show one generic message and keep what was typed", async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe("sign-in", () => {
     await page.keyboard.type(E2E_PASSWORD);
     await page.keyboard.press("Enter");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Inicio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Hola, Ana Pérez" })).toBeVisible();
   });
 
   test("the show-password button toggles the field by keyboard", async ({ page }) => {

@@ -58,7 +58,7 @@ transaction boundaries.
 | `services.py` | `create_catalog_item`, `update_catalog_item`, `deactivate_catalog_item`, `activate_catalog_item` (lock the row; `FieldValidationError` for a taken code) |
 | `selectors.py` | `list_catalogs`, `build_catalog_snapshot` |
 | `permissions.py` | Permission codes of this app |
-| `seeds.py` | `seed_default_catalogs`: the ten catalogs, default void reasons and the "Other" item |
+| `seeds.py` | `seed_default_catalogs`: the default catalogs, void and ovitrap lifecycle reasons (`OPEN_CATALOG_ITEMS`) and the "Other" item |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix (no extra dependency) |
 
 ## Snapshot

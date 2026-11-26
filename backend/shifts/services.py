@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, cast
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 
 from accounts.models import User
 from catalogs.models import CatalogItem
@@ -31,8 +31,10 @@ from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.permissions import FIELD_EVENT_SYNC
 from field_sync.registry import EventContext
 from field_sync.selectors import captured_scope, membership_snapshots
+from organizations.codes import SHIFT_CODE, allocate_code
 from organizations.models import Organization
 from shifts.codes import (
+    CENTER_INACTIVE,
     MOTORCYCLE_BLOCKED,
     MOTORCYCLE_CHECK_CATALOG_SLUG,
     MOTORCYCLE_IN_USE,
@@ -93,6 +95,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     _ensure_no_open_shift(ctx)
     _ensure_shift_id_is_free(shift_id)
     _ensure_motorcycle_is_usable(motorcycle, ctx.envelope.id)
+    _ensure_center_is_active(motorcycle)
     previous_km = highest_recorded_km(motorcycle)
     shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
@@ -237,6 +240,23 @@ def _ensure_shift_id_is_free(shift_id: uuid.UUID) -> None:
         raise EventRejected(INVALID_PAYLOAD, {"fields": {"shift_id": ["already_used"]}})
 
 
+# Center deactivation takes FOR NO KEY UPDATE on the center row (try-lock, 429). A shared lock
+# here serializes with it: once a shift holds it, deactivation cannot start; once deactivation
+# commits, this read sees the inactive row. Shared locks never block each other.
+CENTER_SHARE_LOCK_SQL = "SELECT is_active FROM organizations_center WHERE id = %s FOR SHARE"
+
+
+def _ensure_center_is_active(motorcycle: Motorcycle) -> None:
+    """A motorcycle of a deactivated center cannot start a shift (`center_inactive`)."""
+    if motorcycle.center_id is None:
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(CENTER_SHARE_LOCK_SQL, [motorcycle.center_id])
+        row = cursor.fetchone()
+    if row is None or not row[0]:
+        raise EventRejected(CENTER_INACTIVE)
+
+
 def _ensure_motorcycle_is_usable(
     motorcycle: Motorcycle, source_id: uuid.UUID | None = None
 ) -> None:
@@ -269,6 +289,7 @@ def _insert_shift(ctx: EventContext, new: NewShift) -> Shift:
         with transaction.atomic():
             return Shift.objects.create(
                 id=new.shift_id,
+                code=allocate_code(ctx.organization, SHIFT_CODE),
                 organization=ctx.organization,
                 created_by=ctx.user,
                 courier=ctx.user,

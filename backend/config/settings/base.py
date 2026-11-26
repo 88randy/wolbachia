@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "shifts",
     "geography.apps.GeographyConfig",
     "fleet",
+    "tracks",
     "ovitraps",
     "scheduling",
     "incidents.apps.IncidentsConfig",
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     "notifications",
     "privacy.apps.PrivacyConfig",
     "releases.apps.ReleasesConfig",
+    "platform_admin.apps.PlatformAdminConfig",
 ]
 
 MIDDLEWARE = [
@@ -67,6 +69,10 @@ ASGI_APPLICATION = "config.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 DATABASES = {"default": env.db("DATABASE_URL")}
+# Reuse database connections between requests (a new TLS connection to the managed database costs
+# tens of ms); 0 closes after each request. Health checks drop a connection the server closed.
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DATABASE_CONN_HEALTH_CHECKS", default=True)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = env("REDIS_URL")
@@ -106,6 +112,7 @@ THROTTLE_ANON_RATE = env("THROTTLE_ANON_RATE", default="60/min")
 THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
 THROTTLE_RFC_REVEAL_RATE = env("THROTTLE_RFC_REVEAL_RATE", default="30/hour")
 THROTTLE_RFC_WRITE_RATE = env("THROTTLE_RFC_WRITE_RATE", default="10/hour")
+THROTTLE_TEMPORARY_PASSWORD_RATE = env("THROTTLE_TEMPORARY_PASSWORD_RATE", default="20/hour")
 
 # Authentication (#4). Token lifetimes, grace windows and lockout thresholds are global (the
 # organization is unknown before login), env-configurable defaults [PENDING client].
@@ -132,6 +139,7 @@ AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", d
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
 AUTH_LOGIN_LOCKOUT_MINUTES = env.int("AUTH_LOGIN_LOCKOUT_MINUTES", default=15)
+PLATFORM_TEMPORARY_PASSWORD_HOURS = env.int("PLATFORM_TEMPORARY_PASSWORD_HOURS", default=72)
 AUTH_WEB_SESSION_AGE_SECONDS = env.int("AUTH_WEB_SESSION_AGE_SECONDS", default=43_200)  # 12 h
 SESSION_COOKIE_AGE = AUTH_WEB_SESSION_AGE_SECONDS
 PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3_600)
@@ -204,6 +212,10 @@ if not SYNC_REJECTION_ALERT_PERCENTS or any(
 # the web in `GET /me/` (`limits`). Owner delegated the value to the orchestrator (2026-11-04).
 VOID_REASON_MIN_LENGTH = env.int("VOID_REASON_MIN_LENGTH", default=10)
 
+ANNOTATION_EXPORT_RETENTION_DAYS = env.int("ANNOTATION_EXPORT_RETENTION_DAYS", default=7)
+if ANNOTATION_EXPORT_RETENTION_DAYS < 1:
+    raise ImproperlyConfigured("ANNOTATION_EXPORT_RETENTION_DAYS must be positive.")
+
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -222,6 +234,7 @@ REST_FRAMEWORK = {
         "user": THROTTLE_USER_RATE,
         "rfc_reveal": THROTTLE_RFC_REVEAL_RATE,
         "rfc_write": THROTTLE_RFC_WRITE_RATE,
+        "temporary_password": THROTTLE_TEMPORARY_PASSWORD_RATE,
         "login_user_ip": THROTTLE_LOGIN_USER_IP_RATE,
         "login_ip": THROTTLE_LOGIN_IP_RATE,
         "refresh": THROTTLE_REFRESH_RATE,
@@ -229,7 +242,13 @@ REST_FRAMEWORK = {
         "password_reset_confirm": THROTTLE_PASSWORD_RESET_CONFIRM_RATE,
         "field_sync": THROTTLE_FIELD_SYNC_RATE,
         "search": env("THROTTLE_SEARCH_RATE", default="60/min"),
+        "export": env("THROTTLE_EXPORT_RATE", default="10/hour"),
+        "export_download": env("THROTTLE_EXPORT_DOWNLOAD_RATE", default="30/hour"),
+        "portal": env("THROTTLE_PORTAL_RATE", default="30/min"),
         "risk_import_upload": env("THROTTLE_RISK_IMPORT_UPLOAD_RATE", default="10/hour"),
+        "platform": env("THROTTLE_PLATFORM_RATE", default="120/min"),
+        "platform_write": env("THROTTLE_PLATFORM_WRITE_RATE", default="60/hour"),
+        "password_change": env("THROTTLE_PASSWORD_CHANGE_RATE", default="10/hour"),
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.
@@ -251,8 +270,20 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "CredentialDeliveryEnum": ["password", "invite"],
         "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
         "WolbachiaResultEnum": ["positive", "negative"],
+        "PcrBatchStatusEnum": [
+            "preparing",
+            "ready_to_ship",
+            "shipped",
+            "received_by_lab",
+            "results_received",
+            "closed",
+            "voided",
+        ],
+        "PcrOutcomeEnum": ["positive", "negative", "invalid"],
+        "PcrTargetEnum": ["wolbachia", "dengue"],
         "CodeEnum": ["incident_conflict"],
         "NotificationKindEnum": [
             ("critical", "Critical"),
@@ -302,7 +333,7 @@ SPECTACULAR_SETTINGS = {
         "InventoryLocationKindEnum": ["biofactory", "warehouse", "center"],
         "InventoryLotStatusEnum": ["draft", "available", "blocked"],
         "IncidentStateEnum": ["open", "closed", "voided"],
-        "StateEnum": ["authorized", "received", "verified"],
+        "StateEnum": ["authorized", "received", "verified", "failed"],
         "CourierChangeActionEnum": ["upsert", "remove"],
         "ProjectionUpsertActionEnum": ["upsert"],
         "EventStatusEnum": "field_sync.models.EventStatus",
@@ -319,6 +350,7 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "core.schema.add_error_envelope",
+        "core.schema_hooks.optional_author_names",
     ],
 }
 
@@ -326,6 +358,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-annotation-exports": {
+        "task": "lab.tasks.recover_annotation_exports",
+        "schedule": 60.0,
+    },
+    "expire-annotation-exports": {
+        "task": "lab.tasks.expire_annotation_exports",
+        "schedule": 3600.0,
+    },
     "maintain-training-notices": {
         "task": "people.tasks.maintain_training_notices",
         "schedule": 300.0,

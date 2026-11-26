@@ -107,6 +107,34 @@ describe("attestation middleware", () => {
     ).resolves.toBeDefined();
   });
 
+  test("the public portal is never compared: anonymous, signed in or with another identity", async () => {
+    await expect(
+      get(
+        clientAnswering(() => attested(null)),
+        "/api/v1/portal/{org_slug}/",
+      ),
+    ).resolves.toBeDefined();
+    setExpectedAttestation("A");
+    await expect(
+      get(
+        clientAnswering(() => attested("B")),
+        "/api/v1/portal/{org_slug}/coverage/",
+      ),
+    ).resolves.toBeDefined();
+    expect(mismatch).not.toHaveBeenCalled();
+  });
+
+  test("portal settings are private: an answer for another identity is a mismatch", async () => {
+    setExpectedAttestation("A");
+    await expect(
+      get(
+        clientAnswering(() => attested("B")),
+        "/api/v1/portal-settings/",
+      ),
+    ).rejects.toBeInstanceOf(IdentityMismatchError);
+    expect(mismatch).toHaveBeenCalledOnce();
+  });
+
   test("error answers carry no data and are not compared", async () => {
     setExpectedAttestation("A");
 

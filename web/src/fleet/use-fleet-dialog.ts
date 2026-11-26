@@ -6,27 +6,30 @@ export function fleetClearFocusId(owner: string, motorcycle: string, fault: stri
 }
 interface ReturnFocus {
   openerId: string;
-  fallbackId: string;
   isCurrent: () => boolean;
+}
+/** The record heading takes focus when the opener is gone (the actions live in the menu). */
+function focusHeading() {
+  const heading = document.querySelector<HTMLElement>("h1");
+  heading?.setAttribute("tabindex", "-1");
+  heading?.focus();
 }
 function useReturnFallback(focus?: ReturnFocus) {
   const currentOwner = useRef(focus?.isCurrent);
   currentOwner.current = focus?.isCurrent;
   const openerId = focus?.openerId;
-  const fallbackId = focus?.fallbackId;
   useEffect(() => {
     const isCurrent = currentOwner.current;
     return () => {
       if (
         isCurrent?.() &&
-        fallbackId &&
         openerId &&
         !document.getElementById(openerId) &&
         document.activeElement === document.body
       )
-        document.getElementById(fallbackId)?.focus();
+        focusHeading();
     };
-  }, [fallbackId, openerId]);
+  }, [openerId]);
 }
 /** Native modality starts on Cancel; return follows the current logical action, not an old cell. */
 export function useFleetDialog(isBusy: boolean, onDismiss: () => void, focus?: ReturnFocus) {

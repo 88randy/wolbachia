@@ -1,42 +1,21 @@
-import { AppScrollView } from "../ui/AppScrollView.tsx";
-import { spacing } from "@wolbachia/tokens";
-import type { Theme } from "@wolbachia/tokens";
-import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
 import { useT } from "../i18n/I18nProvider.tsx";
-import { useStyles } from "../theme/ThemeProvider.tsx";
-import { ScreenHeader } from "../ui/ScreenHeader.tsx";
+import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
+import { AppHeader } from "../ui/AppHeader.tsx";
+import { ScreenScaffold } from "../ui/ScreenScaffold.tsx";
 import { DevToolsSection } from "./settings/DevToolsSection.tsx";
-import { ServerSection } from "./settings/ServerSection.tsx";
-import { SettingsPreferences } from "./settings/SettingsPreferences.tsx";
 import { PersonalScreensRow } from "./settings/PersonalScreensRow.tsx";
 import { SafetySection } from "./settings/SafetySection.tsx";
+import { SettingsPreferences } from "./settings/SettingsPreferences.tsx";
 
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    root: { flex: 1, backgroundColor: theme.color.background },
-    content: { padding: spacing[2], gap: spacing[2] },
-  });
-
-/** P31: durable preferences, own history/training and truthful recovery/support state. */
+/** P31: my screens, how the app looks and the state of what is still on the phone. */
 export function SettingsScreen() {
-  const styles = useStyles(createStyles);
   const t = useT();
-  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.root}>
-      <ScreenHeader largeTargets title={t("mobile.settings.title")} />
-      <AppScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[2] }]}
-      >
-        <PersonalScreensRow />
-        <SettingsPreferences />
-        <ServerSection />
-        <SafetySection />
-        {DEV_TOOLS_ENABLED ? <DevToolsSection /> : null}
-      </AppScrollView>
-    </View>
+    <ScreenScaffold header={<AppHeader title={t("mobile.settings.title")} />}>
+      <PersonalScreensRow />
+      <SettingsPreferences />
+      <SafetySection />
+      {DEV_TOOLS_ENABLED ? <DevToolsSection /> : null}
+    </ScreenScaffold>
   );
 }

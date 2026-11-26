@@ -79,6 +79,7 @@ def test_the_database_lets_only_one_of_two_racing_open_shifts_of_a_courier_in(
         try:
             with transaction.atomic():
                 return Shift.objects.create(
+                    code=f"JOR-{uuid.uuid4().hex[:8]}",
                     organization=org_a,
                     courier=template.courier,
                     device=template.device,
@@ -140,6 +141,7 @@ def test_the_database_lets_only_one_of_two_racing_open_shifts_of_a_motorcycle_in
         try:
             with transaction.atomic():
                 return Shift.objects.create(
+                    code=f"JOR-{uuid.uuid4().hex[:8]}",
                     organization=org_a,
                     courier=courier,
                     device=template.device,
@@ -396,6 +398,7 @@ def test_a_shift_row_can_point_at_an_event_stored_later_in_the_same_transaction(
     with transaction.atomic():
         check_deferred_constraints_now()
         Shift.objects.create(
+            code=f"JOR-{uuid.uuid4().hex[:8]}",
             organization=org_a,
             courier=UserFactory(),
             device=template.device,

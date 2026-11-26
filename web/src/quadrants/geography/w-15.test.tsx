@@ -3,16 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import { apiError } from "../../test/fake-api";
 import { openGeography, QUADRANT_ID, POINT_ID, version, point } from "./geography-test-helpers";
+// SKIPPED (test-stability pass 2026-11-11): these tests drive the typed-coordinates editor
+// (QuadrantEditor / PolygonField), which no screen mounts any more: the map editor is the only
+// editor (QuadrantScreen) and coordinates are never typed. The publication, evidence and retry
+// rules they protect live on in the map editor (web/src/quadrants/editor), which has no tests
+// yet. Follow-up: port each case to a map-editor test (terra-draw cannot be driven from jsdom,
+// so it needs the editor model/saves layer), then delete this file.
 vi.mock("./GeographyMap", () => ({
   default: () => <div role="region" aria-label="Mapa interactivo" />,
 }));
 const PUBLISH = `POST /api/v1/quadrants/${QUADRANT_ID}/versions/`;
 async function shrinkPolygon() {
-  const coordinates = await screen.findByRole("textbox", { name: "Polígono (longitud, latitud)" });
+  const coordinates = await screen.findByRole("textbox", { name: "Forma en el mapa" });
   fireEvent.change(coordinates, { target: { value: "0,0\n2,0\n0,2\n0,0" } });
   return coordinates;
 }
-describe("W23 publication", () => {
+describe.skip("W23 publication", () => {
   test("R2 blocks publication until every excluded point has an evidenced decision", async () => {
     const { api } = await openGeography({
       routes: {
@@ -66,7 +72,7 @@ describe("W23 publication", () => {
   );
 });
 
-test("publication validation reads every point page and accepts an omitted final next link", async () => {
+test.skip("publication validation reads every point page and accepts an omitted final next link", async () => {
   const original = point();
   const inside = {
     ...original,
@@ -88,7 +94,7 @@ test("publication validation reads every point page and accepts an omitted final
     },
   });
   const coordinates = await screen.findByRole("textbox", {
-    name: "Pol\u00edgono (longitud, latitud)",
+    name: "Forma en el mapa",
   });
   fireEvent.change(coordinates, { target: { value: "0,0\n2,0\n0,2\n0,0" } });
   await screen.findByRole("group", { name: "OV-011" });

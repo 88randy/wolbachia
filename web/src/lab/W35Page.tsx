@@ -1,26 +1,26 @@
+import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Link, useSearch } from "@tanstack/react-router";
+import { PageFrame } from "../components/templates/PageFrame";
+import { PageHeader } from "../components/templates/PageHeader";
 import { useDocumentTitle } from "../shell/use-document-title";
-import { useCan } from "../session/use-can";
-import { useLabScope } from "./use-lab-scope";
+import { CountStatusChips } from "./CountStatusChips";
 import { CountWorkspace } from "./CountWorkspace";
-import page from "../styles/page.module.css";
-/** W35: identity-scoped, server-confirmed egg counting. */
+import { useLabScope } from "./use-lab-scope";
+
+/** W35: keyboard- and scanner-first egg counting; identity-scoped and server-confirmed. */
 export function W35Page() {
   const { t } = useTranslation();
   const scope = useLabScope();
   const search = useSearch({ strict: false });
-  const canRead = useCan()("egg_count.read");
-  useDocumentTitle(t("lab.count.title"));
+  useDocumentTitle(t("lab.count.headerTitle"));
   return (
-    <section className={page.page}>
-      <h1 className={page.title}>{t("lab.count.title")}</h1>
-      {canRead && <Link to="/lab/count-history">{t("lab.history.title")}</Link>}
+    <PageFrame>
+      <PageHeader title={t("lab.count.headerTitle")} actions={<CountStatusChips scope={scope} />} />
       <CountWorkspace
         key={scope.key + JSON.stringify(search)}
         scope={scope}
         draftKey={"wolbachia:lab:" + scope.draftKey}
       />
-    </section>
+    </PageFrame>
   );
 }

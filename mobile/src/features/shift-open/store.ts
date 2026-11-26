@@ -56,6 +56,18 @@ export class ShiftOpenStore {
       },
     ]);
   }
+  /** A closed shift yields to a new opening; its events stay in the outbox. */
+  async replaceClosedDraft(draft: OpenShiftDraft, closedOpeningEventId: string): Promise<void> {
+    await this.#db.runAtomically([
+      {
+        sql: `UPDATE shift_open_state SET draft = ?, opening_event_id = NULL
+          WHERE slot = 1 AND opening_event_id = ? AND EXISTS
+          (SELECT 1 FROM outbox_event o JOIN outbox_event c ON c.type = 'shift.close' AND c.shift_id = o.shift_id
+            WHERE o.id = ?)`,
+        params: [JSON.stringify(draft), closedOpeningEventId, closedOpeningEventId],
+      },
+    ]);
+  }
   async saveDraft(draft: OpenShiftDraft): Promise<void> {
     await this.#db.runAtomically([
       {

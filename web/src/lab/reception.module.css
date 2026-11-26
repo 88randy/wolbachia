@@ -34,13 +34,21 @@
 }
 .scanForm {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 .scanForm > div {
-  flex: 1;
+  flex: 0 1 28rem;
   min-width: 0;
+}
+.scanForm > button {
+  flex: none;
+  white-space: nowrap;
+}
+.scanHint {
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
 }
 .scanIcon {
   width: var(--web-icon-lg);
@@ -56,7 +64,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  flex: 1;
+  flex: 0 1 14rem;
   min-width: 0;
 }
 .metric > a {
@@ -67,6 +75,9 @@
 .noPaddle summary {
   cursor: pointer;
   overflow-wrap: anywhere;
+  /* WCAG 2.5.8: the whole line is the target, never shorter than a small control. */
+  min-height: var(--web-control-sm);
+  padding-block: var(--space-1);
 }
 .page a,
 .page td {

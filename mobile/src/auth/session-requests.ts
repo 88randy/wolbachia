@@ -27,6 +27,14 @@ export class RemoteSessionEnded extends Error {}
 export function isSessionEnded(code: string): boolean {
   return ["session_revoked", "invalid_token", "device_revoked", "refresh_reuse"].includes(code);
 }
+/**
+ * An expired access token, or one the server already replaced, is not the end of the session:
+ * the refresh token decides. Only a refresh that fails ends it, so a courier never needs the
+ * password during a work day.
+ */
+function canRefreshAfter(code: string): boolean {
+  return code === "token_expired" || code === "invalid_token";
+}
 export function errorCode(answer: ApiAnswer): string {
   return isErrorEnvelope(answer.error) ? answer.error.code : "";
 }
@@ -97,7 +105,7 @@ export class SessionRequests {
     if (!this.#belongsTo(session)) return answer;
     if (
       answer.response.status === 401 &&
-      errorCode(answer) === "token_expired" &&
+      canRefreshAfter(errorCode(answer)) &&
       session.pair !== null
     ) {
       this.#requireOnline();

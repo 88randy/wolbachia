@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Paths } from "expo-file-system";
 
 import { useServices } from "../../app/services-context.ts";
@@ -8,9 +8,9 @@ import { currentLocation } from "../day/location.ts";
 import type { LocationState } from "../day/location.ts";
 import { maxGpsAccuracy } from "../day/location.ts";
 import { useDayLocation } from "../day/use-day-location.ts";
-import { INITIAL_SAFETY, observeSafety, readSafetyRules } from "./domain.ts";
+import { INITIAL_SAFETY, isSameSafety, observeSafety, readSafetyRules } from "./domain.ts";
 import type { SafetyRules, SafetySample, SafetyState } from "./domain.ts";
-import { deriveGlobalStates } from "./global-state.ts";
+import { CalmGps, deriveGlobalStates } from "./global-state.ts";
 import type { GlobalState, GpsLevel, StorageLevel } from "./global-state.ts";
 import { deriveStorageLevel } from "./storage-level.ts";
 
@@ -23,6 +23,18 @@ export interface M16Model {
   readonly rules: SafetyRules;
   readonly globals: readonly GlobalState[];
   readonly isSpeedLocked: boolean;
+  /** The one location stream of the app; capture steps read it instead of opening their own. */
+  readonly location: LocationState;
+  /** Reads the location setting again now (after a permission prompt or a trip to settings). */
+  readonly recheckLocation: () => void;
+}
+
+function useRecheck(): readonly [number, () => void] {
+  const [count, setCount] = useState(0);
+  const recheck = useCallback(() => {
+    setCount((value) => value + 1);
+  }, []);
+  return [count, recheck];
 }
 
 /** One local fix stream feeds the lock; it is independent from the upload ping cadence. */
@@ -32,9 +44,17 @@ export function useM16(): M16Model {
   const session = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   const rules = useSafetyRules(sync.lastSyncAt);
   const isShiftOpen = useShiftOpen(sync.lastSyncAt);
-  const location = useDayLocation(day.location, isShiftOpen);
+  const [recheck, recheckLocation] = useRecheck();
+  // No location on the PIN or login screen: nothing there needs it.
+  const location = useDayLocation(
+    day.location,
+    isShiftOpen && session.phase === "unlocked",
+    recheck,
+  );
   const safety = useSafetyState(location, rules);
   const storage = useStorageLevel();
+  const gps = useCalmGps(gpsLevel(location, safety));
+  const isOnline = useCalmOnline(sync.isOnline);
   const globals = useMemo(
     () =>
       deriveGlobalStates({
@@ -44,20 +64,82 @@ export function useM16(): M16Model {
         // [ASSUMPTION] Battery and update sources arrive with the native adapters of M-17.
         update: "none",
         hasClockSkew: session.hasClockSkew,
-        gps: gpsLevel(location, safety),
+        gps,
         isBatteryLow: false,
-        isOnline: sync.isOnline,
+        isOnline,
         isShiftOpen,
       }),
-    [safety, session.phase, session.hasClockSkew, storage, location, sync.isOnline, isShiftOpen],
+    [safety, session.phase, session.hasClockSkew, storage, gps, isOnline, isShiftOpen],
   );
-  return { safety, rules, globals, isSpeedLocked: safety.lockCause !== null };
+  return {
+    safety,
+    rules,
+    globals,
+    isSpeedLocked: safety.lockCause !== null,
+    location,
+    recheckLocation,
+  };
+}
+
+/** "Searching" and "approximate" only show, and clear, after holding a few seconds (CalmGps). */
+function useCalmGps(level: GpsLevel): GpsLevel {
+  const [shown, setShown] = useState<GpsLevel>("ok");
+  const [calm] = useState(
+    () =>
+      new CalmGps({
+        schedule: (run, ms) => {
+          const timer = setTimeout(run, ms);
+          return () => {
+            clearTimeout(timer);
+          };
+        },
+        publish: setShown,
+      }),
+  );
+  useEffect(() => {
+    calm.set(level);
+  }, [calm, level]);
+  useEffect(
+    () => () => {
+      calm.stop();
+    },
+    [calm],
+  );
+  return shown;
+}
+
+/**
+ * The connection reading flips at startup (unknown, then online) and on weak wifi. "No signal"
+ * only shows after a few seconds without it, so the lock and PIN screens do not jump.
+ */
+const OFFLINE_GRACE_MS = 3000;
+function useCalmOnline(isOnline: boolean): boolean {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    if (isOnline) {
+      setShown(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setShown(false);
+    }, OFFLINE_GRACE_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isOnline]);
+  return shown;
 }
 
 function gpsLevel(location: LocationState, safety: SafetyState): GpsLevel {
   if (location.kind === "denied") return "denied";
-  if (location.kind === "unavailable") return "off";
-  return safety.quality === "usable" ? "ok" : "unreliable";
+  if (location.kind === "off") return "off";
+  if (location.kind === "searching") return "searching";
+  if (location.kind === "noFix") return "noFix";
+  // Not needed now (locked, or no shift): no banner.
+  if (location.kind === "unavailable") return "ok";
+  // A fix exists. Unknown speed (a still phone) and an older fix only matter to the speed lock,
+  // not to the courier: only a fix too imprecise for the rule earns a banner.
+  return safety.quality === "poorAccuracy" ? "unreliable" : "ok";
 }
 
 function sampleOf(location: LocationState, nowMs: number): SafetySample | null {
@@ -76,9 +158,15 @@ function useSafetyState(location: LocationState, rules: SafetyRules): SafetyStat
   useEffect(() => {
     const step = () => {
       const nowMs = Date.now();
-      setState((previous) =>
-        observeSafety({ state: previous, sample: sampleOf(location, nowMs), nowMs, rules }),
-      );
+      setState((previous) => {
+        const next = observeSafety({
+          state: previous,
+          sample: sampleOf(location, nowMs),
+          nowMs,
+          rules,
+        });
+        return isSameSafety(previous, next) ? previous : next;
+      });
     };
     step();
     const timer = setInterval(step, TICK_MS);

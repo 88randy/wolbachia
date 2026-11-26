@@ -3,7 +3,6 @@ import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { DialogFooter } from "./DialogFooter";
 import { Button } from "./Button";
-import styles from "./ui.module.css";
 interface ConfirmActionsProps {
   cancelRef: RefObject<HTMLButtonElement | null>;
   actionLabel: string;
@@ -14,11 +13,11 @@ export function ConfirmActions({ cancelRef, actionLabel, onConfirm }: ConfirmAct
   return (
     <DialogFooter>
       <Primitive.Close asChild>
-        <button ref={cancelRef} className={styles.cancel}>
+        <Button ref={cancelRef} variant="tertiary">
           {t("common.actions.cancel")}
-        </button>
+        </Button>
       </Primitive.Close>
-      <Button className={styles.destructive} onClick={onConfirm}>
+      <Button variant="destructive" onClick={onConfirm}>
         {actionLabel}
       </Button>
     </DialogFooter>

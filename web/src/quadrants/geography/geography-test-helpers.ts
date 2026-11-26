@@ -26,11 +26,14 @@ export function version(revision = 1): Schemas["QuadrantVersion"] {
   return {
     id: `version-${String(revision)}`,
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     geometry: POLYGON,
     revision,
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
     point_resolutions: [],
   };
 }
@@ -60,6 +63,7 @@ export function point(): Schemas["SamplingPoint"] {
       effective_from: CREATED_AT,
       created_at: CREATED_AT,
       created_by: null,
+      created_by_name: null,
     },
   };
 }

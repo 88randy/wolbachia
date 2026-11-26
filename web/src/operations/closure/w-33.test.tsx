@@ -24,6 +24,7 @@ describe("W33 authoritative closure readiness", () => {
                 reason: "removal_unrecovered",
                 permission: "removal.resolve",
                 id: "unrecovered-physical-1",
+                code: "OVT-0123",
                 link: "",
               },
               {
@@ -32,7 +33,12 @@ describe("W33 authoritative closure readiness", () => {
                 id: "physical-2",
                 link: "",
               },
-              { reason: "incident_quadrant_closure", permission: "incident.close", link: "" },
+              {
+                reason: "incident_quadrant_closure",
+                permission: "incident.close",
+                code: "I-0236",
+                link: "/incidents/I-0236",
+              },
             ],
           }),
         ),
@@ -42,9 +48,20 @@ describe("W33 authoritative closure readiness", () => {
     expect(within(blockers).getByText("Ovitrampa no recuperada")).toBeDefined();
     expect(within(blockers).getByText("Retiro sin confirmar")).toBeDefined();
     expect(within(blockers).getByText("Incidente que bloquea el cierre")).toBeDefined();
-    expect(within(blockers).getByText(/removal.resolve/)).toBeDefined();
-    expect(within(blockers).getByText(/field_event.sync/)).toBeDefined();
-    expect(within(blockers).getByText(/incident.close/)).toBeDefined();
+    expect(within(blockers).getByText("Referencia: OVT-0123")).toBeDefined();
+    expect(within(blockers).queryByRole("link", { name: "Referencia: OVT-0123" })).toBeNull();
+    expect(
+      within(blockers).getByRole("link", { name: "Referencia: I-0236" }).getAttribute("href"),
+    ).toBe("/incidents/I-0236");
+    // Technical permission names are no longer printed: each blocker names who can resolve it.
+    expect(
+      within(blockers).getAllByText(
+        "Lo resuelve la persona de supervisión responsable de este pendiente.",
+      ),
+    ).toHaveLength(3);
+    expect(
+      within(blockers).queryByText(/removal.resolve|field_event.sync|incident.close/),
+    ).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Cerrar cuadrante" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(0);
@@ -113,7 +130,8 @@ describe("W33 authoritative closure readiness", () => {
     });
     await userEvent.click(current);
     await userEvent.click(screen.getByRole("button", { name: "Confirmar cierre" }));
-    await screen.findByText("Cierre registrado: closure-receipt-1");
+    // The receipt reference is no longer printed: the confirmation says the closure was recorded.
+    await screen.findByText("Cierre registrado.");
     expect(
       api.requests
         .filter(({ method, path }) => method === "POST" && path === CLOSE_PATH)
@@ -137,7 +155,8 @@ describe("W33 authoritative closure readiness", () => {
         ),
       },
     });
-    await screen.findByText("Referencia: PRIVATE-PHYSICAL-1");
+    // The blocker reference is no longer printed, so wait for the blocker itself.
+    await screen.findByText("Retiro sin confirmar");
     api.setRoute(
       "GET /api/v1/me/",
       Response.json({

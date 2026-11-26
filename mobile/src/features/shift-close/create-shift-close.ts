@@ -14,6 +14,7 @@ import type { Attachments } from "../../attachments/create-attachments.ts";
 import type { EvidencePort } from "../ovitrap-check/types.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import type { ShiftOpenService } from "../shift-open/service.ts";
+import type { TrackRecorder } from "../track/track-recorder.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly day: DayService;
@@ -25,6 +26,7 @@ interface Dependencies {
   readonly evidence: EvidencePort;
   readonly engine: SyncEngine;
   readonly shiftOpen: ShiftOpenService;
+  readonly track: Pick<TrackRecorder, "reconcile">;
 }
 function currentIdentity(deps: Dependencies) {
   return acceptedEvidenceOwner({
@@ -63,10 +65,14 @@ async function pendingPoints(day: DayService) {
     ...snapshot,
     location: { kind: "unavailable" },
     now: new Date(),
+    // Pending points follow server completion only; local work never changes them.
+    epiWeek: null,
   }).pendingTasks.map(({ task }) => ({ taskId: task.id, pointCode: task.point_code }));
 }
 function notifyLocalClose(deps: Dependencies): void {
   deps.day.stopLocation();
+  // Cuts the last segment and stops the background service; local, so it works offline.
+  void deps.track.reconcile();
   deps.shiftOpen.notifyLocalClose();
   void deps.engine.hint();
 }

@@ -85,7 +85,9 @@ test("a rejected release retains original evidence and never offers acceptance p
   );
   expect(screen.getByRole("button", { name: "Aceptar" }).hasAttribute("disabled")).toBe(true);
   await userEvent.click(screen.getByText("Captura, evidencia y procedencia originales"));
-  expect(screen.getByText(/P-160/)).toBeDefined();
+  // Raw payload values are no longer printed: the original facts are plain-language labels.
+  expect(screen.getByText("Captura manual")).toBeDefined();
+  expect(screen.queryByText(/P-160/)).toBeNull();
   expect(screen.getByText(/permit_expired/, { selector: "li" })).toBeDefined();
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
 });
@@ -102,7 +104,7 @@ test("409 retains reason, refreshes original and current evidence, and requires 
   await userEvent.type(input, "Review original evidence");
   await userEvent.click(screen.getByRole("button", { name: "Aceptar" }));
   await userEvent.click(screen.getAllByRole("button", { name: "Aceptar" }).at(-1) as HTMLElement);
-  await screen.findByText("review_revision_conflict");
+  await screen.findByText("Alguien más cambió esta revisión; actualiza antes de decidir");
   expect((input as HTMLInputElement).value).toBe("Review original evidence");
   const current = { ...initial, decision_state: { ...initial.decision_state, revision: 2 } };
   api.setRoute(DETAIL, Response.json(current));
@@ -120,6 +122,29 @@ test("409 retains reason, refreshes original and current evidence, and requires 
     reason: "Review original evidence",
     expected_revision: 2,
   });
+});
+
+test("a blocked accept shows the first blocked_by reason, not the generic review code", async () => {
+  const initial = review({
+    evaluation: { ...review().evaluation, can_accept: true, blockers: [] },
+  });
+  await open({
+    [DETAIL]: Response.json(initial),
+    [ACCEPT]: Response.json(
+      {
+        code: "review_blocked",
+        detail: "Fake review_blocked.",
+        blocked_by: [{ reason: "capture_context_changed", unblocked_by_role: "admin" }],
+      },
+      { status: 409 },
+    ),
+  });
+  await userEvent.type(await screen.findByLabelText("Motivo de la decisión"), "Placement verified");
+  await userEvent.click(screen.getByRole("button", { name: "Aceptar" }));
+  await userEvent.click(screen.getAllByRole("button", { name: "Aceptar" }).at(-1) as HTMLElement);
+  await screen.findByText(
+    "Cambiaron las reglas o el punto desde la captura; pide a un administrador que la revise.",
+  );
 });
 
 test("scope loss removes old results and prevents an inaccessible deep link from reading or deciding", async () => {
@@ -170,13 +195,13 @@ test("forbidden decisions are hidden and unknown or foreign reviews show the sam
 
 test("a definitive list denial hides previously accepted rows during refresh", async () => {
   const { api, app } = await open();
-  await screen.findByRole("link", { name: `Revisar evento ${ID}` });
+  await screen.findByRole("link", { name: "Requiere revisión" });
   api.setRoute(LIST, apiError(403, "permission_denied"));
   await act(async () => {
     await invalidateOrgScoped(app.queryClient, "reviews");
   });
   await screen.findByRole("alert");
-  expect(screen.queryByRole("link", { name: `Revisar evento ${ID}` })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Requiere revisión" })).toBeNull();
 });
 
 test.each([503, 403, 404])(
@@ -226,11 +251,16 @@ test.each([503, 403, 404])(
     await screen.findByRole("alert");
     if (status === 503) {
       expect(screen.getByText(receipt.reason)).toBeDefined();
-      await userEvent.click(screen.getByText("Recibo del efecto confirmado"));
-      expect(screen.getByText(/test-hash/)).toBeDefined();
+      // Who confirmed the effect is in plain view; the sealed hash waits behind the receipt.
+      expect(screen.getByText(/^Efecto confirmado por/)).toBeDefined();
+      expect(screen.queryByText("test-hash")).toBeNull();
+      await userEvent.click(screen.getByRole("button", { name: "Recibo del efecto confirmado" }));
+      expect(screen.getByText("test-hash")).toBeDefined();
+      expect(screen.getByRole("button", { name: "Copiar huella" })).toBeDefined();
     } else {
       expect(screen.queryByText(receipt.reason)).toBeNull();
-      expect(screen.queryByText("Recibo del efecto confirmado")).toBeNull();
+      expect(screen.queryByText(/^Efecto confirmado por/)).toBeNull();
+      expect(screen.queryByRole("button", { name: "Recibo del efecto confirmado" })).toBeNull();
       expect(screen.queryByLabelText("Motivo de la decisión")).toBeNull();
     }
     expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);

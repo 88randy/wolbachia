@@ -133,7 +133,7 @@ class InventoryVersionViewSet(
             latest_versions(self.queryset.model, self.parent_field), actor, permission
         ).select_related(self.parent_field.removesuffix("_id"))
         if self.queryset.model is LocationVersion:
-            return query.select_related("owner__user")
+            return query.select_related("owner__user", "location__quadrant")
         return query.select_related("protocol__incident_type")
 
     def get_object(self) -> Any:  # noqa: ANN401 -- DRF's parent method returns a heterogeneous model
@@ -173,7 +173,7 @@ class SupplyTypeViewSet(InventoryVersionViewSet):
         "protocol_incident_type_options": "supply_type.create",
     }
     code_lookup_field = "supply_type__code"
-    search_fields = ["supply_type__code", "label"]
+    search_fields = ["supply_type__code", "label", "gtin"]
     ordering_aliases = {"code": "supply_type__code"}
     inventory_facets = {
         "is_active": "is_active",

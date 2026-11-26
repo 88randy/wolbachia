@@ -16,6 +16,9 @@ import {
   evidenceFile,
   historyPage,
   settleFleet,
+  chooseMenuAction,
+  pickDay,
+  pickOption,
 } from "./fleet-test-helpers";
 import { observeFleetBody } from "../test/fleet-read-test-helpers";
 import { currentRevision } from "../session/session-revision";
@@ -56,8 +59,8 @@ describe("fleet session isolation", () => {
       document.cookie = "csrftoken=synthetic-csrf; path=/";
       await userEvent.click(await screen.findByRole("button", { name: "Registrar servicio" }));
       let dialog = within(screen.getByRole("dialog"));
-      await userEvent.selectOptions(dialog.getByRole("combobox"), "inspection");
-      await userEvent.type(dialog.getByLabelText("Fecha del servicio"), "2026-11-01");
+      await pickOption(dialog, "Tipo de servicio", "Inspección");
+      await pickDay(dialog, "Fecha del servicio", "2026-11-01");
       await userEvent.type(dialog.getByRole("spinbutton", { name: "Odómetro (km)" }), "12600");
       await userEvent.click(dialog.getByRole("textbox", { name: "Observaciones" }));
       await userEvent.paste("Private retained service attempt");
@@ -336,10 +339,13 @@ describe("fleet session isolation", () => {
         reads: tracedReads,
       } = await openFleet({
         routes: {
-          [GET]: () =>
-            ++reads === 2
-              ? late.promise
-              : pageOf([motorcycle({ code: reads === 1 ? "OLD-PRIVATE" : "NEW-SCOPED" })]),
+          // The status tabs read their own totals (with is_blocked); only the table's read counts.
+          [GET]: ({ path }) =>
+            path.includes("is_blocked=")
+              ? pageOf([])
+              : ++reads === 2
+                ? late.promise
+                : pageOf([motorcycle({ code: reads === 1 ? "OLD-PRIVATE" : "NEW-SCOPED" })]),
         },
       });
       await screen.findByRole("link", { name: "OLD-PRIVATE" });
@@ -392,7 +398,7 @@ describe("fleet session isolation", () => {
       path: `${LIST}/M-03`,
       routes: { [`POST /api/v1/motorcycles/${motorcycle().id}/unblock/`]: () => late.promise },
     });
-    await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
+    await chooseMenuAction("Desbloquear");
     await userEvent.type(
       within(screen.getByRole("dialog")).getByRole("textbox"),
       "Private inspection evidence",
@@ -451,7 +457,7 @@ describe("fleet session isolation", () => {
       },
     });
     document.cookie = "csrftoken=test-csrf; path=/";
-    await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
+    await chooseMenuAction("Desbloquear");
     await userEvent.type(
       within(screen.getByRole("dialog")).getByRole("textbox"),
       "Repair checked and recorded",

@@ -11,6 +11,7 @@ export const incidentTypes = {
     "No hay conexión. Conservamos tu captura; reconecta y verifica la configuración vigente antes de guardar.",
   "incidentTypes.form.verifying":
     "Estamos verificando la configuración autorizada. Espera una respuesta vigente antes de guardar.",
+  "incidentTypes.column.type": "Tipo de incidente",
   "incidentTypes.field.code": "Código exacto",
   "incidentTypes.field.label": "Nombre",
   "incidentTypes.field.icon": "Ícono",

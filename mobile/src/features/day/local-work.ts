@@ -2,6 +2,7 @@ import type { SqlExecutor, SqlRow } from "../../db/sql.ts";
 import { readText } from "../../db/sql.ts";
 import type { LocalWork, LocalWorkOverlay, AssignedTask } from "./types.ts";
 import { captureLocalDate } from "./capture-local-date.ts";
+import { isWithinTaskWeek } from "./epi-week.ts";
 function textOrNull(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
@@ -47,8 +48,9 @@ export class OutboxWorkOverlay implements LocalWorkOverlay {
     return rows.map(localWork);
   }
 }
-function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
-  if (entry.captureDate !== task.date || entry.action !== task.action) return false;
+function matchesCapture(task: AssignedTask, entry: LocalWork, epiWeek: string | null): boolean {
+  if (entry.action !== task.action) return false;
+  if (!isWithinTaskWeek(task.date, entry.captureDate, epiWeek)) return false;
   if (entry.origin === "capture") return entry.pointId !== null && entry.pointId === task.point_id;
   return (
     entry.origin === "legacy" &&
@@ -56,16 +58,29 @@ function matchesCapture(task: AssignedTask, entry: LocalWork): boolean {
     entry.ovitrapId === task.ovitrap_id
   );
 }
-/** Backend task identity is unique by organization/point/action/local date; ambiguity stays unlinked. */
+/**
+ * A capture counts for the task with the same point/action due on or before it in the same epi
+ * week (#374, as the backend). If tasks with different due dates match, the earliest due wins;
+ * two tasks with the same identity and due date are ambiguous and stay unlinked.
+ */
 export function taskWork(
   task: AssignedTask,
   work: readonly LocalWork[],
-  visibleTasks: readonly AssignedTask[],
+  scope: {
+    readonly visibleTasks: readonly AssignedTask[];
+    /** The organization's convention (profile), the same for every row, as the server uses. */
+    readonly epiWeek: string | null;
+  },
 ): readonly LocalWork[] {
+  const matches = (candidate: AssignedTask, entry: LocalWork) =>
+    matchesCapture(candidate, entry, scope.epiWeek);
   return work.filter((entry) => {
     if (entry.taskId !== null) return entry.taskId === task.id;
-    if (!matchesCapture(task, entry)) return false;
-    const matches = visibleTasks.filter((candidate) => matchesCapture(candidate, entry));
-    return matches.length === 1 && matches[0]?.id === task.id;
+    if (!matches(task, entry)) return false;
+    const dues = scope.visibleTasks
+      .filter((candidate) => matches(candidate, entry))
+      .map((candidate) => candidate.date);
+    const earliest = dues.reduce((min, due) => (due < min ? due : min), task.date);
+    return task.date === earliest && dues.filter((due) => due === earliest).length === 1;
   });
 }

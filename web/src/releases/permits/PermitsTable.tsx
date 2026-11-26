@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
@@ -14,14 +15,15 @@ const getPermitId = (row: Permit): string => row.id;
 interface Props {
   controller: TableController;
   query: ReturnType<typeof usePermitsScreen>["query"];
+  actions: ReactNode;
 }
 
 /** Server-paged table of permits with the shared filter bar. */
-export function PermitsTable({ controller, query }: Props) {
+export function PermitsTable({ controller, query, actions }: Props) {
   const { t } = useTranslation();
   return (
     <div className={styles.content}>
-      <FilterBar controller={controller} />
+      <FilterBar controller={controller} actions={actions} />
       <DataTable
         caption={t("permits.list.caption")}
         columns={usePermitColumns()}

@@ -167,6 +167,8 @@ const quadrant: Schemas["Quadrant"] = {
   current_version: {
     id: VERSION_ID,
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     revision: 3,
     effective_from: CLOCK,
     geometry: {
@@ -181,6 +183,7 @@ const quadrant: Schemas["Quadrant"] = {
       ],
     },
     created_by: ACTOR_ID,
+    created_by_name: null,
     created_at: CLOCK,
     point_resolutions: [],
   },
@@ -217,6 +220,7 @@ const APPROVED_POINT: Schemas["PointVersion"] = {
   effective_from: CLOCK,
   is_retired: false,
   created_by: ACTOR_ID,
+  created_by_name: null,
   created_at: CLOCK,
 };
 const RELOCATION_DECISION: Schemas["RelocationDecision"] = {

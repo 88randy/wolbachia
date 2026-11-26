@@ -3,9 +3,12 @@
 from pathlib import Path
 
 from django.conf import settings
+from django.db.models import Max
 
-from organizations.demo_seed import inventory, operations, people, releases, training
+from geography.models import SamplingPoint
+from organizations.demo_seed import geography, inventory, operations, people, releases, training
 from organizations.demo_seed.run import DemoResult
+from shifts.models import Shift
 
 CREDENTIALS_FILE = "demo-credentials.local.md"
 
@@ -17,6 +20,10 @@ def credentials_path() -> Path:
 def _users_table() -> list[str]:
     lines = ["| Username | Profile | Password |", "| --- | --- | --- |"]
     lines += [f"| {u.username} | {u.profile} | {u.password} |" for u in people.DEMO_USERS]
+    platform = people.DEMO_PLATFORM_USER
+    lines.append(
+        f"| {platform.username} | platform admin (no organization) | {platform.password} |"
+    )
     return lines
 
 
@@ -30,6 +37,14 @@ def _data_section(result: DemoResult) -> list[str]:
     lines.append(f"- Release permit `{releases.PERMIT_CODE}`, device `{releases.DEVICE_CODE}`")
     lines.append(f"- Storage location `{inventory.LOCATION_CODE}`; supplies:")
     lines += [f"  - `{spec.code}` ({spec.label})" for spec in inventory.SUPPLIES]
+    lines.append(
+        f"- Traslados: `{inventory.DEMO_TRANSFER_CODE}` preparado, `T-DEMO-02` en tránsito, "
+        "`T-DEMO-03` recibido completo, `T-DEMO-04` recibido con faltante (diferencia DIF-0001)"
+    )
+    lines.append(
+        "- Entregas de hoy: demo-courier-1/4/5/6 planeadas, demo-courier-2 liberada, "
+        "demo-courier-3 liberada y cancelada"
+    )
     return lines
 
 
@@ -42,24 +57,48 @@ def _ovitrap_section(result: DemoResult) -> list[str]:
     return lines
 
 
+def _fleet_section(result: DemoResult) -> list[str]:
+    """Last odometer per motorcycle: a new shift on the phone must open at or above it."""
+    lines = ["", "## Odómetro (al abrir turno captura este valor o más)", ""]
+    rows = (
+        Shift.objects.filter(organization=result.organization)
+        .values("motorcycle__code")
+        .annotate(last=Max("odometer_close_km"))
+        .order_by("motorcycle__code")
+    )
+    lines += [f"- {row['motorcycle__code']}: {row['last']} km" for row in rows]
+    return lines
+
+
+def _points_section(result: DemoResult) -> list[str]:
+    """Where each demo point is (the model has no address field, so this is a local note)."""
+    lines = ["", "## Puntos de muestreo (dirección sintética)", ""]
+    lines += ["| Punto | Dirección |", "| --- | --- |"]
+    points = SamplingPoint.objects.filter(
+        organization=result.organization, code__regex=r"^Q-MER-0[1-8]-B[12]-P[1-9]$"
+    ).order_by("code")
+    lines += [f"| {point.code} | {geography.point_address(point.code)} |" for point in points]
+    return lines
+
+
 def _walkthrough_section() -> list[str]:
     """Spanish step order per profile; the text is a local note, not API copy."""
-    wolb = "L-DEMO-WOLB"
+    wolb = "L-MER-WOLB"
     return [
         "",
         "## Recorrido sugerido",
         "",
-        "1. **demo-admin (web)**: revisa cuadrantes Q-DEMO-01 a Q-DEMO-03, la flota "
+        "1. **demo-admin (web)**: revisa cuadrantes Q-MER-01 a Q-MER-03, la flota "
         "(M-DEMO-01, M-DEMO-02), los tipos de incidencia y el permiso "
         f"{releases.PERMIT_CODE} con el dispositivo {releases.DEVICE_CODE}.",
         f"2. **demo-warehouse (web)**: en la ubicación {inventory.LOCATION_CODE} revisa los lotes "
-        f"(L-DEMO-PADDLE, L-DEMO-BAG, {wolb}) y abre el plan de entrega de demo-courier-1. "
+        f"(L-MER-PADDLE, L-MER-BAG, {wolb}) y abre el plan de entrega de demo-courier-1. "
         "Libera ese plan (paso previo de la custodia).",
         "3. **demo-courier-1 (móvil)**: inicia sesión, inicia turno con la moto M-DEMO-01 y "
         "recibe los insumos del plan liberado (con firma). Sin recibirlos no hay custodia del "
         "lote y la liberación no pasa.",
-        "4. **demo-courier-1 (móvil)**: servicio de ovitrampas en Q-DEMO-01-B1. Escanea el QR de "
-        "Q-DEMO-01-B1-P4 y captura la revisión (sí/no tiene huevos, bolsa nueva). Coloca una "
+        "4. **demo-courier-1 (móvil)**: servicio de ovitrampas en Q-MER-01-B1. Escanea el QR de "
+        "Q-MER-01-B1-P4 y captura la revisión (sí/no tiene huevos, bolsa nueva). Coloca una "
         "ovitrampa nueva en cualquier otro punto libre. Registra combustible e incidencia.",
         f"5. **demo-courier-1 (móvil)**: tarea de liberación de hoy en {training.RELEASE_POINT}: "
         f"permiso {releases.PERMIT_CODE}, dispositivo {releases.DEVICE_CODE}, lote {wolb}. "
@@ -67,13 +106,13 @@ def _walkthrough_section() -> list[str]:
         "La liberación queda pendiente de revisión de tránsito. Cierra el turno.",
         "6. **demo-supervisor (web)**: revisa y acepta la liberación en la bandeja de revisión; "
         "valida el turno y atiende la incidencia.",
-        "7. **demo-entomologist (web)**: W34 recepción de bolsas B-DEMO-001 a B-DEMO-003, "
+        "7. **demo-entomologist (web)**: W34 recepción de bolsas B-MER-001 a B-MER-003, "
         "W35 conteo de huevos y muestras.",
         "8. **demo-promoter / demo-coordinator / demo-regulatory / demo-government**: "
         "cada uno revisa sus pantallas con los mismos datos (el gobierno solo ve el portal).",
         "",
         "Nota: demo-courier-2 tiene la certificación pero no tarea de liberación; sirve para "
-        "probar un segundo teléfono con Q-DEMO-03 y M-DEMO-02.",
+        "probar un segundo teléfono con Q-MER-03 y M-DEMO-02.",
     ]
 
 
@@ -88,6 +127,8 @@ def write_credentials(result: DemoResult) -> Path:
         "",
         *_data_section(result),
         *_ovitrap_section(result),
+        *_fleet_section(result),
+        *_points_section(result),
         *_walkthrough_section(),
         "",
     ]

@@ -15,6 +15,8 @@ function LotCenter(props: InventoryFieldsProps) {
       value={props.values["center_id"] ?? ""}
       disabled={props.disabled || Boolean(props.previous)}
       required
+      autoPickOnly
+      empty={{ message: "inventory.option.noCenters" }}
       onChange={(value) => {
         props.setValue("center_id", value);
         props.setValue("initial_location_id", "");
@@ -49,6 +51,11 @@ function LotDestination(props: InventoryFieldsProps) {
       id="inventory-initial_location_id"
       label={t("inventory.field.location")}
       {...choice}
+      waitingFor="inventory.option.pickCenterFirst"
+      empty={{
+        message: "inventory.option.noLocations",
+        action: { label: "inventory.option.createLocation", to: "/inventory/locations" },
+      }}
       value={props.values["initial_location_id"] ?? ""}
       onChange={(value) => {
         props.setValue("initial_location_id", value);

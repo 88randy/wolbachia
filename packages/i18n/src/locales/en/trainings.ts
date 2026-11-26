@@ -1,30 +1,39 @@
 import type { trainings as Spanish } from "../es-MX/trainings";
 export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.workspace.title": "Trainings",
+  "trainings.tab.courses": "Courses",
+  "trainings.tab.requirements": "Requirements",
+  "trainings.tab.people": "People",
   "trainings.workspace.evaluations": "Evaluation sheets",
   "trainings.workspace.denied":
     "You do not have training access in this scope. Ask Administration for the permission and scope.",
   "trainings.field.code": "Course code",
   "trainings.field.name": "Course name",
   "trainings.field.validity": "Validity (seconds)",
+  "trainings.field.noneOption": "No quadrant",
+  "trainings.field.pickPlaceholder": "Choose from the list",
+  "trainings.field.otherAction": "Other action (specify)",
+  "trainings.field.pickCourseFirst": "Choose the course first.",
+  "trainings.field.versionOption": "Version {version}",
+  "trainings.action.release.record": "Record releases",
   "trainings.field.actions": "Enabled actions",
   "trainings.field.actionsHint":
     "Configured action keys, separated by commas. Publishing a course does not assign permissions.",
   "trainings.field.effective": "Effective from",
   "trainings.field.instantHint":
     "Date and time with an explicit zone, for example 2026-11-09T12:00:00-06:00.",
-  "trainings.field.center": "Center UUID",
-  "trainings.field.quadrant": "Quadrant UUID (optional when allowed by scope)",
-  "trainings.field.subject": "Person UUID",
+  "trainings.field.center": "Center",
+  "trainings.field.quadrant": "Quadrant (optional)",
+  "trainings.field.subject": "Person",
   "trainings.field.action": "Action key",
   "trainings.field.at": "Query instant (optional)",
-  "trainings.field.trainingVersion": "Course version (UUID)",
+  "trainings.field.trainingVersion": "Course version",
   "trainings.field.requirementVersion": "Requirement version",
   "trainings.field.validFrom": "Inclusive start",
   "trainings.field.validTo": "Exclusive end",
   "trainings.field.expiryHint":
     "The certification expires exactly at this instant; include its time zone.",
-  "trainings.field.evidence": "Verified evidence UUIDs",
+  "trainings.field.evidence": "Verified evidence",
   "trainings.field.evidenceHint":
     "Only your verified unbound uploads, separated by commas. You can upload and verify an image above.",
   "trainings.evidence.file": "Certification image",
@@ -39,11 +48,11 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.field.issuer": "Issuer reference",
   "trainings.field.attestation": "Certification attestation",
   "trainings.field.status": "Status",
-  "trainings.field.certificate": "Certification (UUID)",
+  "trainings.field.certificate": "Certificate",
   "trainings.field.revoked": "Revoked from",
   "trainings.field.nextChange": "Next eligibility change",
-  "trainings.field.training": "Course (UUID)",
-  "trainings.field.acceptableVersions": "Acceptable versions (comma-separated UUIDs)",
+  "trainings.field.training": "Course",
+  "trainings.field.acceptableVersions": "Accepted versions",
   "trainings.requirement.title": "Requirements by action and context",
   "trainings.requirement.inspect": "Inspect context requirements",
   "trainings.requirement.publish": "Publish action requirement",
@@ -65,8 +74,7 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.course.unavailable":
     "The record is unavailable in your scope. Check the reference or request access from Administration.",
   "trainings.person.title": "Certifications by person",
-  "trainings.person.lookupHint":
-    "Use authorized person and context references. Training access does not grant personnel directory search or private evaluation access.",
+  "trainings.person.lookupHint": "Choose the person and the center to see their trainings.",
   "trainings.person.inspect": "Inspect certifications and eligibility",
   "trainings.person.certificates": "Certification history",
   "trainings.person.create": "Record certification",
@@ -95,7 +103,7 @@ export const trainings: Record<keyof typeof Spanish, string> = {
     "Your input was retained. Dates need a time zone and references must be valid UUIDs.",
   "trainings.form.failed":
     "The record could not be confirmed. Your input was retained; check history before trying again.",
-  "trainings.form.saved": "Record confirmed by the server.",
+  "trainings.form.saved": "Record saved.",
   "trainings.form.review": "I reviewed history; allow another attempt",
   "trainings.form.reviewHint":
     "No record will be sent automatically. Review history and confirm before saving again.",
@@ -139,11 +147,13 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.mobile.trainingDenied":
     "Certificates require authorization. Ask your supervisor to check your access.",
   "trainings.mobile.partial":
-    "Showing the first authorized records. More history may exist on the server; ask your supervisor.",
+    "Showing the first authorized records. More history may exist; ask your supervisor.",
   "trainings.mobile.downloadedAt": "Certificates and evaluations downloaded",
   "trainings.mobile.author": "Author",
   "trainings.mobile.reason": "Reason or observation",
   "trainings.mobile.revision": "Revision",
   "trainings.mobile.source": "Original record",
   "trainings.mobile.context": "Center and quadrant",
+  "trainings.state.configured": "Configured",
+  "trainings.facts.certificateCount": "Certificates: {count}",
 };

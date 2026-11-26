@@ -1,4 +1,4 @@
-import { CURRENT_FENCE, fenceParams } from "./attachment-store.ts";
+import { CURRENT_FENCE, fenceParams, UPLOAD_REJECTED } from "./attachment-store.ts";
 import type { EvidenceFence } from "./types.ts";
 import type { SqlStatement } from "../db/sql.ts";
 export interface EvidenceSelection {
@@ -6,6 +6,8 @@ export interface EvidenceSelection {
   readonly isFinal: boolean;
 }
 
+// A receipt signed at the warehouse has no phone signature (signature_upload_id null): it waits for no
+// file. Only a receipt that names a signature waits until that file is verified.
 // UNION deduplicates IDs even with corrupt/cyclic lineage. Edges inspect pending work only;
 // ordinary historical receipts are not reclassified or scanned as dependency blockers.
 const DEPENDENCIES = `edges(parent,child) AS (
@@ -23,22 +25,25 @@ const DEPENDENCIES = `edges(parent,child) AS (
    ON ref.key='receipt_source_event_id' AND ref.value=p.id AND p.type='supplies.receive'
 )`;
 
+// A server-rejected file will never verify; it settles the parent so the server can answer it (final code).
+const SETTLED_FILE = `((f.state='verified' AND f.verified_at IS NOT NULL) OR f.last_error IS '${UPLOAD_REJECTED}')`;
 const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) refs
   WHERE refs.key IN ('evidence_ids','transit_evidence_ids') AND
     (refs.type<>'array' OR EXISTS(SELECT 1 FROM json_each(CASE WHEN refs.type='array' THEN refs.value ELSE '[]' END) ref
       WHERE ref.type<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f WHERE f.id=ref.value
-        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?
+        AND ${SETTLED_FILE} AND f.owner_key=?
         AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id))))))
-    OR (type='supplies.receive' AND NOT EXISTS(SELECT 1 FROM attachment_file f
+    OR (type='supplies.receive' AND json_type(waiting.payload,'$.signature_upload_id') IS NOT NULL
+      AND json_type(waiting.payload,'$.signature_upload_id')<>'null' AND NOT EXISTS(SELECT 1 FROM attachment_file f
       JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
       WHERE f.id=json_extract(waiting.payload,'$.signature_upload_id')
-        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))
+        AND ${SETTLED_FILE} AND f.owner_key=?))
     OR (type='fuel.load' AND json_type(payload,'$.receipt_upload_id') IS NOT NULL
       AND json_type(payload,'$.receipt_upload_id')<>'null' AND
       (json_type(payload,'$.receipt_upload_id')<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f
         JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
         WHERE f.id=json_extract(waiting.payload,'$.receipt_upload_id')
-          AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?)))`;
+          AND ${SETTLED_FILE} AND f.owner_key=?)))`;
 
 // One SyncEngine serializes claim and receipt. Fuel/release wait for opening; close JSON
 // waits for earlier fuel/releases, including future retries and parked errors. Local saves never wait.

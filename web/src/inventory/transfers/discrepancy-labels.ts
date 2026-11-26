@@ -10,3 +10,9 @@ export const discrepancyOutcomeKeys = {
   return_origin: "discrepancies.outcome.returnOrigin",
   reference_signed_correction: "discrepancies.outcome.referenceSignedCorrection",
 } as const satisfies Record<Schemas["ClosedOutcomeRequest"]["kind"], string>;
+
+/** A short human folio: "DIF-0042" as stored, or "DIF-A1B2" for the older long codes. */
+export function discrepancyFolio(code: string): string {
+  const old = /^D-([0-9a-f]{32})$/i.exec(code);
+  return old ? `DIF-${(old[1] ?? "").slice(0, 4).toUpperCase()}` : code;
+}

@@ -97,6 +97,7 @@ def test_resolution_openapi_exposes_expected_state_and_immutable_audit():
         "outcome",
         "reason",
         "created_by",
+        "created_by_name",
         "created_at",
     }
 

@@ -11,7 +11,7 @@ You review code. You do not edit files; Bash is only for running tests, linters 
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, the issue the change closes (`issues/NN-*.md`), and the diff. For UI changes compare with the design PNG and source in `design/`.
 
-Skill to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:coding-standards`.
+Required skills by the area of the diff (invoke with the Skill tool and apply; see "Required skills by area" in `.claude/agents/README.md`): `ponytail` (flag over-engineering and bloat), backend `anthropic-skills:django-reviewer` and `django-expert`, web `vercel-react-best-practices`, `vercel-composition-patterns`, `modern-web-guidance:modern-web-guidance` and `web-design-guidelines`, mobile `vercel-react-native-skills` and `vercel-composition-patterns`. Optional if available: `ecc:coding-standards`.
 
 ## What you check
 

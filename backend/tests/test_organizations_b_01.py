@@ -9,7 +9,7 @@ import pytest
 from django.db import connection
 
 from organizations import services
-from organizations.models import default_scope
+from organizations.models import all_scope, default_scope
 
 
 def dimension(mode, *ids):
@@ -115,6 +115,8 @@ def test_effective_scope_clamps_corrupt_government_permissions_and_mixed_assignm
 
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_last_admin_removals_retain_one_administrator():
+    from rest_framework.exceptions import NotFound, PermissionDenied
+
     from organizations.exceptions import AdministrationBusyError, LastAdministratorError
     from organizations.models import Membership, Profile
     from organizations.services import (
@@ -129,6 +131,12 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
     organization = create_organization(OrganizationSpec("Race", "race-99", "MX", "UTC"))
     admin = Profile.objects.get(organization=organization, slug="admin")
     members = [create_membership(UserFactory(), organization, [admin]) for _ in range(2)]
+    for member in members:
+        member.scope = all_scope()
+        member.save(update_fields=["scope"])
+    # Administrators never remove themselves and only an equal can act on an administrator, so
+    # the two administrators remove each other concurrently: exactly one must remain.
+    other = {members[0].pk: members[1].user, members[1].pk: members[0].user}
     barrier = threading.Barrier(2, timeout=10)
     committed = threading.Event()
 
@@ -137,7 +145,7 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
             member = Membership.objects.get(pk=member_id)
             barrier.wait()
             change = MembershipChange(
-                actor=member.user,
+                actor=other[member_id],
                 expected_revision=member.revision,
                 profiles=[],
                 scope=default_scope(),
@@ -151,8 +159,9 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
                 assert committed.wait(10)
                 update_membership(member, change)
             committed.set()
-        except LastAdministratorError as error:
-            return error.code
+        except (LastAdministratorError, PermissionDenied, NotFound):
+            # Either the guard refused, or the winner already removed this actor's authority.
+            return "refused"
         else:
             return "removed"
         finally:
@@ -160,7 +169,7 @@ def test_concurrent_last_admin_removals_retain_one_administrator():
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         outcomes = list(executor.map(remove, [member.pk for member in members]))
-    assert sorted(outcomes) == ["last_administrator", "removed"]
+    assert sorted(outcomes) == ["refused", "removed"]
     assert (
         Membership.objects.filter(organization=organization, is_active=True, profiles=admin).count()
         == 1
@@ -238,6 +247,17 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "reminder_minutes_before_end": (60, "min", 5, 180),
         "max_paddle_reuses": (2, "count", 0, 2),
         "revisit_interval_days": (7, "day", 1, 28),
+        "departure_requires_offline_map": (0, "count", 0, 1),
+        # 0 either, 1 warehouse, 2 phone: who may sign a delivery.
+        "delivery_signature_mode": (0, "count", 0, 2),
+        # Courier track capture on the phone (#370).
+        "track_sample_interval_seconds": (15, "s", 5, 300),
+        "track_min_move_m": (15, "m", 1, 200),
+        "track_still_heartbeat_seconds": (300, "s", 60, 3600),
+        "track_upload_interval_seconds": (300, "s", 60, 3600),
+        "track_simplify_tolerance_m": (5, "m", 0, 50),
+        "track_high_accuracy": (0, "count", 0, 1),
+        "track_day_end_minutes": (1200, "min", 600, 1439),
     }
     parameters = RuleParameter.objects.filter(organization=organization).prefetch_related(
         "versions"
@@ -312,9 +332,12 @@ def test_center_endpoint_wires_default_deny_and_organization_and_dimension_isola
     )
     response = api_client.get("/api/v1/centers/", {"code": center.code})
     assert response.status_code == 200
-    assert response.data["results"] == [
-        {"id": str(center.pk), "code": center.code, "name": center.name}
-    ]
+    [row] = response.data["results"]
+    assert (row["id"], row["code"], row["name"]) == (str(center.pk), center.code, center.name)
+    assert row["is_active"] is True
+    # A plain reader (no center.update / center.deactivate) never gets the admin facts.
+    assert row["deactivated_reason"] is None
+    assert row["motorcycle_count"] is None
     for hidden in [unassigned, foreign]:
         assert api_client.get(f"/api/v1/centers/{hidden.pk}/").status_code == 404
     payload = {

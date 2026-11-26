@@ -15,7 +15,12 @@ export function isMessageKey(key: string): key is MessageKey {
  * written, so a missing parameter is visible in testing instead of silently empty.
  */
 export function translate(locale: Locale, key: MessageKey, params: TranslateParams = {}): string {
-  const template = messages[locale][key];
+  // A count of exactly one uses the singular message <key>One when the catalog has it.
+  const singular = key + "One";
+  const template =
+    params.count === 1 && Object.hasOwn(messages[locale], singular)
+      ? messages[locale][singular as MessageKey]
+      : messages[locale][key];
   return template.replace(/\{([A-Za-z0-9]+)\}/g, (placeholder, name: string) => {
     const value = params[name];
     return value === undefined ? placeholder : String(value);

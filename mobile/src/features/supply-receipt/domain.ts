@@ -27,7 +27,10 @@ export function validQuantity(line: ReceiptLine): boolean {
     (line.pieceId === null || actual === 0n || actual === SCALE)
   );
 }
-export function validateReceipt(draft: ReceiptDraft, needsSignature = true): void {
+export function validateReceipt(
+  draft: ReceiptDraft,
+  needsSignature = draft.needsSignature !== false,
+): void {
   if (!draft.lines.length || !draft.lines.every(validQuantity))
     throw new ReceiptError("quantity_invalid");
   const hasMismatch = draft.lines.some(
@@ -91,7 +94,7 @@ function receiptPayload(draft: ReceiptDraft): Record<string, unknown> {
     expected_revision: draft.expectedRevision,
     plan_revision: draft.planRevision,
     release_id: draft.releaseId,
-    signature_upload_id: draft.signature?.id,
+    signature_upload_id: draft.signature?.id ?? null,
     actual_lines: draft.lines.map((line) => ({
       id: line.id,
       release_line_id: line.releaseLineId,

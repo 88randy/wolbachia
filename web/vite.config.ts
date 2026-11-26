@@ -1,5 +1,7 @@
 import { mapSecurityPlugin } from "./map-security.config.ts";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const DEV_SERVER_PORT = 5173;
@@ -8,7 +10,10 @@ const DEV_SERVER_PORT = 5173;
 const DEFAULT_API_PROXY_TARGET = "http://localhost:8000";
 
 export default defineConfig({
-  plugins: [react(), mapSecurityPlugin()],
+  plugins: [react(), tailwindcss(), mapSecurityPlugin()],
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   server: {
     port: DEV_SERVER_PORT,
     proxy: {
@@ -24,5 +29,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Full-app renders and the source-scanning guard exceed Vitest's 5 s default on loaded runners.
+    testTimeout: 30_000,
   },
 });

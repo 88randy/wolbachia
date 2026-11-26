@@ -8,7 +8,11 @@ function actionNames(actions: unknown): string {
     : "";
 }
 const VERSION_COLUMNS: DataTableColumn<TrainingVersion>[] = [
-  { id: "id", headerKey: "trainings.field.trainingVersion", cell: (row) => row.id },
+  {
+    id: "version",
+    headerKey: "trainings.field.trainingVersion",
+    cell: (row) => `v${String(row.version)}`,
+  },
   {
     id: "validity_seconds",
     headerKey: "trainings.field.validity",

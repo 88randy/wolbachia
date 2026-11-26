@@ -54,6 +54,29 @@ MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
 | reminder_minutes_before_end | 60 | min | 5 | 180 |
 | max_paddle_reuses | 2 | count | 0 | 2 |
 | revisit_interval_days | 7 | day | 1 | 28 |
+| departure_requires_offline_map | 0 | count | 0 | 1 |
+| delivery_signature_mode | 0 | count | 0 | 2 |
+| track_sample_interval_seconds | 15 | s | 5 | 300 |
+| track_min_move_m | 15 | m | 1 | 200 |
+| track_still_heartbeat_seconds | 300 | s | 60 | 3600 |
+| track_upload_interval_seconds | 300 | s | 60 | 3600 |
+| track_simplify_tolerance_m | 5 | m | 0 | 50 |
+| track_high_accuracy | 0 | count | 0 | 1 |
+| track_day_end_minutes | 1200 | min | 600 | 1439 |
+
+The `track_*` keys tune the courier track capture on the phone (#370, `docs/sync.md` "Courier
+track"); the server never reads them. `track_high_accuracy` is a boolean stored as 0/1 (1 = high
+accuracy instead of balanced for the background capture). `track_day_end_minutes` is the local
+end of the work day (minutes after midnight in the organization's time zone, 1200 = 20:00): a
+shift left open stops recording at the first day end after its opening, and the courier is asked
+to close it; the shift itself is never closed automatically (#371). Bounds are [ASSUMPTION].
+
+`delivery_signature_mode` says where the courier signs a supply delivery: 0 = either (default,
+whichever happens first completes it), 1 = on the warehouse screen, 2 = on the courier's phone.
+
+`departure_requires_offline_map` is a boolean stored as 0/1. With 0 (default) the courier can
+depart without a saved offline map pack and the app uses online tiles; with 1 departure stays
+blocked until the pack is verified.
 
 Seed reruns add versions only when none exist and preserve all existing versions,
 including deactivated/voided history. Bounds are reviewed definitions and are

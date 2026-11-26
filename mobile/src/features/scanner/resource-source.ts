@@ -1,7 +1,8 @@
 import { readText } from "../../db/sql.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import { OvitrapStore } from "../ovitrap-check/store.ts";
-import type { Assignment, Draft, QrKind } from "../ovitrap-check/types.ts";
+import { availability } from "../ovitrap-check/availability.ts";
+import type { QrKind } from "../ovitrap-check/types.ts";
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 import type { LifecycleSourceTurn } from "../ovitrap-lifecycle/types.ts";
 import { readSupplyAssignments } from "../supply-receipt/projection-state.ts";
@@ -12,6 +13,8 @@ export interface ScannerResource {
   readonly kind: QrKind;
   readonly id: string;
   readonly code: string | null;
+  /** The label code printed large on an ovitrap (`OVT-0001`); typed by hand when the QR fails. */
+  readonly shortCode?: string | null;
   readonly isRetired?: boolean;
   readonly supply?: {
     readonly assignmentId: string;
@@ -34,8 +37,9 @@ async function resolveOvitrap(turn: LifecycleSourceTurn, id: string) {
 
 async function ovitrapResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
   const rows = await turn.write(() =>
-    db.query(`SELECT id FROM lifecycle_courier_projection WHERE kind='ovitrap'
-      UNION SELECT json_extract(draft,'$.replacementId') AS id FROM lifecycle_capture
+    db.query(`SELECT id, json_extract(body,'$.code') AS short_code FROM lifecycle_courier_projection
+      WHERE kind='ovitrap'
+      UNION SELECT json_extract(draft,'$.replacementId') AS id, NULL AS short_code FROM lifecycle_capture
       WHERE kind='replace' AND json_extract(draft,'$.replacementId') IS NOT NULL ORDER BY id`),
   );
   const resources: ScannerResource[] = [];
@@ -46,6 +50,7 @@ async function ovitrapResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
         kind: "ovitrap",
         id: source.physical.id,
         code: source.point.code,
+        shortCode: typeof row.short_code === "string" ? row.short_code : null,
         isRetired: source.isRetired,
       });
   }
@@ -96,24 +101,24 @@ async function releaseResources(
   }
 }
 
-function assignedBagContext(draft: Draft | null, assignment: Assignment | null) {
-  if (!draft?.point || !assignment) return null;
-  const pointId = draft.point.id;
-  const isAssigned =
-    assignment.points.some(({ id }) => id === pointId) &&
-    assignment.ovitraps.some(({ id, point }) => id === draft.ovitrapId && point.id === pointId);
-  return isAssigned ? { pointId, ovitrapId: draft.ovitrapId, bags: assignment.bags } : null;
+/**
+ * The bags a scan may bind: only while an unsaved capture of a live ovitrap is open at a point the
+ * save would accept (`availability`, the same scope gate as saving). Null otherwise. `bags` are the
+ * optional downloaded QR-to-code mappings; the day bundle carries none.
+ */
+export async function readBagContext(db: SqlExecutor, turn: LifecycleSourceTurn) {
+  const store = new OvitrapStore(db);
+  const { draft, event } = await turn.write(() => store.read());
+  const snapshots = await turn.write(() => store.snapshots());
+  if (!draft?.point || event || !turn.canCapture) return null;
+  if (availability(draft, snapshots).isScopeBlocked) return null;
+  const { isRetired } = await turn.write(() => store.lifecycleSource(draft.ovitrapId, draft.point));
+  return isRetired ? null : { bags: snapshots.assignment?.bags ?? [] };
 }
 
 async function bagResources(db: SqlExecutor, turn: LifecycleSourceTurn) {
-  const store = new OvitrapStore(db);
-  const { draft, event } = await turn.write(() => store.read());
-  const { assignment } = await turn.write(() => store.snapshots());
-  if (event || !turn.canCapture) return [];
-  const current = assignedBagContext(draft, assignment);
+  const current = await readBagContext(db, turn);
   if (!current) return [];
-  const source = await resolveOvitrap(turn, current.ovitrapId);
-  if (!source || source.isRetired || source.point.id !== current.pointId) return [];
   return current.bags.map((bag): ScannerResource => ({
     kind: "bag",
     id: bag.id,

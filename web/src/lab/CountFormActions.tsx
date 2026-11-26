@@ -1,12 +1,16 @@
+import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import type { useCountForm } from "./use-count-form";
-export function CountFormActions({ form }: { form: ReturnType<typeof useCountForm> }) {
+
+function PrimaryAction({ form }: { form: ReturnType<typeof useCountForm> }) {
   const { t } = useTranslation();
   const kind = form.write.failure?.kind;
   if (kind === "confirm" || kind === "uncertain")
     return (
       <Button
+        size="lg"
         onClick={() => {
           void form.submit(kind === "confirm");
         }}
@@ -16,8 +20,28 @@ export function CountFormActions({ form }: { form: ReturnType<typeof useCountFor
       </Button>
     );
   return (
-    <Button type="submit" loading={form.write.isBusy} aria-disabled={kind === "conflict"}>
-      {t("lab.count.save")}
+    <Button type="submit" size="lg" loading={form.write.isBusy} aria-disabled={kind === "conflict"}>
+      {t("lab.count.save")} <kbd aria-hidden="true">{t("lab.count.enterKey")}</kbd>
     </Button>
+  );
+}
+
+/** Primary "save and next" plus the secondary damaged-paddle action (blocked, with its reason). */
+export function CountFormActions({ form }: { form: ReturnType<typeof useCountForm> }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <Tooltip content={t("lab.count.damagedBlocked")}>
+        <Button
+          size="lg"
+          variant="secondary"
+          aria-disabled="true"
+          leadingIcon={<TriangleAlert aria-hidden="true" />}
+        >
+          {t("lab.count.damaged")}
+        </Button>
+      </Tooltip>
+      <PrimaryAction form={form} />
+    </div>
   );
 }

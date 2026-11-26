@@ -259,7 +259,9 @@ class SupplyReceipt(InventoryRecord):
     release = models.ForeignKey(
         OriginReleaseProof, on_delete=models.PROTECT, related_name="receipts"
     )
-    signature = models.ForeignKey("uploads.Upload", on_delete=models.PROTECT, related_name="+")
+    signature = models.ForeignKey(
+        "uploads.Upload", null=True, on_delete=models.PROTECT, related_name="+"
+    )
     observations = models.JSONField()
 
 

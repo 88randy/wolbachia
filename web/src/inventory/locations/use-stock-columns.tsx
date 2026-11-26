@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
@@ -20,23 +19,6 @@ function ledgerSearch(row: StockRow) {
   return "lot" in row
     ? movementFiltersOf(row)
     : { lot: row.lot_id, piece: row.piece_id ?? "none", unit: row.unit };
-}
-function operationColumn(location: Schemas["Location"]): Column {
-  return {
-    id: "operation",
-    headerKey: "inventory.field.operation",
-    cell: (row) =>
-      ("source_ids" in row ? row.source_ids : [row.operation_id]).map((operation) => (
-        <Link
-          key={operation}
-          to="/inventory/locations/$code"
-          params={{ code: location.code }}
-          search={{ center: location.center, view: "movements", ...ledgerSearch(row), operation }}
-        >
-          {operation}
-        </Link>
-      )),
-  };
 }
 function quantityColumn(context: Context): Column {
   const { location, movements, language } = context;
@@ -61,7 +43,7 @@ function identityColumns(context: Context): Column[] {
     {
       id: movements ? "lot_code" : "lot__code",
       headerKey: "inventory.field.code",
-      cell: (row) => row.lot_code,
+      cell: (row) => <span className="whitespace-nowrap">{row.lot_code}</span>,
       link: (row) => ({
         to: "/inventory/lots/$code",
         params: { code: row.lot_code },
@@ -69,25 +51,16 @@ function identityColumns(context: Context): Column[] {
       }),
     },
     quantityColumn(context),
-    unitColumn,
-    {
-      id: "piece_id",
-      headerKey: "inventory.field.piece",
-      cell: (row) => row.piece_id ?? t("inventory.option.none"),
-    },
-    operationColumn(location),
+    unitColumn(t),
   ];
 }
-const unitColumn: Column = {
-  id: "unit",
-  headerKey: "inventory.field.unit",
-  cell: (row) => (
-    <>
-      {row.unit}
-      {"unit_version_id" in row && <small>{row.unit_version_id}</small>}
-    </>
-  ),
-};
+function unitColumn(t: Context["t"]): Column {
+  return {
+    id: "unit",
+    headerKey: "inventory.field.unit",
+    cell: (row) => (row.unit === "piece" ? t("transfers.new.unit.piece") : row.unit),
+  };
+}
 const sourceLabels: Record<string, MessageKey> = {
   lot_admission: "inventory.option.admission",
   transfer_dispatch: "inventory.source.dispatch",
@@ -104,10 +77,6 @@ function TransferFacts({
   return (
     <p>
       {t("inventory.source.transfer")}: {transfer.code}
-      <br />
-      {t("inventory.source.transferId")}: <span>{transfer.id}</span>
-      <br />
-      {t("inventory.source.transferEvent")}: <span>{transfer.event_id}</span>
     </p>
   );
 }
@@ -116,18 +85,12 @@ function sourceValue(row: StockRow, t: Context["t"]) {
   return (
     <>
       {t(sourceLabels[row.source_kind] ?? "inventory.source.unknown")}
-      <p>{row.source_id}</p>
       {row.source_transfer && <TransferFacts transfer={row.source_transfer} t={t} />}
     </>
   );
 }
 function provenanceColumns({ t, format }: Context): Column[] {
   return [
-    {
-      id: "movement",
-      headerKey: "inventory.field.movementId",
-      cell: (row) => ("id" in row ? row.id : null),
-    },
     {
       id: "source",
       headerKey: "inventory.field.source",
@@ -137,12 +100,6 @@ function provenanceColumns({ t, format }: Context): Column[] {
       id: "created_at",
       headerKey: "inventory.field.createdAt",
       cell: (row) => ("created_at" in row ? format(row.created_at) : null),
-    },
-    {
-      id: "author",
-      headerKey: "inventory.field.author",
-      cell: (row) =>
-        "created_by" in row ? (row.created_by ?? t("inventory.option.unknownAuthor")) : null,
     },
   ];
 }

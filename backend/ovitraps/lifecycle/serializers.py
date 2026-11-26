@@ -6,6 +6,7 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from core.serializers import OrgScopedModelSerializer
 from core.void_reason import VOID_REASON_MAX_LENGTH, validate_void_reason
 from field_sync.serializers import SafeDateTimeField, validate_plausible_time
@@ -124,6 +125,7 @@ class RelocationSerializer(ProvenanceSerializer):
     ovitrap = serializers.UUIDField(source="ovitrap.client_uuid", read_only=True)
     point = serializers.UUIDField(source="ovitrap.sampling_point_id", read_only=True)
     point_code = serializers.CharField(source="ovitrap.sampling_point.code", read_only=True)
+    ovitrap_code = serializers.CharField(source="ovitrap.code", read_only=True)
     status = serializers.CharField(source="decision_status", read_only=True)  # type: ignore[assignment]
 
     class Meta:
@@ -134,6 +136,7 @@ class RelocationSerializer(ProvenanceSerializer):
             "ovitrap",
             "point",
             "point_code",
+            "ovitrap_code",
             "point_version",
             "old_location",
             "new_location",
@@ -156,7 +159,7 @@ class RelocationQuerySerializer(serializers.Serializer[Any]):
     ovitrap = serializers.UUIDField(required=False)
 
 
-class HistoryEntrySerializer(serializers.Serializer[Any]):
+class HistoryEntrySerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     event_id = serializers.UUIDField()
     type = serializers.CharField()
     device_time = serializers.DateTimeField()

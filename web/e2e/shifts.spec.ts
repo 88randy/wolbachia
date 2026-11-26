@@ -17,7 +17,8 @@ type Shift = Schemas["ShiftDetail"];
 type Decision = Schemas["ShiftDecision"];
 type DecisionKind = Schemas["ShiftValidationKindEnum"];
 const SHIFT_ID = "00000000-0000-4000-8000-000000000034";
-const SHIFT_PATH = `/operations/shifts/${SHIFT_ID}`;
+const SHIFT_CODE = "JOR-0034";
+const SHIFT_PATH = `/operations/shifts/${SHIFT_CODE}`;
 const DETAIL_PATH = `/api/v1/shifts/${SHIFT_ID}/`;
 const DESKTOP = { width: 1280, height: 1000 };
 const COMPACT = { width: 320, height: 800 };
@@ -33,6 +34,7 @@ const REVIEWER = makeMe({
 function closedShift(): Shift {
   return {
     id: SHIFT_ID,
+    code: SHIFT_CODE,
     courier: "00000000-0000-4000-8000-000000000001",
     device: "00000000-0000-4000-8000-000000000002",
     motorcycle: "00000000-0000-4000-8000-000000000003",

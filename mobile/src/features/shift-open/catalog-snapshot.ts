@@ -1,4 +1,4 @@
-import type { ChecklistCatalog, ChecklistItem } from "./domain.ts";
+import type { ChecklistCatalog, ChecklistItem, MotorcycleOption } from "./domain.ts";
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -40,6 +40,21 @@ function blockedCodes(motorcycles: unknown): readonly string[] {
     return value.is_blocked ? [value.code] : [];
   });
 }
+function motorcycleOptions(motorcycles: unknown): readonly MotorcycleOption[] {
+  if (!Array.isArray(motorcycles)) return [];
+  return motorcycles.flatMap((value: unknown) =>
+    isRecord(value) && typeof value.code === "string"
+      ? [
+          {
+            code: value.code,
+            plate: typeof value.plate === "string" ? value.plate : "",
+            isBlocked: value.is_blocked === true,
+          },
+        ]
+      : [],
+  );
+}
+
 /** Runtime shape follows docs/sync.md and backend CatalogSnapshotViewSet: an object, despite the generated list annotation. */
 export function readCatalogSnapshot(value: unknown): ChecklistCatalog {
   if (
@@ -53,6 +68,7 @@ export function readCatalogSnapshot(value: unknown): ChecklistCatalog {
     version: value.version,
     items: readItems(value.catalogs),
     blockedMotorcycles: blockedCodes(value.motorcycles),
+    motorcycles: motorcycleOptions(value.motorcycles),
     sampleOrigins: readItems(value.catalogs, "sample-origin"),
   };
 }
@@ -63,4 +79,13 @@ export function readRulesSnapshot(value: unknown): {
   if (!isRecord(value) || typeof value.version !== "string" || !Array.isArray(value.parameters))
     throw new Error("Malformed rules snapshot.");
   return { version: value.version, parameters: value.parameters };
+}
+
+/** Rule `departure_requires_offline_map` (0/1). Missing, malformed or 0 means "recommended, not required". */
+export function readRequiresOfflineMap(rules: unknown): boolean {
+  if (!isRecord(rules) || !Array.isArray(rules.parameters)) return false;
+  const rule = rules.parameters.find(
+    (entry: unknown) => isRecord(entry) && entry.key === "departure_requires_offline_map",
+  ) as Record<string, unknown> | undefined;
+  return rule?.value === 1;
 }

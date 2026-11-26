@@ -3,7 +3,6 @@ import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useApiClient } from "../../api/ApiClientProvider";
-import { useMe } from "../../session/use-me";
 import { useSessionIdentity } from "../../session/use-session-identity";
 import { initialDraft, validatePermit, versionBody } from "./permit-draft";
 import type { PermitDraft, PermitErrors } from "./permit-draft";
@@ -13,6 +12,7 @@ import { permitFormChoicesOptions } from "./permits-query";
 import type { Permit } from "./permits-query";
 import { usePermitDocumentUpload } from "./use-permit-document-upload";
 import { usePermitSubmit } from "./use-permit-submit";
+import { useOrganizationTimeZone } from "../../format/use-time-zone";
 
 function useDraft(permit: Permit | undefined, timeZone: string) {
   const [draft, setDraft] = useState(() => initialDraft(permit, timeZone));
@@ -41,7 +41,7 @@ function sendPermit(call: Call, draft: PermitDraft, permit: Permit | undefined) 
  */
 export function usePermitForm(permit: Permit | undefined, onSaved: () => void) {
   const client = useApiClient();
-  const timeZone = useMe().organization?.timezone ?? "UTC";
+  const timeZone = useOrganizationTimeZone();
   const choices = useQuery(permitFormChoicesOptions(client, useSessionIdentity()));
   const document = usePermitDocumentUpload();
   const submit = usePermitSubmit(onSaved, "permits.form.conflict");

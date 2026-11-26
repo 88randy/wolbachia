@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { InlineNotice } from "../../ui/InlineNotice";
-import styles from "./trainings.module.css";
 import { TrainingReviewNotice } from "./TrainingReviewNotice";
 import { TrainingCommandError } from "./TrainingCommandError";
 interface Props {
@@ -16,12 +15,7 @@ export function TrainingFeedback({ error, receipt, requiresReview, review }: Pro
     <div aria-live="polite">
       {requiresReview && <TrainingReviewNotice onReview={review} />}
       {error !== undefined && <TrainingCommandError error={error} />}
-      {receipt && (
-        <InlineNotice tone="success">
-          {t("trainings.form.saved")}
-          <p className={styles.code}>{receipt.id}</p>
-        </InlineNotice>
-      )}
+      {receipt && <InlineNotice tone="success">{t("trainings.form.saved")}</InlineNotice>}
     </div>
   );
 }

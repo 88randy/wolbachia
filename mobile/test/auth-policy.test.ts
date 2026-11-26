@@ -27,19 +27,40 @@ void it("defaults missing/null rules and clamps every server-supplied authentica
     pinMaxAttempts: 3,
     sessionIdleMinutes: 5,
     clockSkewReviewSeconds: 300,
+    backgroundLockGraceSeconds: 120,
   });
   assert.deepEqual(readAuthRules(snapshot({ pin_max_attempts: null })), readAuthRules(null));
   assert.deepEqual(
     readAuthRules(
-      snapshot({ pin_max_attempts: 40, session_idle_minutes: 0, clock_skew_review_seconds: 8000 }),
+      snapshot({
+        pin_max_attempts: 40,
+        session_idle_minutes: 0,
+        clock_skew_review_seconds: 8000,
+        background_lock_grace_seconds: 5000,
+      }),
     ),
-    { pinMaxAttempts: 10, sessionIdleMinutes: 1, clockSkewReviewSeconds: 3600 },
+    {
+      pinMaxAttempts: 10,
+      sessionIdleMinutes: 1,
+      clockSkewReviewSeconds: 3600,
+      backgroundLockGraceSeconds: 900,
+    },
   );
   assert.deepEqual(
     readAuthRules(
-      snapshot({ pin_max_attempts: -1, session_idle_minutes: 50, clock_skew_review_seconds: 1 }),
+      snapshot({
+        pin_max_attempts: -1,
+        session_idle_minutes: 50,
+        clock_skew_review_seconds: 1,
+        background_lock_grace_seconds: 1,
+      }),
     ),
-    { pinMaxAttempts: 1, sessionIdleMinutes: 30, clockSkewReviewSeconds: 30 },
+    {
+      pinMaxAttempts: 1,
+      sessionIdleMinutes: 30,
+      clockSkewReviewSeconds: 30,
+      backgroundLockGraceSeconds: 10,
+    },
   );
   assert.equal(readAuthRules(snapshot({ pin_max_attempts: NaN })).pinMaxAttempts, 3);
 });

@@ -1,5 +1,8 @@
 import type { AreaCatalog } from "../area.ts";
 export const ui = {
+  "ui.picker.search": "Buscar por nombre",
+  "ui.picker.empty": "Sin coincidencias",
+  "ui.picker.loading": "Cargando…",
   "ui.actions.more": "Más acciones",
   "ui.actions.createFirst": "Crear el primer registro",
   "ui.actions.clearFilters": "Limpiar filtros",
@@ -8,6 +11,7 @@ export const ui = {
   "ui.actions.review": "Revisar",
   "ui.actions.dismiss": "Cerrar aviso",
   "ui.states.refreshing": "Actualizando…",
+  "ui.states.noValue": "Sin dato",
   "ui.states.noData": "Todavía no hay registros. Crea el primero para empezar.",
   "ui.states.noResults": "No hay resultados con estos filtros. Límpialos para ver más registros.",
   "ui.states.loadError": "No pudimos cargar esta sección. Reintenta para actualizarla.",
@@ -20,4 +24,14 @@ export const ui = {
   "ui.preview.voided": "Anulación de muestra registrada",
   "ui.toast.label": "Avisos",
   "ui.toast.blocking": "Avisos que requieren atención",
+  "ui.signaturePad.placeholder": "Firma aquí",
+  "ui.signaturePad.clear": "Borrar",
+  "ui.dateField.clear": "Quitar la fecha",
+  "ui.signaturePad.ready": "Firma lista",
+  "ui.signaturePad.hint": "Firma con el dedo o el mouse.",
+  "ui.signaturePad.tooShort": "La firma es muy corta. Vuelve a firmar.",
+  "ui.signaturePad.failed": "No se pudo guardar la firma. Inténtalo de nuevo.",
+  "ui.signaturePad.signer": "Firma: {name}",
+  "ui.signaturePad.noPermission":
+    "Tu perfil no puede guardar firmas. Pide a administración que te dé ese permiso.",
 } as const satisfies AreaCatalog<"ui">;

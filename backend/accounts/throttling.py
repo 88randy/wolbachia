@@ -60,3 +60,13 @@ class PasswordResetThrottle(IdentThrottle):
 
 class PasswordResetConfirmThrottle(IdentThrottle):
     scope = "password_reset_confirm"
+
+
+class PasswordChangeThrottle(SimpleRateThrottle):
+    """Per signed-in user: guessing the current password is slow."""
+
+    scope = "password_change"
+
+    def get_cache_key(self, request: Request, view: APIView) -> str | None:
+        ident = getattr(request.user, "pk", None) or self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}

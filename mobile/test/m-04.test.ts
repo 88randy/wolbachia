@@ -146,13 +146,26 @@ void test("AC safety: missing/empty checklist, unanswered/Other and missing maps
   const state = await service.read();
   assert.ok(state.draft);
   const draft = state.draft;
-  assert.equal(departureGate({ draft, catalog: null, map: READY }), "unconfigured");
   assert.equal(
-    departureGate({ draft, catalog: { version: "catalog-v1", items: [] }, map: READY }),
+    departureGate({ draft, catalog: null, map: READY, requiresOfflineMap: true }),
     "unconfigured",
   );
   assert.equal(
-    departureGate({ draft: { ...draft, checks: [] }, catalog: state.catalog, map: READY }),
+    departureGate({
+      draft,
+      catalog: { version: "catalog-v1", items: [] },
+      map: READY,
+      requiresOfflineMap: true,
+    }),
+    "unconfigured",
+  );
+  assert.equal(
+    departureGate({
+      draft: { ...draft, checks: [] },
+      catalog: state.catalog,
+      map: READY,
+      requiresOfflineMap: true,
+    }),
     "checklist",
   );
   assert.equal(
@@ -160,10 +173,16 @@ void test("AC safety: missing/empty checklist, unanswered/Other and missing maps
       draft,
       catalog: { version: "catalog-v1", items: [{ ...ITEM, is_other: true }] },
       map: READY,
+      requiresOfflineMap: true,
     }),
     "note",
   );
   await store.saveMap({ ...READY, status: "unavailable" });
+  const requiresMap = {
+    version: "rules-map",
+    parameters: [{ key: "departure_requires_offline_map", value: 1 }],
+  };
+  await store.saveRules(requiresMap);
   await assert.rejects(service.open(), /map/);
   assert.equal((await service.read()).opening, null);
 });
@@ -545,4 +564,17 @@ void test("Regression: refresh cannot publish after an edit or unmount invalidat
     await refresh;
     assert.equal(published.length, 0, guard);
   }
+});
+void test("AC odometer: no warning while the field is empty or not lower than the last value", async () => {
+  const { service, outbox } = await harness();
+  await outbox.enqueue(
+    makeEnvelope({ type: "shift.open", payload: { motorcycle_code: "M-03", odometer_km: 13000 } }),
+  );
+  await prepare(service);
+  await service.update({ odometer_km: "" });
+  assert.equal((await service.read()).hasOdometerWarning, false);
+  await service.update({ odometer_km: "13000" });
+  assert.equal((await service.read()).hasOdometerWarning, false);
+  await service.update({ odometer_km: "12999" });
+  assert.equal((await service.read()).hasOdometerWarning, true);
 });

@@ -16,11 +16,14 @@ export interface UploadGrant {
   readonly lease: string;
   readonly contentType: OwnedEvidence["contentType"];
 }
-export interface UploadState {
-  readonly state: "authorized" | "received" | "verified";
-  readonly verifiedAt: string | null;
-  readonly grant: UploadGrant;
-}
+/** "failed" is terminal: the server's sanitization rejected the file, so no grant exists. */
+export type UploadState =
+  | { readonly state: "failed" }
+  | {
+      readonly state: "authorized" | "received" | "verified";
+      readonly verifiedAt: string | null;
+      readonly grant: UploadGrant;
+    };
 export interface AttachmentTransport {
   authorize(call: UploadCall): Promise<UploadState>;
   renew(call: UploadCall): Promise<UploadState>;
@@ -145,6 +148,7 @@ export class PrivateAttachmentTransport implements AttachmentTransport {
     );
     await this.#requireCall(call);
     if (answer.id !== call.file.id) throw new EvidenceError("upload_identity");
+    if (answer.state === "failed") return { state: "failed" };
     return {
       state: answer.state,
       verifiedAt: answer.state === "verified" ? verifiedAt(answer, call.file.id) : null,

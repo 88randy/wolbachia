@@ -7,14 +7,16 @@ import styles from "./incidents.module.css";
 
 export function IncidentWorkColumns(props: IncidentActionProps & { scope: IncidentScope }) {
   return (
-    <div className={styles.workspace}>
-      <div className={styles.actions}>
-        <IncidentEvidenceList scope={props.scope} incident={props.incident} />
-        <IncidentThread events={props.incident.timeline} />
+    <div className={styles.workspaceHost}>
+      <div className={styles.workspace}>
+        <div className={styles.actions}>
+          <IncidentEvidenceList scope={props.scope} incident={props.incident} />
+          <IncidentThread events={props.incident.timeline} />
+        </div>
+        <aside className={styles.actions}>
+          <IncidentActions {...props} />
+        </aside>
       </div>
-      <aside className={styles.actions}>
-        <IncidentActions {...props} />
-      </aside>
     </div>
   );
 }

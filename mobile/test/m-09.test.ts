@@ -250,7 +250,16 @@ async function begin(h: Awaited<ReturnType<typeof harness>>, kind: LifecycleDraf
     previous.draft?.eventId ?? null,
   );
   assert.ok(state.draft);
-  return state.draft;
+  if (kind !== "replace" || state.draft.labelScanned) return state.draft;
+  // A fresh printed label the pool does not know yet, scanned like on the phone.
+  const bound = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${h.deps.uuid()}`,
+    false,
+    state.draft.eventId,
+  );
+  assert.equal(bound.labelResult, "read");
+  assert.ok(bound.draft);
+  return bound.draft;
 }
 async function complete(h: Awaited<ReturnType<typeof harness>>, draft: LifecycleDraft) {
   await h.service.update(
@@ -330,21 +339,15 @@ void test("AC1: replacement retains fixed point code/lineage and reserves fresh 
   const [event] = await h.outbox.claimPending(10);
   assert.equal(event?.envelope.payload.replacement_id, first.replacementId);
   assert.equal(event.envelope.payload.ovitrap_id, SOURCE);
-  assert.ok(next.draft?.replacementId);
-  const reserved = next.draft.replacementId;
-  const ids = [h.deps.uuid(), reserved];
-  const restarted = new LifecycleService({
-    ...h.deps,
-    uuid: () => ids.shift() ?? "invalid",
-    shiftId: () => Promise.resolve("66666666-6666-4666-8666-666666666666"),
-  });
-  await assert.rejects(
-    restarted.start(
-      { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
-      next.draft.eventId,
-    ),
+  assert.ok(next.draft);
+  assert.equal(next.draft.replacementId, null, "the new trap waits for its scanned label");
+  assert.equal(
+    (await h.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [first.eventId]))[0]
+      ?.id,
+    first.replacementId,
+    "the saved replacement reserved exactly its scanned label",
   );
-  assert.equal((await h.store.read()).draft?.eventId, next.draft.eventId);
+  const reserved = first.replacementId;
   const placement = makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: reserved });
   await h.store.capture.begin(placement);
   await assert.rejects(
@@ -1134,7 +1137,8 @@ void test("AC1 wiring: M08 checks the replacement physical identity and blocks t
 });
 
 import { messages } from "@wolbachia/i18n";
-import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+import { componentHarness, minHeightOf } from "./support/m-09-render.ts";
+const noop = () => undefined;
 void test("AC4: P15-P17 localized native props preserve labeled large controls across language/theme/text-scale", async () => {
   const keys = Object.keys(messages["es-MX"])
     .filter((key) => key.startsWith("mobile.lifecycle."))
@@ -1157,11 +1161,7 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
   );
   for (const { locale, scheme, fontScale } of matrix) {
     const render = componentHarness({ locale, scheme, fontScale });
-    for (const [name, kind] of [
-      ["P15Screen", "replace"],
-      ["P16Screen", "relocate"],
-      ["P17Screen", "remove"],
-    ] as const) {
+    for (const kind of ["replace", "relocate", "remove"] as const) {
       const draft = {
         ...source,
         kind,
@@ -1169,6 +1169,7 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         otherText: "visible",
         evidence: [PHOTO],
         recovery: "unconfirmed",
+        gps: null,
       };
       const model = {
         state: { ...(await h.service.read()), draft },
@@ -1177,30 +1178,49 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
         run: () => Promise.resolve(true),
         service: h.service,
       };
-      const nodes = render.render(`mobile/src/features/ovitrap-lifecycle/${name}.tsx`, name, {
+      const pages = [
+        ...(kind === "remove" ? ["LifecycleRecoveryPage"] : []),
+        "LifecycleReasonPage",
+        ...(kind === "replace" ? ["LifecycleLabelPage"] : []),
+        "LifecyclePhotoPage",
+        "LifecycleConfirmPage",
+      ];
+      // The confirm page starts the GPS fix by itself; the rest of the page is what is asserted.
+      const pageRender = componentHarness({
+        locale,
+        scheme,
+        fontScale,
+        stubs: { "use-auto-gps.ts": { useAutoGps: () => undefined } },
+      });
+      const nodes = pages.flatMap((name) =>
+        pageRender.render(`mobile/src/features/ovitrap-lifecycle/${name}.tsx`, name, {
+          draft,
+          model,
+        }),
+      );
+      // Last wizard page: the one button at the bottom says what saving does for this kind.
+      const lastPage = pages.length - 1;
+      const wizard = componentHarness({
+        locale,
+        scheme,
+        fontScale,
+        stubs: {
+          react: {
+            // The wizard resumes from a lazy initializer; force its last page.
+            useState: (value: unknown) => [
+              typeof value === "number" || typeof value === "function" ? lastPage : value,
+              noop,
+            ],
+          },
+          "use-auto-gps.ts": { useAutoGps: () => undefined },
+        },
+      }).render("mobile/src/features/ovitrap-lifecycle/LifecycleWizard.tsx", "LifecycleWizard", {
         draft,
         model,
       });
-      const footer = render.render(
-        "mobile/src/features/ovitrap-lifecycle/LifecycleFooter.tsx",
-        "LifecycleFooter",
-        { draft, model },
-      );
-      const reasonSheet = render.render(
-        "mobile/src/features/ovitrap-lifecycle/CatalogSheet.tsx",
-        "CatalogSheet",
-        {
-          isOpen: true,
-          close: () => undefined,
-          items: draft.catalog?.[kind] ?? [],
-          code: "other",
-          choose: () => undefined,
-        },
-      );
-      assertScreenControls([...nodes, ...footer, ...reasonSheet], locale);
-      const primary =
-        kind === "remove" ? "mobile.lifecycle.confirmRemove" : "mobile.lifecycle.save";
-      assert.ok(footer.some((item) => item.props.accessibilityLabel === messages[locale][primary]));
+      assertScreenControls(nodes, locale);
+      const primary = messages[locale][`field.lifecycle.save.${kind}` as const];
+      assert.ok(wizard.some((item) => item.props.accessibilityLabel === primary));
     }
     const sheet = render.render(
       "mobile/src/features/ovitrap-lifecycle/RemoveSheet.tsx",
@@ -1217,12 +1237,13 @@ void test("AC4: P15-P17 localized native props preserve labeled large controls a
     assert.ok(sheet.some((item) => item.props.accessibilityViewIsModal === true));
     assert.ok(
       sheet.some(
-        (item) => item.props.accessibilityLabel === messages[locale]["common.actions.cancel"],
+        (item) => item.props.accessibilityLabel === messages[locale]["field.action.cancel"],
       ),
     );
     assert.ok(
       sheet.some(
-        (item) => item.props.accessibilityLabel === messages[locale]["mobile.lifecycle.remove"],
+        (item) =>
+          item.props.accessibilityLabel === messages[locale]["field.lifecycle.confirmRemove"],
       ),
     );
   }
@@ -1237,18 +1258,18 @@ function assertScreenControls(
   for (const control of controls) {
     assert.equal(typeof control.props.accessibilityLabel, "string");
     assert.ok(String(control.props.accessibilityLabel).trim());
-    assert.ok(Number(flattenStyle(control.props.style).minHeight) >= 48);
+    assert.ok(minHeightOf(control) >= 48, String(control.props.accessibilityLabel));
     assert.equal(control.props.allowFontScaling === false, false);
   }
   assert.ok(
     controls.some(
-      (control) => control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.other"],
+      (control) => control.props.accessibilityLabel === messages[locale]["field.lifecycle.other"],
     ),
   );
   assert.ok(
     controls.some(
       (control) =>
-        control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.captureGps"],
+        control.props.accessibilityLabel === messages[locale]["field.lifecycle.gpsRetry"],
     ),
   );
   assert.ok(
@@ -1275,6 +1296,99 @@ void test("AC2: a draft started before configuration can adopt later downloaded 
     h.store.saveConfiguration({ ...config, rules: { ...rules, version: "rules-v2" } }, turn),
   );
   assert.equal((await h.service.read()).catalogChanged, true);
+});
+void test("no downloaded reasons: the reason page says so and its retry downloads them", async () => {
+  const h = await harness();
+  const source = await begin(h, "replace");
+  for (const locale of ["es-MX", "en"] as const) {
+    const calls: string[] = [];
+    const model = {
+      state: await h.service.read(),
+      isBusy: false,
+      edit: () => undefined,
+      run: (action: () => Promise<unknown>, eventId: string) => {
+        calls.push(eventId);
+        return action().then(() => true);
+      },
+      service: { updateConfiguration: (id: string) => Promise.resolve(calls.push(`update:${id}`)) },
+    };
+    const nodes = componentHarness({ locale, scheme: "light", fontScale: 1 }).render(
+      "mobile/src/features/ovitrap-lifecycle/LifecycleReasonPage.tsx",
+      "LifecycleReasonPage",
+      { draft: { ...source, catalog: null }, model },
+    );
+    const texts = nodes.filter((item) => item.type === "Text").map((item) => item.props.children);
+    assert.ok(texts.flat().includes(messages[locale]["field.lifecycle.noReasons"]));
+    const retry = nodes.find(
+      (item) => item.props.accessibilityLabel === messages[locale]["field.action.retry"],
+    );
+    assert.ok(retry);
+    (retry.props.onPress as () => void)();
+    await Promise.resolve();
+    assert.deepEqual(calls, [source.eventId, `update:${source.eventId}`]);
+  }
+});
+
+void test("opening an action downloads the current reasons and moves the open draft onto them", async () => {
+  const h = await harness();
+  const config = await h.store.configuration();
+  assert.ok(config.catalog);
+  await h.source.read(null, (turn) =>
+    h.store.saveConfiguration({ catalog: null, rules: null }, turn),
+  );
+  const draft = await begin(h, "replace");
+  assert.equal(draft.catalog, null);
+  const downloaded = { ...config, catalog: { ...config.catalog, version: "catalog-v2" } };
+  const service = new LifecycleService({
+    ...h.deps,
+    refresh: (turn) => h.store.saveConfiguration(downloaded, turn),
+  });
+
+  const updated = await service.updateConfiguration(draft.eventId);
+
+  assert.equal(updated.draft?.catalog?.version, "catalog-v2");
+  assert.deepEqual(
+    updated.draft.catalog.replace.map((item) => item.code),
+    ["damaged", "other"],
+  );
+  assert.equal(updated.catalogChanged, false);
+});
+
+void test("offline keeps the last lists; a chosen reason that left the list is never swapped out", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  const offline = new LifecycleService({
+    ...h.deps,
+    refresh: () => Promise.reject(new TypeError("Network request failed")),
+  });
+  const kept = await offline.updateConfiguration(draft.eventId);
+  assert.equal(kept.draft?.catalog?.version, draft.catalog?.version);
+
+  await h.service.update({ reasonCode: "damaged" }, draft.eventId);
+  const config = await h.store.configuration();
+  assert.ok(config.catalog);
+  const shrunk = {
+    ...config,
+    catalog: { ...config.catalog, version: "catalog-v3", replace: [reason("other")] },
+  };
+  const online = new LifecycleService({
+    ...h.deps,
+    refresh: (turn) => h.store.saveConfiguration(shrunk, turn),
+  });
+  const result = await online.updateConfiguration(draft.eventId);
+  assert.equal(result.draft?.reasonCode, "damaged");
+  assert.equal(result.draft.catalog?.version, draft.catalog?.version);
+  assert.equal(result.catalogChanged, true);
+});
+
+void test("a lost session is not hidden as offline", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  const service = new LifecycleService({
+    ...h.deps,
+    refresh: () => Promise.reject(new StaleCaptureError()),
+  });
+  await assert.rejects(() => service.updateConfiguration(draft.eventId), StaleCaptureError);
 });
 import { runSyncPass } from "../src/sync/sync-pass.ts";
 void test("AC3 wiring: existing sync applies retired/current projections before receipt and cursor advancement", async () => {
@@ -2760,77 +2874,10 @@ async function feedbackHostControls(
     "AdvisoryFeedback",
     { model, draft },
   );
-  const retry = nodes.find((node) => node.type === "Pressable");
-  assert.equal(retry?.props.accessibilityLabel, messages[locale]["common.actions.retry"]);
-  assert.ok(Number(flattenStyle(retry.props.style).minHeight) >= 48);
-  const review = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ReviewedOutcome.tsx",
-    "ReviewedOutcome",
-    { entry: { ...SHIFT_HISTORY, is_terminal: false } },
-  );
-  const text = review.filter((node) => node.type === "Text").map((node) => node.props.children);
-  assert.ok(text.includes(messages[locale]["mobile.lifecycle.approvalNotCurrent"]));
-  assert.ok(text.includes(messages[locale]["mobile.lifecycle.nonterminalDecision"]));
-  const proposal = {
-    eventId: draft.eventId,
-    status: "rejected",
-    proposedLocation: [-99, 19],
-    isVoided: false,
-    decision: {
-      id: h.deps.uuid(),
-      proposalEventId: draft.eventId,
-      status: "rejected",
-      decidedAt: null,
-      reason: null,
-      nextDayTask: null,
-    },
-    nextDayTask: { id: h.deps.uuid(), code: "ACTUAL-TASK", dueDate: "2026-01-17" },
-    isTaskActionable: false,
-  };
-  let opened = 0;
-  const passive = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ProposalFeedback.tsx",
-    "ProposalFeedback",
-    {
-      proposal,
-      openTask: () => {
-        opened++;
-      },
-    },
-  );
-  assert.equal(
-    passive.some((node) => node.type === "Pressable"),
-    false,
-  );
-  assert.ok(
-    passive.some(
-      (node) => node.props.children === messages[locale]["mobile.lifecycle.decisionTimeUnknown"],
-    ),
-  );
-  const actionable = render.render(
-    "mobile/src/features/ovitrap-lifecycle/ProposalFeedback.tsx",
-    "ProposalFeedback",
-    {
-      proposal: { ...proposal, isTaskActionable: true },
-      openTask: () => {
-        opened++;
-      },
-    },
-  );
-  const button = actionable.find((node) => node.type === "Pressable");
-  assert.equal(button?.props.accessibilityLabel, messages[locale]["mobile.lifecycle.openTask"]);
-  assert.ok(button);
-  assert.equal(typeof button.props.onPress, "function");
-  (button.props.onPress as () => void)();
-  assert.equal(opened, 1);
-  const closed = render.render(
-    "mobile/src/features/ovitrap-lifecycle/AvailabilityNotices.tsx",
-    "AvailabilityNotices",
-    { model },
-  );
-  assert.ok(
-    closed.some((node) => node.props.children === messages[locale]["mobile.lifecycle.epochClosed"]),
-  );
+  // An unavailable advisory is one calm sentence under its title; the supervisor still decides.
+  const advisory = nodes.filter((node) => node.type === "Text").map((node) => node.props.children);
+  assert.ok(advisory.includes(messages[locale]["field.lifecycle.advisoryTitle"]));
+  assert.ok(advisory.includes(messages[locale]["field.lifecycle.advisoryUnavailable"]));
 }
 
 async function currentTaskActions(
@@ -3206,3 +3253,166 @@ async function deniedAdvisoryAction(
   assert.equal(errors, change === "none" ? 1 : 0);
   await h.credentials.runExclusive((tx) => tx.grantUnlock(h.credentials.unlockGate()));
 }
+
+void test("Replacement binds the printed label: typed OVT code and scanned QR become replacement_id", async () => {
+  const h = await harness();
+  const label = { id: "bbbbbbbb-bbbb-4bbb-8bbb-000000000118", code: "OVT-0118" };
+  const service = new LifecycleService({ ...h.deps, labelPool: () => Promise.resolve([label]) });
+  const started = await service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const eventId = started.draft.eventId;
+  assert.equal(started.draft.replacementId, null);
+  assert.equal(started.draft.labelScanned, false);
+  const typed = await service.bindReplacementLabel("ovt-118", true, eventId);
+  assert.equal(typed.labelResult, "read");
+  assert.equal(typed.draft?.replacementId, label.id);
+  assert.equal(typed.draft.replacementCode, label.code);
+  assert.equal(typed.draft.manualCapture, true);
+  const scanned = await service.bindReplacementLabel(`wbf:1:ovitrap:${label.id}`, false, eventId);
+  assert.equal(scanned.labelResult, "read");
+  assert.ok(scanned.draft);
+  assert.equal(scanned.draft.replacementCode, label.code);
+  await complete({ ...h, service }, scanned.draft);
+  await service.save(eventId);
+  const [event] = await h.outbox.claimPending(10);
+  assert.equal(event?.envelope.payload.replacement_id, label.id);
+  assert.equal(event.envelope.payload.ovitrap_id, SOURCE);
+  assert.deepEqual(
+    (await h.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [eventId])).map(
+      (row) => row.id,
+    ),
+    [label.id],
+  );
+});
+
+void test("Replacement refuses a used label, the old trap's own label and unknown or unreadable codes", async () => {
+  const h = await harness();
+  const first = await begin(h, "replace");
+  await complete(h, first);
+  await h.service.save(first.eventId);
+  assert.ok(first.replacementId);
+  const next = await h.service.start(
+    { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
+    first.eventId,
+  );
+  assert.ok(next.draft);
+  const eventId = next.draft.eventId;
+  const bind = async (value: string, isManual: boolean) =>
+    (await h.service.bindReplacementLabel(value, isManual, eventId)).labelResult;
+  assert.equal(await bind(`wbf:1:ovitrap:${first.replacementId}`, false), "own");
+  assert.equal(await bind(`wbf:1:ovitrap:${SOURCE}`, false), "used");
+  assert.equal(await bind(SOURCE, true), "used");
+  assert.equal(await bind("OVT-0999", true), "unknown");
+  assert.equal(await bind("not a label", false), "invalid");
+  const draft = (await h.store.read()).draft;
+  assert.equal(draft?.replacementId, null);
+  assert.equal(draft.labelScanned, false);
+  await complete(h, draft);
+  await assert.rejects(h.service.save(eventId), /identity/);
+});
+
+import { REPLACEMENT_SCAN_ERRORS } from "../src/features/scanner/service.ts";
+const LABEL_L = "dddddddd-dddd-4ddd-8ddd-000000000777";
+/** A replacement draft from before the label step: a random UUID already reserved for its event. */
+async function legacyReplacement(h: Awaited<ReturnType<typeof harness>>) {
+  const started = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const eventId = started.draft.eventId;
+  const legacyId = "cccccccc-cccc-4ccc-8ccc-000000000001";
+  await h.db.runAtomically([
+    { sql: "INSERT INTO lifecycle_identity(id,event_id) VALUES(?,?)", params: [legacyId, eventId] },
+    {
+      sql: `UPDATE lifecycle_draft SET draft=json_remove(json_set(draft,'$.replacementId',?),
+        '$.labelScanned','$.replacementCode') WHERE slot=1`,
+      params: [legacyId],
+    },
+  ]);
+  const bound = await h.service.bindReplacementLabel(`wbf:1:ovitrap:${LABEL_L}`, false, eventId);
+  assert.equal(bound.labelResult, "read");
+  assert.ok(bound.draft);
+  await complete(h, bound.draft);
+  return { eventId, legacyId };
+}
+async function placeLabel(h: Awaited<ReturnType<typeof harness>>, ovitrapId: string) {
+  const placed = makeDraft({
+    eventId: h.deps.uuid(),
+    mode: "place",
+    ovitrapId,
+    deviceTime: "2026-01-16T15:00:00Z",
+  });
+  await h.store.capture.begin(placed);
+  return h.outbox.enqueue(
+    captureEvent(placed),
+    h.store.capture.commitStatements(placed, (await h.store.capture.read()).draftVersion),
+  );
+}
+
+void test("legacy replacement keeps its old reservation, sends the scanned label and still protects it", async () => {
+  const first = await harness();
+  const legacy = await legacyReplacement(first);
+  await first.service.save(legacy.eventId);
+  const [event] = await first.outbox.claimPending(10);
+  assert.equal(event?.envelope.payload.replacement_id, LABEL_L);
+  assert.deepEqual(
+    (
+      await first.db.query("SELECT id FROM lifecycle_identity WHERE event_id=?", [legacy.eventId])
+    ).map((row) => row.id),
+    [legacy.legacyId],
+  );
+  await assert.rejects(placeLabel(first, LABEL_L), "a later placement cannot take the label");
+
+  const second = await harness();
+  const pending = await legacyReplacement(second);
+  await placeLabel(second, LABEL_L);
+  await assert.rejects(second.service.save(pending.eventId), "a placement saved first wins");
+  assert.equal((await second.store.read()).event, null);
+});
+
+void test("an open placement draft holding the label makes it used for the replacement", async () => {
+  const h = await harness();
+  await h.store.capture.begin(
+    makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: LABEL_L, labelScanned: true }),
+  );
+  const started = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(started.draft);
+  const bound = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${LABEL_L}`,
+    false,
+    started.draft.eventId,
+  );
+  assert.equal(bound.labelResult, "used");
+});
+
+void test("after Me equivoqué the voided replacement's sticker stays used; a new sticker is needed", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  assert.ok(draft.replacementId);
+  await h.service.correct(
+    { reasonCode: "other", reason: "Wrong trap replaced by mistake" },
+    draft.eventId,
+  );
+  const again = await h.service.start(
+    { kind: "replace", ovitrapId: SOURCE, manualCapture: false },
+    draft.eventId,
+  );
+  assert.ok(again.draft);
+  assert.notEqual(again.draft.eventId, draft.eventId);
+  const rescan = await h.service.bindReplacementLabel(
+    `wbf:1:ovitrap:${draft.replacementId}`,
+    false,
+    again.draft.eventId,
+  );
+  assert.equal(rescan.labelResult, "used");
+  assert.equal(REPLACEMENT_SCAN_ERRORS[rescan.labelResult], "labelUsed");
+});

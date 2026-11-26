@@ -1,6 +1,6 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { openInventory } from "../../test/inventory-api";
 import {
   inventoryLocation,
@@ -12,6 +12,44 @@ import {
   INVENTORY_OPERATION,
   INVENTORY_ADMISSION,
 } from "../../test/inventory-fixtures";
+import "../../test/slow-app-flows";
+
+const PIN = [-99.1, 19.4];
+
+/** A Combobox stays disabled until the choice it depends on is made; wait for that, then use it. */
+async function enabledPicker(scope: HTMLElement, name: string) {
+  const picker = await within(scope).findByRole<HTMLButtonElement>("combobox", { name });
+  await waitFor(() => {
+    expect(picker.disabled).toBe(false);
+  });
+  return picker;
+}
+
+// MapLibre needs WebGL, which jsdom lacks. The map picker is replaced by a stand-in that places
+// the pin the same way a click on the map does: through onChange([longitude, latitude]).
+vi.mock("../../map-picker/MapPointPicker", () => ({
+  MapPointPicker: ({
+    label,
+    value,
+    onChange,
+  }: {
+    label: string;
+    value: number[] | null;
+    onChange: (point: number[]) => void;
+  }) => (
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          onChange(PIN);
+        }}
+      >
+        {"Colocar punto: " + label}
+      </button>
+      <output aria-label="Punto actual">{value ? value.join(",") : "sin punto"}</output>
+    </div>
+  ),
+}));
 
 test("a physical stock quantity links to actual server-filtered legs using the operation UUID", async () => {
   const location = inventoryLocation();
@@ -71,7 +109,20 @@ test("a physical stock quantity links to actual server-filtered legs using the o
       ),
     ).toBe(true);
   });
-  await user.click(await screen.findByRole("link", { name: INVENTORY_OPERATION }));
+  await screen.findByRole("cell", { name: "Admisión inicial" });
+  // The operation id is a URL-only facet: it reaches the server as given, never as the admission id.
+  await act(async () => {
+    await app.router.navigate({
+      to: "/inventory/locations/$code",
+      params: { code: location.code },
+      search: {
+        view: "movements",
+        center: location.center,
+        operation: INVENTORY_OPERATION,
+        lot: lot.id,
+      },
+    });
+  });
   await waitFor(() => {
     expect(
       api.requests.some((request) => request.path.includes(`operation=${INVENTORY_OPERATION}`)),
@@ -80,8 +131,9 @@ test("a physical stock quantity links to actual server-filtered legs using the o
   expect(
     api.requests.some((request) => request.path.includes(`operation=${INVENTORY_ADMISSION}`)),
   ).toBe(false);
-  expect(screen.getByText(INVENTORY_ADMISSION)).toBeDefined();
-  await user.selectOptions(screen.getByRole("combobox", { name: "Ordenar por" }), "-quantity");
+  expect(screen.queryByText(INVENTORY_ADMISSION)).toBeNull();
+  await user.click(screen.getByRole("button", { name: /Cantidad/ }));
+  await user.click(screen.getByRole("button", { name: /Cantidad/ }));
   await waitFor(() => {
     expect(
       api.requests.some((request) => {
@@ -173,14 +225,15 @@ test("a physical stock quantity links to actual server-filtered legs using the o
     "Origen no reconocido",
   ])
     await screen.findByText(label);
-  const dispatchRow = screen.getByText(rows[1]?.id ?? "").closest("tr");
+  const dispatchRow = screen.getByText(/TR-01/).closest("tr");
   expect(dispatchRow).not.toBeNull();
   if (!dispatchRow) throw new Error("Expected the rendered dispatch movement row");
   const dispatch = within(dispatchRow);
-  expect(dispatch.getByRole("link", { name: rows[1]?.operation_id })).toBeDefined();
-  expect(dispatch.getAllByText(dispatchEvent)).toHaveLength(2);
-  expect(dispatch.getByText(transferId)).toBeDefined();
-  expect(screen.queryByRole("link", { name: transferId })).toBeNull();
+  expect(dispatch.getByText("Salida de transferencia")).toBeDefined();
+  // Ids are never shown to the user and the transfer code is not a link: no transfer read happens.
+  expect(screen.queryByText(transferId)).toBeNull();
+  expect(screen.queryByText(dispatchEvent)).toBeNull();
+  expect(screen.queryByRole("link", { name: /TR-01/ })).toBeNull();
   expect(api.requests.some((request) => request.path.startsWith("/api/v1/transfers/"))).toBe(false);
   const lotLink = dispatch.getByRole("link", { name: lot.code });
   expect(
@@ -201,34 +254,30 @@ test("location creation uses actual center-only placement and Membership owner, 
     },
   });
   await user.click(await screen.findByRole("button", { name: "Nueva ubicación" }));
-  const dialog = within(screen.getByRole("dialog"));
+  const dialogElement = screen.getByRole("dialog");
+  const dialog = within(dialogElement);
   await user.type(dialog.getByRole("textbox", { name: "Código" }), "LOC-NEW");
   await user.type(dialog.getByRole("textbox", { name: "Nombre" }), "Authored store");
+  await user.selectOptions(dialog.getByRole("combobox", { name: "Tipo de ubicación" }), "Almacén");
+  await user.selectOptions(dialog.getByRole("combobox", { name: "Centro" }), "Synthetic center");
   await user.selectOptions(
-    dialog.getByRole("combobox", { name: "Tipo de ubicación" }),
-    "warehouse",
+    await enabledPicker(dialogElement, "Cuadrante"),
+    "Sólo centro, sin cuadrante",
   );
-  await dialog.findByRole("option", { name: "Synthetic center" });
-  await user.selectOptions(dialog.getByRole("combobox", { name: "Centro" }), INVENTORY_CENTER);
-  await dialog.findByRole("option", { name: "Sólo centro, sin cuadrante" });
-  await user.selectOptions(dialog.getByRole("combobox", { name: "Cuadrante" }), "none");
-  await dialog.findByRole("option", { name: "Synthetic owner" });
-  await user.selectOptions(dialog.getByRole("combobox", { name: "Responsable" }), INVENTORY_OWNER);
-  await user.type(dialog.getByRole("textbox", { name: "Longitud" }), "-99.2");
-  await user.type(dialog.getByRole("textbox", { name: "Latitud" }), "   ");
+  await user.selectOptions(await enabledPicker(dialogElement, "Responsable"), "Synthetic owner");
   await user.click(dialog.getByRole("button", { name: "Crear registro" }));
   await dialog.findByRole("alert");
   expect(api.requests.some((request) => request.method === "POST")).toBe(false);
-  await user.clear(dialog.getByRole("textbox", { name: "Latitud" }));
-  await user.type(dialog.getByRole("textbox", { name: "Latitud" }), "19.3");
+  await user.click(dialog.getByRole("button", { name: /Colocar punto/ }));
+  expect(dialog.getByLabelText("Punto actual").textContent).toBe("-99.1,19.4");
   await user.click(dialog.getByRole("button", { name: "Crear registro" }));
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.find((request) => request.method === "POST")?.body).toMatchObject({
     owner_id: INVENTORY_OWNER,
     center_id: INVENTORY_CENTER,
     quadrant_id: null,
     is_insecticide_free: null,
-    geometry: { type: "Point", coordinates: [-99.2, 19.3] },
+    geometry: { type: "Point", coordinates: [-99.1, 19.4] },
   });
 });
 
@@ -250,12 +299,8 @@ test("a lost location write reconciles only equivalent submitted coordinates, wi
       },
     },
   });
-  const longitude = await screen.findByRole("textbox", { name: "Longitud" });
-  await user.clear(longitude);
-  await user.type(longitude, "-99.100000");
-  const latitude = screen.getByRole("textbox", { name: "Latitud" });
-  await user.clear(latitude);
-  await user.type(latitude, "19.400000");
+  await user.click(await screen.findByRole("button", { name: /Colocar punto/ }));
+  expect(screen.getByLabelText("Punto actual").textContent).toBe("-99.1,19.4");
   await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
   const reconcile = await screen.findByRole("button", { name: "Consultar el registro guardado" });
   await user.click(reconcile);
@@ -269,6 +314,6 @@ test("a lost location write reconciles only equivalent submitted coordinates, wi
   ).toBe("true");
   current = { ...current, geometry: { type: "Point", coordinates: [-99.1, 19.4] } };
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(1);
 });

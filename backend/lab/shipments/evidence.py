@@ -79,7 +79,8 @@ def verified_request_evidence(
 
 def owned_verified_unbound(actor: UploadActor, upload: Upload) -> bool:
     return (
-        upload.uploader_id == actor.user.pk
+        not upload.purpose
+        and upload.uploader_id == actor.user.pk
         and upload.device_id == actor.device_id
         and UploadVerification.objects.filter(
             organization=actor.organization, upload=upload

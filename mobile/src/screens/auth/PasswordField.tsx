@@ -38,15 +38,19 @@ export function PasswordField(props: PasswordFieldProps) {
     <View style={styles.field}>
       <AppText variant="label">{t("mobile.login.password")}</AppText>
       <View style={[styles.passwordFrame, props.hasError && styles.invalidField]}>
-        <TextField label={t("mobile.login.password")} {...inputProps} />
+        <View style={styles.passwordInputBox}>
+          <TextField label={t("mobile.login.password")} {...inputProps} />
+        </View>
         {props.togglePassword !== undefined ? (
-          <Button
-            variant="text"
-            label={t(
-              props.isPasswordVisible ? "mobile.login.hidePassword" : "mobile.login.showPassword",
-            )}
-            onPress={props.togglePassword}
-          />
+          <View style={styles.passwordToggle}>
+            <Button
+              variant="text"
+              label={t(
+                props.isPasswordVisible ? "mobile.login.hidePassword" : "mobile.login.showPassword",
+              )}
+              onPress={props.togglePassword}
+            />
+          </View>
         ) : null}
       </View>
     </View>

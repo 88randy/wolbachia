@@ -98,10 +98,14 @@ void test("P31 support, pending-work and lock actions remain labelled in both th
       const labels = nodes
         .filter((node) => node.type === "Text")
         .map((node) => node.props.children);
-      assert.ok(labels.includes(messages[locale]["mobile.settings.updaterUnavailable"]));
+      // The support card names the missing support contact and the running version; the pending
+      // work card explains what locking keeps. The updater state is not shown to the courier.
+      assert.ok(labels.includes(messages[locale]["mobile.settings.supportUnavailable"]));
+      assert.ok(labels.includes(`${messages[locale]["mobile.settings.version"]}: 0.0.0`));
       assert.ok(labels.includes(messages[locale]["mobile.settings.lockHint"]));
       assert.ok(labels.includes(messages[locale]["mobile.settings.lockAccess"]));
-      assert.equal(nodes.filter((node) => node.props.accessibilityRole === "button").length, 3);
+      assert.ok(labels.includes(messages[locale]["mobile.settings.viewUploads"]));
+      assert.equal(nodes.filter((node) => node.props.accessibilityRole === "button").length, 2);
       assert.ok(
         nodes.every(
           (node) => node.props.numberOfLines === undefined && node.props.allowFontScaling !== false,

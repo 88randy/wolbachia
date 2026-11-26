@@ -45,6 +45,8 @@ class Command(BaseCommand):
             self.stdout.write(f"  create profiles: {', '.join(plan.missing_profiles)}")
         for profile_slug, codes in plan.permissions.grants.items():
             self.stdout.write(f"  grant to profile '{profile_slug}': {', '.join(codes)}")
+        for profile_slug, codes in plan.permissions.withdrawals.items():
+            self.stdout.write(f"  withdraw from profile '{profile_slug}': {', '.join(codes)}")
         for profile_slug in plan.permissions.skipped:
             self.stdout.write(
                 f"  skip profile '{profile_slug}': not created by the seed, set its codes by hand"
@@ -63,6 +65,7 @@ class Command(BaseCommand):
         return not (
             plan.missing_profiles
             or plan.permissions.grants
+            or plan.permissions.withdrawals
             or plan.permissions.skipped
             or plan.missing_catalogs
             or plan.missing_parameters

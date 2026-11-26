@@ -1,5 +1,6 @@
 """Current immutable snapshots, SQL-filtered safety and ledger projections."""
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
@@ -184,6 +185,118 @@ def lot_safety(
         tuple(str(pk) for pk in holds.values_list("pk", flat=True)),
     )
     return evaluate_lot(snapshot, now)
+
+
+def lot_safety_batch(
+    versions: Sequence[LotVersion], location: Location | None = None
+) -> dict[UUID, LotSafety]:
+    """`lot_safety` for a page of lot versions with a fixed number of queries.
+
+    Same facts and the same evaluation as the per-version function; only the reads are shared.
+    Needs `lot__organization`, `supply_version`, `protocol` and `initial_location` loaded.
+    """
+    from zoneinfo import ZoneInfo
+
+    from inventory.transfers.models import TransferHold
+
+    if not versions:
+        return {}
+    now = server_now()
+    requested = {version.pk: location or version.initial_location for version in versions}
+    lot_ids = {version.lot_id for version in versions}
+    location_ids = {place.pk for place in requested.values() if place is not None}
+    supply_ids = {version.lot.supply_id for version in versions}
+    days = {
+        version.pk: now.astimezone(ZoneInfo(version.lot.organization.timezone)).date()
+        for version in versions
+    }
+    storage = {
+        row.location_id: row
+        for row in LocationVersion.objects.filter(location_id__in=location_ids)
+        .order_by("location_id", "-revision")
+        .distinct("location_id")
+    }
+    supplies = {
+        row.supply_type_id: row
+        for row in SupplyTypeVersion.objects.filter(supply_type_id__in=supply_ids)
+        .order_by("supply_type_id", "-revision")
+        .distinct("supply_type_id")
+    }
+    readings = list(
+        ConditionReading.objects.filter(
+            lot_id__in=lot_ids, slot__isnull=False, local_date__in=set(days.values())
+        )
+        .exclude(evaluation="unassessed")
+        .values(
+            "lot_id",
+            "protocol_id",
+            "local_date",
+            "timezone",
+            "slot",
+            "capture_mode",
+            "capture_location_id",
+            "location_version__location_id",
+        )
+    )
+    holds = list(
+        TransferHold.objects.filter(lot_id__in=lot_ids, resolution__isnull=True).values_list(
+            "pk", "lot_id", "location_id"
+        )
+    )
+    state = (
+        IncidentEvent.objects.filter(incident_id=OuterRef("incident_link__incident_id"))
+        .order_by("-revision")
+        .values("state")[:1]
+    )
+    breaches = list(
+        ConditionBreach.objects.filter(reading__lot_id__in=lot_ids)
+        .annotate(_state=Subquery(state))
+        .filter(Q(_state__isnull=True) | ~Q(_state="closed"))
+        .values_list("pk", "reading__lot_id")
+    )
+    result: dict[UUID, LotSafety] = {}
+    for version in versions:
+        place = requested[version.pk]
+        place_id = place.pk if place is not None else None
+        organization = version.lot.organization
+        slots = frozenset(
+            row["slot"]
+            for row in readings
+            if place_id is not None
+            and row["lot_id"] == version.lot_id
+            and row["protocol_id"] == version.protocol_id
+            and row["local_date"] == days[version.pk]
+            and row["timezone"] == organization.timezone
+            and (
+                (
+                    row["capture_mode"] == "explicit_location"
+                    and row["capture_location_id"] == place_id
+                )
+                or (
+                    row["capture_mode"] == "legacy_initial"
+                    and row["location_version__location_id"] == place_id
+                )
+            )
+        )
+        current_storage = storage.get(place_id) if place is not None else None
+        snapshot = LotSafetySnapshot(
+            version.supply_version.is_biological,
+            supplies[version.lot.supply_id].is_active,
+            missing_fields(version),
+            version.expires_at,
+            protocol_ready(version.protocol),
+            version.supply_version.requires_insecticide_free,
+            current_storage.is_insecticide_free if current_storage else None,
+            slots,
+            tuple(str(pk) for pk, lot_id in breaches if lot_id == version.lot_id),
+            tuple(
+                str(pk)
+                for pk, lot_id, held_at in holds
+                if lot_id == version.lot_id and held_at == place_id
+            ),
+        )
+        result[version.pk] = evaluate_lot(snapshot, now)
+    return result
 
 
 def condition_status(actor: UploadActor, target: tuple[Lot, Location | None]) -> dict[str, Any]:

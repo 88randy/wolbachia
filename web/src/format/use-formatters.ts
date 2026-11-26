@@ -1,15 +1,13 @@
 import { useCallback } from "react";
 import { useLanguage } from "../i18n/use-language";
-import { useMe } from "../session/use-me";
-import { formatCalendarDate, formatDate } from "./format-date";
+import { useOrganizationTimeZone } from "./use-time-zone";
+import { formatCalendarDate, formatCalendarRange, formatDate } from "./format-date";
 import { formatNumber } from "./format-number";
-
-const FALLBACK_TIME_ZONE = "UTC";
 
 /** `format(iso)`: a moment as a date, in the organization's time zone and the interface language. */
 export function useFormatDate(): (iso: string) => string {
   const { language } = useLanguage();
-  const timeZone = useMe().organization?.timezone ?? FALLBACK_TIME_ZONE;
+  const timeZone = useOrganizationTimeZone();
   return useCallback((iso) => formatDate(iso, language, timeZone), [language, timeZone]);
 }
 
@@ -17,6 +15,15 @@ export function useFormatDate(): (iso: string) => string {
 export function useFormatCalendarDate(): (isoDate: string) => string {
   const { language } = useLanguage();
   return useCallback((isoDate) => formatCalendarDate(isoDate, language), [language]);
+}
+
+/** `format("2026-11-01", "2026-11-30")`: a compact calendar range ("1–30 nov 2026"). */
+export function useFormatCalendarRange(): (fromDate: string, toDate: string) => string {
+  const { language } = useLanguage();
+  return useCallback(
+    (fromDate, toDate) => formatCalendarRange(fromDate, toDate, language),
+    [language],
+  );
 }
 
 /** `format(7.5)`: a number in the interface language. */

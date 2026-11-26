@@ -73,6 +73,7 @@ export class AttachmentSync {
       pending.state === "ready"
         ? await this.deps.transport.authorize(call)
         : await this.deps.transport.renew(call);
+    if (resume.state === "failed") return this.deps.store.saveRejection(call.file.id, call);
     if (resume.state === "verified") {
       if (resume.verifiedAt === null) throw new EvidenceError("upload_unverified");
       const verifiedAt =

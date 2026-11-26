@@ -4,6 +4,8 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { TextField } from "../forms/TextField";
 import { Select } from "../forms/Select";
 import { FieldNotes } from "../forms/FieldNotes";
+import { FormField, FormGrid } from "../components/templates/FormGrid";
+import { DateField } from "../ui/DateField";
 import type { FleetDraft } from "./fleet-drafts";
 import styles from "./fleet.module.css";
 const fields: readonly { name: string; label: MessageKey; type: string; required?: boolean }[] = [
@@ -12,6 +14,7 @@ const fields: readonly { name: string; label: MessageKey; type: string; required
   { name: "service_interval_km", label: "fleet.service.intervalKm", type: "number" },
   { name: "service_interval_days", label: "fleet.service.intervalDays", type: "number" },
 ];
+type ServiceFieldSpec = (typeof fields)[number];
 interface FieldsProps {
   draft: FleetDraft;
   disabled: boolean;
@@ -22,11 +25,19 @@ export function FleetServiceFields(props: FieldsProps) {
   const { disabled } = props;
   return (
     <fieldset disabled={disabled} className={styles.formFields}>
-      <ServiceKind {...props} />
-      {fields.map((field) => (
-        <ServiceField key={field.name} field={field} {...props} />
-      ))}
-      <ServiceNotes {...props} />
+      <FormGrid>
+        <FormField>
+          <ServiceKind {...props} />
+        </FormField>
+        {fields.map((field) => (
+          <FormField key={field.name} width="short">
+            <ServiceField field={field} {...props} />
+          </FormField>
+        ))}
+        <FormField width="full">
+          <ServiceNotes {...props} />
+        </FormField>
+      </FormGrid>
     </fieldset>
   );
 }
@@ -57,14 +68,24 @@ function ServiceKind({ draft, change, blur }: FieldsProps) {
     />
   );
 }
-function ServiceField({
-  draft,
-  field,
-  change,
-  blur,
-}: FieldsProps & { field: (typeof fields)[number] }) {
+function ServiceDate({ draft, field, change }: FieldsProps & { field: ServiceFieldSpec }) {
+  const { t } = useTranslation();
+  return (
+    <DateField
+      id={useId()}
+      label={t(field.label)}
+      value={draft.values[field.name] ?? ""}
+      onChange={(value) => {
+        change(field.name, value);
+      }}
+    />
+  );
+}
+function ServiceField(props: FieldsProps & { field: ServiceFieldSpec }) {
   const { t } = useTranslation();
   const id = useId();
+  const { draft, field, change, blur } = props;
+  if (field.type === "date") return <ServiceDate {...props} />;
   return (
     <TextField
       id={id}

@@ -894,3 +894,60 @@ def test_physical_pending_parent_is_shared_only_through_real_scope_and_effective
             "resolved_speed_reference"
         ]["source_event_id"] == str(parent.id)
     assert ReviewSourceSnapshot.objects.get(source_event_id=child.id).facts == original_facts
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("change", ["unrelated_parameter", "consumed_version"])
+def test_capture_review_compares_only_the_rules_the_gates_consume(make_member, change):
+    """A snapshot holding every org parameter stays acceptable when an unrelated key appears."""
+    from dataclasses import replace
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from field_sync.envelope import GpsFix
+    from ovitraps.models import PlacementAttempt
+    from reviews.actions import ReviewDecisionRequest, decide_review
+    from reviews.exceptions import ReviewBlockedError
+    from reviews.models import ReviewItem
+    from rules.models import RuleParameter
+    from tests.factories import RuleParameterFactory, RuleParameterVersionFactory
+    from tests.ovitrap_support import envelope, ingest, setup_field
+    from tests.review_support import audit_current_membership, reviewer
+    from tests.sync_support import configure_clock_skew
+
+    field = setup_field()
+    organization = field.batch.organization
+    configure_clock_skew(organization)
+    audit_current_membership(field.membership)
+    now = timezone.now()
+    field.batch = replace(field.batch, sent_at=now, received_at=now)
+    sent = replace(envelope(field), device_time=now, gps=GpsFix(20.005, -99.98, 5))
+    assert ingest(field, sent).code == "ovitrap_too_far"
+    original = ReviewSourceSnapshot.objects.get(source_event_id=sent.id).facts
+    if change == "unrelated_parameter":
+        RuleParameterVersionFactory(
+            parameter=RuleParameterFactory(organization=organization, key="track_unrelated_m")
+        )
+    else:
+        RuleParameterVersionFactory(
+            parameter=RuleParameter.objects.get(
+                organization=organization, key="max_distance_to_point_m"
+            ),
+            value=9999,
+            effective_from=sent.device_time - timedelta(microseconds=1),
+        )
+    item = ReviewItem.objects.get(field_event_id=sent.id)
+    request = ReviewDecisionRequest("accept", 0, "Verified the placement at the real point")
+    actor = reviewer(organization, make_member)
+    if change == "consumed_version":
+        with pytest.raises(ReviewBlockedError) as blocked:
+            decide_review(actor, item.pk, request)
+        reasons = [row["reason"] for row in blocked.value.blocked_by]
+        assert "capture_context_changed" in reasons, reasons
+        assert not PlacementAttempt.objects.filter(event_id=sent.id).exists()
+        return
+    decide_review(actor, item.pk, request)
+    placement = PlacementAttempt.objects.get(event_id=sent.id)
+    assert placement.evaluated_rules == original["owner"]["ovitrap"]["rules"]
+    assert "track_unrelated_m" not in placement.rule_version_ids

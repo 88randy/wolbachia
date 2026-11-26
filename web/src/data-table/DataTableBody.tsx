@@ -15,7 +15,7 @@ interface BodyProps<TRow extends RowData> extends TablePresentation<TRow> {
   selection: RowSelectionConfig<TRow> | undefined;
 }
 export function DataTableBody<TRow extends RowData>(props: BodyProps<TRow>) {
-  const { table, columns, voidOf, selection, groupOf, renderDetail, rowActions } = props;
+  const { table, columns, voidOf, selection, groupOf, renderDetail, rowActions, rowLink } = props;
   const rows = table.getRowModel().rows;
   const columnCount =
     columns.length + Number(selection !== undefined) + Number(rowActions !== undefined);
@@ -35,6 +35,7 @@ export function DataTableBody<TRow extends RowData>(props: BodyProps<TRow>) {
               selection={selection}
               renderDetail={renderDetail}
               rowActions={rowActions}
+              rowLink={rowLink}
             />
           </RowGroup>
         );

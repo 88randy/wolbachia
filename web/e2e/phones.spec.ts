@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { makeMe } from "../src/test/fake-api";
 import { makePhone, makePhones } from "./fixtures/devices-mock";
 import { expectNoHorizontalScroll } from "./fixtures/a11y";
+import { chooseOption } from "./fixtures/combobox";
 import { mockApi } from "./fixtures/mock-api";
 
 const PHONES = "/settings/phones";
@@ -42,7 +43,7 @@ test.describe("phones list (W67)", () => {
     await expect(luis).toContainText("3 nov 2026");
     await expect(luis).toContainText("Activo");
     await expect(page.getByRole("row", { name: /Teléfono de Pedro/ })).toContainText("Revocado");
-    await expect(page.getByText("Mostrando 1 a 3 de 3")).toBeVisible();
+    await expect(page.getByText("1–3 de 3")).toBeVisible();
     await expect(page.getByRole("button", { name: /revocar|subir|publicar/i })).toHaveCount(0);
   });
 
@@ -56,7 +57,7 @@ test.describe("phones list (W67)", () => {
     release();
 
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toBeVisible();
-    await expect(page.getByText("Mostrando 1 a 1 de 1")).toBeVisible();
+    await expect(page.getByText("1–1 de 1")).toBeVisible();
   });
 
   test("the status filter is in the address, shows a chip and the back button undoes it", async ({
@@ -66,7 +67,8 @@ test.describe("phones list (W67)", () => {
     await page.goto(PHONES);
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toBeVisible();
 
-    await page.getByRole("combobox", { name: "Estado" }).selectOption({ label: "Revocado" });
+    await page.getByRole("button", { name: "Filtros" }).click();
+    await chooseOption(page, page.getByRole("combobox", { name: "Estado" }), "Revocado");
 
     await expect(page.getByRole("row", { name: /Teléfono de Pedro/ })).toBeVisible();
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toHaveCount(0);
@@ -79,7 +81,7 @@ test.describe("phones list (W67)", () => {
 
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toBeVisible();
     expect(search(page)).toBe("");
-    await expect(page.getByRole("combobox", { name: "Estado" })).toHaveValue("");
+    await expect(page.getByRole("list", { name: "Filtros activos" })).toHaveCount(0);
   });
 
   test("a chip and Clear filters remove the filter", async ({ page }) => {
@@ -119,7 +121,7 @@ test.describe("phones list (W67)", () => {
     await expect(page.getByText("Página 2 de 3")).toBeVisible();
     await expect(page.getByRole("row", { name: /Teléfono 26/ })).toBeVisible();
     await expect(page.getByRole("row", { name: /Teléfono 01/ })).toHaveCount(0);
-    await expect(page.getByText(`Mostrando ${String(PAGE_SIZE + 1)} a 50 de 60`)).toBeVisible();
+    await expect(page.getByText(`${String(PAGE_SIZE + 1)}–50 de 60`)).toBeVisible();
     expect(search(page)).toBe("?page=2");
     await expect(next).toBeFocused();
 
@@ -222,7 +224,7 @@ test.describe("phones list (W67)", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: "Phones" })).toBeVisible();
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toContainText("Nov 3, 2026");
-    await expect(page.getByText("Showing 1 to 1 of 1")).toBeVisible();
+    await expect(page.getByText("1–1 of 1")).toBeVisible();
   });
 
   test("a content dialog that was open is covered by the session blocker, so Retry is reachable", async ({

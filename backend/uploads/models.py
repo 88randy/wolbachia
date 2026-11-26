@@ -17,6 +17,12 @@ class EvidenceRecord(ImmutableMixin, OrgScopedModel):
 
 
 class Upload(EvidenceRecord):
+    purpose = models.CharField(
+        max_length=32,
+        default="",
+        db_default="",
+        choices=[("", ""), ("egg_annotation", "egg_annotation")],
+    )
     public_id = models.UUIDField(default=uuid.uuid4)
     uploader = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
@@ -25,7 +31,7 @@ class Upload(EvidenceRecord):
         "accounts.Device", on_delete=models.PROTECT, null=True, related_name="+"
     )
     content_type = models.CharField(
-        max_length=16, choices=[(value, value) for value in CONTENT_TYPES]
+        max_length=16, choices=[(value, value) for value in (*CONTENT_TYPES, "image/webp")]
     )
     size_bytes = models.PositiveIntegerField()
     sha256 = models.CharField(max_length=64)
@@ -74,7 +80,25 @@ class UploadVerification(EvidenceRecord):
     height = models.PositiveIntegerField()
 
 
+class UploadSanitizationFailure(EvidenceRecord):
+    """One immutable rejection prevents repeated decoding of the same source bytes."""
+
+    upload = models.OneToOneField(
+        Upload, on_delete=models.PROTECT, related_name="sanitization_failure"
+    )
+    code = models.CharField(max_length=64)
+    params = models.JSONField(default=dict)
+
+
 class AttachmentLink(EvidenceRecord):
+    # Parent resolution and completion already use the upload OneToOne index.
+    egg_annotation = models.ForeignKey(
+        "lab.EggAnnotation",
+        null=True,
+        db_index=False,
+        on_delete=models.PROTECT,
+        related_name="attachments",
+    )
     upload = models.OneToOneField(Upload, on_delete=models.PROTECT, related_name="attachment")
     field_event = models.ForeignKey(
         "field_sync.FieldEvent", null=True, on_delete=models.PROTECT, related_name="attachments"
@@ -120,116 +144,132 @@ class AttachmentLink(EvidenceRecord):
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
+                    models.Q(egg_annotation__isnull=True)
+                    & (
+                        models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=False,
+                            certification__isnull=True,
+                            inventory_intent__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                            inventory_intent__isnull=False,
+                            certification__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_paddle_command__isnull=True,
+                            lab_rejection__isnull=True,
+                            inventory_intent__isnull=True,
+                            certification__isnull=False,
+                        )
+                        | models.Q(
+                            material_request__isnull=True,
+                            lab_paddle_command__isnull=False,
+                            certification__isnull=True,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_rejection__isnull=True,
+                            inventory_intent__isnull=True,
+                        )
+                        | models.Q(
+                            material_request__isnull=False,
+                            field_event__isnull=True,
+                            fault__isnull=True,
+                            incident__isnull=True,
+                            review_item__isnull=True,
+                            transfer_event__isnull=True,
+                            lab_rejection__isnull=True,
+                            inventory_intent__isnull=True,
+                            certification__isnull=True,
+                            lab_paddle_command__isnull=True,
+                        )
                     )
                     | models.Q(
+                        egg_annotation__isnull=False,
                         material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=False,
-                        certification__isnull=True,
-                        inventory_intent__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                        inventory_intent__isnull=False,
-                        certification__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_paddle_command__isnull=True,
-                        lab_rejection__isnull=True,
-                        inventory_intent__isnull=True,
-                        certification__isnull=False,
-                    )
-                    | models.Q(
-                        material_request__isnull=True,
-                        lab_paddle_command__isnull=False,
-                        certification__isnull=True,
-                        field_event__isnull=True,
-                        fault__isnull=True,
-                        incident__isnull=True,
-                        review_item__isnull=True,
-                        transfer_event__isnull=True,
-                        lab_rejection__isnull=True,
-                        inventory_intent__isnull=True,
-                    )
-                    | models.Q(
-                        material_request__isnull=False,
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,

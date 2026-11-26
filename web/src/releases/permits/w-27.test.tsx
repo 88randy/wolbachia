@@ -151,7 +151,7 @@ describe("W44 permits and W45 record", () => {
     });
     const valid = await screen.findByRole("row", { name: /P-014/ });
     expect(within(valid).getByText("Vigente")).toBeDefined();
-    expect(within(valid).getByText("C-07 · Q-08")).toBeDefined();
+    expect(within(valid).getByText("Q-08")).toBeDefined();
     const suspended = screen
       .getAllByRole("row")
       .find((row) => row.textContent.includes("Suspendido"));

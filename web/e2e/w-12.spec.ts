@@ -145,8 +145,7 @@ for (const language of LANGUAGES)
       await page.keyboard.press("Enter");
       await expect(
         page.getByRole("status").filter({
-          hasText:
-            language === "en" ? "Reading saved on the server" : "Lectura guardada en el servidor",
+          hasText: language === "en" ? "Reading saved" : "Lectura guardada",
         }),
       ).toBeVisible();
       expect(writes).toEqual([

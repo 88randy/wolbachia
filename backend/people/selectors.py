@@ -86,7 +86,7 @@ def scoped_evaluations(actor: UploadActor, permission: str) -> QuerySet[Evaluati
     voids = EvaluationVoid.objects.filter(evaluation_id=OuterRef("pk"))
     return (
         scoped_facts(rows, current_scope(actor), permission)
-        .select_related("void_record")
+        .select_related("void_record", "rubric_version")
         .annotate(
             **{"_current_attempt_id": Subquery(attempts.values("id")[:1])},
             _read_revision=Greatest(

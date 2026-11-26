@@ -313,8 +313,10 @@ still require owner verification. No public OSM bulk/offline download is added.
 Vite emits dist/security-headers.conf from web/nginx/security-headers.conf using
 its resolved build environment (including --mode). Docker accepts both map build
 arguments and copies that generated file into nginx. CSP img-src/connect-src
-allow only self and the configured tile origin; worker-src allows self/blob for
-MapLibre. Styles must keep tile/glyph/sprite resources on that origin or self;
+allow only self and the configured tile origin; img-src also allows data: and
+blob: so locally selected or fetched photos (W35 annotation canvas, bag trace
+photos) render from object URLs, with no remote image origin; worker-src allows
+self/blob for MapLibre. Styles must keep tile/glyph/sprite resources on that origin or self;
 no broad https wildcard is added. The static source config supports the default
 OSM source. API session/CSRF and API network access still use api-client only.
 

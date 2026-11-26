@@ -11,7 +11,7 @@ export const errors: Record<keyof typeof source, string> = {
     "This motorcycle has an open shift. Close the shift before voiding it.",
   "errors.api.duplicateCode": "That code is already registered. Use another code and try again.",
   "errors.api.generic": "We couldn't complete the action. Please try again.",
-  "errors.api.network": "We can't reach the server. Check your signal and try again.",
+  "errors.api.network": "No connection. Check your signal and try again.",
   "errors.api.validation": "Some data is not valid. Review the highlighted fields and fix them.",
   "errors.api.notFound": "We couldn't find what you're looking for. Go back and try again.",
   "errors.api.permissionDenied":

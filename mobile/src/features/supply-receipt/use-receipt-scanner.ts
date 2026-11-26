@@ -24,7 +24,8 @@ function useScannerContext(model: M05Model) {
   return useCallback(() => {
     const { model: current, route: screen } = latest.current;
     const snapshot = auth.getSnapshot();
-    if (snapshot.phase !== "unlocked" || AppState.currentState !== "active") return null;
+    if (snapshot.phase !== "unlocked" || (AppState.currentState ?? "active") !== "active")
+      return null;
     const draft = interactiveDraft(current, screen.name);
     if (!draft) return null;
     const identity = acceptedEvidenceOwner({
@@ -71,7 +72,7 @@ function useScannerPermission(input: {
   const [permission, requestPermission] = useCameraPermissions();
   const [isRequesting, setRequesting] = useState(false);
   const [errorKey, setError] = useState<MessageKey | null>(null);
-  const start = async () => {
+  const start = async (isSecondTry = false): Promise<void> => {
     setRequesting(true);
     setError(null);
     const result = await input.session.start({
@@ -79,6 +80,12 @@ function useScannerPermission(input: {
       permission,
       requestPermission,
     });
+    // The system prompt sends the app to the background, which retires the first attempt; the
+    // permission is already answered, so one more attempt shows the camera without asking again.
+    if (result.kind === "retry" && !isSecondTry) {
+      setRequesting(false);
+      return start(true);
+    }
     setRequesting(input.session.isRequesting);
     if (result.kind === "ready") input.show(result.ticket);
     else if (result.kind !== "busy")

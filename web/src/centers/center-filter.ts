@@ -16,6 +16,7 @@ export const CENTER_FILTER = {
   kind: "text",
   labelKey: "geography.field.center",
   maxLength: 36,
+  input: "hidden",
 } as const;
 export const CENTER_TABLE: TableQueryConfig = {
   paging: "page",

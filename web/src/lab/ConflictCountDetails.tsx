@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { nameOrDash } from "../lookups/use-reference-names";
 import type { Count } from "./lab-query";
 
 export function ConflictCountDetails({ count }: { count: Count | undefined }) {
@@ -9,7 +10,7 @@ export function ConflictCountDetails({ count }: { count: Count | undefined }) {
   return (
     <dl>
       <dt>{t("lab.history.author")}</dt>
-      <dd>{count.created_by}</dd>
+      <dd>{nameOrDash(count.created_by_name)}</dd>
       <dt>{t("lab.history.time")}</dt>
       <dd>
         <time dateTime={count.created_at}>{format(count.created_at)}</time>

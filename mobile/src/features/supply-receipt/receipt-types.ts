@@ -31,13 +31,20 @@ export interface ReceiptDraft {
   } | null;
   readonly strokes: readonly string[];
   readonly signature: Evidence | null;
+  /** False when the delivery is already warehouse-signed (or the rule says warehouse only). Absent = true. */
+  readonly needsSignature?: boolean;
   readonly evidence: readonly Evidence[];
 }
 export interface ReceiptState {
   readonly review?: Schemas["ReviewHistoryEntry"] | null;
   readonly ready: boolean;
+  /** The open shift, so the list only offers deliveries that can be received now. */
+  readonly shiftId: string | null;
   readonly assignments: readonly Schemas["SupplyBundle"][];
+  /** Every receipt on this phone, saved or not: its releases are "started" for the pending rule. */
   readonly drafts: readonly ReceiptDraft[];
+  /** Only the unsaved ones: the "Continuar entrega" rows. A saved receipt is never actionable there. */
+  readonly openDrafts: readonly ReceiptDraft[];
   readonly draft: ReceiptDraft | null;
   readonly event: OutboxEvent | null;
   readonly feedback: "duplicate" | "added" | "invalid" | null;

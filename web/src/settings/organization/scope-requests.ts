@@ -25,6 +25,7 @@ export function requestScopeSnapshot({ client, target, guard }: Context) {
 interface Change extends Context {
   scope: WorkScope;
   permissions: string[];
+  profiles: string[];
   revision: number;
 }
 export function requestScopeChange({
@@ -33,6 +34,7 @@ export function requestScopeChange({
   guard,
   scope,
   permissions,
+  profiles,
   revision,
 }: Change) {
   if (target.kind === "role")
@@ -46,7 +48,7 @@ export function requestScopeChange({
   return client
     .POST("/api/v1/memberships/{id}/change-scope/", {
       params: { path: { id: target.record.id } },
-      body: { scope, expected_revision: revision },
+      body: { scope, profiles, expected_revision: revision },
       signal: guard.signal,
     })
     .then(unwrap);

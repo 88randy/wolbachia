@@ -59,17 +59,17 @@ it does not download private image bytes.
 
 ## Criterion → test
 
-| Criterion / invariant | Owning proof |
-| --- | --- |
-| Verified signature/photo, same-file retry and pending/stale proof rejection | `transfer-evidence.test.ts` |
-| Exact quantities, missing coverage, duplicate pieces, ambiguous/unknown scans | `transfer-reception.test.ts` |
-| Same-batch signature, photo and scan preservation | `reception-draft.test.ts` |
-| Lost receipt retry UUID/body, 401 no replay, 409 draft retention/blockers | `transfer-session.test.tsx` |
-| Empty/changed scope, permitted draft restoration/denial retirement, opaque codes and committed detail | `transfer-session.test.tsx`, `discrepancy.test.tsx` |
-| A transient old outlet cannot read/write the new route | `transfer-route-scope.test.ts` |
-| Four resolution outcomes, complete quantity partition and exact close retry | `discrepancy-resolution.test.ts`, `discrepancy.test.tsx` |
-| Upload/CSRF/organization wiring and committed scan focus | `e2e/w-10.spec.ts` journey |
-| Keyboard/modal focus, axe, contrast, es-MX/en, light/dark, 320px and +30% text | Four combinations in `e2e/w-10.spec.ts` |
+| Criterion / invariant                                                                                 | Owning proof                                             |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Verified signature/photo, same-file retry and pending/stale proof rejection                           | `transfer-evidence.test.ts`                              |
+| Exact quantities, missing coverage, duplicate pieces, ambiguous/unknown scans                         | `transfer-reception.test.ts`                             |
+| Same-batch signature, photo and scan preservation                                                     | `reception-draft.test.ts`                                |
+| Lost receipt retry UUID/body, 401 no replay, 409 draft retention/blockers                             | `transfer-session.test.tsx`                              |
+| Empty/changed scope, permitted draft restoration/denial retirement, opaque codes and committed detail | `transfer-session.test.tsx`, `discrepancy.test.tsx`      |
+| A transient old outlet cannot read/write the new route                                                | `transfer-route-scope.test.ts`                           |
+| Four resolution outcomes, complete quantity partition and exact close retry                           | `discrepancy-resolution.test.ts`, `discrepancy.test.tsx` |
+| Upload/CSRF/organization wiring and committed scan focus                                              | `e2e/w-10.spec.ts` journey                               |
+| Keyboard/modal focus, axe, contrast, es-MX/en, light/dark, 320px and +30% text                        | Four combinations in `e2e/w-10.spec.ts`                  |
 
 Run focused Vitest from `web` with
 `node ../node_modules/vitest/vitest.mjs run --maxWorkers=1 --pool=threads --silent=false src/inventory/transfers`.

@@ -10,6 +10,7 @@ interface Props extends TrainingEditorOptions {
   title: MessageKey;
   description: MessageKey;
   hasActive?: boolean;
+  triggerVariant?: "primary" | "secondary";
   renderBefore?: (editor: ReturnType<typeof useTrainingEditor>) => ReactNode;
 }
 export function TrainingCommandDialog(props: Props) {
@@ -22,7 +23,7 @@ export function TrainingCommandDialog(props: Props) {
       title={t(props.title)}
       description={t(props.description)}
       trigger={
-        <Button variant="secondary" aria-disabled={props.isBlocked}>
+        <Button variant={props.triggerVariant ?? "secondary"} aria-disabled={props.isBlocked}>
           {t(props.title)}
         </Button>
       }

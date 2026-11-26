@@ -16,10 +16,16 @@ export const NEW_EVALUATION_ID = "14800000-0000-4000-8000-000000000010";
 const CERTIFICATE_ID = "14800000-0000-4000-8000-000000000011";
 const OLD_ATTEMPT_ID = "14800000-0000-4000-8000-000000000012";
 const ATTEMPT_ID = "14800000-0000-4000-8000-000000000013";
+export const SUBJECT_NAME = "Synthetic promoter";
+export const CENTER_NAME = "Synthetic center";
 export const CLOCK = "2026-11-09T18:00:00Z";
 export const EXPIRY = "2027-11-09T18:00:00Z";
 export const RUBRIC_CODE = "FIELD-148";
 export const TRAINING_CODE = "COURSE-148";
+
+/** Smallest bytes the upload check accepts: the PNG signature plus a few bytes. */
+export const PNG_BYTES = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
+const UPLOAD_LEASE = "synthetic-lease";
 
 const pageOf = <T>(results: T[]) => ({
   count: results.length,
@@ -98,6 +104,7 @@ const oldEvaluation: Schemas["EvaluationRead"] = {
   id: OLD_EVALUATION_ID,
   subject_id: SUBJECT_ID,
   rubric_version_id: OLD_RUBRIC_VERSION,
+  rubric_version_number: 1,
   center_id: CENTER_ID,
   quadrant_id: null,
   created_at: "2026-10-20T18:00:00Z",
@@ -142,8 +149,9 @@ function replyRubric(route: Route) {
   const url = new URL(route.request().url());
   if (url.pathname.endsWith("/versions/"))
     return route.fulfill({ json: pageOf([oldRubric, rubricVersion]) });
+  const code = url.searchParams.get("code");
   return route.fulfill({
-    json: pageOf(url.searchParams.get("code") === RUBRIC_CODE ? [rubric] : []),
+    json: pageOf(!code || code === RUBRIC_CODE ? [rubric] : []),
   });
 }
 function replyCertification(route: Route, state: JourneyState) {
@@ -229,6 +237,26 @@ function newAttempt(
   };
 }
 
+/** B04 evidence upload: authorize, PUT the original, finalize as verified. */
+function replyUpload(route: Route) {
+  const url = new URL(route.request().url());
+  if (route.request().method() === "PUT") return route.fulfill({ status: 204 });
+  if (url.pathname.endsWith("/finalize/"))
+    return route.fulfill({
+      json: { id: EVIDENCE_ID, state: "verified", verified_at: CLOCK },
+    });
+  return route.fulfill({
+    status: 201,
+    json: {
+      upload_id: EVIDENCE_ID,
+      url: `/api/v1/field/uploads/${EVIDENCE_ID}/content/`,
+      method: "PUT",
+      headers: { "Content-Type": "image/png", "Upload-Lease": UPLOAD_LEASE },
+      expires_at: EXPIRY,
+    },
+  });
+}
+
 /** Synthetic B03 wiring; a saved command is never represented as an HR delivery receipt. */
 export async function mockPeopleJourney(page: Page) {
   const state: JourneyState = { commands: [], certificates: [], evaluations: [oldEvaluation] };
@@ -247,6 +275,16 @@ export async function mockPeopleJourney(page: Page) {
   await page.route(`**/api/v1/users/${SUBJECT_ID}/eligibility/**`, (route) =>
     replyEligibility(route, state),
   );
+  await page.route("**/api/v1/field/uploads/**", replyUpload);
+  await page.route("**/api/v1/users/operational/**", (route) =>
+    route.fulfill({
+      json: pageOf([{ id: SUBJECT_ID, display_name: SUBJECT_NAME, profiles: ["promoter"] }]),
+    }),
+  );
+  await page.route("**/api/v1/centers/**", (route) =>
+    route.fulfill({ json: pageOf([{ id: CENTER_ID, code: "C-148", name: CENTER_NAME }]) }),
+  );
+  await page.route("**/api/v1/quadrants/**", (route) => route.fulfill({ json: pageOf([]) }));
   await page.route("**/api/v1/evaluations/**", (route) => replyEvaluation(route, state));
   return state;
 }

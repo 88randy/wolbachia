@@ -1,4 +1,6 @@
 import { currentPointScopeSql } from "../features/ovitrap-lifecycle/current-scope.ts";
+import { capturePointScopeSql } from "../features/ovitrap-lifecycle/context-sql.ts";
+import { lateCaptureScopeSql } from "../features/ovitrap-check/late-scope.ts";
 import { INCIDENT_SCHEMA } from "../features/incidents/schema.ts";
 import {
   IDENTITY_EFFECTS,
@@ -16,6 +18,7 @@ import { SUPPLY_RECEIPT_SCHEMA } from "../features/supply-receipt/schema.ts";
 import { FUEL_SCHEMA } from "../features/fuel/schema.ts";
 import { RELEASE_SCHEMA } from "../features/releases/schema.ts";
 import { SAMPLE_SCHEMA } from "../features/samples/schema.ts";
+import { TRACK_SCHEMA } from "../features/track/schema.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -306,6 +309,32 @@ const MIGRATIONS: readonly (readonly string[])[] = [
   INCIDENT_SCHEMA,
   RELEASE_SCHEMA,
   SAMPLE_SCHEMA,
+  [
+    "DROP TRIGGER shift_open_captured_immutable",
+    `CREATE TRIGGER shift_open_captured_immutable BEFORE UPDATE ON shift_open_state
+      WHEN OLD.opening_event_id IS NOT NULL AND (
+        NEW.opening_event_id IS NOT NULL OR NOT EXISTS
+        (SELECT 1 FROM outbox_event o WHERE o.id = OLD.opening_event_id AND (o.local_status = 'rejected'
+          OR EXISTS (SELECT 1 FROM outbox_event c WHERE c.type = 'shift.close' AND c.shift_id = o.shift_id))))
+      BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected or closed'); END`,
+  ],
+  [
+    "DROP TRIGGER ovitrap_capture_current_scope",
+    `CREATE TRIGGER ovitrap_capture_current_scope BEFORE INSERT ON ovitrap_capture
+    WHEN (NOT EXISTS(${currentPointScopeSql("json_extract(NEW.draft,'$.point.id')")})
+      OR NOT EXISTS(${capturePointScopeSql("json_extract(NEW.draft,'$.point.id')")}))
+      AND NOT EXISTS(${lateCaptureScopeSql("NEW.draft")})
+    BEGIN SELECT RAISE(ABORT,'current M08 assignment, capture scope or epoch is unavailable'); END`,
+  ],
+  [
+    // Discarding an unsent draft drops its photos; a file that was sent or is bound to an event stays.
+    "DROP TRIGGER attachment_retained",
+    `CREATE TRIGGER attachment_retained BEFORE DELETE ON attachment_file
+      WHEN OLD.state NOT IN ('adopting','ready')
+        OR EXISTS(SELECT 1 FROM attachment_event WHERE evidence_id = OLD.id)
+      BEGIN SELECT RAISE(ABORT,'evidence is retained'); END`,
+  ],
+  TRACK_SCHEMA,
 ];
 
 /** Highest schema version this build knows. */

@@ -2,6 +2,14 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { AREAS } from "../router/areas";
 const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   shifts: "shift.page.title",
+  editor: "mapEditor.title",
+  users: "users.page.title",
+  plan: "scheduling.plan.menu",
+  live: "live.title",
+  risk: "scheduling.risk.menu",
+  interventions: "scheduling.intervention.title",
+  import: "scheduling.import.title",
+  assignments: "scheduling.assign.title",
   phones: "phones.page.title",
   "rule-parameters": "rules.page.title",
   catalogs: "catalogs.page.title",
@@ -10,17 +18,30 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "incident-types": "incidentTypes.page.title",
   motorcycles: "fleet.page.title",
   versions: "geography.history.title",
+  points: "geography.points.title",
   bags: "labReception.page.title",
   "permit-types": "permits.types.title",
   permits: "permits.list.title",
+  devices: "releases.devices.title",
   trainings: "trainings.workspace.title",
   evaluations: "evaluations.page.title",
   reviews: "reviews.workspace.title",
   relocations: "relocations.workspace.title",
-  closure: "closure.page.title",
+  closure: "closure.crumb",
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
+  annotate: "labAnnotation.editor.action",
   "count-history": "lab.history.title",
+  "data-transfers": "regulatory.page.transfers",
+  exports: "regulatory.page.exports",
+  "arco-requests": "regulatory.page.arco",
+  "access-log": "regulatory.page.accessLog",
+  "export-receipts": "regulatory.access.tab.exports",
+  "portal-settings": "regulatory.page.portal",
+  retention: "regulatory.page.retention",
+  comparison: "comparison.crumb",
+  "api-keys": "apiKeys.crumb",
+  records: "shell.crumb.records",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   transfers: "transfers.page.title",
@@ -32,7 +53,9 @@ const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   reconciliations: "allocation.reconciliation.title",
   "write-offs": "allocation.writeOff.title",
 };
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 function resourceKey(parts: string[], index: number): MessageKey | undefined {
+  if (UUID.test(parts[index] ?? "")) return "releases.detail.crumb";
   if (parts[0] !== "inventory") return RESOURCE_LABELS[parts[index] ?? ""];
   if (index === 1) return INVENTORY_LABELS[parts[index] ?? ""];
   return lotResourceKey(parts, index);
@@ -43,19 +66,30 @@ function lotResourceKey(parts: string[], index: number): MessageKey | undefined 
   if (index === 3 && parts[index] === "conditions") return "conditions.page.title";
   return undefined;
 }
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What the router knows about a path: its declared crumb label, and whether it is a route. */
+export interface CrumbSource {
+  crumbOf: (path: string) => MessageKey | undefined;
+  isRoute: (path: string) => boolean;
+}
+
 /** Only known routes become ancestor links; human codes remain plain text. */
-export function breadcrumbsOf(pathname: string) {
-  const parts = pathname.split("/").filter(Boolean);
+export function breadcrumbsOf(pathname: string, source?: CrumbSource) {
+  // Records without a human code (UUID routes) end the trail at their list.
+  const parts = pathname.split("/").filter((part) => part && !UUID_PATTERN.test(part));
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;
-    const key = area ? (`shell.nav.${area.id}` as MessageKey) : resourceKey(parts, index);
     const path = `/${parts.slice(0, index + 1).join("/")}`;
+    const key = area
+      ? (`shell.nav.${area.id}` as MessageKey)
+      : (resourceKey(parts, index) ?? source?.crumbOf(path));
     return {
       path,
       label: part,
       key,
-      isLinked: key !== undefined && part !== "versions",
+      isLinked: key !== undefined && part !== "versions" && (source?.isRoute(path) ?? true),
       isCurrent: index === parts.length - 1,
     };
   });

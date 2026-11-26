@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
+import { TextField } from "../../forms/TextField";
 import type { OrganizationFormController } from "./use-organization-form";
 type Field = "name" | "country" | "timezone" | "label_phone" | "support_contact";
 interface Definition {
@@ -20,20 +21,20 @@ export function OrganizationTextFields({ controller }: { controller: Organizatio
   return (
     <>
       {FIELDS.map(({ field, key, max, isReadOnly }) => (
-        <label key={field}>
-          {t(key)}
-          <input
-            value={controller.settings[field]}
-            required={field === "name" || field === "timezone"}
-            maxLength={max}
-            readOnly={isReadOnly}
-            onChange={(event) => {
-              controller.change(field, event.target.value);
-            }}
-          />
-        </label>
+        <TextField
+          key={field}
+          id={`organization-${field}`}
+          label={t(key)}
+          hint={isReadOnly ? t("orgAdmin.organization.countryReadOnly") : undefined}
+          value={controller.settings[field]}
+          required={field === "name" || field === "timezone"}
+          maxLength={max}
+          readOnly={isReadOnly}
+          onChange={(event) => {
+            controller.change(field, event.target.value);
+          }}
+        />
       ))}
-      <p>{t("orgAdmin.organization.countryReadOnly")}</p>
     </>
   );
 }

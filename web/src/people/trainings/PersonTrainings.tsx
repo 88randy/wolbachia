@@ -14,7 +14,6 @@ export function PersonTrainings({ scope }: { scope: TrainingScope }) {
   const isAllowed = canReadPersonContext(me, context);
   return (
     <Card title={t("trainings.person.title")}>
-      <p>{t("trainings.person.lookupHint")}</p>
       <PersonTrainingSearch key={`search:${JSON.stringify(context)}`} context={context} />
       {context.subject && !isAllowed && (
         <InlineNotice tone="warning">{t("trainings.course.unavailable")}</InlineNotice>

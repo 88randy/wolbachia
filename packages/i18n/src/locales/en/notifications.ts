@@ -1,6 +1,8 @@
 import type { notifications as Spanish } from "../es-MX/notifications.ts";
 export const notifications = {
   "notifications.page.title": "Notifications",
+  "notifications.tabs.inbox": "Notices",
+  "notifications.tabs.preferences": "Preferences",
   "notifications.page.purpose": "Review your notifications and choose how to receive them.",
   "notifications.page.all": "View all notifications",
   "notifications.page.denied":

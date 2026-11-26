@@ -1,5 +1,6 @@
 """Thin authenticated Lab commands and action-scoped read projections."""
 
+from collections.abc import Callable, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -12,12 +13,14 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.author_names import prime_author_names
 from core.exceptions import FieldValidationError
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
 from incidents.permissions import INCIDENT_MANAGE_TYPE
 from lab import selectors
 from lab.access import LabTarget
+from lab.annotation_serializers import EggAnnotationSerializer
 from lab.facade import run_command
 from lab.incidents import policy_availability, write_reception_policy
 from lab.methods import decide_method, write_method
@@ -55,7 +58,7 @@ from lab.serializers import (
     ReceptionPolicyWriteSerializer,
     RecountRequestSerializer,
 )
-from uploads.access import actor_from_request
+from uploads.access import actor_from_request, current_scope
 
 UUID_ROUTE = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 VERSION_PARAMETER = OpenApiParameter(
@@ -75,11 +78,19 @@ class LabReadViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet[Any]):
         query.is_valid(raise_exception=True)
         return dict(query.validated_data)
 
-    def page_response(self, rows: QuerySet[Any], projection: Any) -> Response:  # noqa: ANN401 -- closed resource projection
+    def page_response(
+        self,
+        rows: QuerySet[Any],
+        projection: Any,  # noqa: ANN401 -- closed resource projection
+        before_projection: Callable[[list[Any]], None] | None = None,
+    ) -> Response:
+        """`before_projection` sees the whole page once, e.g. to publish it in constant queries."""
         page = self.paginate_queryset(rows)
-        if page is None:
-            return Response([projection(row) for row in rows])
-        return self.get_paginated_response([projection(row) for row in page])
+        items = list(rows) if page is None else list(page)
+        if before_projection is not None:
+            before_projection(items)
+        body = [projection(row) for row in items]
+        return Response(body) if page is None else self.get_paginated_response(body)
 
 
 class LabResultViewSet(LabReadViewSet):
@@ -110,8 +121,16 @@ class LabResultViewSet(LabReadViewSet):
             return self.result_list_response(actor)
 
     def result_list_response(self, actor: Any) -> Response:  # noqa: ANN401 -- actual request UploadActor
+        page_facts: list[selectors.BagLabFacts] = []
+
+        def prepare(page: list[Any]) -> None:
+            selectors.publish_result_page(actor, page)
+            page_facts.append(selectors.result_page_facts(page))
+
         response = self.page_response(
-            self.get_queryset(), lambda row: selectors.published_result_projection(actor, row)
+            self.get_queryset(),
+            lambda row: selectors.result_projection(row, page_facts[0]),
+            prepare,
         )
         if self.result_kind == "count" and "qa_state" in self.request.query_params:
             from lab.independent_qa.services import publish_inferred_counts
@@ -146,6 +165,26 @@ class LabResultViewSet(LabReadViewSet):
 
 
 class EggCountViewSet(LabResultViewSet):
+    required_permissions = {**LabResultViewSet.required_permissions, "annotation": COUNT_READ}
+
+    @extend_schema(responses=EggAnnotationSerializer)
+    @action(detail=True, methods=["get"])
+    def annotation(self, request: Request, pk: str | None = None) -> Response:
+        from lab.annotations import annotation_projection
+        from lab.independent_qa.services import numeric_read_transaction
+        from lab.models import EggAnnotation
+
+        actor = actor_from_request(request)
+        with numeric_read_transaction(actor):
+            count = get_object_or_404(self.get_queryset(), pk=pk)
+            annotation = get_object_or_404(
+                EggAnnotation.objects.select_related("bag", "image_upload"),
+                count=count,
+                organization=actor.organization,
+            )
+            selectors.publish_result_page(actor, [count])
+            return Response(annotation_projection(annotation))
+
     @extend_schema(
         parameters=[LabQueueQuerySerializer], responses=LabQueueCandidateSerializer(many=True)
     )
@@ -198,13 +237,19 @@ class LabDiscrepancyViewSet(LabReadViewSet):
             from lab.models import ReceptionDiscrepancy
 
             return ReceptionDiscrepancy.objects.none()
-        return selectors.discrepancy_rows(actor_from_request(self.request), self.read_query())
+        values = self.read_query()
+        if "configuration_pending" not in self.request.query_params:
+            # DRF reads an absent boolean from a QueryDict as False, which would hide every
+            # case still waiting for incident configuration; only an explicit filter applies.
+            values.pop("configuration_pending", None)
+        return selectors.discrepancy_rows(actor_from_request(self.request), values)
 
     @extend_schema(parameters=[LabListQuerySerializer])
     def list(self, request: Request) -> Response:
         actor = actor_from_request(request)
+        scope = current_scope(actor)  # Once per page, not once per row.
         return self.page_response(
-            self.get_queryset(), lambda row: selectors.discrepancy_projection(actor, row)
+            self.get_queryset(), lambda row: selectors.discrepancy_projection(actor, row, scope)
         )
 
     def retrieve(self, request: Request, pk: str | None = None) -> Response:
@@ -227,14 +272,16 @@ class RecountRequestViewSet(LabReadViewSet):
         with numeric_read_transaction(actor):
             return self.page_response(
                 selectors.recount_rows(actor, self.read_query()),
-                lambda row: self.published_request(actor, row),
+                lambda row: dict(RecountRequestSerializer(row).data),
+                lambda page: self.publish_page(actor, page),
             )
 
-    def published_request(self, actor: Any, row: Any) -> dict[str, Any]:  # noqa: ANN401 -- existing serializer projection boundary
-        from lab.independent_qa.services import NumericPublication, publish_numeric_access
+    def publish_page(self, actor: Any, page: Sequence[Any]) -> None:  # noqa: ANN401 -- actual request UploadActor
+        from lab.independent_qa.services import NumericPublication, publish_numeric_access_batch
 
-        publish_numeric_access(actor, row.count, NumericPublication(COUNT_READ, "request"))
-        return dict(RecountRequestSerializer(row).data)
+        publish_numeric_access_batch(
+            actor, [row.count for row in page], NumericPublication(COUNT_READ, "request")
+        )
 
 
 class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):
@@ -267,8 +314,21 @@ class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveMod
     @action(detail=True, methods=["get"])
     def versions(self, request: Request, pk: str | None = None) -> Response:
         method = get_object_or_404(self.get_queryset(), pk=pk)
+        context: dict[str, Any] = {}
+
+        def prime(page: list[Any]) -> None:
+            authors = [row.created_by_id for row in page]
+            authors += [
+                verification.created_by_id
+                for row in page
+                for verification in getattr(row, "read_verifications", ())
+            ]
+            prime_author_names(context, method.organization_id, authors)
+
         return self.page_response(
-            method.versions.all(), lambda row: LabMethodVersionSerializer(row).data
+            selectors.method_version_rows(method),
+            lambda row: LabMethodVersionSerializer(row, context=context).data,
+            prime,
         )
 
     @extend_schema(request=LabMethodWriteSerializer, responses={201: LabMethodVersionSerializer})

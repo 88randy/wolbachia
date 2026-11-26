@@ -1,4 +1,5 @@
 import type { MessageKey } from "@wolbachia/i18n";
+import { writeErrorKey } from "../../outbox/write-error-key.ts";
 
 const ERROR_KEYS: Readonly<Record<string, MessageKey>> = {
   signature_required: "mobile.supplyReceipt.signatureRequired",
@@ -14,6 +15,6 @@ const ERROR_KEYS: Readonly<Record<string, MessageKey>> = {
 
 export function receiptErrorKey(error: unknown): MessageKey {
   if (error instanceof Error && "code" in error && typeof error.code === "string")
-    return ERROR_KEYS[error.code] ?? "mobile.storage.saveFailed";
-  return "mobile.storage.saveFailed";
+    return ERROR_KEYS[error.code] ?? writeErrorKey(error);
+  return writeErrorKey(error);
 }

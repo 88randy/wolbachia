@@ -171,6 +171,7 @@ def test_code_parameter_is_documented_on_opted_in_lists_only(schema: dict[str, A
         "blocked_reason",
         "created_at",
         "created_by",
+        "created_by_name",
         "is_cleared",
         "cleared_at",
         "clearance",
@@ -180,7 +181,7 @@ def test_code_parameter_is_documented_on_opted_in_lists_only(schema: dict[str, A
     assert clearance["nullable"] is True
     reference = clearance["allOf"][0]["$ref"]
     proof = components[reference.rsplit("/", 1)[-1]]["properties"]
-    assert set(proof) == {"id", "created_at", "reviewer", "reason", "evidence_ids"}
+    assert set(proof) == {"id", "created_at", "reviewer", "reviewer_name", "reason", "evidence_ids"}
     assert all(field["readOnly"] for field in proof.values())
     assert proof["reviewer"]["format"] == "uuid"
     assert proof["created_at"]["format"] == "date-time"

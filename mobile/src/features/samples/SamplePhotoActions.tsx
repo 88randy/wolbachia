@@ -1,5 +1,6 @@
+import { Camera, Undo2 } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Button } from "../../ui/Button.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { SampleViewModel } from "./view-model.ts";
 
 export function SamplePhotoActions({ model }: { readonly model: SampleViewModel }) {
@@ -7,15 +8,15 @@ export function SamplePhotoActions({ model }: { readonly model: SampleViewModel 
   const disabled = model.isBusy || !model.canEdit || model.status !== "draft";
   return (
     <>
-      <Button
-        variant="outline"
+      <SecondaryButton
+        icon={Camera}
         label={t("mobile.sample.takePhoto")}
         disabled={disabled}
         onPress={model.capturePhoto}
       />
       {model.evidenceCount > 0 ? (
-        <Button
-          variant="outline"
+        <SecondaryButton
+          icon={Undo2}
           label={t("mobile.sample.undoPhoto")}
           disabled={disabled}
           onPress={model.undoPhoto}

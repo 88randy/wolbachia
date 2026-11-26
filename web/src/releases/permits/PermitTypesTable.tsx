@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
 import { FilterBar } from "../../data-table/FilterBar";
@@ -11,13 +12,18 @@ import type { usePermitTypesScreen } from "./use-permit-types-screen";
 const getTypeId = (row: PermitType): string => row.id;
 
 /** Server-paged table of permit types with the shared filter bar. */
-export function PermitTypesTable({ screen }: { screen: ReturnType<typeof usePermitTypesScreen> }) {
+interface Props {
+  screen: ReturnType<typeof usePermitTypesScreen>;
+  actions: ReactNode;
+}
+
+export function PermitTypesTable({ screen, actions }: Props) {
   const { t } = useTranslation();
   const columns = usePermitTypeColumns();
   const { controller, query } = screen;
   return (
     <div className={styles.content}>
-      <FilterBar controller={controller} />
+      <FilterBar controller={controller} actions={actions} />
       <DataTable
         caption={t("permits.types.caption")}
         columns={columns}

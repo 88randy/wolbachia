@@ -61,6 +61,7 @@ class LabNumericDisclosure(LabFact):
                 "history",
                 "replay",
                 "physical_assessment",
+                "annotation_export",
             )
         ],
     )

@@ -42,7 +42,7 @@ def record_event_links(event: FieldEvent) -> None:
 
 
 def _link_declared(actor: UploadActor, upload: Upload, event_id: UUID) -> bool:
-    if upload.content_type == PDF_CONTENT_TYPE:
+    if upload.purpose or upload.content_type == PDF_CONTENT_TYPE:
         return False  # official documents are never field evidence; the declaration stays unlinked
     try:
         parent = authorize_target(actor, AttachmentTarget("field_event", event_id), upload)

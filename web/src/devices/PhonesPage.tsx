@@ -6,13 +6,11 @@ import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
 import { useSessionIdentity } from "../session/use-session-identity";
-import { useDocumentTitle } from "../shell/use-document-title";
-import page from "../styles/page.module.css";
+import { ListPage } from "../components/templates/ListPage";
 import { phonesQueryOptions } from "./phones-query";
 import type { Phone } from "./phones-query";
 import { PHONES_PAGE_SIZE, phonesTableFor } from "./phones-table";
 import { useMe } from "../session/use-me";
-import styles from "./phones.module.css";
 import { usePhoneColumns } from "./use-phone-columns";
 
 const getPhoneId = (phone: Phone): string => phone.id;
@@ -24,26 +22,21 @@ const getPhoneId = (phone: Phone): string => phone.id;
  */
 export function PhonesPage() {
   const { t } = useTranslation();
-  useDocumentTitle(t("phones.page.title"));
   const client = useApiClient();
   const controller = useTableUrlState(phonesTableFor(useMe().user.id));
   const columns = usePhoneColumns();
   const identity = useSessionIdentity();
   const query = useQuery(phonesQueryOptions(client, identity, controller.state));
   return (
-    <section className={page.page}>
-      <h1 className={page.title}>{t("phones.page.title")}</h1>
-      <p className={styles.hint}>{t("phones.page.hint")}</p>
-      <div className={styles.content}>
-        <FilterBar controller={controller} />
-        <DataTable
-          caption={t("phones.table.caption")}
-          columns={columns}
-          getRowId={getPhoneId}
-          controller={controller}
-          data={pageTableData(query, controller.state.page, PHONES_PAGE_SIZE)}
-        />
-      </div>
-    </section>
+    <ListPage title={t("phones.page.title")} description={t("phones.page.hint")}>
+      <FilterBar controller={controller} />
+      <DataTable
+        caption={t("phones.table.caption")}
+        columns={columns}
+        getRowId={getPhoneId}
+        controller={controller}
+        data={pageTableData(query, controller.state.page, PHONES_PAGE_SIZE)}
+      />
+    </ListPage>
   );
 }

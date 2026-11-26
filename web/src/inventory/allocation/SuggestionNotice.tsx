@@ -1,4 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useCan } from "../../session/use-can";
 import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/InlineNotice";
 import type { AssignmentPanelState } from "./use-assignment-panel";
@@ -10,6 +12,7 @@ export function SuggestionNotice({
   suggestion: AssignmentPanelState["suggestion"];
 }) {
   const { t } = useTranslation();
+  const canConfigure = useCan()("supply_type.update");
   if (suggestion.isError)
     return (
       <InlineNotice
@@ -24,9 +27,16 @@ export function SuggestionNotice({
       </InlineNotice>
     );
   if (!suggestion.data || suggestion.data.status === "assessed") return null;
-  const key =
-    suggestion.data.status === "unavailable"
-      ? "allocation.assignment.noSchedule"
-      : "allocation.assignment.unconfigured";
-  return <InlineNotice tone="info">{t(key)}</InlineNotice>;
+  if (suggestion.data.status === "unavailable")
+    return <InlineNotice tone="info">{t("allocation.assignment.noSchedule")}</InlineNotice>;
+  return (
+    <InlineNotice tone="info">
+      <p className="m-0">{t("allocation.assignment.unconfigured")}</p>
+      {canConfigure && (
+        <Link to="/inventory/supplies" className="font-semibold">
+          {t("allocation.assignment.configureLink")}
+        </Link>
+      )}
+    </InlineNotice>
+  );
 }

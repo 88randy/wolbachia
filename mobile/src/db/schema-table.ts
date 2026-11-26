@@ -32,7 +32,7 @@ function hasPair(tokens: readonly string[], first: string, second: string): bool
 }
 function columnShape(tokens: readonly string[]): ColumnShape {
   const type = tokens[1];
-  if (type !== "text" && type !== "integer")
+  if (type !== "text" && type !== "integer" && type !== "real")
     throw new UnsupportedSchemaDefinitionError("Unsupported column type.");
   const defaultIndex = tokens.indexOf("default");
   return {

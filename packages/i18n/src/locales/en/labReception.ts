@@ -7,7 +7,7 @@ export const labReception: Record<keyof typeof source, string> = {
   "labReception.page.scope":
     "Organization-wide reception. Use the sampling point and epi week to narrow the lists; the selected center does not filter this view.",
   "labReception.scan.label": "Bag code",
-  "labReception.scan.readingId": "Reading identifier (UUID)",
+  "labReception.scan.readingId": "Reading",
   "labReception.scan.noPaddleHint":
     "Use the identifier of a field reading that recorded no egg paddle. It cannot enter the count queue.",
   "labReception.scan.hint":

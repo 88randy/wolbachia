@@ -109,6 +109,52 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed(
         "revisit_interval_days", ValueType.INTEGER, Unit.DAYS, 7, Decimal(1), Decimal(28)
     ),
+    # Where the courier signs a delivery: 0 = either (default), 1 = warehouse screen, 2 = phone.
+    ParameterSeed(
+        "delivery_signature_mode", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(2)
+    ),
+    # Boolean stored as 0/1. The offline map pack is recommended, not required, until the tile
+    # source is chosen (client decision delegated); 1 restores the blocking departure gate.
+    ParameterSeed(
+        "departure_requires_offline_map", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(1)
+    ),
+    # Courier track sampling (#370), read by the phone only. [ASSUMPTION] Bounds keep the track
+    # useful and the battery cost bounded; the client may tune values inside them.
+    ParameterSeed(
+        "track_sample_interval_seconds",
+        ValueType.INTEGER,
+        Unit.SECONDS,
+        15,
+        Decimal(5),
+        Decimal(300),
+    ),
+    ParameterSeed("track_min_move_m", ValueType.INTEGER, Unit.METERS, 15, Decimal(1), Decimal(200)),
+    ParameterSeed(
+        "track_still_heartbeat_seconds",
+        ValueType.INTEGER,
+        Unit.SECONDS,
+        300,
+        Decimal(60),
+        Decimal(3600),
+    ),
+    ParameterSeed(
+        "track_upload_interval_seconds",
+        ValueType.INTEGER,
+        Unit.SECONDS,
+        300,
+        Decimal(60),
+        Decimal(3600),
+    ),
+    ParameterSeed(
+        "track_simplify_tolerance_m", ValueType.INTEGER, Unit.METERS, 5, Decimal(0), Decimal(50)
+    ),
+    # Boolean stored as 0/1: 1 uses high accuracy instead of balanced for the background capture.
+    ParameterSeed("track_high_accuracy", ValueType.INTEGER, Unit.COUNT, 0, Decimal(0), Decimal(1)),
+    # Local work-day end in minutes after midnight in the organization's time zone (1200 = 20:00):
+    # a shift left open stops recording its track there (#371). The shift is never auto-closed.
+    ParameterSeed(
+        "track_day_end_minutes", ValueType.INTEGER, Unit.MINUTES, 1200, Decimal(600), Decimal(1439)
+    ),
 )
 
 

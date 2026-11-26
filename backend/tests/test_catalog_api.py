@@ -1,4 +1,6 @@
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from catalogs import permissions as catalog_codes
@@ -407,9 +409,7 @@ def test_inactive_maximum_does_not_block_automatic_sort(admin, catalog):
     assert (response.status_code, response.data["sort"]) == (201, 1)
 
 
-def test_list_returns_usage_counts_and_authorship_without_per_item_queries(
-    admin, catalog, django_assert_num_queries
-):
+def test_list_returns_usage_counts_and_authorship_without_per_item_queries(admin, catalog):
     from catalogs.selectors import with_item_usage
     from catalogs.serializers import CatalogItemSerializer
     from shifts.models import MotorcycleCheck
@@ -425,9 +425,19 @@ def test_list_returns_usage_counts_and_authorship_without_per_item_queries(
             item=used,
             result="ok",
         )
-    # Projection includes usage and usernames in one SQL query, independent of list size.
-    with django_assert_num_queries(1):
-        list(CatalogItemSerializer(with_item_usage(catalog.items.all(), catalog), many=True).data)
+
+    # Usage and authors are batched: the number of queries does not grow with the list.
+    def serialize_queries() -> int:
+        with CaptureQueriesContext(connection) as queries:
+            list(
+                CatalogItemSerializer(with_item_usage(catalog.items.all(), catalog), many=True).data
+            )
+        return len(queries)
+
+    baseline = serialize_queries()
+    for _ in range(3):
+        CatalogItemFactory(catalog=catalog, created_by=UserFactory())
+    assert serialize_queries() == baseline
 
     response = admin.get(items_url(catalog.slug))
     rows = {row["id"]: row for row in response.data["results"]}

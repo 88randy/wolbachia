@@ -20,6 +20,7 @@ export function shiftDetail(
 ): Schemas["ShiftDetail"] {
   return {
     id: SHIFT_ID,
+    code: "JOR-0034",
     courier: "00000000-0000-4000-8000-000000000001",
     device: "00000000-0000-4000-8000-000000000002",
     motorcycle: "00000000-0000-4000-8000-000000000003",
@@ -53,6 +54,7 @@ export function decision(kind: "approve" | "observe"): Schemas["ShiftDecision"] 
     validation_fingerprint: "synthetic-fingerprint",
     subjects: [],
     created_by: ALLOWED.user.id,
+    created_by_name: "Ana Supervisora",
     created_at: "2026-11-04T15:00:00Z",
   };
 }

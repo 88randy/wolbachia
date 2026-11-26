@@ -92,3 +92,38 @@ export function receptionBody(
     evidence_ids: [...new Set(Object.values(draft.photos).filter(Boolean))],
   };
 }
+
+/** Everything arrived as expected: one scan per line with its full quantity (the starting point). */
+export function prefilledDraft(transfer: Transfer): ReceptionDraft {
+  const scanned = transfer.lines.map<Schemas["ClosedScanRequest"]>((line) => ({
+    kind: "expected",
+    scan_id: crypto.randomUUID(),
+    line_id: line.id,
+    quantity: line.quantity,
+  }));
+  return { scanned, photos: {}, signature: "" };
+}
+
+/** The person says how much of one line really arrived; its earlier scans are replaced by it. */
+export function setLineReceived(
+  transfer: Transfer,
+  draft: ReceptionDraft,
+  input: { lineId: string; quantity: string },
+) {
+  const line = transfer.lines.find((item) => item.id === input.lineId);
+  const units = quantityUnits(input.quantity.trim() === "" ? "0" : input.quantity.trim());
+  const expected = line ? quantityUnits(line.quantity) : null;
+  if (!line || units === null || expected === null || units > expected)
+    return { draft, result: "invalid" as const };
+  const kept = draft.scanned.filter(
+    (scan) => !(scan.kind === "expected" && scan.line_id === line.id),
+  );
+  if (units === 0n) return { draft: { ...draft, scanned: kept }, result: "accepted" as const };
+  const scan: Schemas["ExpectedScanRequest"] = {
+    kind: "expected",
+    scan_id: crypto.randomUUID(),
+    line_id: line.id,
+    quantity: quantityText(units),
+  };
+  return { draft: { ...draft, scanned: [...kept, scan] }, result: "accepted" as const };
+}

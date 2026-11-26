@@ -60,8 +60,7 @@ function policyColumns(t: Translate): Column[] {
     {
       id: "protocol",
       headerKey: "conditions.section.protocol",
-      cell: (row) =>
-        row.range ? `${row.range.name} · ${row.range.id}` : t("conditions.state.noRange"),
+      cell: (row) => (row.range ? row.range.name : t("conditions.state.noRange")),
     },
     {
       id: "slot",

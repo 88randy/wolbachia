@@ -70,9 +70,28 @@ export function traceFleetReads(
     return response;
   };
 }
+interface ListState {
+  filters: Record<string, string | undefined>;
+  includeVoided: boolean;
+  page: number;
+}
+/**
+ * The status tabs read their own totals through the same list key (all, available, blocked), so a
+ * list target selects the table's own state: its explicit params, and no status filter unless asked.
+ */
+function listStateMatches(value: unknown, params: Readonly<Record<string, string>>) {
+  const state = value as ListState;
+  const actual: Record<string, string | undefined> = {
+    ...state.filters,
+    page: String(state.page),
+    include_voided: state.includeVoided ? "true" : undefined,
+  };
+  if (!("is_blocked" in params) && actual["is_blocked"] !== undefined) return false;
+  return Object.entries(params).every(([key, expected]) => actual[key] === expected);
+}
 function targetMatches(query: Query, target: FleetReadTarget) {
   if (query.queryKey[4] !== target.kind) return false;
-  if (target.kind === "list") return true;
+  if (target.kind === "list") return listStateMatches(query.queryKey[5], target.params ?? {});
   if (target.kind === "record") return query.queryKey[5] === target.code;
   const value = query.queryKey[5];
   return (

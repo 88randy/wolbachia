@@ -4,6 +4,7 @@ import { expect, test } from "vitest";
 import { createFakeApi, makeMe } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 import { centerStorageKey } from "./center-selection";
+import { centerPicker } from "../test/center-picker";
 const CENTERS = [
   { id: "c1", code: "C-01", name: "Primero" },
   { id: "c2", code: "C-02", name: "Segundo" },
@@ -52,13 +53,15 @@ test("changing center clears caches and URL chips; an obsolete answer cannot ret
     },
   });
   const app = await renderApp({ path: "/settings/roles?search=obsolete&page=2", fetch: api.fetch });
-  await screen.findByRole("option", { name: "C-02 · Segundo" });
-  const picker = screen.getByRole("combobox", { name: "Filtro de centro" });
-  expect(
-    within(picker).queryByRole("option", { name: "Todos los centros autorizados" }),
-  ).toBeNull();
-  expect(within(picker).queryByRole("option", { name: /Foreign/ })).toBeNull();
-  await userEvent.selectOptions(picker, "c2");
+  const picker = await centerPicker();
+  await userEvent.click(picker);
+  const list = within(await screen.findByRole("listbox"));
+  // Only the names of the centers the user may use: no "all" entry, no other organization's.
+  expect(list.getAllByRole("option").map((option) => option.textContent)).toEqual([
+    "Primero",
+    "Segundo",
+  ]);
+  await userEvent.click(list.getByRole("option", { name: "Segundo" }));
   await screen.findByRole("cell", { name: "Resultados actuales" });
   await waitFor(() => {
     expect(app.router.state.location.search).toEqual({});
@@ -95,11 +98,10 @@ test("a remembered id is validated across all pages and an inaccessible stored c
       ),
   });
   const app = await renderApp({ fetch: api.fetch });
-  const picker = await screen.findByRole<HTMLSelectElement>("combobox", {
-    name: "Filtro de centro",
+  const picker = await centerPicker();
+  await waitFor(() => {
+    expect(picker.textContent).toContain("Segundo");
   });
-  await screen.findByRole("option", { name: "C-02 · Segundo" });
-  expect(picker.value).toBe("c2");
   api.setRoute("GET /api/v1/centers/", () => Response.json(paged([CENTERS[0]])));
   await act(async () => {
     await app.queryClient.invalidateQueries({
@@ -107,7 +109,7 @@ test("a remembered id is validated across all pages and an inaccessible stored c
     });
   });
   await waitFor(() => {
-    expect(picker.value).toBe("");
+    expect(picker.textContent).not.toContain("Segundo");
   });
   expect(window.localStorage.getItem(centerStorageKey(me))).toBeNull();
 });

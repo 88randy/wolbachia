@@ -94,6 +94,10 @@ export class SupplyReceiptService {
       store: this.deps.store,
       bundle: this.deps.bundle,
       feedback: this.#feedback,
+      shiftId: await this.deps.shift().then(
+        (shift) => shift.id,
+        () => null,
+      ),
     });
     this.#requireIdentity(identity);
     if (selected !== this.#selected) throw new ReceiptError("stale_draft");
@@ -111,6 +115,11 @@ export class SupplyReceiptService {
       this.#selected = id;
       this.#feedback = null;
     });
+  };
+  /** Leaves the saved-receipt confirmation so the next visit offers any delivery still pending. */
+  dismissSaved = (): void => {
+    this.#selected = null;
+    this.#publish();
   };
   begin = (assignmentId: string, releaseId: string): Promise<void> =>
     this.#queue(async (identity) => {

@@ -97,6 +97,28 @@ function isKnownSpeed(speedMps: number | null): speedMps is number {
   return speedMps !== null && Number.isFinite(speedMps) && speedMps >= 0;
 }
 
+function isSameFix(a: SafetySample | null, b: SafetySample | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  return a.atMs === b.atMs && a.speedMps === b.speedMps && a.accuracyM === b.accuracyM;
+}
+
+/**
+ * True when two states say the same thing. The tick builds a fresh sample object every second;
+ * without this check every tick re-rendered everything that reads the safety monitor, the PIN
+ * screen included.
+ */
+export function isSameSafety(a: SafetyState, b: SafetyState): boolean {
+  return (
+    isSameFix(a.latestFix, b.latestFix) &&
+    a.speedKmh === b.speedKmh &&
+    a.quality === b.quality &&
+    a.lockCause === b.lockCause &&
+    a.lowSpeedSinceMs === b.lowSpeedSinceMs &&
+    a.lastLowFixMs === b.lastLowFixMs
+  );
+}
+
 export interface SafetyObservation {
   readonly state: SafetyState;
   readonly sample: SafetySample | null;

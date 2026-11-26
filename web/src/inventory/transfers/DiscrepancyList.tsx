@@ -1,7 +1,7 @@
 import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card } from "../../ui/Card";
+import { ListPage } from "../../components/templates/ListPage";
 import { StatusPill } from "../../ui/StatusPill";
 import { FilterBar } from "../../data-table/FilterBar";
 import { DataTable } from "../../data-table/DataTable";
@@ -10,13 +10,14 @@ import type { DataTableColumn } from "../../data-table/table-types";
 import { operationTableData } from "../../operations/read-access";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useInventoryContext } from "../use-inventory-context";
+import { useDiscrepancyCounts } from "../use-status-counts";
 import {
   DISCREPANCY_TABLE,
   DISCREPANCY_PAGE_SIZE,
   discrepancyListOptions,
 } from "./discrepancy-query";
 import type { Discrepancy } from "./discrepancy-query";
-import styles from "../inventory.module.css";
+import { discrepancyFolio } from "./discrepancy-labels";
 
 function useColumns(): DataTableColumn<Discrepancy>[] {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ function useColumns(): DataTableColumn<Discrepancy>[] {
     {
       id: "code",
       headerKey: "discrepancies.field.code",
-      cell: (row) => row.code,
+      cell: (row) => discrepancyFolio(row.code),
       link: (row) => ({ to: "/inventory/discrepancies/$code", params: { code: row.code }, search }),
     },
     { id: "transfer", headerKey: "discrepancies.field.transfer", cell: (row) => row.transfer.code },
@@ -52,19 +53,17 @@ export function DiscrepancyList() {
   const controller = useTableUrlState(DISCREPANCY_TABLE);
   const query = useQuery(discrepancyListOptions(scope, controller.state));
   const columns = useColumns();
+  const counts = useDiscrepancyCounts();
   return (
-    <Card title={t("discrepancies.page.title")} headingLevel={1}>
-      <div className={styles.filters}>
-        <FilterBar controller={controller} />
-      </div>
+    <ListPage title={t("discrepancies.page.title")}>
+      <FilterBar controller={controller} quickCounts={counts} />
       <DataTable
         caption={t("discrepancies.page.title")}
         columns={columns}
         controller={controller}
         getRowId={(row) => row.id}
-        embedded
         data={operationTableData(query, controller.state.page, DISCREPANCY_PAGE_SIZE)}
       />
-    </Card>
+    </ListPage>
   );
 }

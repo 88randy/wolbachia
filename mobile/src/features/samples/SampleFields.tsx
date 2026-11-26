@@ -1,11 +1,10 @@
-import { Card } from "../../ui/Card.tsx";
 import { SampleField } from "./SampleField.tsx";
 import type { SampleViewModel } from "./view-model.ts";
 
 export function SampleFields({ model }: { readonly model: SampleViewModel }) {
   const disabled = model.isBusy || !model.canEdit || model.status !== "draft";
   return (
-    <Card>
+    <>
       <SampleField
         labelKey="mobile.sample.code"
         hintKey="mobile.sample.codeHint"
@@ -27,6 +26,6 @@ export function SampleFields({ model }: { readonly model: SampleViewModel }) {
           onBlur={model.blurFields}
         />
       ) : null}
-    </Card>
+    </>
   );
 }

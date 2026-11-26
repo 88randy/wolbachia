@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { Card } from "../ui/Card";
 import { useFormatDateTime } from "../format/use-format-date-time";
+import { nameOrDash } from "../lookups/use-reference-names";
 import styles from "./incidents.module.css";
 /** Complete immutable thread, reusable by the universal record when W4 lands. */
 export function IncidentThread({ events }: { events: readonly Schemas["IncidentEvent"][] }) {
@@ -21,9 +22,8 @@ export function IncidentThread({ events }: { events: readonly Schemas["IncidentE
               <time dateTime={event.created_at}>{format(event.created_at)}</time>
             </p>
             <p>
-              {t("incidents.workspace.eventState", {
-                revision: event.revision,
-                owner: event.owner,
+              {t("incidents.workspace.eventStateNamed", {
+                owner: nameOrDash(event.owner_display),
                 severity: t(`incidents.severity.${event.severity}`),
                 state: t(`incidents.state.${event.state}`),
               })}

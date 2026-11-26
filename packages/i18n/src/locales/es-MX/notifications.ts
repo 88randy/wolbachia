@@ -1,6 +1,8 @@
 import type { AreaCatalog } from "../area.ts";
 export const notifications = {
   "notifications.page.title": "Notificaciones",
+  "notifications.tabs.inbox": "Avisos",
+  "notifications.tabs.preferences": "Preferencias",
   "notifications.page.purpose": "Revisa tus avisos y elige cómo recibirlos.",
   "notifications.page.all": "Ver todas las notificaciones",
   "notifications.page.denied":

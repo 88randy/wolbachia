@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { SelectMenu } from "../ui/SelectMenu";
 import styles from "./filter-bar.module.css";
 import type { SelectFilter } from "./table-types";
 
@@ -10,30 +11,28 @@ interface FilterSelectProps {
   onChange: (value: string | undefined) => void;
 }
 
-/** A native `<select>`: keyboard, screen readers and mobile pickers work without extra code. */
+/** One filter dropdown; "All" clears the filter from the URL. */
 export function FilterSelect({ filter, value, onChange }: FilterSelectProps) {
   const { t } = useTranslation();
   const id = useId();
+  const options = [
+    { value: "", label: t("table.filters.all") },
+    ...filter.options.map((option) => ({ value: option.value, label: t(option.labelKey) })),
+  ];
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>
         {t(filter.labelKey)}
       </label>
-      <select
+      <SelectMenu
         id={id}
-        className={styles.control}
+        className="min-w-40"
         value={value ?? ""}
-        onChange={(event) => {
-          onChange(event.target.value === "" ? undefined : event.target.value);
+        options={options}
+        onValueChange={(next) => {
+          onChange(next === "" ? undefined : next);
         }}
-      >
-        <option value="">{t("table.filters.all")}</option>
-        {filter.options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {t(option.labelKey)}
-          </option>
-        ))}
-      </select>
+      />
     </div>
   );
 }

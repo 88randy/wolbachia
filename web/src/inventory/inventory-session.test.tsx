@@ -11,6 +11,7 @@ import {
   INVENTORY_CENTER,
   INVENTORY_OWNER,
 } from "../test/inventory-fixtures";
+import "../test/slow-app-flows";
 function deferred() {
   let release: (response: Response) => void = () => undefined;
   let refuse: (error: Error) => void = () => undefined;
@@ -212,7 +213,7 @@ test("a late admission conflict cannot replace a newer reconciled intent after a
   await waitFor(() => {
     expect(writes).toBe(2);
   });
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   const rejection = apiError(409, "inventory_revision_conflict");
   await act(async () => {
     oldReply.release(rejection);
@@ -427,9 +428,8 @@ const creationCases = {
     locationMode: false,
     centerOnly: false,
     path: "/inventory/lots/new",
-    choice: "LOC-01",
+    choice: /LOC-01/,
     selector: "Ubicación inicial",
-    value: inventoryLocation().id,
     field: "Observaciones",
   },
   lotCenterOnly: {
@@ -438,7 +438,6 @@ const creationCases = {
     path: "/inventory/lots/new",
     choice: "Borrador sólo del centro, sin ubicación",
     selector: "Ubicación inicial",
-    value: "none",
     field: "Observaciones",
   },
   location: {
@@ -447,7 +446,6 @@ const creationCases = {
     path: "/inventory/locations",
     choice: "Sólo centro, sin cuadrante",
     selector: "Cuadrante",
-    value: "none",
     field: "Nombre",
   },
 } as const;
@@ -455,7 +453,7 @@ test.each(["lotLocation", "lotCenterOnly", "location"] as const)(
   "new %s draft waits for actual current action target, retires denial and rejects late ABA restoration",
   async (mode) => {
     const user = userEvent.setup();
-    const { locationMode, centerOnly, path, choice, selector, value, field } = creationCases[mode];
+    const { locationMode, centerOnly, path, choice, selector, field } = creationCases[mode];
     const first = deferred();
     const late = deferred();
     let phase = "initial";
@@ -504,15 +502,15 @@ test.each(["lotLocation", "lotCenterOnly", "location"] as const)(
         await user.click(await screen.findByRole("button", { name: "Nueva ubicación" }));
     };
     await reopen();
-    await screen.findByRole("option", { name: "Synthetic center" });
+    await screen.findByRole("combobox", { name: "Centro" });
     await user.selectOptions(screen.getByRole("combobox", { name: "Centro" }), INVENTORY_CENTER);
-    await screen.findByRole("option", { name: choice });
-    await user.selectOptions(
-      screen.getByRole("combobox", {
-        name: selector,
-      }),
-      value,
-    );
+    await waitFor(() => {
+      expect(screen.getByRole<HTMLButtonElement>("combobox", { name: selector }).disabled).toBe(
+        false,
+      );
+    });
+    await user.click(screen.getByRole("combobox", { name: selector }));
+    await user.click(await screen.findByRole("option", { name: choice }));
     fireEvent.change(screen.getByRole("textbox", { name: field }), {
       target: { value: "Private unsaved target" },
     });
@@ -593,10 +591,15 @@ test.each(["supplies", "locations"] as const)(
     });
     await user.click(await screen.findByRole("button", { name: title }));
     if (kind === "locations") {
-      await screen.findByRole("option", { name: "Synthetic center" });
+      await screen.findByRole("combobox", { name: "Centro" });
       await user.selectOptions(screen.getByRole("combobox", { name: "Centro" }), INVENTORY_CENTER);
-      await screen.findByRole("option", { name: "Sólo centro, sin cuadrante" });
-      await user.selectOptions(screen.getByRole("combobox", { name: "Cuadrante" }), "none");
+      await waitFor(() => {
+        expect(
+          screen.getByRole<HTMLButtonElement>("combobox", { name: "Cuadrante" }).disabled,
+        ).toBe(false);
+      });
+      await user.click(screen.getByRole("combobox", { name: "Cuadrante" }));
+      await user.click(await screen.findByRole("option", { name: "Sólo centro, sin cuadrante" }));
     }
     await user.type(
       screen.getByRole("textbox", { name: field }),

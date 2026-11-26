@@ -239,6 +239,15 @@ def execute_release(
     intent_evidence(actor, intent)
     if intent.kind == "release_cancel":
         return _cancel_release(actor, intent, version)
+    from inventory.allocations.signature_mode import (
+        check_signature_channel,
+        delivery_signature_mode,
+    )
+
+    check_signature_channel(
+        delivery_signature_mode(actor.organization),
+        any(row.get("role") == "signature" for row in intent.declared_evidence),
+    )
     return _release_plan(actor, intent, version)
 
 
@@ -256,6 +265,14 @@ def _release_plan(
         "lines": observed,
         "evidence": intent.declared_evidence,
     }
+    from inventory.allocations.signature_mode import signature_proof
+
+    signed = signature_proof(intent.declared_evidence, str(actor.user.pk))
+    if signed is not None:
+        signed["captured_by_name"] = (
+            f"{actor.user.first_name} {actor.user.last_name}".strip() or str(actor.user.username)
+        )
+        proof["signature"] = signed
     release = OriginReleaseProof.objects.create(
         organization=actor.organization,
         created_by=actor.user,

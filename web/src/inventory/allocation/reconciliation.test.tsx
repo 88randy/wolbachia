@@ -12,6 +12,7 @@ import {
   reasonRoutes,
   reconciliation,
 } from "./allocation-fixtures";
+import "../../test/slow-app-flows";
 
 const ROW = reconciliation([
   {},
@@ -27,25 +28,37 @@ function routes(body = ROW) {
   };
 }
 
+/** Row actions live in the row "⋯" menu; open it and return the menu entries it offers. */
+async function openRowMenu(user: ReturnType<typeof userEvent.setup>, row: HTMLElement) {
+  await user.click(within(row).getByRole("button", { name: "Más opciones" }));
+  return screen.findAllByRole("menuitem");
+}
+
 test("a nonzero equation offers justify and open-discrepancy, a pending receipt is not a zero", async () => {
+  const user = userEvent.setup();
   await openInventory({
     path: "/inventory/reconciliations",
-    me: allocationMe(["inventory.reconcile"]),
+    me: allocationMe(["inventory.reconcile", "discrepancy.read"]),
     routes: routes(),
   });
   const rows = await screen.findAllByRole("row");
   const difference = rows.find((row) => /\+2/.test(row.textContent));
   expect(difference).toBeDefined();
-  expect(
-    within(difference as HTMLElement).getByRole("button", { name: "Justificar" }),
-  ).toBeDefined();
-  expect(
-    within(difference as HTMLElement).getByRole("link", { name: "Abrir discrepancia" }),
-  ).toBeDefined();
+  const offered = await openRowMenu(user, difference as HTMLElement);
+  const justify = offered.find((item) => item.textContent === "Justificar la diferencia");
+  expect(justify?.getAttribute("aria-disabled")).not.toBe("true");
+  const discrepancy = offered.find((item) => item.textContent === "Abrir diferencia");
+  expect(discrepancy?.getAttribute("aria-disabled")).not.toBe("true");
+  await user.keyboard("{Escape}");
   const pending = rows.find((row) => /Pendiente de firma/.test(row.textContent));
   expect(pending).toBeDefined();
-  expect(within(pending as HTMLElement).queryByRole("button", { name: "Justificar" })).toBeNull();
-  expect(screen.getByText(/no impide cerrar la jornada/)).toBeDefined();
+  const pendingMenu = await openRowMenu(user, pending as HTMLElement);
+  expect(pendingMenu.some((item) => item.textContent === "Justificar la diferencia")).toBe(false);
+  const blocked = pendingMenu.find((item) => item.textContent === "Justificar (esta línea cuadra)");
+  expect(blocked?.getAttribute("aria-disabled")).toBe("true");
+  expect(
+    screen.getByText(/Si el resultado no es cero, hay una diferencia por justificar/),
+  ).toBeDefined();
 });
 
 test("a balanced line has no corrective actions", async () => {
@@ -84,7 +97,10 @@ test("justify prepares then executes with the revision the user saw, and keeps t
     },
   });
   document.cookie = "csrftoken=test-csrf; path=/";
-  await user.click(await screen.findByRole("button", { name: "Justificar" }));
+  const rows = await screen.findAllByRole("row");
+  const difference = rows.find((row) => /\+2/.test(row.textContent));
+  await openRowMenu(user, difference as HTMLElement);
+  await user.click(await screen.findByRole("menuitem", { name: "Justificar la diferencia" }));
   await user.selectOptions(await screen.findByRole("combobox", { name: "Motivo" }), "duplicate");
   await user.click(screen.getByRole("button", { name: "Registrar justificación" }));
   expect(await screen.findByText("Justificación registrada.")).toBeDefined();

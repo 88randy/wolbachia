@@ -1,5 +1,5 @@
 import type { Schemas } from "@wolbachia/api-client";
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createFakeApi, makeMe } from "../../test/fake-api";
 import type { FakeApiRoutes } from "../../test/fake-api";
@@ -42,6 +42,7 @@ export const EVALUATION: Schemas["EvaluationRead"] = {
   id: ID,
   subject_id: PERSON,
   rubric_version_id: OLD_VERSION,
+  rubric_version_number: 2,
   center_id: ID,
   quadrant_id: null,
   created_at: OBSERVED,
@@ -74,7 +75,14 @@ export function receipt(
 function evaluationRoutes(me: typeof ME, routes: FakeApiRoutes = {}) {
   return {
     "GET /api/v1/me/": Response.json(me),
-    "GET /api/v1/centers/": Response.json(page([])),
+    "GET /api/v1/centers/": Response.json(
+      page([{ id: ID, code: "C-148", name: "Synthetic center" }]),
+    ),
+    "GET /api/v1/quadrants/": Response.json(page([])),
+    "GET /api/v1/trainings/": Response.json(page([])),
+    "GET /api/v1/users/operational/": Response.json(
+      page([{ id: PERSON, display_name: "Synthetic person", profiles: ["promoter"] }]),
+    ),
     "GET /api/v1/evaluation-notice-policy/": Response.json(page([])),
     "GET /api/v1/evaluations/": Response.json(page([EVALUATION])),
     "GET /api/v1/evaluation-rubrics/": Response.json(
@@ -109,30 +117,42 @@ export async function openEvaluations(
   else await screen.findByRole("heading", { name: "Cédulas de evaluación" });
   return { ...app, api };
 }
-export async function fillEvaluation() {
+/** Chooses an option of a searchable picker by its visible label. */
+async function pick(user: ReturnType<typeof userEvent.setup>, picker: HTMLElement, label: string) {
+  await user.click(picker);
+  await user.click(await screen.findByRole("option", { name: new RegExp(label) }));
+}
+export async function pickSubject(
+  user: ReturnType<typeof userEvent.setup>,
+  form: { getByRole: (role: string, options?: { name?: string }) => HTMLElement },
+) {
+  await pick(user, form.getByRole("combobox", { name: "Persona" }), "Synthetic person");
+}
+export async function openTab(name: string) {
+  await userEvent.click(await screen.findByRole("tab", { name }));
+}
+export async function fillEvaluation(options: { skipSubject?: boolean } = {}) {
   const user = userEvent.setup({ delay: null });
-  await pasteText(user, screen.getByRole("textbox", { name: "Código exacto de rúbrica" }), "R-148");
-  await user.click(screen.getByRole("button", { name: "Consultar rúbrica" }));
+  await pick(
+    user,
+    screen.getByRole("combobox", { name: "Código exacto de rúbrica" }),
+    "Synthetic rubric",
+  );
   await user.click(await screen.findByRole("button", { name: "Usar esta versión" }));
   const form = within(screen.getByRole("region", { name: "Nueva evaluación" }));
-  await pasteText(user, form.getByRole("textbox", { name: "Persona (UUID)" }), PERSON);
-  await pasteText(user, form.getByRole("textbox", { name: "Centro (UUID)" }), ID);
-  await pasteText(
-    user,
-    form.getByRole("textbox", { name: "Fecha de observación con zona horaria" }),
-    OBSERVED,
-  );
+  if (!options.skipSubject) await pickSubject(user, form);
+  await pick(user, form.getByRole("combobox", { name: "Centro" }), "Synthetic center");
+  await user.click(form.getByRole("button", { name: /Fecha de observación/ }));
+  const cell = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>('[data-day="2026-11-09"] button');
+    if (!found) throw new Error("day not shown");
+    return found;
+  });
+  await user.click(cell);
+  fireEvent.change(form.getByLabelText("Hora"), { target: { value: "12:00" } });
   await user.type(form.getByRole("spinbutton", { name: "Presentación" }), "80");
   await user.type(form.getByRole("spinbutton", { name: "Cobertura" }), "50");
   return { user, form };
-}
-async function pasteText(
-  user: ReturnType<typeof userEvent.setup>,
-  field: HTMLElement,
-  value: string,
-) {
-  await user.click(field);
-  await user.paste(value);
 }
 export async function submitEvaluation() {
   const { user, form } = await fillEvaluation();

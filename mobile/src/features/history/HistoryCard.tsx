@@ -1,21 +1,13 @@
-import type { MessageKey } from "@wolbachia/i18n";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { eventTypeKey, STATUS_BADGE_KEY } from "../../sync/inbox-model.ts";
+import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Badge } from "../../ui/Badge.tsx";
-import type { BadgeTone } from "../../ui/Badge.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { kitShadow } from "../../ui/kit-styles.ts";
 import { STATUS_PRESENTATION } from "../../ui/status-presentation.ts";
+import { historyTitleKey } from "./domain.ts";
 import type { HistoryEntry } from "./domain.ts";
 import { HistoryProvenance } from "./HistoryProvenance.tsx";
 
-function presentation(entry: HistoryEntry): { tone: BadgeTone; label: MessageKey } {
-  if (entry.status === "reviewed") return { tone: "success", label: "mobile.history.reviewed" };
-  if (entry.status === "voided") return { tone: "critical", label: "mobile.history.voided" };
-  if (entry.status === "observed") return { tone: "warning", label: "mobile.history.observed" };
-  if (entry.status === "sent") return { tone: "success", label: "mobile.history.received" };
-  return { tone: STATUS_PRESENTATION[entry.status].tone, label: STATUS_BADGE_KEY[entry.status] };
-}
 export function HistoryCard({
   entry,
   formattedTime,
@@ -23,21 +15,24 @@ export function HistoryCard({
   readonly entry: HistoryEntry;
   readonly formattedTime: string | null;
 }) {
-  const t = useT(),
-    state = presentation(entry);
+  const t = useT();
+  const { tone, icon: Icon, label } = STATUS_PRESENTATION[entry.status]; // D4: shared with P28/P33
+  const color = useTheme().theme.color.status[tone].fg;
   return (
-    <Card>
-      <AppText variant="button">
-        {t(entry.isServerDecision ? "mobile.history.serverFact" : eventTypeKey(entry.kind))}
+    <View className="gap-2 rounded-card border border-line bg-surface p-4" style={kitShadow.card}>
+      <View className="flex-row items-center gap-3">
+        <Icon color={color} size={26} strokeWidth={2.25} />
+        <View className="flex-1">
+          <AppText variant="bodyStrong">{t(historyTitleKey(entry.kind))}</AppText>
+          <AppText variant="caption" style={{ color }}>
+            {t(label)}
+          </AppText>
+        </View>
+      </View>
+      <AppText variant="caption" tone="secondary">
+        {formattedTime ?? t("mobile.history.unknownTime")}
       </AppText>
-      <Badge icon="search" tone={state.tone} label={t(state.label)} />
-      <AppText isMonospace>{formattedTime ?? t("mobile.history.unknownTime")}</AppText>
-      {entry.codes.map((code) => (
-        <AppText key={code} isMonospace>
-          {code}
-        </AppText>
-      ))}
       <HistoryProvenance entry={entry} />
-    </Card>
+    </View>
   );
 }

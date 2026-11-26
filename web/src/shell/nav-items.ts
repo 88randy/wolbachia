@@ -3,6 +3,7 @@ import {
   Bike,
   Bell,
   Bug,
+  CalendarDays,
   ChartColumn,
   FlaskConical,
   House,
@@ -11,6 +12,7 @@ import {
   MessagesSquare,
   Package,
   Settings,
+  Building2,
   ShieldCheck,
   TriangleAlert,
   Users,
@@ -26,6 +28,7 @@ export const AREA_ICONS: Record<AreaId, LucideIcon> = {
   notifications: Bell,
   incidents: TriangleAlert,
   operations: ListChecks,
+  scheduling: CalendarDays,
   quadrants: MapIcon,
   releases: Bug,
   community: MessagesSquare,
@@ -36,12 +39,14 @@ export const AREA_ICONS: Record<AreaId, LucideIcon> = {
   dashboards: ChartColumn,
   regulatory: ShieldCheck,
   settings: Settings,
+  platform: Building2,
 };
 
 const GROUP_HEADINGS: Record<Exclude<AreaGroup, "main">, MessageKey> = {
   operation: "shell.group.operation",
   resources: "shell.group.resources",
   analysis: "shell.group.analysis",
+  platform: "shell.group.platform",
 };
 
 export interface NavGroup {
@@ -51,7 +56,13 @@ export interface NavGroup {
   readonly areas: readonly Area[];
 }
 
-const GROUP_ORDER: readonly AreaGroup[] = ["main", "operation", "resources", "analysis"];
+const GROUP_ORDER: readonly AreaGroup[] = [
+  "main",
+  "operation",
+  "resources",
+  "analysis",
+  "platform",
+];
 
 function headingOf(group: AreaGroup): MessageKey | undefined {
   return group === "main" ? undefined : GROUP_HEADINGS[group];
@@ -68,9 +79,11 @@ export const NAV_GROUPS: readonly NavGroup[] = GROUP_ORDER.map((id) => ({
  * The sidebar for one user: only the areas their permissions allow (Home always), and no group
  * heading for a group left empty. Decided from permission codes, never from profile names.
  */
-export function visibleNavGroups(me: Pick<Me, "permissions">): readonly NavGroup[] {
+export function visibleNavGroups(
+  me: Pick<Me, "permissions"> & Partial<Pick<Me, "is_platform_admin" | "organization">>,
+): readonly NavGroup[] {
   return NAV_GROUPS.map((group) => ({
     ...group,
-    areas: group.areas.filter((area) => canOpenArea(me, area)),
+    areas: group.areas.filter((area) => !("hidden" in area) && canOpenArea(me, area)),
   })).filter((group) => group.areas.length > 0);
 }

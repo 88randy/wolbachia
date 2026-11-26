@@ -43,6 +43,7 @@ function expectedLines(): Schemas["TransferLine"][] {
     {
       id: TRANSFER_LINE,
       lot_id: LOT_ID,
+      lot_code: "L-001",
       piece_id: null,
       unit_version_id: UNIT_ID,
       quantity: "2",
@@ -91,6 +92,7 @@ function ownedHolds(): Schemas["TransferHold"][] {
     {
       id: "15200000-0000-4000-8000-000000000010",
       lot_id: LOT_ID,
+      lot_code: "L-001",
       location_id: DESTINATION_ID,
       piece_id: null,
       resolution_id: null,

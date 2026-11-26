@@ -1,7 +1,9 @@
 """Actual subject vectors; unresolved audit requires two explicit all bounds in one grant."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
@@ -11,6 +13,11 @@ from field_sync.envelope import EventEnvelope
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from organizations.scope import EffectiveScope
+
+if TYPE_CHECKING:
+    from geography.models import SamplingPoint
+    from inventory.models import Lot
+    from releases.models import Permit, ReleaseDevice
 
 
 @dataclass(frozen=True)
@@ -113,11 +120,20 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
             return _void_subject(organization, envelope)
         if envelope.type in {"incident.report", "emergency.accident"}:
             return _incident_subject(organization, envelope)
-        if envelope.type in {"shift.open", "shift.close", "fuel.load"}:
+        if envelope.type in {"shift.open", "shift.close", "fuel.load", "track.segment"}:
             return _motorcycle_subject(organization, envelope, data)
     except (Http404, ValidationError, ValueError, TypeError):
         return SubjectFacts()
     return SubjectFacts()
+
+
+def subject_facts_many(
+    organization: Organization, envelopes: list[EventEnvelope]
+) -> dict[UUID, SubjectFacts]:
+    """Resolve current subjects in request-local batches without changing write preflights."""
+    from reviews.subject_batches import resolve_many
+
+    return resolve_many(organization, envelopes)
 
 
 def _community_subject(organization: Organization, values: dict[str, Any]) -> SubjectFacts:
@@ -169,14 +185,57 @@ def release_subjects(organization: Organization, values: dict[str, Any]) -> Subj
         .select_related("point__block__quadrant")
         .first()
     )
-    if permit is None or device is None or lot is None or task is None:
+    return _release_subject_facts((permit, device, lot, None if task is None else task.point))
+
+
+def _release_subjects_many(
+    organization: Organization, releases: dict[UUID, dict[str, Any]]
+) -> dict[UUID, SubjectFacts]:
+    from inventory.models import Lot
+    from releases.models import Permit, ReleaseDevice
+    from scheduling.models import ScheduledTask
+
+    permits = Permit.objects.filter(organization=organization).in_bulk(
+        {values["permit_id"] for values in releases.values()}
+    )
+    devices = ReleaseDevice.objects.filter(organization=organization).in_bulk(
+        {values["release_device_id"] for values in releases.values()}
+    )
+    lots = Lot.objects.filter(organization=organization).in_bulk(
+        {values["lot_id"] for values in releases.values()}
+    )
+    tasks = (
+        ScheduledTask.objects.filter(organization=organization)
+        .select_related("point__block__quadrant")
+        .in_bulk({values["schedule_task_id"] for values in releases.values()})
+    )
+    facts = {}
+    for identifier, values in releases.items():
+        device = devices.get(values["release_device_id"])
+        task = tasks.get(values["schedule_task_id"])
+        facts[identifier] = _release_subject_facts(
+            (
+                permits.get(values["permit_id"]),
+                device if device is not None and device.source_lot_id == values["lot_id"] else None,
+                lots.get(values["lot_id"]),
+                None if task is None else task.point,
+            )
+        )
+    return facts
+
+
+def _release_subject_facts(
+    rows: tuple[Permit | None, ReleaseDevice | None, Lot | None, SamplingPoint | None],
+) -> SubjectFacts:
+    permit, device, lot, point = rows
+    if permit is None or device is None or lot is None or point is None:
         return SubjectFacts()
     contexts = tuple(
         {
             "center_id": str(row.center_id),
             "quadrant_id": None if row.quadrant_id is None else str(row.quadrant_id),
         }
-        for row in (permit, device, lot, task.point)
+        for row in (permit, device, lot, point)
     )
     return SubjectFacts(True, contexts, "release", permit.pk)
 

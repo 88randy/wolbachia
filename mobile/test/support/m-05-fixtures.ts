@@ -58,6 +58,7 @@ function supplyRelease(): Schemas["SupplyReleaseBundle"] {
     id: receiptId(8),
     plan_revision: 1,
     manifest_hash: "a".repeat(64),
+    warehouse_signed: false,
     lines: [
       {
         id: receiptId(9),

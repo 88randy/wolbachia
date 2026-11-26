@@ -40,7 +40,7 @@ export const conditions = {
     "Chart and table show the same server page. Each reading retains its own allowed limits; these are not today's configuration.",
   "conditions.state.hold":
     "A later normal reading does not clear an unresolved hold. Incident links appear only when you can read them.",
-  "conditions.state.saved": "Reading saved on the server",
+  "conditions.state.saved": "Reading saved",
   "conditions.state.review":
     "Review the current server history before another manual capture. Your input has been preserved.",
   "conditions.state.invalid": "Review this value and save again.",

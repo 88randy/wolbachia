@@ -41,6 +41,18 @@ export function rubricsOptions(scope: EvaluationScope, code: string) {
       ),
   });
 }
+export function rubricChoicesOptions(scope: EvaluationScope) {
+  return orgScopedQueryOptions(scope.identity, {
+    key: ["evaluations", "rubric-choices"],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await scope.client.GET("/api/v1/evaluation-rubrics/", {
+          params: { query: { page_size: 100 } },
+          signal,
+        }),
+      ),
+  });
+}
 export function rubricVersionsOptions(
   scope: EvaluationScope,
   target: { id: string; page: number },

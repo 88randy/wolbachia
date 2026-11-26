@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { Select } from "../../forms/Select";
+import { useQuantityText } from "../use-quantity-text";
 import { DiscrepancyOutcomeEvidence } from "./DiscrepancyOutcomeEvidence";
 import type { DiscrepancyRecordState } from "./discrepancy-use-record";
 import type { DiscrepancyOutcomeDraft } from "./discrepancy-resolution";
@@ -35,13 +36,14 @@ function useOutcomeOptions(state: DiscrepancyRecordState, line: Schemas["Discrep
 }
 export function DiscrepancyOutcomeFields({ state, line }: OutcomeProps) {
   const { t } = useTranslation();
+  const quantityText = useQuantityText();
   const id = useId();
   const options = useOutcomeOptions(state, line);
   const draft = state.draft.outcomes[line.id] ?? { kind: "" };
   return (
     <section>
       <p>
-        {t(discrepancyKindKeys[line.kind])} · {line.quantity}
+        {t(discrepancyKindKeys[line.kind])} · {quantityText(line.quantity)}
       </p>
       <Select
         id={id}

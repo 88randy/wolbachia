@@ -4,7 +4,7 @@ import { rememberPreferences } from "./fixtures/a11y";
 import { installMapRuntimeApi, interceptSyntheticTiles } from "./fixtures/map-runtime";
 import { observeMapWorkers, readMapWorkers } from "./fixtures/map-worker-observation";
 
-test("production MapLibre worker and real canvas clicks update the coordinate draft", async ({
+test("production MapLibre worker and real canvas clicks draw a block into the unsaved changes", async ({
   page,
   baseURL,
 }) => {
@@ -16,25 +16,27 @@ test("production MapLibre worker and real canvas clicks update the coordinate dr
   await observeMapWorkers(page);
   await installMapRuntimeApi(page);
   const requests = await interceptSyntheticTiles(page, origin);
-  await page.goto("/quadrants/C-DEMO/versions");
-  const coordinates = page.getByRole("textbox", { name: copy["geography.field.polygon"] });
-  await expect(coordinates).toBeVisible();
-  const before = await coordinates.inputValue();
-  expect((await readMapWorkers(page)).urls).toEqual([]);
+  // The redesigned map editor mounts its map on load, so the worker starts with the page.
   const started = page.waitForEvent("worker");
-  await page.getByRole("button", { name: copy["geography.map.open"] }).click();
+  await page.goto("/quadrants/C-DEMO/versions");
   const worker = await started;
   expect(new URL(worker.url()).origin).toBe(origin);
   expect(new URL(worker.url()).pathname).toMatch(/^\/assets\/maplibre-gl-worker-[^/]+\.js$/);
   await expect.poll(async () => (await readMapWorkers(page)).messages).toBeGreaterThan(0);
   await expect.poll(() => requests.tiles.length).toBeGreaterThan(0);
   const canvas = page
-    .getByRole("region", { name: copy["geography.map.label"], exact: true })
+    .getByRole("region", { name: copy["mapEditor.map.label"], exact: true })
     .and(page.locator("canvas"));
   await expect(canvas).toBeVisible();
-  await page.getByRole("button", { name: copy["geography.map.draw"] }).click();
+  const unsaved = (count: number) =>
+    page.getByLabel(copy["mapEditor.pending.count"].replace("{count}", String(count)));
+  await expect(unsaved(0)).toBeVisible();
+  await page.getByRole("button", { name: copy["mapEditor.toolShort.block"], exact: true }).click();
   await canvas.click({ position: { x: 40, y: 40 } });
-  await expect(coordinates).not.toHaveValue(before);
+  await canvas.click({ position: { x: 120, y: 40 } });
+  await canvas.click({ position: { x: 120, y: 120 } });
+  await canvas.press("Enter");
+  await expect(unsaved(1)).toBeVisible();
   await expect(page.getByRole("link", { name: copy["geography.map.attribution"] })).toHaveAttribute(
     "href",
     "https://www.openstreetmap.org/copyright",

@@ -25,6 +25,19 @@ from organizations.models import Center, Membership
 from organizations.services import effective_scope
 
 
+def _record_scope(record_type: str, record: Any) -> tuple[str | None, str | None]:  # noqa: ANN401
+    """Center and quadrant of a resolved record, for the permission checks of its sub-sources."""
+    if record_type == "sampling_point":
+        quadrant = record.block.quadrant
+        return str(quadrant.center_id), str(quadrant.pk)
+    center = getattr(record, "center_id", None)
+    quadrant_id = record.pk if record_type == "quadrant" else getattr(record, "quadrant_id", None)
+    return (
+        None if center is None else str(center),
+        None if quadrant_id is None else str(quadrant_id),
+    )
+
+
 class DiscoveryViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
     """Home, search and history share one action permission; each type rechecks its own."""
 
@@ -83,8 +96,17 @@ class DiscoveryViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         source, record = selectors.resolve_record(member, record_type, code)
         visible = source.rows(member, effective_scope(member))
         cursor = decode_cursor(values["cursor"]) if "cursor" in values else None
+        effective = effective_scope(member)
+        center_id, quadrant_id = _record_scope(record_type, record)
         entries, next_cursor = timeline_page(
-            sources_for(record_type, record, visible), cursor, values["page_size"]
+            sources_for(
+                record_type,
+                record,
+                visible,
+                lambda code: effective.allows(code, center_id, quadrant_id),
+            ),
+            cursor,
+            values["page_size"],
         )
         flag = (
             source.voided is not None

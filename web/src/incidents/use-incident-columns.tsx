@@ -7,6 +7,7 @@ import { useFormatDateTime } from "../format/use-format-date-time";
 import { StatusPill } from "../ui/StatusPill";
 import type { Incident } from "./incidents-query";
 import { IncidentStatus } from "./IncidentStatus";
+import { useCenterColumns } from "../data-table/center-column";
 import { IncidentDeadline } from "./IncidentDeadline";
 type Translate = (key: MessageKey) => string;
 type IncidentSearch = Readonly<Record<string, string | undefined>>;
@@ -77,5 +78,6 @@ export function useIncidentColumns(): readonly DataTableColumn<Incident>[] {
   const { t } = useTranslation();
   const search = useSearch({ strict: false });
   const format = useFormatDateTime();
-  return [...identityColumns(t, search), ...statusColumns(t), ...timeColumns(format)];
+  const columns = [...identityColumns(t, search), ...statusColumns(t), ...timeColumns(format)];
+  return useCenterColumns(columns, (row) => row.center, { after: "type" });
 }

@@ -5,6 +5,7 @@ import type { RegisteredRouter } from "@tanstack/react-router";
 
 import { useApiClient } from "../api/ApiClientProvider";
 import { safeRedirect } from "../router/safe-redirect";
+import { isPlatformOnly, PLATFORM_HOME } from "../session/platform";
 import { runAuthOperation, useAbandonOnUnmount } from "../session/auth-operation";
 import type { Me } from "../session/me";
 import { begin, commitKnown, noteStaleLogin } from "../session/session-controller";
@@ -21,7 +22,14 @@ async function continueAfterLogin(
   router: RegisteredRouter,
 ): Promise<void> {
   const target = safeRedirect(requestedTarget);
-  if (me.organization === null) {
+  if (me.must_change_password) {
+    await router.navigate({
+      to: "/change-password",
+      search: target === "/" ? {} : { redirect: target },
+    });
+  } else if (isPlatformOnly(me)) {
+    await router.navigate({ to: PLATFORM_HOME });
+  } else if (me.organization === null) {
     const search = target === "/" ? {} : { redirect: target };
     await router.navigate({ to: "/select-organization", search });
   } else {

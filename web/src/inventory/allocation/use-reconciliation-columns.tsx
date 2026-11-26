@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useCan } from "../../session/use-can";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { Schemas } from "@wolbachia/api-client";
 import type { DataTableColumn } from "../../data-table/table-types";
@@ -7,10 +8,12 @@ import { formatInventoryQuantity } from "../format-inventory-quantity";
 import { DifferenceCell } from "./DifferenceCell";
 import { courierLabel, lotLabel } from "./allocation-labels";
 import type { ReconciliationRow } from "./reconciliation-equation";
+import { courierState } from "./use-assignment-route";
+import type { CourierEntry } from "./allocation-query";
 
 interface Directories {
   lots: readonly Schemas["Lot"][] | undefined;
-  couriers: readonly Schemas["OperationalPersonnel"][] | undefined;
+  couriers: readonly CourierEntry[] | undefined;
 }
 type Column = DataTableColumn<ReconciliationRow>;
 type Quantity = (value: string | null) => string;
@@ -46,29 +49,42 @@ function textColumns({ lots, couriers }: Directories): Column[] {
 }
 
 /** Assigned links to the assignment of that courier and day; shrinkage to that day's write-offs. */
-function numberColumns(quantity: Quantity): Column[] {
+function numberColumns(quantity: Quantity, can: (permission: string) => boolean): Column[] {
   const assigned = numberColumn("credited", "allocation.reconciliation.assigned", quantity);
   const shrinkage = numberColumn("shrinkage", "allocation.reconciliation.shrinkage", quantity);
   const assignment = (row: ReconciliationRow) => row.reconciliation.assignment;
   return [
     {
       ...assigned,
-      link: (row) => ({
-        to: "/inventory/assignments",
-        search: { date: assignment(row).date, courier: assignment(row).courier_id },
-      }),
+      ...(can("inventory.allocate")
+        ? {
+            link: (row: ReconciliationRow) => ({
+              to: "/inventory/assignments/new" as const,
+              search: { date: assignment(row).date },
+              state: courierState(assignment(row).courier_id),
+            }),
+          }
+        : {}),
     },
     numberColumn("used", "allocation.reconciliation.used", quantity),
     numberColumn("returned", "allocation.reconciliation.returned", quantity),
     {
       ...shrinkage,
-      link: (row) => ({ to: "/inventory/write-offs", search: { date: assignment(row).date } }),
+      ...(can("inventory.write_off")
+        ? {
+            link: (row: ReconciliationRow) => ({
+              to: "/inventory/write-offs" as const,
+              search: { created_at_from: undefined, date: assignment(row).date },
+            }),
+          }
+        : {}),
     },
   ];
 }
 
 export function useReconciliationColumns(directories: Directories) {
   const { t } = useTranslation();
+  const can = useCan();
   const { language } = useLanguage();
   const quantity: Quantity = (value) =>
     value === null
@@ -80,5 +96,5 @@ export function useReconciliationColumns(directories: Directories) {
     align: "end",
     cell: (row) => <DifferenceCell line={row.line} state={row.state} />,
   };
-  return [...textColumns(directories), ...numberColumns(quantity), difference];
+  return [...textColumns(directories), ...numberColumns(quantity, can), difference];
 }

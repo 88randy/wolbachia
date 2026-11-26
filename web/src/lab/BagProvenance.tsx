@@ -1,33 +1,20 @@
 import { useTranslation } from "react-i18next";
-import { useFormatDateTime } from "../format/use-format-date-time";
-import { Card } from "../ui/Card";
 import { StatusPill } from "../ui/StatusPill";
-import type { BagMetadataResult } from "./bag-metadata-query";
+import { BagTracePanel } from "./trace/BagTracePanel";
 import type { Candidate } from "./lab-query";
 
-interface BagProvenanceProps {
-  bag: Candidate;
-  facts: BagMetadataResult;
-}
-
-export function BagProvenance({ bag, facts }: BagProvenanceProps) {
+/** The bag being counted, in large text, with its short origin card (never blocks the count). */
+export function BagProvenance({ bag }: { bag: Candidate }) {
   const { t } = useTranslation();
-  const format = useFormatDateTime();
   return (
-    <Card title={t("lab.bag.title")}>
-      <dl>
-        <dt>{t("lab.bag.block")}</dt>
-        <dd>{facts.block?.code ?? t("lab.bag.unavailable")}</dd>
-        <dt>{t("lab.bag.date")}</dt>
-        <dd>{facts.bag ? format(facts.bag.device_time) : t("lab.bag.unavailable")}</dd>
-        <dt>{t("lab.bag.collector")}</dt>
-        <dd>{facts.bag?.collector ?? t("lab.bag.unavailable")}</dd>
-      </dl>
-      <StatusPill tone={bag.is_lagged ? "warning" : "success"}>
-        {t(bag.is_lagged ? "lab.bag.lagged" : "lab.bag.onTime")}
-      </StatusPill>
-      {bag.is_index_excluded && <p>{t("lab.bag.excluded")}</p>}
-      {!facts.block && <p>{t("lab.bag.partial")}</p>}
-    </Card>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="m-0 text-3xl leading-9 font-bold tracking-tight text-ink">{bag.code}</h2>
+        <StatusPill tone={bag.is_lagged ? "warning" : "success"}>
+          {t(bag.is_lagged ? "lab.bag.lagged" : "lab.bag.onTime")}
+        </StatusPill>
+      </div>
+      <BagTracePanel code={bag.code} variant="compact" />
+    </div>
   );
 }

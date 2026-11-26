@@ -44,13 +44,13 @@ Tracked in [backend follow-up #334](https://github.com/88randy/wolbachia/issues/
 
 ## Acceptance coverage
 
-| Criterion / invariant | Test |
-| --- | --- |
-| Server weighting, low/pass/critical/incomplete result and raw null observation | `W51Page.test.tsx`, `evaluation-domain.test.ts` |
-| Keyboard errors retain input; irreversible confirmation and no duplicate/replayed write | `W51Page.test.tsx` |
-| Old rubric/attempt provenance; unavailable notice state | `W51Page.test.tsx` |
-| Independent create/read grants, scoped deep link denial, context cache retirement and late write publication | `W51Page.test.tsx`, `evaluation-domain.test.ts` |
-| W50 certification to W51 capture/history, focus return, live results, axe, both locales/themes, 320px and expanded text | `../../../e2e/w-05.spec.ts` |
+| Criterion / invariant                                                                                                   | Test                                            |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Server weighting, low/pass/critical/incomplete result and raw null observation                                          | `W51Page.test.tsx`, `evaluation-domain.test.ts` |
+| Keyboard errors retain input; irreversible confirmation and no duplicate/replayed write                                 | `W51Page.test.tsx`                              |
+| Old rubric/attempt provenance; unavailable notice state                                                                 | `W51Page.test.tsx`                              |
+| Independent create/read grants, scoped deep link denial, context cache retirement and late write publication            | `W51Page.test.tsx`, `evaluation-domain.test.ts` |
+| W50 certification to W51 capture/history, focus return, live results, axe, both locales/themes, 320px and expanded text | `../../../e2e/w-05.spec.ts`                     |
 
 The inline cards replace B22's fixed columns to preserve every action at phone
 width. Sample checklist, scores, counts and delivery claims from the design are

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { SyntheticEvent, RefObject } from "react";
+import type { RefObject } from "react";
 import type { ReceptionActions } from "./use-reception-command";
 import { normalizeBagCode, isBagCodeValid } from "./reception-command";
 import { useReceptionScanQueue } from "./use-reception-scan-queue";
@@ -28,10 +28,9 @@ export function useReceptionScanner(actions: ReceptionActions) {
   const [code, setCode] = useState("");
   const queue = useReceptionScanQueue(actions);
   useScannerFocus(input);
-  function submit(event: SyntheticEvent) {
-    event.preventDefault();
+  function submit(scanned: string) {
     if (actions.isReviewRequired || !actions.canSubmit) return;
-    const normalized = normalizeBagCode(code);
+    const normalized = normalizeBagCode(scanned);
     if (!isBagCodeValid(normalized)) {
       actions.setResult({ code: "invalid" });
       return;

@@ -85,7 +85,8 @@ test.each(["approve", "observe"] as const)(
     });
     const history = screen.getByRole("region", { name: "Historial de validación" });
     expect(await within(history).findByText(saved.reason)).toBeDefined();
-    expect(within(history).getByText(ALLOWED.user.id)).toBeDefined();
+    // The author shows by name, never by id.
+    expect(within(history).getByText("Ana Supervisora")).toBeDefined();
     expect(api.requests.find((request) => request.method === "POST")?.body).toEqual({
       reason: saved.reason,
       expected_revision: 0,
@@ -251,9 +252,11 @@ test("a failed refresh keeps readable facts but disables decisions until a succe
   ).toBe("true");
 });
 
-test("the W29 entry list sends URL status and page to the server", async () => {
+const COURIER = shiftDetail().courier;
+
+test("the W29 entry list sends URL status, page and the day-history filters to the server", async () => {
   const { api } = await openShift({
-    path: "/operations/shifts?status=closed&page=2",
+    path: `/operations/shifts?status=closed&page=2&courier=${COURIER}&date_from=2026-11-03&date_to=2026-11-04`,
     routes: {
       "GET /api/v1/shifts/": Response.json({
         count: 26,
@@ -261,17 +264,26 @@ test("the W29 entry list sends URL status and page to the server", async () => {
         previous: null,
         results: [shiftDetail()],
       }),
+      "GET /api/v1/lookups/users/": Response.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      }),
     },
   });
   await screen.findByRole("cell", { name: "M-03" });
   const rowLink = screen
     .getAllByRole("link")
-    .find((link) => link.getAttribute("href") === SHIFT_PATH);
-  expect(rowLink?.getAttribute("href")).toBe(SHIFT_PATH);
+    .find((link) => link.getAttribute("href") === "/operations/shifts/JOR-0034");
+  expect(rowLink?.textContent).toBe("JOR-0034");
   const request = api.requests.find((entry) => entry.path.startsWith("/api/v1/shifts/?"));
   const params = new URLSearchParams(request?.path.split("?")[1]);
   expect(params.get("status")).toBe("closed");
   expect(params.get("page")).toBe("2");
+  expect(params.get("courier")).toBe(COURIER);
+  expect(params.get("date_from")).toBe("2026-11-03");
+  expect(params.get("date_to")).toBe("2026-11-04");
 });
 
 test.each([403, 404])("a denied refresh (%s) removes private facts and drafts", async (status) => {

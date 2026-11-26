@@ -1,20 +1,22 @@
+import { useTranslation } from "react-i18next";
+import { DetailPage } from "../../components/templates/DetailPage";
 import { ErrorState } from "../../ui/ErrorState";
 import { ConditionStatusContent } from "./ConditionStatusContent";
-import { ConditionsHeader } from "./ConditionsHeader";
+import { ConditionsActions } from "./ConditionsHeader";
 import type { useConditionScreen } from "./use-condition-screen";
-import page from "../../styles/page.module.css";
-import styles from "../inventory.module.css";
+
 export function ConditionsContent({ model }: { model: ReturnType<typeof useConditionScreen> }) {
-  const { code, scope, lot, status, capture, review } = model;
+  const { t } = useTranslation();
+  const { code, scope, lot, status, capture } = model;
+  const review = () => {
+    void model.review();
+  };
   return (
-    <section className={[page.page, styles.content].join(" ")}>
-      <ConditionsHeader
-        code={code}
-        context={scope.readContext}
-        onReview={() => {
-          void review();
-        }}
-      />
+    <DetailPage
+      code={code}
+      title={t("conditions.page.title")}
+      actions={<ConditionsActions code={code} context={scope.readContext} onReview={review} />}
+    >
       {lot.error && (
         <ErrorState
           onRetry={() => {
@@ -28,6 +30,6 @@ export function ConditionsContent({ model }: { model: ReturnType<typeof useCondi
         capture={capture}
         isLotReady={!lot.error && !lot.isFetching && !lot.isPlaceholderData}
       />
-    </section>
+    </DetailPage>
   );
 }

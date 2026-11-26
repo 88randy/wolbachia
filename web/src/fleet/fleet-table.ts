@@ -7,6 +7,7 @@ export const FLEET_TABLE: TableQueryConfig = {
   sortableIds: ["code", "plate", "created_at", "center"],
   defaultOrdering: "code",
   supportsVoided: true,
+  limitationsKey: "fleet.page.gaps",
   filters: [
     CENTER_FILTER,
     { kind: "text", key: "code", labelKey: "refresh.table.exactCode", maxLength: 64 },
@@ -14,6 +15,7 @@ export const FLEET_TABLE: TableQueryConfig = {
       kind: "select",
       key: "is_blocked",
       labelKey: "fleet.column.status",
+      presentation: "segmented",
       options: [
         { value: "false", labelKey: "fleet.status.available" },
         { value: "true", labelKey: "fleet.status.blocked" },

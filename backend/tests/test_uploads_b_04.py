@@ -28,7 +28,14 @@ from tests.test_inventory_allocations_b_10 import allocation as allocation
 from uploads.access import UploadActor
 from uploads.exceptions import UploadConflictError, UploadInProgressError, UploadStorageError
 from uploads.images import sanitize_image
-from uploads.models import AttachmentLink, Upload, UploadLease, UploadSource, UploadVerification
+from uploads.models import (
+    AttachmentLink,
+    Upload,
+    UploadLease,
+    UploadSanitizationFailure,
+    UploadSource,
+    UploadVerification,
+)
 from uploads.services import (
     LEASE_HEADER,
     UploadBody,
@@ -181,6 +188,48 @@ def put(private, identifier, authorization):
         private.actor,
         UploadBody(identifier, authorization["headers"][LEASE_HEADER], BytesIO(private.content)),
     )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_failed_sanitize_is_terminal_without_redecoding(private, monkeypatch):
+    identifier, lease = authorize(private)
+    put(private, identifier, lease)
+    monkeypatch.setattr("uploads.images.MAX_IMAGE_PIXELS", 1)
+    with pytest.raises(FieldValidationError) as first:
+        finalize_upload(private.actor, identifier)
+    monkeypatch.setattr("uploads.images.MAX_IMAGE_PIXELS", 25_000_000)
+    with pytest.raises(FieldValidationError) as retry:
+        finalize_upload(private.actor, identifier)
+    assert retry.value.fields == first.value.fields
+    assert not UploadVerification.objects.filter(upload__public_id=identifier).exists()
+    assert UploadSanitizationFailure.objects.filter(upload__public_id=identifier).count() == 1
+    assert renew_upload(private.actor, identifier)["state"] == "failed"
+
+
+@pytest.mark.django_db
+def test_sanitization_failure_receipt_is_same_org_and_append_only(org_a, org_b, make_member):
+    user, _member = make_member(org_a, ["field.upload"])
+    upload = Upload.objects.create(
+        organization=org_a,
+        created_by=user,
+        uploader=user,
+        content_type="image/png",
+        size_bytes=1,
+        sha256="0" * 64,
+    )
+    with pytest.raises(DatabaseError) as foreign, transaction.atomic():
+        UploadSanitizationFailure.objects.create(
+            organization=org_b, created_by=user, upload=upload, code="upload_invalid_image"
+        )
+    assert foreign.value.__cause__.sqlstate == "23514"
+    failure = UploadSanitizationFailure.objects.create(
+        organization=org_a, created_by=user, upload=upload, code="upload_invalid_image"
+    )
+    with pytest.raises(DatabaseError), transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute(
+            "UPDATE uploads_uploadsanitizationfailure SET code=%s WHERE id=%s",
+            ["changed", failure.pk],
+        )
 
 
 @pytest.mark.django_db(transaction=True)

@@ -1,33 +1,35 @@
+import { Link } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
+import { useCan } from "../session/use-can";
+import { buttonVariants } from "../ui/button-variants";
 import { EmptyState } from "../ui/EmptyState";
 import { CountEditor } from "./CountEditor";
-import { CountShortcuts } from "./CountShortcuts";
 import type { Candidate } from "./lab-query";
-import styles from "./lab.module.css";
 
 type CountWorkspaceEditorProps = Omit<ComponentProps<typeof CountEditor>, "bag"> & {
   bag: Candidate | null;
-  onRetry: () => Promise<void>;
 };
 
-export function CountWorkspaceEditor({ bag, onRetry, ...editor }: CountWorkspaceEditorProps) {
+/** No pending bags is not an error: one friendly message and the way to receive more. */
+function NoBags() {
   const { t } = useTranslation();
+  const canReceive = useCan()("bag.receive");
   return (
-    <div className={styles.editor}>
-      {bag ? (
-        <CountEditor {...editor} bag={bag} />
-      ) : (
-        <EmptyState
-          kind="noData"
-          message={t("lab.queue.empty")}
-          onAction={() => {
-            void onRetry();
-          }}
-          actionLabel={t("common.actions.retry")}
-        />
-      )}
-      <CountShortcuts />
-    </div>
+    <EmptyState
+      kind="noData"
+      message={`${t("lab.count.noBags")}. ${t("lab.count.noBagsHint")}`}
+      action={
+        canReceive && (
+          <Link to="/lab/bags" className={buttonVariants({ variant: "primary" })}>
+            {t("lab.count.receiveBags")}
+          </Link>
+        )
+      }
+    />
   );
+}
+
+export function CountWorkspaceEditor({ bag, ...editor }: CountWorkspaceEditorProps) {
+  return bag ? <CountEditor {...editor} bag={bag} /> : <NoBags />;
 }

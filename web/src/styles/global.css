@@ -26,7 +26,7 @@ body {
   font-family: var(--font-family);
   font-size: var(--web-type-body-font-size);
   line-height: var(--web-type-body-line-height);
-  font-variant-numeric: var(--font-variant-numeric);
+  /* No global tabular-nums: in Inter it widens hyphens ("Q-MER-01"). Number cells opt in. */
 }
 
 /* Focus ring from the design (.fo): solid line, offset, soft halo. Never removed. */
@@ -63,8 +63,7 @@ body {
   }
 }
 code,
-kbd,
-time {
+kbd {
   font-family: var(--font-family-mono);
   font-variant-numeric: var(--font-variant-numeric);
 }
@@ -78,6 +77,10 @@ svg {
   flex-shrink: 0;
 }
 /* Existing native dialog logic is unchanged; this shared surface also covers future dialogs. */
+/* Tailwind preflight resets every margin; native dialogs keep the browser centering. */
+dialog {
+  margin: auto;
+}
 dialog[open] {
   max-height: calc(100dvh - var(--space-6));
   overflow: auto;
@@ -99,4 +102,218 @@ dialog[open]::backdrop {
   button:active:not(:disabled) {
     transform: translateY(calc(var(--space-0-5) / 4));
   }
+}
+
+/*
+ * Native checkboxes and radios get the shadcn look (filled brand box, white mark) while keeping
+ * native keyboard, form and indeterminate behavior. The marks are CSS masks tinted with tokens.
+ */
+input[type="checkbox"]:not([role="switch"]),
+input[type="radio"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-level-1);
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    background-color var(--web-motion-fast) var(--web-motion-easing),
+    border-color var(--web-motion-fast) var(--web-motion-easing);
+}
+input[type="checkbox"]:not([role="switch"]) {
+  border-radius: 5px;
+}
+input[type="radio"] {
+  border-radius: var(--radius-full);
+}
+input[type="checkbox"]:not([role="switch"]):hover:not(:disabled),
+input[type="radio"]:hover:not(:disabled) {
+  border-color: var(--color-action);
+}
+input[type="checkbox"]:not([role="switch"]):checked,
+input[type="checkbox"]:not([role="switch"]):indeterminate {
+  border-color: var(--color-action);
+  background: var(--color-action);
+}
+input[type="checkbox"]:not([role="switch"])::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: var(--color-on-action);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: scale(0);
+  transition: transform var(--web-motion-fast) var(--web-motion-easing);
+}
+input[type="checkbox"]:not([role="switch"]):indeterminate::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");
+}
+input[type="checkbox"]:not([role="switch"]):checked::before,
+input[type="checkbox"]:not([role="switch"]):indeterminate::before {
+  transform: scale(1);
+}
+input[type="radio"]:checked {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  box-shadow: inset 0 0 0 4px var(--color-surface);
+}
+label:has(> input[type="checkbox"]:not([role="switch"])),
+label:has(> input[type="radio"]) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--web-control-sm);
+  cursor: pointer;
+}
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Remaining native selects: the same field look as the shared SelectMenu, with a token chevron. */
+select {
+  appearance: none;
+  min-height: var(--web-control-lg);
+  padding: 0 var(--space-4) 0 var(--space-1-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
+    linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  box-shadow: var(--shadow-level-1);
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-font-size);
+  cursor: pointer;
+}
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/*
+ * One look for every text field, whatever screen module styles it: one border, the same height,
+ * radius and focus ring as `forms/TextField`. The `html body` prefix outranks screen modules
+ * (`.formFields input`, `.page input`...). Search boxes and the command palette keep their own
+ * chrome, and the inner input of a composite field (`forms/form.module.css .input`) stays bare.
+ */
+html
+  body
+  :is(
+    input:not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="color"],
+      [type="hidden"],
+      [type="search"],
+      [cmdk-input]
+    ),
+    textarea,
+    select:not([aria-hidden="true"])
+  ) {
+  box-sizing: border-box;
+  max-width: min(100%, 36rem);
+  min-height: var(--web-control-lg);
+  padding-inline: var(--space-1-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-level-1);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--web-type-body-font-size);
+}
+html body textarea {
+  max-width: 100%;
+  min-height: calc(var(--web-control-lg) * 2);
+  padding-block: var(--space-1);
+  line-height: var(--web-type-body-line-height);
+}
+html body select:not([aria-hidden="true"]) {
+  appearance: none;
+  padding-inline-end: var(--space-4);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
+    linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+html
+  body
+  :is(
+    input:not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="color"],
+      [type="hidden"],
+      [type="search"],
+      [cmdk-input]
+    ),
+    textarea,
+    select:not([aria-hidden="true"])
+  ):focus-visible {
+  border-color: var(--color-action);
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+}
+html body :is(input, textarea, select)[aria-invalid="true"] {
+  border-color: var(--color-status-critical-fg);
+}
+
+/* Field labels: the TextField label everywhere a label sits right before its control. */
+html
+  body
+  label:has(
+    + :is(
+      input:not([type="checkbox"], [type="radio"]),
+      textarea,
+      select,
+      button[role="combobox"],
+      div
+    )
+  ) {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+  line-height: var(--web-type-body-line-height);
+}
+
+/* Checkbox and radio groups: a left-aligned column, never centered. */
+fieldset:has(> label > input[type="checkbox"]),
+fieldset:has(> label > input[type="radio"]) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  text-align: start;
+}
+fieldset:has(> label > input[type="checkbox"]) > legend,
+fieldset:has(> label > input[type="radio"]) > legend {
+  margin-bottom: var(--space-0-5);
+  padding: 0;
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
 }

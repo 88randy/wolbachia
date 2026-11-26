@@ -5,10 +5,6 @@ export function RevisionReview({ editor }: { editor: ScopeEditor }) {
   const { t } = useTranslation();
   return (
     <div>
-      <p>
-        {t("orgAdmin.revision.current")}
-        {editor.current?.revision ?? editor.revision}
-      </p>
       {editor.writer.error && <p role="alert">{t(editor.writer.error)}</p>}
       {editor.writer.error && (
         <button

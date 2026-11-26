@@ -8,6 +8,7 @@ export const shift: Record<keyof typeof source, string> = {
   "shift.page.timeline": "Available timeline",
   "shift.page.history": "Validation history",
   "shift.field.reference": "Shift reference",
+  "shift.field.code": "Shift",
   "shift.field.courier": "Courier reference",
   "shift.field.motorcycle": "Motorcycle",
   "shift.field.lifecycle": "Status",
@@ -38,6 +39,19 @@ export const shift: Record<keyof typeof source, string> = {
     "The summary of points, readings, egg paddle presence and Yes/No eggs, incidents, distance and flags with thresholds and versions is not available yet. Review field information before deciding.",
   "shift.gap.track":
     "GPS track unavailable. The shift provides no coordinates or visit events to display a map. This list contains only the available opening and closing.",
+  "shift.filter.courier": "Courier",
+  "shift.filter.dateFrom": "Opened from",
+  "shift.filter.dateTo": "Opened until",
+  "shift.track.title": "Shift track",
+  "shift.track.start": "Start",
+  "shift.track.end": "End",
+  "shift.track.table": "Track segments (phone time)",
+  "shift.track.segmentStart": "Segment start",
+  "shift.track.segmentEnd": "Segment end",
+  "shift.track.positions": "Positions",
+  "shift.track.empty": "This shift has no received positions yet.",
+  "shift.track.inReview":
+    "Segments in review: {count}. They are not drawn until supervision resolves their review.",
   "shift.gap.points":
     "Point history (W4) is not available in this application yet. Saved shift decisions are shown here.",
   "shift.history.empty":
@@ -62,7 +76,7 @@ export const shift: Record<keyof typeof source, string> = {
   "shift.error.tooShort": "Enter a reason meeting the indicated minimum length.",
   "shift.error.tooLong": "The reason exceeds the indicated maximum length.",
   "shift.error.invalidCharacters": "Remove control characters from the reason and try again.",
-  "shift.error.invalid": "The server did not accept the reason. Review it and try again.",
+  "shift.error.invalid": "The reason was not accepted. Check it and try again.",
   "shift.error.conflict":
     "The shift changed. Your reason is preserved. Close this dialog, refresh and review history before opening the action again.",
   "shift.error.uncertain":

@@ -303,16 +303,19 @@ class TransferEventSerializer(OrgScopedModelSerializer):
     def get_discrepancy_id(self, event: TransferEvent) -> str | None:
         if event.kind == "resolution":
             return str(event.resolution.discrepancy_id)
-        discrepancy = Discrepancy.objects.filter(receipt_event=event).first()
+        discrepancy = getattr(event, "discrepancy", None)
         return str(discrepancy.pk) if discrepancy else None
 
 
 class TransferLineSerializer(OrgScopedModelSerializer):
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+
     class Meta:
         model = TransferLine
         fields = [
             "id",
             "lot_id",
+            "lot_code",
             "piece_id",
             "unit_version_id",
             "quantity",
@@ -347,7 +350,7 @@ class TransferSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
     def get_revision(self, transfer: Transfer) -> int:
-        return transfer.events.order_by("-revision").values_list("revision", flat=True).first() or 0
+        return max((event.revision for event in transfer.events.all()), default=0)
 
     @extend_schema_field(
         {
@@ -358,7 +361,7 @@ class TransferSerializer(OrgScopedModelSerializer):
     def get_state(self, transfer: Transfer) -> str:
         from inventory.transfers.selectors import transfer_state
 
-        return transfer_state(transfer)
+        return str(getattr(transfer, "current_state", None) or transfer_state(transfer))
 
     @extend_schema_field(serializers.DictField(child=serializers.CharField()))
     def get_outstanding(self, transfer: Transfer) -> dict[str, str]:
@@ -379,9 +382,11 @@ class TransferHoldSerializer(OrgScopedModelSerializer):
         source="resolution.resolution_id", read_only=True, allow_null=True
     )
 
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+
     class Meta:
         model = TransferHold
-        fields = ["id", "lot_id", "location_id", "piece_id", "resolution_id"]
+        fields = ["id", "lot_id", "lot_code", "location_id", "piece_id", "resolution_id"]
         read_only_fields = fields
 
 

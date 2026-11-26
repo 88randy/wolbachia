@@ -1,15 +1,12 @@
-import { Image } from "react-native";
+import { Image, View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { SamplePhotoActions } from "./SamplePhotoActions.tsx";
-import { createSampleStyles } from "./styles.ts";
 import type { SampleViewModel } from "./view-model.ts";
 
 export function SamplePhoto({ model }: { readonly model: SampleViewModel }) {
   const t = useT();
-  const styles = useStyles(createSampleStyles);
   const hint =
     model.requiresPhoto === null
       ? "mobile.sample.photoUnknown"
@@ -17,18 +14,19 @@ export function SamplePhoto({ model }: { readonly model: SampleViewModel }) {
         ? "mobile.sample.photoRequired"
         : "mobile.sample.photoOptional";
   return (
-    <Card>
-      <AppText variant="bodyStrong">{t("mobile.sample.photo")}</AppText>
-      <AppText>{t(hint)}</AppText>
-      <AppText isMonospace>{model.evidenceCount}</AppText>
+    <>
+      <SectionTitle title={t("mobile.sample.photo")} />
+      <AppText variant="body">{t(hint)}</AppText>
       {model.photoUri ? (
-        <Image
-          source={{ uri: model.photoUri }}
-          style={styles.photo}
-          accessibilityLabel={t("mobile.sample.photoPreview")}
-        />
+        <View className="overflow-hidden rounded-card bg-surface-muted">
+          <Image
+            source={{ uri: model.photoUri }}
+            className="aspect-square w-full"
+            accessibilityLabel={t("mobile.sample.photoPreview")}
+          />
+        </View>
       ) : null}
       <SamplePhotoActions model={model} />
-    </Card>
+    </>
   );
 }

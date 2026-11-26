@@ -39,7 +39,7 @@ function receiptRow(receipt: Schemas["LabReceipt"]): ReceptionRow {
     id: receipt.id,
     bagId: receipt.bag_id,
     readingId: receipt.reading_id,
-    code: null,
+    code: receipt.bag_code ?? null,
     createdAt: receipt.created_at,
     status: receipt.kind === "no_paddle" ? "noPaddle" : "received",
   };
@@ -59,7 +59,7 @@ function discrepancyRow(discrepancy: Schemas["LabDiscrepancy"]): ReceptionRow {
     id: discrepancy.id,
     bagId: discrepancy.bag_id,
     readingId: null,
-    code: null,
+    code: discrepancy.bag_code ?? null,
     createdAt: discrepancy.created_at,
     status: discrepancy.kind,
     discrepancy,

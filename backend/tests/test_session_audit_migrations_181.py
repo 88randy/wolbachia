@@ -145,7 +145,9 @@ def test_personnel_guards_cannot_be_reversed_after_private_facts_are_stored(org_
     retained_receipt = AccessLog.objects.filter(pk=receipt.pk).values().get()
     leaves = MigrationExecutor(connection).loader.graph.leaf_nodes()
     try:
-        with pytest.raises(IrreversibleError, match="Retain personnel"):
+        # Atomic so the refused reverse also rolls back later migrations it already unapplied
+        # (e.g. accounts 0009 dropping `reason`), leaving the schema at head for the live models.
+        with pytest.raises(IrreversibleError, match="Retain personnel"), transaction.atomic():
             MigrationExecutor(connection).migrate(
                 [("accounts", "0004_personnel_accesslog_and_more")]
             )

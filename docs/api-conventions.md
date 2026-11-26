@@ -1,5 +1,135 @@
 # API conventions (mobile + web)
 
+## Manual egg annotations (W35)
+
+The existing `POST /api/v1/bags/{id}/counts/` command accepts optional
+`annotation: {upload_id, marks, tool_version, elapsed_seconds?}`. The existing
+same-Bag count replacement in `POST /egg-counts/{id}/void/` accepts the same
+payload. The server derives `value = len(marks)`; an explicitly different value
+returns `validation_error` with field code `lab_annotation_value_mismatch`.
+Numeric-only commands retain their existing behavior. All commands retain the
+original UUID idempotency, CAS revision, plausibility confirmation and saved
+`next_bag` result. Count, annotation and private attachment commit atomically.
+Lab facade command JSON bodies are limited to 2 MiB: `CONTENT_LENGTH` above
+2,097,152 bytes returns `413 payload_too_large` before JSON parsing. The mark
+list limit is checked before validating any child mark.
+
+Use the existing private upload flow with `purpose: "egg_annotation"` on
+authorization. This purpose permits JPEG, PNG and single-frame WebP, up to the
+existing 10 MiB and 25 megapixel ceilings; other parent types keep their existing
+formats. Finalization exposes verified oriented `image_width`/`image_height`.
+Sanitization failure is terminal for that upload UUID: subsequent finalize calls
+return the retained validation code without decoding again; renewal state is `failed`.
+Creation requires `egg_count.create` plus `field.upload` over the actual Bag
+scope. Verification and storage I/O finish before the count transaction.
+
+`marks` is a list of at most 5,000 entries, mixing
+`{kind:"box", x:int, y:int, w:int, h:int}` and
+`{kind:"point", x:int, y:int}`. Coordinates use verified, EXIF-oriented image
+pixels with top-left origin. Points require `0 <= x < image_width` and
+`0 <= y < image_height`. Boxes additionally require positive `w,h`,
+`x+w <= image_width` and `y+h <= image_height`. Boolean, fractional, unknown-kind,
+extra-field and outside-image inputs are rejected; the server never clamps
+training coordinates. The UI rounds/clamps gestures before submission.
+`tool_version` is nonempty and at most 64 characters; optional
+`elapsed_seconds` is a client-measured integer from 0 through 2,147,483,647.
+
+`GET /egg-counts/{id}/annotation/` reads the retained annotation for a count.
+`GET /egg-annotations/` uses server paging and accepts exact Bag `code`, `author`
+(User UUID), `created_from` (inclusive timestamp) and `created_before` (exclusive
+timestamp). `GET /egg-annotations/{id}/` uses the annotation public UUID.
+All reads require current `egg_count.read`, including the existing paired scope
+and independent-count visibility policy, before filtering/counting/paging.
+Foreign or inaccessible objects are opaque 404s. `annotation_id` on count
+projections is optional/nullable for compatibility with previously saved replies.
+The annotation supplies `image_url` through the existing authorized attachment
+download; private source bytes are never exposed. Voiding a count retains its
+annotation and image. A photo-backed correction creates a new annotation.
+The annotation's sole public identifier is `id`.
+
+## Training dataset exports (W72)
+
+Every action requires current `egg_annotation.export`, granted only to seeded
+admins by default. Organization comes from the authenticated membership; neither
+the request nor the route accepts an organization ID. Selection applies current
+whole paired export scope, date/author/voided filters, without blind-QA filtering.
+Creating the export explicitly discloses every sealed count to its requester:
+`annotation_export` numeric receipts commit atomically with the selection,
+making the requester ineligible for blind recounts of those Bags
+(`lab_recount_disclosed`). This happens before dispatch, including failed jobs.
+Other readers retain blind visibility before page counts and archive access.
+An export is indivisible: if any selected annotation becomes inaccessible,
+list/detail/download conceal it. Admins with this permission may see/download
+every currently accessible export in their organization, regardless of requester;
+each download is logged. New requester polls need no numeric publication;
+historical requests retain disclosure on their first numeric delivery. For other
+authorized readers, ready/expired totals publish only selected counts missing the
+existing actor/count disclosure receipt. Subsequent polls of the same immutable
+exports perform no disclosure writes or materialization of already disclosed counts.
+
+| Method and path | Contract |
+| --- | --- |
+| `POST /api/v1/lab/egg-annotation-exports/` | `{date_from, date_to, author?, include_voided?: false, format}` with format `coco` or `yolo`; returns `201` with the job projection. Dates are inclusive organization-local days, at most 366 days. `author` is an optional same-organization User UUID or null. At most 5,000 images and 2 GiB of verified image bytes are selected; at most one active request per requester and two per organization. |
+| `GET /api/v1/lab/egg-annotation-exports/` | Standard server page-number pagination (`page`, `page_size`), newest creation time/UUID first. |
+| `GET /api/v1/lab/egg-annotation-exports/{id}/` | One currently authorized job projection. |
+| `GET /api/v1/lab/egg-annotation-exports/{id}/download/` | Ready ZIP stream, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`; one immutable actor/time download receipt per authorized delivery. |
+
+The projection has `id`, `created_at`, `date_from`, `date_to`, `author` (nullable),
+`include_voided`, `format`, `status`, `image_count`, `box_count`, `point_count`,
+`error_code`, `size_bytes` (nullable) and `sha256`. Result counts/size/hash are
+available when ready; expired facts retain the ready counts without a downloadable
+object. Queued/running/failed facts retain zero counts and no result. Status
+transitions append immutable facts: `queued -> running -> ready | failed` and
+`ready -> expired`.
+Selections and voided flags are fixed when requested, before asynchronous work;
+later annotation creation or voiding does not alter the selected dataset.
+Creation uses the existing `export` throttle, downloads use `export_download`
+(30/hour), and polling uses the ordinary read allowance. Foreign/inaccessible jobs are
+opaque `404`; missing permission is `403`. Errors contain codes/params only:
+invalid/reversed/over-366-day dates use field code
+`annotation_export_date_range` (`max_days: 366`); oversized selections use
+`annotation_export_too_many_images` (`max_images: 5000`) or
+`annotation_export_too_many_bytes` (`max_bytes: 2147483648`). These follow the existing
+`400 validation_error` field envelope. Concurrent active requests are refused
+inside the organization-locked create transaction with `annotation_export_in_progress`.
+Download before ready returns
+`409 annotation_export_not_ready`. A failed task retains
+`error_code: annotation_export_failed`, never exception text or private paths.
+An inactive requester or removed permission causes a retained
+`annotation_export_requester_unauthorized` failure. Beat
+recovers queued/running requests older than the 1,860-second hard time limit plus
+120 seconds as `annotation_export_timed_out`. Ready archives expire after
+`ANNOTATION_EXPORT_RETENTION_DAYS` (default 7); expiry deletes bytes and appends
+`expired` while retaining every historical row. Expired downloads return
+`annotation_export_expired`. Clients can create a new request with identical filters.
+
+The web is authenticated by session cookies and uses a same-origin download
+anchor; it does not fetch the archive into a Blob or put credentials in a URL.
+Headerless cookie downloads resolve a current active membership of the export's
+organization before applying ordinary permission/scope checks. The download
+checks stat size against the immutable ready fact, verifies SHA-256 while
+streaming, and aborts on mismatch. HEAD does not append a download receipt.
+
+One archive contains only verified sanitized images named with annotation public
+UUIDs. COCO has `annotations.json`, images, consistent detection IDs, pixel bbox
+and area, category 1 `aedes_egg`, `iscrowd: 0`, AedesVision/export/UTC metadata and
+empty licenses. YOLO has image/label pairs, class 0 normalized center `xywh` to
+six decimals, `classes.txt`, and relative `data.yaml` paths (no `path`,
+`train: images`, `val: images`, `nc: 1`, `names: [aedes_egg]`). This is an unsplit
+export; a consumer creates an independent validation split before training.
+Both contain `points.json` as
+`{"images":[{"image_id":1,"file_name":"images/<UUID>.<ext>","points":[[x,y],...]}]}`
+in pixels, a minimal `manifest.csv`, and a schema/policy `README.txt`.
+Points never become boxes; point-only images remain present with empty YOLO
+labels. Manifest columns are `image_file,annotation_id,count_id,box_count,point_count,voided,created_at`
+(UTC). Archive metadata contains no author identifiers/names, organization IDs,
+locations, Bag/ovitrap codes or original filenames. Voided counts are excluded
+by default; explicit inclusion retains their captured manifest flag.
+There are no personal data in metadata, file names or manifest; photos may still
+show handwritten codes or labels. W72 and the archive README disclose this limitation.
+See [the format/storage details](../backend/lab/README.md#training-dataset-exports-w72)
+and [decision 177](decisions.md).
+
 ## UIEB shipment source and material delivery (#118)
 
 `GET/POST /uieb-shipments/` and `GET /uieb-shipments/{id}/` expose the versioned
@@ -601,6 +731,10 @@ OpenAPI parameters describe history fields, without the identity-list filters.
 Verified primitives: [DRF search and ordering filters](https://www.django-rest-framework.org/api-guide/filtering/)
 and [Django queryset ordering](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#order-by).
 
+## Shift and release codes
+
+`Shift.code` (`JOR-0128`) and `Release.code` (`LIB-0042`) are read-only, sequential per organization and kind (4 digits, growing past 9999). They are allocated when the record is stored, by `organizations.codes.allocate_code`: a `CodeCounter` row per (organization, kind) locked with `FOR UPDATE NOWAIT` and held until the transaction ends, so numbers are gapless, a rolled back or replayed event consumes none, and a busy counter is the same retryable `429 sync_in_progress` as any other sync lock (leaf lock: taken after every other lock of the writer). `GET /shifts/` and `GET /releases/` accept `?code=`; `GET /shifts/{id}/` and `GET /releases/{id}/` keep working with the id (old links). Existing rows were numbered by creation time in the migrations `shifts.0005_readable_codes` and `releases.0007_readable_codes`.
+
 ## Shared conventions
 
 | Topic | Convention | Status |
@@ -645,6 +779,7 @@ and [Django queryset ordering](https://docs.djangoproject.com/en/5.2/ref/models/
 | Permission codes (#5) | `field_event.sync` (seeded for `courier`), `review_item.read` (seeded for `supervisor` and `admin`). | Accepted |
 | Shifts (#68) | `GET /shifts/` (page-number paging; `?status=open\|closed`, `?courier=<user id>`, `?date_from=` and `?date_to=` as `YYYY-MM-DD`, inclusive, in the organization's time zone, on the phone's opening time; `date_to` before `date_from` is `400 validation_error` with `fields.date_to` `date_range_inverted`) and `GET /shifts/{id}/` need `shift.read`; newest first. Shift: `{id, courier, device, motorcycle, motorcycle_code, status, opened_at_device, opened_event, odometer_open_km, open_note, closed_at_device, closed_event, odometer_close_km, close_note, checks: [{id, item, item_code, result, note}], created_at}`. Read-only: shifts are written by the `shift.open` / `shift.close` sync events (`sync.md`). No human code (`?code=`) yet: shifts are identified by the UUID the phone generated [ASSUMPTION]. Another organization's shift is `404`. | Accepted |
 | Permission codes (#68) | `shift.read` (seeded for `supervisor` and `admin`). | Accepted |
+| Courier track (#370) | Permission `courier_track.read` (seeded for `supervisor`, `coordinator` and `admin`; never `courier`), scoped like shifts (`readable_shifts`: motorcycle center plus the subject vector). `GET /shifts/positions/` (not paged, bounded by open shifts): `[{shift_id, shift_code, courier, motorcycle_code, lat, lng, accuracy_m, recorded_at, received_at}]`, the last position of every readable **open** shift that has a stored segment; shifts without one are absent. `recorded_at` is the phone's clock, `received_at` the server receipt of that segment. `GET /shifts/{id}/track/`: `{shift_id, status, segments: [{id, started_at, ended_at, received_at, positions: [[offset_s, lat, lng, accuracy_m]]}], pending_review_count}`, segments ordered by `started_at` (phone clock), offsets in seconds from the segment's `started_at`; segments of voided sources are excluded and `pending_review_count` counts `track.segment` events of the shift stored `in_review`, not voided and without a terminal review decision (never drawn). Unknown, foreign, out-of-scope or non-UUID id: `404`; without the permission: `403`. Each successful read inserts one `TrackViewReceipt` per viewer, kind (`live` / `track`), shift and UTC hour (insert-only, repeats absorbed). Written only by the `track.segment` sync event (`sync.md`); no writes, no exports, no user-facing text. | Accepted |
 | Error codes (#68) | Per event (`results[].code`, see `sync.md`): `shift_already_open`, `motorcycle_unknown`, `motorcycle_blocked`, `motorcycle_in_use`, `odometer_out_of_range`, `shift_not_open`, `shift_event_not_voidable` (`rejected`); `odometer_decreased`, `severe_check`, `captured_after_shift_close` (`in_review`). Translated from `packages/i18n` (`sync.result.*`). | Accepted |
 | Motorcycles (#72) | `GET/POST /motorcycles/`, `GET/PATCH /motorcycles/{id}/`; no `PUT` or `DELETE`. Page-number list ordered by `code`, then `id`; exact `?code=`, `?is_blocked=true\|false`, `?include_voided=true`. Create accepts `code` (50 characters) and optional `plate` (20); PATCH accepts only `plate`. Code is immutable after creation: any `code` key in PATCH (even unchanged) is rejected with `400 validation_error`, `fields.code: [{code: immutable_code, params: {}}]`. Correct a wrong code by voiding the motorcycle and creating a new one with the correct code; the original code remains reserved. This protects schema-1 offline events, which resolve motorcycles by code; there are no aliases. Response: `{id, code, plate, is_blocked, blocked_reason, created_at, created_by, voided_at, voided_by, void_reason}`; audit/block/void fields are read-only. Codes are case-sensitive and unique per organization, including voided motorcycles; duplicate creation is `400 validation_error`, `fields.code: [{code: duplicate_code, params: {}}]`, also under concurrency. Another organization's id is `404`. | Accepted |
 | Motorcycle correction (#72) | `POST /motorcycles/{id}/void/ {reason_code, reason?}` uses the shared void resolver (#80; `unblock` keeps a free-text `{reason}` under the #32 validator), returns the motorcycle and retains history. Open shift: `409 motorcycle_in_use`; repeated void, edit or unblock of a voided motorcycle: `409 already_voided`. Voided motorcycles cannot open a shift (`motorcycle_unknown`). `POST /motorcycles/{id}/unblock/ {reason}` uses the same validator (default minimum 10 visible characters), clears both block fields and inserts `MotorcycleBlockEvent` with actor, time, previous block reason and normalized reason atomically. Returns the motorcycle; already unblocked is `409 motorcycle_not_blocked`, without another event. Invalid reasons are checked before state. Severe-check blocks also insert an event referencing the field event; PostgreSQL forbids audit UPDATE/DELETE. Error messages: `errors.api.motorcycleNotBlocked`, `errors.api.motorcycleInUse`, `errors.api.duplicateCode`, `errors.api.immutableCode` in es-MX/en. | Accepted |
@@ -1831,3 +1966,49 @@ never a parameter.
 
 No model, migration or write path is added. Samples and lab count facts are not yet producers:
 they are a follow-up (they need the sample source-context rule of `lab.samples.selectors`).
+
+## Platform administration (`/api/v1/platform/`)
+
+The only cross-organization surface. Every endpoint requires a web session (device bearer tokens
+answer `401`) whose user holds an active platform role (`403 permission_denied` otherwise),
+including organization admins. Reads are throttled per user (`platform`, 120/min) and writes also
+by `platform_write` (60/hour); both are env-configurable. Organizations are addressed by slug and
+no endpoint returns organization business data. `X-Organization` is never used to authorize.
+
+- `GET /platform/organizations/?search=&status=active|suspended&ordering=` (page paging):
+  `slug, name, country, timezone, is_active, users_count, centers_count, has_logo, created_at`.
+- `POST /platform/organizations/`: `name, slug, country, timezone, epi_week, languages[],
+  centers[{code,name}] (1..20), admin_first_name, admin_last_name, admin_username, admin_email,
+  admin_delivery=password|invite`. One transaction: organization, default profiles, permissions,
+  catalogs and rules, centers, a NEW admin account with the `admin` profile and all scope.
+  `201 {organization, admin{username, delivery, temporary_password}}`. `temporary_password` is
+  random (about 95 bits), returned once (`Cache-Control: no-store`) and never stored or logged; with
+  `invite` it is null and the existing password-reset email is sent after commit. Field codes:
+  `slug_taken`, `invalid_slug` (also the reserved `new-organization`), `username_taken`,
+  `duplicate_center_code`, `center_code_taken`.
+- `GET /platform/organizations/{slug}/`: settings, `centers[]`, `admins[]` (username, names,
+  email), last 50 `history[]` (`action, created_at, actor_name, reason`).
+- `POST .../centers/`, `POST .../admins/` (a new account only; an existing username is never
+  reused), `POST .../apply-defaults/` (idempotent seeds), `GET|POST .../logo/` (same PNG validator
+  as `/organization/logo/`), `POST .../suspend/` and `.../reactivate/` with a required `reason`
+  (void-reason length limits). Suspension keeps every record; members get `no_active_membership`.
+- `GET /platform/availability/?slug=&username=`: `{slug_available, username_available}`.
+
+`/me/` adds `is_platform_admin`. A platform admin with no membership gets `200` with
+`organization: null`, `organizations: []` and no permissions (instead of `403`); a named
+`X-Organization` is still refused.
+
+### Temporary passwords, revocation and suspension (security review of the platform)
+
+- A `password` delivery sets `User.must_change_password` and `temporary_password_expires_at`
+  (`PLATFORM_TEMPORARY_PASSWORD_HOURS`, default 72). Sign-in works until expiry (afterwards it is
+  `401 invalid_credentials`); `/me/` reports `must_change_password: true` and every other API call
+  answers `403 password_change_required` except `/me/`, `/auth/logout/` and
+  `POST /auth/password-change/ {current_password, new_password}` (session only, throttled
+  `password_change`, 10/hour; `204`; keeps the web session, revokes device sessions). A password
+  reset also clears the flag.
+- `PlatformAuditEntry` also refuses `TRUNCATE` (statement trigger).
+- `manage.py revoke_platform_admin --username <u>` deactivates the role and appends
+  `platform_admin.revoke`.
+- Suspending an organization also revokes its device sessions (`membership_inactive`) and ends
+  its members' web sessions right away; the acting platform admin keeps their session.

@@ -50,6 +50,31 @@ describe("orgScopedQueryOptions", () => {
     expect(placeholderFrom(NORTE, current)).toBeUndefined();
   });
 
+  test("only a center-independent list keeps its placeholder across a center change", () => {
+    const client = new QueryClient();
+    const loadedAs: SessionIdentity = { ...NORTE, authorization: "a1", activeCenter: "c1" };
+    const options = (identity: SessionIdentity, placeholderAcrossCenters: boolean) =>
+      orgScopedQueryOptions(identity, {
+        key: ["centers"],
+        queryFn: () => Promise.resolve(1),
+        placeholderAcrossCenters,
+      });
+    const previousQuery = client.getQueryCache().build<number>(client, {
+      queryKey: [...options(loadedAs, true).queryKey],
+      meta: { revision: 0, center: "c1", authorization: "a1" },
+    });
+    const placeholderFor = (identity: SessionIdentity, across: boolean) => {
+      const { placeholderData } = options(identity, across);
+      if (typeof placeholderData !== "function") throw new TypeError("expected a function");
+      return placeholderData(7, previousQuery);
+    };
+    const otherCenter: SessionIdentity = { ...loadedAs, activeCenter: "c2" };
+    expect(placeholderFor(otherCenter, true)).toBe(7);
+    expect(placeholderFor(otherCenter, false)).toBeUndefined();
+    expect(placeholderFor({ ...otherCenter, authorization: "a2" }, true)).toBeUndefined();
+    expect(placeholderFor({ ...otherCenter, organizationSlug: "sur" }, true)).toBeUndefined();
+  });
+
   test("drops an answer that arrives after the session revision changed", async () => {
     let answer: (value: number) => void = () => undefined;
     const late = new Promise<number>((resolve) => {
@@ -131,10 +156,15 @@ describe("findUnscopedQueries (the guard itself)", () => {
  */
 describe("org-scoped queries", () => {
   const SRC = join(import.meta.dirname, "..");
-  const EXEMPT = ["session", "api", "test"];
+  // `portal/` is the public read-only portal: no session, keyed by the organization slug in its
+  // URL. The record history is the one infinite (cursor) query: it carries the full scope prefix
+  // by hand because the helper only builds single-page queries.
+  const EXEMPT = ["session", "api", "test", "portal"];
+  const EXEMPT_FILES = ["discovery/discovery-query.ts"];
   const files = readdirSync(SRC, { recursive: true, encoding: "utf8" })
     .filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.(ts|tsx)$/.test(file))
-    .filter((file) => !EXEMPT.includes(file.split(/[\\/]/)[0] ?? ""));
+    .filter((file) => !EXEMPT.includes(file.split(/[\\/]/)[0] ?? ""))
+    .filter((file) => !EXEMPT_FILES.includes(file.replaceAll("\\", "/")));
 
   test("finds the screens' files", () => {
     expect(files.length).toBeGreaterThan(20);

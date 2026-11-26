@@ -5,8 +5,7 @@ import type { ReactNode } from "react";
 import { Card } from "../../ui/Card";
 import { CardSkeleton } from "../../ui/CardSkeleton";
 import { InlineNotice } from "../../ui/InlineNotice";
-import { readMapSource, OSM_COPYRIGHT } from "../../quadrants/geography/map-source";
-import type { MapSource } from "../../quadrants/geography/map-source";
+import { readMapSource } from "../../quadrants/geography/map-source";
 import { LocationMapBoundary } from "./LocationMapBoundary";
 import styles from "../inventory.module.css";
 const Canvas = lazy(async () => ({
@@ -21,23 +20,13 @@ function validPoint(location: Schemas["Location"]) {
     Math.abs(Number(point[1])) <= 90
   );
 }
-function MapFrame({
-  children,
-  source,
-  fallback,
-}: {
-  children: ReactNode;
-  source: MapSource | null;
-  fallback: ReactNode;
-}) {
+function MapFrame({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
   const { t } = useTranslation();
   return (
     <Card title={t("inventory.section.map")}>
       <LocationMapBoundary fallback={fallback}>
         <Suspense fallback={<CardSkeleton />}>{children}</Suspense>
       </LocationMapBoundary>
-      <a href={OSM_COPYRIGHT}>{t("inventory.map.attribution")}</a>
-      {source?.attribution && <p>{source.attribution}</p>}
     </Card>
   );
 }
@@ -54,7 +43,7 @@ export function LocationsMap({ locations }: { locations: readonly Schemas["Locat
   const fallback = <InlineNotice tone="info">{t("inventory.map.fallback")}</InlineNotice>;
   if (locations.length === 0) return null;
   return (
-    <MapFrame source={source} fallback={fallback}>
+    <MapFrame fallback={fallback}>
       {unavailable ? (
         fallback
       ) : (

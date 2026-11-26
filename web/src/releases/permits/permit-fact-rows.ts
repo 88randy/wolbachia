@@ -7,13 +7,15 @@ interface Input {
   version: PermitVersion;
   t: TFunction;
   format: (iso: string) => string;
+  /** Formats the end of the validity (a midnight end reads as its last day). */
+  formatEnd: (iso: string) => string;
 }
 
 /** Label and value of each fact of the current official version, in reading order. */
-export function factRows({ permit, version, t, format }: Input): [string, string][] {
+export function factRows({ permit, version, t, format, formatEnd }: Input): [string, string][] {
   const meters = maxGpsAccuracy(version.requirements);
   const from = format(version.valid_from);
-  const to = format(version.valid_to);
+  const to = formatEnd(version.valid_to);
   return [
     [t("permits.detail.number"), version.number],
     [t("permits.detail.authority"), version.authority],

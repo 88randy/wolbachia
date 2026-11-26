@@ -92,7 +92,7 @@ for (const language of LANGUAGES) {
       const terminal = page.getByRole("combobox", {
         name: language === "en" ? "Terminal owner" : "Responsable terminal",
       });
-      await expect(terminal).toHaveValue(W64_TYPE.terminal);
+      await expect(terminal).toContainText(W64_OWNERS[2].label);
       await expectNoAxeViolations(page);
       const evidence = page.getByLabel(language === "en" ? "Photos to close" : "Fotos para cerrar");
       await evidence.focus();
@@ -128,7 +128,7 @@ for (const language of LANGUAGES) {
         .click();
       await expect(row).toBeFocused();
       await row.click();
-      await expect(terminal).toHaveValue(W64_TYPE.terminal);
+      await expect(terminal).toContainText(W64_OWNERS[2].label);
       await expect(evidence).toHaveValue("3");
       await page.getByRole("main").evaluate((main) => {
         main.scrollTop = 0;

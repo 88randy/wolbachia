@@ -1,9 +1,11 @@
 import { expect, test } from "./fixtures/test";
+import type { Page } from "@playwright/test";
 import type { Schemas } from "@wolbachia/api-client";
 import { messages } from "@wolbachia/i18n";
 import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 import { deferCompactResize, releaseCompactResize } from "./fixtures/compact-resize";
+import { interceptSyntheticTiles } from "./fixtures/map-runtime";
 import {
   LANGUAGES,
   THEMES,
@@ -59,12 +61,48 @@ function initialVersion(): Schemas["QuadrantVersion"] {
   return {
     id: "version-1",
     quadrant: QUADRANT_ID,
+    area_m2: null,
+    perimeter_m: null,
     geometry: POLYGON,
     revision: 1,
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
     point_resolutions: [],
+  };
+}
+/** The block that holds the saved sampling point (3, 3); its quadrant is the one being edited. */
+function savedBlock(): Schemas["Block"] {
+  const square = {
+    type: "Polygon" as const,
+    coordinates: [
+      [
+        [2.5, 2.5],
+        [3.5, 2.5],
+        [3.5, 3.5],
+        [2.5, 3.5],
+        [2.5, 2.5],
+      ],
+    ],
+  };
+  return {
+    id: BLOCK_ID,
+    quadrant: QUADRANT_ID,
+    code: "B-0001",
+    created_at: CREATED_AT,
+    created_by: null,
+    current_version: {
+      id: "block-version-0",
+      block: BLOCK_ID,
+      geometry: square,
+      area_m2: null,
+      perimeter_m: null,
+      revision: 1,
+      effective_from: CREATED_AT,
+      created_at: CREATED_AT,
+      created_by: null,
+    },
   };
 }
 function samplingPoint(code = "OV-010", id = POINT_ID): Schemas["SamplingPoint"] {
@@ -83,13 +121,36 @@ function samplingPoint(code = "OV-010", id = POINT_ID): Schemas["SamplingPoint"]
       effective_from: CREATED_AT,
       created_at: CREATED_AT,
       created_by: null,
+      created_by_name: null,
     },
   };
 }
+/** The corner handles sit where the edge-length labels cross: read them from those labels. */
+async function dragTopRightCornerInside(page: Page) {
+  const labels = page.getByText(/^\d{3}([.,]\d+)? km$/);
+  await expect(labels).toHaveCount(4);
+  const centers = await labels.evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    }),
+  );
+  const left = Math.min(...centers.map((center) => center.x));
+  const right = Math.max(...centers.map((center) => center.x));
+  const top = Math.min(...centers.map((center) => center.y));
+  const bottom = Math.max(...centers.map((center) => center.y));
+  await page.mouse.move(right, top);
+  await page.mouse.down();
+  await page.mouse.move((left + right) / 2, (top + bottom) / 2, { steps: 12 });
+  await page.mouse.up();
+}
+
 for (const language of LANGUAGES) {
   for (const theme of THEMES) {
-    test(`W22-W24 keyboard R2 wiring: ${language}, ${theme}`, async ({ page }) => {
+    test(`W22-W24 keyboard R2 wiring: ${language}, ${theme}`, async ({ page, baseURL }) => {
+      if (!baseURL) throw new Error("The quadrant journey needs the configured baseURL.");
       await deferCompactResize(page);
+      await interceptSyntheticTiles(page, new URL(baseURL).origin);
       const copy = messages[language];
       await rememberPreferences(page, theme, language);
       await mockApi(page, {
@@ -164,7 +225,7 @@ for (const language of LANGUAGES) {
           });
           return;
         }
-        await route.fulfill({ json: pageOf([]) });
+        await route.fulfill({ json: pageOf([savedBlock()]) });
       });
       await page.route("**/api/v1/sampling-points/**", async (route) => {
         if (route.request().method() === "POST") {
@@ -199,8 +260,8 @@ for (const language of LANGUAGES) {
       const code = page.getByRole("link", { name: "C-07" });
       await code.focus();
       await page.keyboard.press("Enter");
-      const coordinates = page.getByRole("textbox", { name: copy["geography.field.polygon"] });
-      await expect(coordinates).toBeVisible();
+      const map = page.getByRole("region", { name: copy["mapEditor.map.label"], exact: true });
+      await expect(map).toBeVisible();
       const sidebarToggle = page.getByRole("button", { name: copy["shell.sidebar.collapse"] });
       for (const viewport of [
         { width: 1280, height: 800 },
@@ -218,17 +279,36 @@ for (const language of LANGUAGES) {
         document.body.style.fontSize = "130%";
       });
       await expectNoHorizontalScroll(page);
-      await coordinates.fill("0,0\n2,0\n0,2\n0,0");
-      const publish = page.getByRole("button", { name: copy["geography.editor.publish"] });
-      await expect(publish).toBeDisabled();
-      const resolution = page.getByRole("group", { name: "OV-010" });
-      await resolution.getByRole("combobox").selectOption("keep");
-      await resolution
-        .getByRole("textbox", { name: copy["geography.field.evidence"] })
+      // The quadrant is reshaped on the map: drag its top-right corner inside, so the sampling
+      // point ends up outside and needs a decision and a reason before anything can be saved.
+      const save = page.getByRole("button", { name: copy["mapEditor.action.saveChanges"] });
+      await expect(
+        page.getByRole("region", { name: copy["mapEditor.pending.title"], exact: true }),
+      ).toContainText(copy["mapEditor.pending.empty"]);
+      await page.evaluate(() => {
+        document.body.style.fontSize = "";
+      });
+      await page.setViewportSize({ width: 1280, height: 1000 });
+      await map.scrollIntoViewIfNeeded();
+      await dragTopRightCornerInside(page);
+      const pending = page.getByRole("region", { name: copy["mapEditor.pending.title"] });
+      await expect(pending).toContainText("C-07");
+      await expect(save).toBeDisabled();
+      await page
+        .getByRole("combobox", {
+          name: copy["mapEditor.move.decision"].replace("{point}", "OV-010"),
+        })
+        .click();
+      await page.getByRole("option", { name: copy["mapEditor.move.keep"], exact: true }).click();
+      await page
+        .getByRole("textbox", { name: copy["mapEditor.move.reason"] })
         .fill("Outside point explicitly approved");
-      await publish.focus();
+      await expect(save).toBeEnabled();
+      await save.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByText(copy["geography.status.saved"], { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(copy["mapEditor.saved.all"].replace("{count}", "1"), { exact: true }),
+      ).toBeVisible();
       expect(published).toBe(true);
       await page.getByRole("button", { name: copy["geography.blocks.suggest"] }).click();
       await page.getByRole("textbox", { name: copy["geography.blocks.code"] }).fill("B-0131");

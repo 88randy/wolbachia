@@ -66,7 +66,6 @@ a.kpiValue:hover {
   white-space: nowrap;
   flex-shrink: 0;
   width: max-content;
-  font-family: var(--font-family-mono);
   color: var(--color-text-secondary);
   font-size: var(--web-type-caption-font-size);
   cursor: help;

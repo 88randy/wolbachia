@@ -13,6 +13,7 @@ class SampleQuerySerializer(serializers.Serializer[Any]):
     center = serializers.UUIDField(required=False)
     quadrant = serializers.UUIDField(required=False)
     include_voided = serializers.BooleanField(required=False, default=False)
+    pending_result = serializers.BooleanField(required=False, default=False)
 
 
 class SampleReceiptSerializer(serializers.Serializer[Any]):
@@ -51,6 +52,7 @@ class SampleSnapshotSerializer(serializers.Serializer[Any]):
     center_id = serializers.UUIDField()
     quadrant_id = serializers.UUIDField(allow_null=True)
     reading_id = serializers.UUIDField(allow_null=True)
+    bag_code = serializers.CharField(allow_null=True)
     lot_id = serializers.UUIDField(allow_null=True)
     release_id = serializers.UUIDField(allow_null=True)
     method_version_id = serializers.UUIDField()

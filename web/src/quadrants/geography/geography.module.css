@@ -39,6 +39,8 @@
 }
 .page button:where(:not(.createPrimary, .createSecondary)),
 .dialog button:where(:not(.createPrimary, .createSecondary)) {
+  /* Never a full-width bar inside the column layouts of the record. */
+  align-self: flex-start;
   min-height: var(--web-control-lg);
   height: auto;
   white-space: normal;
@@ -160,4 +162,11 @@
 .dialog .fieldset {
   border: 0;
   padding: 0;
+}
+/* Map text stays readable over any tile: a surface-colored halo. */
+.labelHalo {
+  text-shadow:
+    0 0 2px var(--color-surface),
+    0 0 2px var(--color-surface),
+    0 0 3px var(--color-surface);
 }

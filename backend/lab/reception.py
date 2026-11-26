@@ -110,6 +110,7 @@ def receipt_projection(receipt: BagReceipt) -> dict[str, Any]:
         "id": str(receipt.pk),
         "reading_id": str(receipt.reading_id),
         "bag_id": None if receipt.bag_id is None else str(receipt.bag_id),
+        "bag_code": None if receipt.bag is None else receipt.bag.code,
         "kind": receipt.kind,
         "created_at": receipt.created_at.isoformat(),
         "created_by": str(receipt.created_by_id),

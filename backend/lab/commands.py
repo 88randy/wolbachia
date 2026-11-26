@@ -54,8 +54,15 @@ def canonical_values(values: dict[str, Any]) -> dict[str, Any]:
 
 def canonical_command_input(request: LabCommandInput) -> dict[str, Any]:
     """Pin exact treatment instants without changing released command/response encoding."""
+    from lab.annotations import annotation_count_values
+
+    values = request.values
+    if request.action == "count" and "annotation" in values:
+        values = annotation_count_values(values)
+    if (replacement := values.get("replacement")) and "annotation" in replacement:
+        values = {**values, "replacement": annotation_count_values(replacement)}
     if request.action != "paddle_reuse":
-        return canonical_values(request.values)
+        return canonical_values(values)
     values = dict(request.values)
     for key in ("washed_at", "dried_at"):
         if isinstance(value := values.get(key), datetime):
@@ -212,13 +219,14 @@ def replacement_permissions(values: dict[str, Any]) -> tuple[str, ...]:
     return (
         (COUNT_CREATE, REJECTION_CREATE, FIELD_UPLOAD)
         if replacement.get("kind") == "rejection"
-        else (COUNT_CREATE,)
+        else (COUNT_CREATE, *((FIELD_UPLOAD,) if "annotation" in replacement else ()))
     )
 
 
 def extra_permissions(request: LabCommandInput) -> tuple[str, ...]:
     return (
         *((FIELD_UPLOAD,) if request.action == "reject" else ()),
+        *((FIELD_UPLOAD,) if request.action == "count" and "annotation" in request.values else ()),
         *replacement_permissions(request.values),
     )
 

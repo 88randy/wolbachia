@@ -20,6 +20,7 @@ from organizations.models import Organization
 from ovitraps import codes
 from ovitraps.capture import Capture, capture_context, epi_week
 from ovitraps.findings import CatalogChoice, validate_choices
+from ovitraps.labels import code_for_new_ovitrap
 from ovitraps.models import Bag, Ovitrap, OvitrapReading, OvitrapVoid, PlacementAttempt
 from ovitraps.selectors import (
     accessible_ovitrap,
@@ -63,6 +64,7 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         with transaction.atomic(), fanout_courier_changes(scope) as emit:
             ovitrap = Ovitrap.objects.create(
                 client_uuid=payload["ovitrap_id"],
+                code=code_for_new_ovitrap(ctx.organization, payload["ovitrap_id"]),
                 organization=ctx.organization,
                 created_by=ctx.user,
                 event_id=ctx.envelope.id,

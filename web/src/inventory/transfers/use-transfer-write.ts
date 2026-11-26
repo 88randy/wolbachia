@@ -62,6 +62,7 @@ async function perform(runtime: Runtime, command: TransferCommand) {
     const receipt = await execute(scope, memory.command, guard.signal);
     if (!isCurrentOperation(runtime, guard)) return;
     runtime.setResult(receipt);
+    delete memory.command; // done: the next step (receive) must not stay frozen by this one
     void invalidateOrgScoped(runtime.cache, "transfers");
     void invalidateOrgScoped(runtime.cache, "inventory");
   } catch (error) {

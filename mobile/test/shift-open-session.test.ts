@@ -4,10 +4,12 @@ import { it } from "node:test";
 
 import { createAuth } from "../src/auth/create-auth.ts";
 import { ServerSettings } from "../src/config/server-settings.ts";
-import { createShiftOpen } from "../src/features/shift-open/create-shift-open.ts";
 import { SyncEngine } from "../src/sync/sync-engine.ts";
 import { createStores, FIXED_DEVICE_ID, FIXED_NOW } from "./support/factories.ts";
 import { makeCredentials } from "./support/auth-fakes.ts";
+import "./support/native-module-stubs.ts";
+
+const { createShiftOpen } = await import("../src/features/shift-open/create-shift-open.ts");
 
 const ORIGIN = "https://example.invalid";
 function jsonResponse(body: unknown, status = 200): Response {

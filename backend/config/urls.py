@@ -15,6 +15,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("me/", MeView.as_view(), name="me"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     *accounts_urlpatterns,
+    path("platform/", include("platform_admin.urls")),
     path("", include("organizations.urls")),
     path("", include("catalogs.urls")),
     path("", include("community.urls")),
@@ -35,6 +36,8 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("ovitraps.lifecycle.urls")),
     path("", include("scheduling.urls")),
     path("", include("discovery.urls")),
+    path("", include("privacy.urls")),
+    path("", include("analytics.urls")),
 ]
 
 urlpatterns = [path("api/v1/", include(api_v1_patterns))]

@@ -17,10 +17,20 @@ block and quadrant relation; voids inherit their exact source's proof. Unscoped
 local facts remain in the inbox/outbox and are absent here until genuine server
 source or whole-shift history supplies their subjects. A narrowed scope never
 authorizes a retained old code, reason or observation.
+P33 (#373, D1): the same snapshot and gates also return `unscoped`: own outbox
+events P29 hides whose type is in the exact `UNSCOPED_TYPES` whitelist (fuel,
+supplies receive/reconcile, incident, emergency, shift open/close), that reference
+no point and that no server `history.*` row places outside the grant. A
+`record.void` qualifies only through such an original. They carry only id, type,
+device time and outbox status; P29 ignores them (`calendar-store.test.ts`).
 Code search uses explicit local code/reference fields; it searches no arbitrary
 payload notes. Timeline grouping uses the organization's timezone.
 
-Local ingest state stays distinct from downloaded review facts. An accepted void
+A review or relocation verdict (voided, accepted, rejected, observed) on one of the
+courier's own visible events folds into that event's row (`foldDecisions`, shared by
+P29 and P33): the latest verdict gives status, reason and author, and no separate
+decision row is listed. Orphan verdicts keep their row, titled by type when the kind
+names one (`historyTitleKey`). Lab facts never fold. Local ingest state stays distinct from downloaded review facts. An accepted void
 decision never rewrites its original source event. Author and correction target
 UUIDs remain exact; unavailable names/times stay unavailable. No course or history
 projection grants a field capture permission.

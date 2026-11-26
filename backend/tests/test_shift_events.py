@@ -625,3 +625,19 @@ def test_voided_motorcycle_cannot_open_a_shift(phone, motorcycle, check_items, v
     result = only_result(phone.sync([open_event("M-03")]))
     assert status_and_code(result) == ("rejected", "motorcycle_unknown")
     assert not Shift.objects.exists()
+
+
+def test_a_motorcycle_of_a_deactivated_center_cannot_open_a_shift(
+    org_a: Organization, phone: Phone, check_items: dict[str, CatalogItem]
+) -> None:
+    from organizations.models import Center
+
+    center = Center.objects.create(
+        organization=org_a, code="CLOSED", name="Closed", is_active=False
+    )
+    MotorcycleFactory(organization=org_a, code="M-07", center=center)
+
+    result = only_result(phone.sync([open_event("M-07")]))
+
+    assert status_and_code(result) == ("rejected", "center_inactive")
+    assert not Shift.objects.filter(motorcycle__code="M-07").exists()

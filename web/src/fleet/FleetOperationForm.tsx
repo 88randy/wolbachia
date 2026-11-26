@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { FormActions } from "../components/templates/FormGrid";
 import { Button } from "../ui/Button";
 import { FleetOperationFeedback } from "./FleetOperationFeedback";
 import type { FleetDraft } from "./fleet-drafts";
 import type { useFleetOperations } from "./use-fleet-operations";
-import styles from "./fleet.module.css";
 export interface FleetOperationProps {
   draft: FleetDraft;
   operations: ReturnType<typeof useFleetOperations>;
@@ -27,7 +27,7 @@ function FleetOperationFooter(props: FleetOperationProps & { verified: boolean }
   const busy = props.draft.phase !== "idle";
   const label = props.draft.kind === "clear" ? "fleet.action.clearFault" : "fleet.action.service";
   return (
-    <div className={styles.actions}>
+    <FormActions>
       <Button
         data-fleet-cancel
         variant="secondary"
@@ -39,7 +39,7 @@ function FleetOperationFooter(props: FleetOperationProps & { verified: boolean }
       <Button type="submit" loading={busy} aria-disabled={isBlocked(props) || !props.verified}>
         {t(busy ? "fleet.action.busy" : label)}
       </Button>
-    </div>
+    </FormActions>
   );
 }
 /** The two writes share the same native form/footer and guarded manual submission. */

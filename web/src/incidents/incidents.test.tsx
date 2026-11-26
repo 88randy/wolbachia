@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createFakeApi, makeMe, apiError } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
+import { openFilterPanel } from "../test/filter-bar-helpers";
 import { renderApp } from "../test/render-app";
 beforeEach(() => {
   window.sessionStorage.clear();
@@ -157,7 +158,7 @@ describe("W7 incident detail", () => {
   test("keeps in-memory drafts and evidence after a failed refresh until retry succeeds", async () => {
     const { api, app } = await open("/incidents/I-0033");
     const view = within(app.container);
-    await view.findByRole("heading", { name: /I-0033/ });
+    await view.findByRole("heading", { name: "Other incident" });
     const storageRead = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
       throw new Error("Storage denied");
     });
@@ -174,7 +175,7 @@ describe("W7 incident detail", () => {
       }),
     );
     await view.findByRole("alert");
-    expect(view.getByRole("heading", { name: /I-0033/ })).toBeDefined();
+    expect(view.getByRole("heading", { name: "Other incident" })).toBeDefined();
     expect(view.getByRole("textbox", { name: "Comentario" })).toBe(comment);
     expect(comment).toHaveProperty("value", "Keep the in-memory draft");
     expect(view.getByLabelText("Foto de evidencia")).toBe(input);
@@ -198,7 +199,7 @@ describe("W7 incident detail", () => {
   });
   test("resolves a human code and renders the full audit thread and voided source", async () => {
     const { api } = await open("/incidents/I-0033");
-    await screen.findByRole("heading", { name: /I-0033/ });
+    await screen.findByRole("heading", { name: "Other incident" });
     expect(screen.getByText("Original report")).toBeDefined();
     expect(screen.getByText("Synthetic incident")).toBeDefined();
     expect(screen.getByText("Escalation audit")).toBeDefined();
@@ -210,7 +211,7 @@ describe("W7 incident detail", () => {
   });
   test("cannot submit close until verified evidence satisfies the type", async () => {
     const { api } = await open("/incidents/I-0033");
-    await screen.findByRole("heading", { name: /I-0033/ });
+    await screen.findByRole("heading", { name: "Other incident" });
     await userEvent.type(
       screen.getByRole("textbox", { name: "Motivo de cierre" }),
       "Resolved safely",
@@ -237,7 +238,7 @@ describe("W7 incident detail", () => {
       [DETAIL]: Response.json(record),
       [`POST /api/v1/incidents/${ID}/close/`]: Response.json({ ...event, action: "close" }),
     });
-    await screen.findByRole("heading", { name: /I-0033/ });
+    await screen.findByRole("heading", { name: "Other incident" });
     await userEvent.type(
       screen.getByRole("textbox", { name: "Motivo de cierre" }),
       "Resolved safely",
@@ -258,7 +259,7 @@ describe("W7 incident detail", () => {
     const { api } = await open("/incidents/I-0033", {
       [`POST /api/v1/incidents/${ID}/comments/`]: apiError(409, "incident_conflict"),
     });
-    await screen.findByRole("heading", { name: /I-0033/ });
+    await screen.findByRole("heading", { name: "Other incident" });
     await userEvent.type(screen.getByRole("textbox", { name: "Comentario" }), "Keep this draft");
     await userEvent.click(screen.getByRole("button", { name: "Enviar comentario" }));
     await screen.findByText(/Otra persona modificó/);
@@ -285,7 +286,7 @@ describe("W7 incident detail", () => {
         }),
       ),
     });
-    await screen.findByRole("heading", { name: /I-0033/ });
+    await screen.findByRole("heading", { name: "Other incident" });
     expect(screen.queryByRole("button", { name: "Cerrar incidente" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Reasignar" })).toBeNull();
   });
@@ -294,7 +295,8 @@ describe("W7 incident detail", () => {
 test("keeps URL filters and supported sorting on the server", async () => {
   const { api, app } = await open();
   await screen.findByRole("link", { name: "I-0033" });
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Severidad" }), "high");
+  await openFilterPanel(userEvent.setup());
+  await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Severidad" }), "high");
   await waitFor(() => {
     expect(app.router.state.location.search["severity"]).toBe("high");
   });
@@ -328,7 +330,7 @@ test("reassigns only to an eligible membership and changes severity with the cur
     [`POST /api/v1/incidents/${ID}/reassign/`]: Response.json(event),
     [`POST /api/v1/incidents/${ID}/change-severity/`]: Response.json(event),
   });
-  await screen.findByRole("option", { name: "Eligible owner" });
+  await screen.findByRole("combobox", { name: "Responsable" });
   api.setRoute(DETAIL, () =>
     Response.json(incident({ revision: 3, owner_id: owner, owner_display: "Reassigned owner" })),
   );
@@ -349,7 +351,7 @@ test("reassigns only to an eligible membership and changes severity with the cur
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Severidad" }), "high");
   await waitFor(() => {
     const severity = screen.getByRole("button", { name: "Cambiar severidad" });
-    expect(screen.getByRole("combobox", { name: "Severidad" })).toHaveProperty("value", "high");
+    expect(screen.getByRole("combobox", { name: "Severidad" }).textContent).toContain("Alta");
     expect(severity.closest("fieldset")?.getAttribute("disabled")).toBeNull();
     expect(severity.getAttribute("aria-disabled")).toBe("false");
   });
@@ -378,7 +380,10 @@ test("keeps previous owner options read-only while the next search is pending", 
       results: [{ membership_id: owner, label: "Eligible owner" }],
     }),
   });
+  // The owner picker is a dropdown: its options exist once it is opened.
+  await userEvent.click(await screen.findByRole("combobox", { name: "Responsable" }));
   await screen.findByRole("option", { name: "Eligible owner" });
+  await userEvent.keyboard("{Escape}");
   api.setRoute(route, () => held);
   await userEvent.click(screen.getByRole("textbox", { name: "Buscar responsable" }));
   await userEvent.paste("different");
@@ -391,7 +396,7 @@ test("keeps previous owner options read-only while the next search is pending", 
     ).toBe(true);
   });
   const select = screen.getByRole("combobox", { name: "Responsable" });
-  expect(screen.getByRole("option", { name: "Eligible owner" })).toBeDefined();
+  // While the next search is pending the picker is read-only: nothing can be chosen from old rows.
   expect(select).toHaveProperty("disabled", true);
   expect(screen.getByRole("button", { name: "Reasignar" }).getAttribute("aria-disabled")).toBe(
     "true",
@@ -400,9 +405,10 @@ test("keeps previous owner options read-only while the next search is pending", 
   expect(api.requests.some((request) => request.method === "POST")).toBe(false);
   release(Response.json({ count: 0, next: null, previous: null, results: [] }));
   await waitFor(() => {
-    expect(screen.queryByRole("option", { name: "Eligible owner" })).toBeNull();
+    expect(select).toHaveProperty("disabled", false);
   });
-  expect(select).toHaveProperty("disabled", false);
+  await userEvent.click(select);
+  expect(screen.queryByRole("option", { name: "Eligible owner" })).toBeNull();
 });
 test("refuses duplicate comments while the first write is pending", async () => {
   let release: (reply: Response) => void = () => undefined;
@@ -412,7 +418,7 @@ test("refuses duplicate comments while the first write is pending", async () => 
   const { api } = await open("/incidents/I-0033", {
     [`POST /api/v1/incidents/${ID}/comments/`]: () => held,
   });
-  await screen.findByRole("heading", { name: /I-0033/ });
+  await screen.findByRole("heading", { name: "Other incident" });
   await userEvent.type(
     screen.getByRole("textbox", { name: "Comentario" }),
     "One immutable comment",
@@ -439,9 +445,11 @@ test("refuses duplicate comments while the first write is pending", async () => 
 test("All is an explicit state and does not send an open-state predicate", async () => {
   const { api, app } = await open();
   await screen.findByRole("link", { name: "I-0033" });
-  expect(screen.getByRole("combobox", { name: "Estado" })).toHaveProperty("value", "open");
+  // The state is a group of tabs; "Abiertos" is the pressed default.
+  const states = within(screen.getByRole("group", { name: "Estado" }));
+  expect(states.getByRole("button", { pressed: true }).textContent).toMatch(/Abiert/);
   const boundary = api.requests.length;
-  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "all");
+  await userEvent.click(states.getByRole("button", { name: /Todos/ }));
   await waitFor(() => {
     expect(app.router.state.location.search["state"]).toBe("all");
   });

@@ -39,7 +39,8 @@ def bind_evidence(  # noqa: PLR0913 -- current actor, exact parent, declared ide
             and upload.device_id == actor.device_id
         )
         if (
-            not (same_case or own_unbound)
+            upload.purpose
+            or not (same_case or own_unbound)
             or not UploadVerification.objects.filter(upload=upload).exists()
         ):
             raise IncidentConflictError("incident_evidence_not_ready")

@@ -1,8 +1,9 @@
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useCenterColumns } from "../../data-table/center-column";
 import type { DataTableColumn } from "../../data-table/table-types";
-import { useFormatDateTime } from "../../format/use-format-date-time";
+import { useFormatDateTime, useFormatValidityEnd } from "../../format/use-format-date-time";
 import { PermitBlockers } from "./PermitBlockers";
 import { permitStatus } from "./permit-status";
 import { PermitStatusBadge } from "./PermitStatusBadge";
@@ -33,27 +34,31 @@ function identityColumns(): Columns {
   ];
 }
 
-function validity(row: Permit, t: TFunction, format: (iso: string) => string): string {
+interface Formats {
+  format: (iso: string) => string;
+  formatEnd: (iso: string) => string;
+}
+
+function validity(row: Permit, t: TFunction, formats: Formats): string {
   const version = row.current_version;
   if (!version) return "";
   return t("permits.column.validityCell", {
-    from: format(version.valid_from),
-    to: format(version.valid_to),
+    from: formats.format(version.valid_from),
+    to: formats.formatEnd(version.valid_to),
   });
 }
 
-function stateColumns(t: TFunction, format: (iso: string) => string): Columns {
+function stateColumns(t: TFunction, formats: Formats): Columns {
   return [
     {
       id: "zone",
       headerKey: "permits.column.zone",
-      cell: (row) =>
-        t("permits.column.zoneCell", { center: row.center_code, quadrant: row.quadrant_code }),
+      cell: (row) => <span className="whitespace-nowrap">{row.quadrant_code}</span>,
     },
     {
       id: "validity",
       headerKey: "permits.column.validity",
-      cell: (row) => validity(row, t, format),
+      cell: (row) => validity(row, t, formats),
     },
     {
       id: "status",
@@ -72,5 +77,10 @@ function stateColumns(t: TFunction, format: (iso: string) => string): Columns {
 export function usePermitColumns(): readonly DataTableColumn<Permit>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
-  return useMemo(() => [...identityColumns(), ...stateColumns(t, format)], [t, format]);
+  const formatEnd = useFormatValidityEnd();
+  const columns = useMemo(
+    () => [...identityColumns(), ...stateColumns(t, { format, formatEnd })],
+    [t, format, formatEnd],
+  );
+  return useCenterColumns(columns, (row) => row.center, { after: "authority" });
 }

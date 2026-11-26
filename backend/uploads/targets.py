@@ -6,6 +6,7 @@ from uuid import UUID
 
 from django.http import Http404
 
+from core.exceptions import FieldValidationError
 from field_sync.models import FieldEvent
 from field_sync.permissions import FIELD_EVENT_SYNC
 from geography.models import SamplingPoint
@@ -141,6 +142,8 @@ def authorize_target(
     actor: UploadActor, target: AttachmentTarget, upload: Upload
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
+    if upload.purpose:
+        raise FieldValidationError("file", "upload_type_not_allowed")
     scope = current_scope(actor)
     if target.kind in {
         "inventory_intent",
@@ -279,6 +282,11 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     from uploads.services import _resolve_link_target
 
     parent = _resolve_link_target(link)
+    if parent.kind == "egg_annotation":
+        from lab.annotations import authorize_annotation_download
+
+        authorize_annotation_download(actor, parent.identifier)
+        return
     if parent.kind == "material_request":
         from lab.shipments.evidence import authorize_request_download
 

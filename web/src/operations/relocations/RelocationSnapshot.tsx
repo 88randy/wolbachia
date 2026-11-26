@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { StatusPill } from "../../ui/StatusPill";
 import type { Relocation } from "./relocations-query";
-import { relocationFields, relocationStatusKey, snapshotText } from "./relocation-snapshot";
+import { relocationFields, relocationStatusKey } from "./relocation-snapshot";
 export function RelocationSnapshot({ proposal }: { proposal: Relocation }) {
   const { t, i18n } = useTranslation();
   const format = useFormatDateTime();
@@ -19,11 +19,6 @@ export function RelocationSnapshot({ proposal }: { proposal: Relocation }) {
           </div>
         ))}
       </dl>
-      <details>
-        <summary>{t("relocations.workspace.capturedRules")}</summary>
-        <p>{snapshotText(proposal.evaluated_rules)}</p>
-        <p>{snapshotText(proposal.rule_version_ids)}</p>
-      </details>
       {proposal.voided_at && (
         <p>
           {t("relocations.workspace.voided")} {proposal.void_reason_code} {proposal.void_reason}

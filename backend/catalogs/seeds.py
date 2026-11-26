@@ -62,8 +62,7 @@ def _needs_catalog_seed(catalog: Catalog | None, seed: CatalogSeed) -> bool:
     if catalog is None:
         return True
     required = {OTHER_ITEM_CODE} if catalog.is_open or seed.slug == "ovitrap-finding" else set()
-    if seed.slug == "void-reason":
-        required.update(row[0] for row in VOID_REASON_ITEMS)
+    required.update(row[0] for row in OPEN_CATALOG_ITEMS.get(seed.slug, ()))
     required.update(row[0] for row in CLOSED_CATALOG_ITEMS.get(seed.slug, ()))
     return not required <= {item.code for item in catalog.items.all()}
 
@@ -89,8 +88,7 @@ def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
     locked = Catalog.objects.select_for_update().get(pk=catalog.pk, organization=organization)
     if locked.is_open or locked.slug == "ovitrap-finding":
         _ensure_other_item(locked)
-    if locked.slug == "void-reason":
-        _seed_void_reason_items(locked)
+    _seed_open_items(locked)
     _seed_closed_items(locked)
     return locked
 
@@ -113,11 +111,43 @@ VOID_REASON_ITEMS = (
     ("data-entry-error", "Error de captura", "Data entry error", 10),
     ("duplicate-record", "Registro duplicado", "Duplicate record", 20),
     ("wrong-location", "Ubicación incorrecta", "Wrong location", 30),
+    # Reasons a write-off needs (the write-off form reads this catalog).
+    ("expired", "Caducado", "Expired", 40),
+    ("damaged", "Dañado", "Damaged", 50),
+    ("lost", "Perdido o robado", "Lost or stolen", 60),
 )
 
 
-def _seed_void_reason_items(catalog: Catalog) -> None:
-    for code, label_es, label_en, sort in VOID_REASON_ITEMS:
+# [PENDING] Lifecycle reasons: P15/P17 options of design S09-Ovitrampa; relocation and damage
+# lists are our default (owner delegated it). The org admin edits them; "Other" stays last.
+OPEN_CATALOG_ITEMS = {
+    "void-reason": VOID_REASON_ITEMS,
+    "replacement-reason": (
+        ("destroyed", "Destruida", "Destroyed", 10),
+        ("damaged", "Dañada", "Damaged", 20),
+    ),
+    "relocation-reason": (
+        ("closed-house", "Casa cerrada", "Closed house", 10),
+        ("resident-refused", "El morador ya no acepta", "Resident no longer agrees", 20),
+        ("unsafe-location", "Lugar inseguro o inaccesible", "Unsafe or inaccessible place", 30),
+    ),
+    "removal-reason": (
+        ("end-of-period", "Fin de periodo", "End of period", 10),
+        ("quadrant-closed", "Cierre de cuadrante", "Quadrant closed", 20),
+        ("resident-request", "Lo pidió el morador", "Resident asked", 30),
+        ("supervisor-instruction", "Indicación del supervisor", "Supervisor instruction", 40),
+    ),
+    "damage-reason": (
+        ("broken", "Rota", "Broken", 10),
+        ("weather", "Lluvia, sol o viento", "Rain, sun or wind", 20),
+        ("animal", "Animal", "Animal", 30),
+        ("vandalism", "Vandalismo", "Vandalism", 40),
+    ),
+}
+
+
+def _seed_open_items(catalog: Catalog) -> None:
+    for code, label_es, label_en, sort in OPEN_CATALOG_ITEMS.get(catalog.slug, ()):
         _create_seed_item(
             catalog=catalog,
             code=code,

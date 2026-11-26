@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useCouriers } from "../scheduling/use-directories";
 import { Card } from "../ui/Card";
 import { StatusPill } from "../ui/StatusPill";
 import { InlineNotice } from "../ui/InlineNotice";
@@ -18,7 +19,13 @@ export function ShiftSummary({ shift }: { shift: ShiftDetail }) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const state = validationState(shift);
-  const rows = buildShiftSummaryFacts(shift, language, t("shift.field.unavailable"));
+  const courierName = useCouriers([]).nameOf;
+  const rows = buildShiftSummaryFacts(
+    shift,
+    language,
+    t("shift.field.unavailable"),
+    courierName(shift.courier),
+  );
   return (
     <Card title={t("shift.page.summary")}>
       <StatusPill tone={state === "approved" ? "success" : "warning"}>

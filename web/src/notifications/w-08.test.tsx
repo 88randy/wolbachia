@@ -109,6 +109,7 @@ test("preferences enforce required channels and roll back a failed optional chan
   const { api } = await open({
     "PATCH /api/v1/me/notification-preferences/": () => pending.promise,
   });
+  await userEvent.click(await screen.findByRole("tab", { name: "Preferencias" }));
   const critical = await screen.findByRole("group", { name: "Críticos" });
   expect(
     within(critical).getByRole<HTMLInputElement>("switch", { name: "Correo electrónico" }).disabled,

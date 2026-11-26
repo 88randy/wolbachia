@@ -1,6 +1,7 @@
 import type { SqlExecutor, SqlStatement } from "../db/sql.ts";
 import { readInteger, readText } from "../db/sql.ts";
 import { EvidenceError, ownerKey } from "./types.ts";
+import { IDLE_SYNC_GAP_MS } from "../sync/idle-gap.ts";
 import { RETAINED_PROJECTION_KINDS } from "../features/ovitrap-lifecycle/context-sql.ts";
 import type { EvidenceFence, EvidenceOwner, OwnedEvidence, StoredEvidence } from "./types.ts";
 
@@ -15,7 +16,10 @@ const FILE_PARENT =
   "attachment_file f JOIN attachment_event b ON b.evidence_id=f.id JOIN outbox_event e ON e.id=b.event_id";
 const PARENT_RECEIPT =
   "e.local_status IN ('sent','in_review') AND e.result_code IS NOT NULL AND e.result_params IS NOT NULL";
-const NEEDS_TRANSPORT = `(f.state<>'verified' OR f.is_bound=0) AND (f.state<>'verified' OR (${PARENT_RECEIPT}))`;
+/** Terminal marker in last_error: the server rejected the file; it is never retried or replaced. */
+export const UPLOAD_REJECTED = "upload_rejected";
+const NEEDS_TRANSPORT = `(f.state<>'verified' OR f.is_bound=0) AND (f.state<>'verified' OR (${PARENT_RECEIPT}))
+  AND f.last_error IS NOT '${UPLOAD_REJECTED}'`;
 
 /** All progress is CAS guarded; captured identity and bytes never change. */
 export class AttachmentStore {
@@ -176,6 +180,18 @@ export class AttachmentStore {
     );
   }
 
+  async saveRejection(
+    id: string,
+    call: { fence: EvidenceFence; attemptVersion: number },
+  ): Promise<boolean> {
+    const rows = await this.db.query(
+      `UPDATE attachment_file SET last_error=?,retry_at=NULL,attempts=attempts+1
+      WHERE id=? AND owner_key=? AND ${CURRENT_FENCE} AND attempt_version=? RETURNING id`,
+      [UPLOAD_REJECTED, id, call.fence.ownerKey, ...fenceParams(call.fence), call.attemptVersion],
+    );
+    return rows.length === 1;
+  }
+
   async beginAttempt(id: string, fence: EvidenceFence): Promise<number | null> {
     const [row] = await this.db.query(
       `UPDATE attachment_file SET attempt_version=attempt_version+1
@@ -199,12 +215,16 @@ export class AttachmentStore {
     if (!rows.length) throw new EvidenceError("stale_attempt");
   }
 
+  /**
+   * When the next file needs a pass: its own retry time after a failure, or the idle gap for a file
+   * that is only waiting (never "now": that would start a pass every few seconds while idle).
+   */
   async nextRetryDelayMs(now: number): Promise<number | null> {
     const [row] = await this.db.query(
       `SELECT MIN(COALESCE(f.retry_at,?)) AS due FROM ${FILE_PARENT} JOIN attachment_context c
       ON c.owner_key=f.owner_key AND c.is_active=1 WHERE ${NEEDS_TRANSPORT} AND f.metadata IS NOT NULL
       AND e.local_status<>'rejected'`,
-      [new Date(now).toISOString()],
+      [new Date(now + IDLE_SYNC_GAP_MS).toISOString()],
     );
     return typeof row?.due === "string" ? Math.max(0, Date.parse(row.due) - now) : null;
   }
@@ -220,13 +240,18 @@ export class AttachmentStore {
     // No volatile sending flag: authorized/received replay via renew with the original UUID.
   }
 
-  async pendingSummary(): Promise<{ pending: number; hasError: boolean }> {
+  async pendingSummary(): Promise<{ pending: number; hasError: boolean; rejected: number }> {
     const [row] = await this.db
-      .query(`SELECT COUNT(*) AS pending,COALESCE(MAX(f.last_error IS NOT NULL),0) AS has_error
+      .query(`SELECT COUNT(*) AS pending,COALESCE(MAX(f.last_error IS NOT NULL),0) AS has_error,
+      COALESCE(SUM(f.last_error IS '${UPLOAD_REJECTED}'),0) AS rejected
       FROM ${FILE_PARENT} JOIN attachment_context c ON c.owner_key=f.owner_key AND c.is_active=1
       WHERE e.local_status<>'rejected' AND (f.state<>'verified' OR f.is_bound=0)`);
     if (!row) throw new EvidenceError("file_journal");
-    return { pending: readInteger(row, "pending"), hasError: readInteger(row, "has_error") === 1 };
+    return {
+      pending: readInteger(row, "pending"),
+      hasError: readInteger(row, "has_error") === 1,
+      rejected: readInteger(row, "rejected"),
+    };
   }
 
   async retryNow(fence: EvidenceFence): Promise<void> {

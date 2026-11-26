@@ -279,6 +279,84 @@ def test_readiness_distinguishes_live_physical_unrecovered_and_pending_source(fi
     assert not QuadrantClosure.objects.exists()
 
 
+def _by_reason(field):
+    return {row["reason"]: row for row in readiness(field.actor, field.quadrant)["blockers"]}
+
+
+def test_every_blocker_reason_carries_the_ovitrap_code_and_hidden_ones_do_not(field):
+    from ovitraps.models import Ovitrap
+
+    assert ingest(field, envelope(field)).status == "accepted"
+    code = Ovitrap.objects.get().code
+    assert _by_reason(field)["removal_unconfirmed"]["code"] == code
+    original_batch = field.batch
+    field.batch = replace(original_batch, is_final_upload=True)
+    assert ingest(field, lifecycle(field, "remove")).status == "in_review"
+    assert ingest(field, lifecycle(field, "relocate")).status == "in_review"
+    pending = readiness(field.actor, field.quadrant)["blockers"]
+    assert {row["code"] for row in pending if row["reason"].endswith("review_pending")} == {code}
+    assert {row["reason"] for row in pending} >= {
+        "removal_review_pending",
+        "relocation_review_pending",
+    }
+    field.batch = original_batch
+    assert ingest(field, lifecycle(field, "remove")).status == "accepted"
+    removal = _by_reason(field)["removal_unrecovered"]
+    assert removal["code"] == code
+    assert removal["link"] == ""
+    field.profile.permission_codes.remove("ovitrap.read")
+    field.profile.save()
+    assert _by_reason(field)["removal_unrecovered"] == {
+        "reason": "removal_unrecovered",
+        "permission": "removal.resolve",
+        "link": "",
+    }
+
+
+def test_review_pending_ovitrap_code_needs_ovitrap_read_besides_review_read(field):
+    assert ingest(field, envelope(field)).status == "accepted"
+    field.batch = replace(field.batch, is_final_upload=True)
+    assert ingest(field, lifecycle(field, "remove")).status == "in_review"
+    field.profile.permission_codes.remove("ovitrap.read")
+    field.profile.save()
+    pending = [
+        row
+        for row in readiness(field.actor, field.quadrant)["blockers"]
+        if row["reason"] == "removal_review_pending"
+    ]
+    assert pending
+    assert all("id" in row and "code" not in row for row in pending)
+    assert all("code_permission" not in row for row in pending)
+
+
+def test_pending_relocation_carries_the_ovitrap_code_only_for_its_reader(field):
+    from ovitraps.models import Ovitrap
+
+    proposal(field)
+    code = Ovitrap.objects.get().code
+    assert _by_reason(field)["relocation_pending"]["code"] == code
+    field.profile.permission_codes.remove("relocation.read")
+    field.profile.save()
+    assert "code" not in _by_reason(field)["relocation_pending"]
+
+
+def test_unresolvable_source_code_is_omitted_without_failing(field):
+    from field_sync.models import FieldEvent
+    from geography.decisions.readiness import _source_trap_codes
+    from ovitraps.models import Ovitrap
+
+    assert ingest(field, envelope(field)).status == "accepted"
+    trap = Ovitrap.objects.get()
+    named = FieldEvent(pk=uuid4(), payload={"ovitrap_id": str(trap.client_uuid)})
+    broken = [
+        FieldEvent(pk=uuid4(), payload={"ovitrap_id": "not-a-uuid"}),
+        FieldEvent(pk=uuid4(), payload={"ovitrap_id": str(uuid4())}),
+        FieldEvent(pk=uuid4(), payload={}),
+        FieldEvent(pk=uuid4(), payload="scalar"),
+    ]
+    assert _source_trap_codes(trap.organization, [named, *broken]) == {named.pk: trap.code}
+
+
 @pytest.mark.parametrize("hold_kind", ["dispatch", "quadrant_closure"])
 def test_only_actual_owned_closure_hold_survives_its_separate_217_resolution(field, hold_kind):
     from incidents.configuration import write_type
@@ -308,6 +386,8 @@ def test_only_actual_owned_closure_hold_survives_its_separate_217_resolution(fie
     assert (not state["can_close"]) is (hold_kind == "quadrant_closure")
     if hold_kind == "quadrant_closure":
         assert state["blockers"][0]["id"] == str(incident.pk)
+        assert state["blockers"][0]["code"] == incident.code
+        assert state["blockers"][0]["link"] == f"/incidents/{incident.code}"
         field.profile.permission_codes.remove("incident.read")
         field.profile.save()
         opaque = readiness(field.actor, field.quadrant)["blockers"]

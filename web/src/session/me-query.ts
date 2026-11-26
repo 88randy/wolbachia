@@ -9,7 +9,7 @@ import { ME_QUERY_KEY } from "./me-key";
 import { getOrganizationSlug } from "./organization-slug";
 import { commitKnown, forgetRefusedSlug, readToken } from "./session-controller";
 import type { Token } from "./session-controller";
-import { currentRevision } from "./session-revision";
+import { currentRevision, sessionState, subscribeToRevision } from "./session-revision";
 
 export { ME_QUERY_KEY };
 
@@ -112,13 +112,28 @@ export async function loadMe(queryClient: QueryClient, client: ApiClient): Promi
       .query(meQueryOptions(client))
       .catch((error: unknown) => ({ error }));
     if (!("error" in result)) return result;
-    // The session REVISION changed while this asked (another tab signed in): that answer was
-    // discarded (`commitKnown`). Ask again for the new epoch instead of failing the route. A
-    // cancel without a revision change (an organization switch) is not retried.
-    const isStale = result.error instanceof CancelledError && currentRevision() !== started;
+    // The answer was discarded because the session moved while this asked: the REVISION changed
+    // (another tab signed in) or an operation is in flight (a focus check cancels this read). Ask
+    // again once it settled, so its outcome (a 401 included) decides the route, not the cancel.
+    const isOperation = sessionState() === "reconciling";
+    const isStale =
+      result.error instanceof CancelledError && (isOperation || currentRevision() !== started);
     if (!isStale || attempt >= MAX_REVISION_RETRIES) throw result.error;
+    await sessionSettled();
     attempt += 1;
   }
+}
+
+/** Resolves once no session operation is in flight (the state left `reconciling`). */
+function sessionSettled(): Promise<void> {
+  if (sessionState() !== "reconciling") return Promise.resolve();
+  return new Promise((resolve) => {
+    const stop = subscribeToRevision(() => {
+      if (sessionState() === "reconciling") return;
+      stop();
+      resolve();
+    });
+  });
 }
 
 export function meQueryOptions(client: ApiClient) {

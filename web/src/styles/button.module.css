@@ -1,15 +1,19 @@
 .button {
   position: relative;
+  /* Never stretched by a column parent: buttons keep their own width on desktop. */
+  align-self: flex-start;
+  justify-self: start;
   min-width: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--web-control-md);
+  min-height: var(--web-control-lg);
   padding: var(--space-0-5) var(--space-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-level-1);
   font: inherit;
   font-size: var(--web-type-label-font-size);
   font-weight: 600;
@@ -66,10 +70,10 @@
   min-height: var(--web-control-sm);
 }
 .md {
-  min-height: var(--web-control-md);
+  min-height: var(--web-control-lg);
 }
 .lg {
-  min-height: var(--web-control-lg);
+  min-height: var(--web-control-xl);
 }
 .xl {
   min-height: var(--web-control-xl);

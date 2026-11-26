@@ -52,7 +52,7 @@ class NotificationSerializer(OrgScopedModelSerializer):
 
     @cached_property
     def _object_references(self) -> dict[UUID, dict[str, Any] | None]:
-        return {}
+        return self.context.get("object_references", {})
 
     class Meta:
         model = Notification

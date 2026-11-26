@@ -1,5 +1,6 @@
 """Current read hints; immutable audit references never grant a parent or byte access."""
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -203,6 +204,15 @@ def linked_record(actor: UploadActor, incident: Incident) -> dict[str, Any]:
     return unavailable_record() if blocker is None else blocker_resource(actor, blocker)
 
 
+_EVIDENCE_EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "application/pdf": "pdf"}
+
+
+def _evidence_filename(created_at: datetime, content_type: str) -> str:
+    """A readable download name; uploads keep no original filename."""
+    extension = _EVIDENCE_EXTENSIONS.get(content_type, "bin")
+    return f"evidence-{created_at:%Y%m%d-%H%M}.{extension}"
+
+
 def evidence_projection(actor: UploadActor, identifiers: list[str]) -> list[dict[str, Any]]:
     references = []
     for identifier in sorted(set(identifiers)):
@@ -213,6 +223,7 @@ def evidence_projection(actor: UploadActor, identifiers: list[str]) -> list[dict
             "verified_at": None,
             "content_type": None,
             "size_bytes": None,
+            "filename": None,
         }
         link = (
             AttachmentLink.objects.filter(
@@ -236,6 +247,7 @@ def evidence_projection(actor: UploadActor, identifiers: list[str]) -> list[dict
                     verified_at=verification.created_at,
                     content_type=verification.content_type,
                     size_bytes=verification.size_bytes,
+                    filename=_evidence_filename(link.upload.created_at, verification.content_type),
                 )
         references.append(entry)
     return references

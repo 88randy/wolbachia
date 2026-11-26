@@ -1,3 +1,4 @@
+import { withRowMenu } from "./row-menu";
 import type { RowData } from "@tanstack/react-table";
 import { DataTableContent } from "./DataTableContent";
 import { SelectedRowsBar } from "./SelectedRowsBar";
@@ -25,8 +26,8 @@ export interface DataTableProps<Row extends RowData> extends TablePresentation<R
 }
 /** Server-owned rows, with optional grouping/details and no client-side reordering. */
 export function DataTable<Row extends RowData>(props: DataTableProps<Row>) {
-  const { caption, columns, getRowId, controller, data, voidOf, selection, ...presentation } =
-    props;
+  const { caption, columns, getRowId, controller, data, voidOf, selection, ...rest } = props;
+  const presentation = withRowMenu(rest);
   const isSelectable = selection && (selection.isSelectable ?? (() => true));
   const table = useDataTable({ columns, rows: data.rows, getRowId, isSelectable });
   const sortText = useSortText(controller.state.sort, columns);

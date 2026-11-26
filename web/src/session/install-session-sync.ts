@@ -4,6 +4,20 @@ import { setIdentityMismatchHandler } from "./attestation";
 import { reconcileSession } from "./session-reconcile";
 import { subscribeToSessionChanged } from "./session-sync";
 import { leaveKnown } from "./session-controller";
+import { purgeAnnotationDrafts } from "../lab/annotation-draft";
+import { currentRevision, subscribeToRevision } from "./session-revision";
+
+function clearRetiredAnnotationDrafts() {
+  let revision = currentRevision();
+  return subscribeToRevision(() => {
+    const next = currentRevision();
+    if (next === revision) return;
+    revision = next;
+    void purgeAnnotationDrafts().catch((error: unknown) => {
+      console.warn("Unable to purge retired annotation drafts", error);
+    });
+  });
+}
 
 interface Wiring {
   queryClient: QueryClient;
@@ -25,6 +39,7 @@ let uninstallCurrent: (() => void) | undefined;
  */
 export function installSessionSync({ queryClient, client, invalidateRoutes }: Wiring): () => void {
   uninstallCurrent?.();
+  const stopDrafts = clearRetiredAnnotationDrafts();
   const reconcile = (): void => {
     void reconcileSession(queryClient, client).then((isKnown) => {
       if (isKnown) return invalidateRoutes();
@@ -42,6 +57,7 @@ export function installSessionSync({ queryClient, client, invalidateRoutes }: Wi
     reconcile();
   });
   const uninstall = (): void => {
+    stopDrafts();
     stopAnnouncements();
     document.removeEventListener("visibilitychange", verify);
     window.removeEventListener("focus", verify);

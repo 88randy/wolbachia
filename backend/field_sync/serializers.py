@@ -246,3 +246,11 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     quadrants = QuadrantReferenceSerializer(many=True)
     sampling_points = SamplingPointBundleSerializer(many=True)
     ovitraps = OvitrapBundleSerializer(many=True)
+
+
+class FieldZoneSerializer(serializers.Serializer[Any]):
+    """One quadrant polygon of the scope of the caller; `ring` is closed [lng, lat] pairs."""
+
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    ring = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()))

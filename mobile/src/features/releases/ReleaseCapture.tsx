@@ -1,25 +1,26 @@
+import { MapPin } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { ReleaseQuantity } from "./ReleaseQuantity.tsx";
 import type { ReleaseViewModel } from "./view-model.ts";
 
 export function ReleaseCapture({ model }: { readonly model: ReleaseViewModel }) {
   const t = useT();
   const disabled = model.isBusy || !model.canEdit || model.status !== "draft";
+  const accuracy =
+    model.gpsAccuracy === null
+      ? undefined
+      : `${t("mobile.release.gpsAccuracy")}: ${String(model.gpsAccuracy)}`;
   return (
-    <Card>
+    <>
       <ReleaseQuantity model={model} disabled={disabled} />
-      <AppText>{t("mobile.release.gpsAccuracy")}</AppText>
-      <AppText isMonospace>{model.gpsAccuracy ?? t("mobile.release.referenceUnavailable")}</AppText>
-      <Button
-        variant="outline"
-        icon="location"
+      <SecondaryButton
+        icon={MapPin}
         label={t("mobile.release.acquireGps")}
+        accessibilityHint={accuracy}
         disabled={disabled}
         onPress={model.acquireGps}
       />
-    </Card>
+    </>
   );
 }

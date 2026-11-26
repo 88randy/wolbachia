@@ -13,7 +13,6 @@ import {
 } from "./allocation-query";
 import type { AllocationScope } from "./allocation-query";
 import { useWriteOffColumns } from "./use-write-off-columns";
-import styles from "../inventory.module.css";
 
 /** Server paging, ordering and filters live in the URL; rows are never filtered in the browser. */
 export function WriteOffTable(props: { scope: AllocationScope; route: string }) {
@@ -26,16 +25,13 @@ export function WriteOffTable(props: { scope: AllocationScope; route: string }) 
   const columns = useWriteOffColumns({ lots, people });
   return (
     <>
-      <div className={styles.filters}>
-        <FilterBar controller={controller} />
-      </div>
+      <FilterBar controller={controller} />
       <DataTable
         caption={t("allocation.writeOff.tableCaption")}
         columns={columns}
         controller={controller}
         getRowId={(row) => row.id}
         data={pageTableData(query, controller.state.page, ALLOCATION_PAGE_SIZE)}
-        embedded
       />
     </>
   );

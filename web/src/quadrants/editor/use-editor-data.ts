@@ -1,0 +1,63 @@
+/* eslint-disable max-lines-per-function -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Schemas } from "@wolbachia/api-client";
+import { centersOptions } from "../../centers/centers-query";
+import { PERMIT_MANAGE } from "../../releases/permits/permissions";
+import { useCan } from "../../session/use-can";
+import type { GeographyScope } from "../geography/use-w-15";
+import {
+  editorBlocksOptions,
+  editorPermitsOptions,
+  editorPointsOptions,
+  editorQuadrantsOptions,
+  editorReleasePointsOptions,
+} from "./editor-query";
+
+const EMPTY: never[] = [];
+
+/** Everything the editor draws. Previous data stays on screen while it refetches. */
+export function useEditorData(scope: GeographyScope) {
+  const quadrants = useQuery(editorQuadrantsOptions(scope));
+  const blocks = useQuery(editorBlocksOptions(scope));
+  const points = useQuery(editorPointsOptions(scope));
+  const releasePoints = useQuery(editorReleasePointsOptions(scope));
+  const can = useCan();
+  // Permit zones only feed a warning: without permit.manage they are never requested.
+  const permits = useQuery({
+    ...editorPermitsOptions(scope),
+    retry: false,
+    enabled: can(PERMIT_MANAGE),
+  });
+  const centers = useQuery(centersOptions(scope.client, scope.identity));
+  const activePoints = useMemo(
+    () =>
+      (points.data ?? (EMPTY as Schemas["SamplingPoint"][])).filter(
+        (item) => item.current_version && !item.current_version.is_retired,
+      ),
+    [points.data],
+  );
+  return {
+    isLoading: quadrants.isPending,
+    isError: quadrants.isError,
+    refetch: () => void quadrants.refetch(),
+    /** Reload everything the map draws (used after a save, before the draft lets go). */
+    refresh: async () => {
+      await Promise.all([
+        quadrants.refetch(),
+        blocks.refetch(),
+        points.refetch(),
+        releasePoints.refetch(),
+      ]);
+    },
+    quadrants: quadrants.data ?? EMPTY,
+    blocks: blocks.data ?? EMPTY,
+    points: activePoints,
+    releasePoints: releasePoints.data ?? EMPTY,
+    permits: permits.data ?? EMPTY,
+    canCheckPermits: permits.isSuccess,
+    centers: centers.data ?? EMPTY,
+  };
+}
+
+export type EditorData = ReturnType<typeof useEditorData>;

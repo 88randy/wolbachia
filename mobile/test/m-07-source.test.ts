@@ -97,11 +97,14 @@ void test("M07 local resources retain actual supply pins and exclude foreign or 
   const scanner = new ScannerService({
     read: () => fixture.bundle.captureLifecycleSource(),
     resources: (turn) => readScannerResources(fixture.db, turn),
+    bag: () => Promise.reject(new Error("Supply routing cannot resolve a bag.")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Supply routing cannot edit a capture.")),
       startCheck: () => Promise.reject(new Error("Supply routing cannot begin a capture.")),
       enterBag: () => Promise.reject(new Error("Supply routing cannot change a bag.")),
+      bindLabel: () => Promise.reject(new Error("Supply routing cannot bind a label.")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
   assert.deepEqual(
@@ -117,7 +120,13 @@ void test("M07 local resources retain actual supply pins and exclude foreign or 
       error: "unavailable",
     });
   assert.deepEqual(resources, [
-    { kind: "ovitrap", id: PROJECTION_TRAP.id, code: PROJECTION_POINT.code, isRetired: false },
+    {
+      kind: "ovitrap",
+      id: PROJECTION_TRAP.id,
+      code: PROJECTION_POINT.code,
+      shortCode: null,
+      isRetired: false,
+    },
     {
       kind: "lot",
       id: id(5),
@@ -199,11 +208,14 @@ void test("M10 release-device QR and exact manual code route only downloaded pai
   const scanner = new ScannerService({
     read: () => fixture.bundle.captureLifecycleSource(),
     resources: (turn) => readScannerResources(fixture.db, turn),
+    bag: () => Promise.reject(new Error("Unrelated bag")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Unrelated draft write")),
       startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
       enterBag: () => Promise.reject(new Error("Unrelated bag")),
+      bindLabel: () => Promise.reject(new Error("Unrelated label")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
   for (const isManual of [false, true]) {
@@ -240,11 +252,14 @@ function sampleScanner(admit: Parameters<typeof sampleScannerRoute>[1]["admit"])
     sample: (input, current) => sampleScannerRoute(input, { admit }, current),
     read: () => () => Promise.reject(new Error("Sample QR borrowed ovitrap authority")),
     resources: () => Promise.reject(new Error("Sample QR manufactured a downloaded resource")),
+    bag: () => Promise.reject(new Error("Sample QR bound a bag")),
     ovitrap: {
       draftBuffer: new OvitrapDraftBuffer(),
       update: () => Promise.reject(new Error("Unrelated draft write")),
       startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
       enterBag: () => Promise.reject(new Error("Unrelated bag")),
+      bindLabel: () => Promise.reject(new Error("Unrelated label")),
+      usedPointCode: () => Promise.resolve(null),
     },
   });
 }

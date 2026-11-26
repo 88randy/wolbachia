@@ -10,7 +10,10 @@ import { useVoidReasonLabel, voidInfoOf } from "../void";
 import { fleetListOptions } from "./fleet-query";
 import { FLEET_PAGE_SIZE, FLEET_TABLE } from "./fleet-table";
 import { useFleetColumns } from "./use-fleet-columns";
+import { useFleetCounts } from "./use-fleet-counts";
+import { useFleetRowMenu } from "./use-fleet-row-menu";
 import { useFleetAuthor } from "./use-fleet-author";
+import { useDisplaySettled } from "../session/use-visible-session-state";
 import { CardSkeleton } from "../ui/CardSkeleton";
 export function FleetTable() {
   const { t } = useTranslation();
@@ -18,18 +21,23 @@ export function FleetTable() {
   const scope = useFleetScope("", controller.state.filters["center"]);
   const query = useQuery(fleetListOptions(scope, controller.state));
   const columns = useFleetColumns();
+  const counts = useFleetCounts(scope, controller.state);
+  const rowMenu = useFleetRowMenu();
   const author = useFleetAuthor();
   const format = useFormatDateTime();
   const reasonLabel = useVoidReasonLabel();
-  if (!scope.identity.isSettled) return <CardSkeleton />;
+  const isSettled = useDisplaySettled(scope.identity.isSettled);
+  if (!isSettled) return <CardSkeleton />;
   return (
     <>
-      <FleetFilters controller={controller} />
+      <FleetFilters controller={controller} quickCounts={counts} />
       <DataTable
         caption={t("fleet.table.caption")}
         columns={columns}
         getRowId={(item) => item.id}
         controller={controller}
+        rowLink={rowMenu.link}
+        rowMenu={rowMenu.menu}
         data={pageTableData(query, controller.state.page, FLEET_PAGE_SIZE)}
         voidOf={(item) => voidInfoOf(item, author, { formatWhen: format, reasonLabel })}
       />

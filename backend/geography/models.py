@@ -6,6 +6,7 @@ from uuid import UUID
 from django.db import models
 
 from core.models import ImmutableMixin, OrgScopedModel
+from geography.measured import MeasuredGeometryMixin
 
 
 class Quadrant(ImmutableMixin, OrgScopedModel):
@@ -18,8 +19,11 @@ class Quadrant(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_quadrant_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_quadrant_org_code"
-            )
+            ),
         ]
 
     @property
@@ -27,12 +31,11 @@ class Quadrant(ImmutableMixin, OrgScopedModel):
         return self.pk
 
 
-class QuadrantVersion(ImmutableMixin, OrgScopedModel):
+class QuadrantVersion(MeasuredGeometryMixin, ImmutableMixin, OrgScopedModel):
     # Response metadata is computed under the same lock; never persisted.
     spacing_warnings: list[dict[str, object]]
 
     quadrant = models.ForeignKey(Quadrant, on_delete=models.PROTECT, related_name="versions")
-    geometry = models.JSONField()
     revision = models.PositiveIntegerField()
     effective_from = models.DateTimeField()
 
@@ -54,8 +57,11 @@ class Block(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_block_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_block_org_code"
-            )
+            ),
         ]
 
     @property
@@ -63,9 +69,8 @@ class Block(ImmutableMixin, OrgScopedModel):
         return self.quadrant.center_id
 
 
-class BlockVersion(ImmutableMixin, OrgScopedModel):
+class BlockVersion(MeasuredGeometryMixin, ImmutableMixin, OrgScopedModel):
     block = models.ForeignKey(Block, on_delete=models.PROTECT, related_name="versions")
-    geometry = models.JSONField()
     revision = models.PositiveIntegerField()
     effective_from = models.DateTimeField()
 
@@ -85,8 +90,11 @@ class SamplingPoint(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         constraints = [
             models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_samplingpoint_org_id_uniq"
+            ),
+            models.UniqueConstraint(
                 fields=["organization", "code"], name="geography_point_org_code"
-            )
+            ),
         ]
 
     @property
@@ -107,7 +115,10 @@ class PointVersion(ImmutableMixin, OrgScopedModel):
 
     class Meta(ImmutableMixin.Meta):
         constraints = [
-            models.UniqueConstraint(fields=["point", "version"], name="geography_point_version")
+            models.UniqueConstraint(
+                fields=["organization", "id"], name="geography_pointversion_org_id_uniq"
+            ),
+            models.UniqueConstraint(fields=["point", "version"], name="geography_point_version"),
         ]
         indexes = [models.Index(fields=["point", "-effective_from"])]
 
@@ -127,6 +138,40 @@ class ExcludedPointResolution(ImmutableMixin, OrgScopedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["quadrant_version", "point"], name="geography_resolution_point_once"
+            )
+        ]
+
+
+class ReleasePoint(ImmutableMixin, OrgScopedModel):
+    """Planned place inside a quadrant where couriers release (web map editor)."""
+
+    quadrant = models.ForeignKey(Quadrant, on_delete=models.PROTECT, related_name="release_points")
+    code = models.CharField(max_length=50)
+    scope_center_lookup: ClassVar[str] = "quadrant__center_id"
+    scope_quadrant_lookup: ClassVar[str] = "quadrant_id"
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "code"], name="geography_release_point_org_code"
+            )
+        ]
+
+    @property
+    def center_id(self) -> UUID:
+        return self.quadrant.center_id
+
+
+class ReleasePointVersion(ImmutableMixin, OrgScopedModel):
+    point = models.ForeignKey(ReleasePoint, on_delete=models.PROTECT, related_name="versions")
+    location = models.JSONField()
+    version = models.PositiveIntegerField()
+    effective_from = models.DateTimeField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["point", "version"], name="geography_release_point_version"
             )
         ]
 

@@ -4,9 +4,12 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNameField
 from core.serializers import OrgScopedModelSerializer
 from organizations.models import Center, Membership, Organization, Profile
 from organizations.validators import validate_permission_code, validate_timezone
+
+CENTER_REASON_MIN_LENGTH = 5
 
 
 class MeUserSerializer(serializers.Serializer[Any]):
@@ -77,13 +80,115 @@ class MeSerializer(serializers.Serializer[Any]):
     scope = MeScopeSerializer()
     organizations = MeOrganizationChoiceSerializer(many=True)
     limits = MeLimitsSerializer()
+    is_platform_admin = serializers.BooleanField()
+    must_change_password = serializers.BooleanField(source="user.must_change_password")
 
 
-class CenterSerializer(OrgScopedModelSerializer):
+CENTER_ADMIN_ONLY_FIELDS = (
+    "deactivated_at",
+    "deactivated_reason",
+    "deactivated_by_name",
+    "quadrant_count",
+    "warehouse_count",
+    "motorcycle_count",
+)
+
+
+class CenterAdminSerializer(OrgScopedModelSerializer):
+    """A center as the organization admin manages it; counts come from the queryset annotation.
+
+    Served only to holders of `center.update` or `center.deactivate`; every other reader gets
+    `CenterSerializer`, the same shape with the admin-only fields null.
+    """
+
+    quadrant_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    warehouse_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    motorcycle_count = serializers.IntegerField(read_only=True, allow_null=True, default=0)
+    deactivated_reason = serializers.CharField(read_only=True, allow_null=True)
+    deactivated_by_name = AuthorNameField("deactivated_by")
+
     class Meta:
         model = Center
-        fields = ["id", "code", "name"]
+        fields = [
+            "id",
+            "code",
+            "name",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "deactivated_at",
+            "deactivated_reason",
+            "deactivated_by_name",
+            "quadrant_count",
+            "warehouse_count",
+            "motorcycle_count",
+        ]
         read_only_fields = fields
+
+
+class CenterSerializer(CenterAdminSerializer):
+    """A center for any `center.read` holder: who closed it, why and what it holds stay null."""
+
+    def to_representation(self, instance: Center) -> dict[str, Any]:
+        data = dict(super().to_representation(instance))
+        return {**data, **dict.fromkeys(CENTER_ADMIN_ONLY_FIELDS)}
+
+
+class CenterCreateSerializer(serializers.Serializer[Any]):
+    code = serializers.CharField(max_length=50)
+    name = serializers.CharField(max_length=200)
+
+
+class CenterUpdateSerializer(serializers.Serializer[Any]):
+    name = serializers.CharField(max_length=200)
+
+
+class CenterDeactivateSerializer(serializers.Serializer[Any]):
+    reason = serializers.CharField(min_length=CENTER_REASON_MIN_LENGTH, max_length=500)
+
+
+class CenterListQuerySerializer(serializers.Serializer[Any]):
+    include_inactive = serializers.BooleanField(required=False, default=False)
+
+
+class CenterReadinessRowSerializer(serializers.Serializer[Any]):
+    key = serializers.ChoiceField(
+        choices=["open_shifts", "stock", "motorcycles", "active_quadrants", "people_only_here"]
+    )
+    count = serializers.IntegerField()
+    is_blocking = serializers.BooleanField()
+    permission = serializers.CharField()
+    resolved_by_role = serializers.CharField()
+
+
+class CenterReadinessSerializer(serializers.Serializer[Any]):
+    rows = CenterReadinessRowSerializer(many=True)
+    prepared_transfer_count = serializers.IntegerField()
+
+
+class CenterMoveMotorcyclesSerializer(serializers.Serializer[Any]):
+    destination_center = serializers.UUIDField()
+
+
+class CenterMoveStockSerializer(serializers.Serializer[Any]):
+    destination_location = serializers.UUIDField()
+
+
+class CenterMoveResultSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField(required=False)
+    code = serializers.CharField(required=False)
+    location_id = serializers.UUIDField(required=False)
+    location_code = serializers.CharField(required=False)
+    transfer_code = serializers.CharField(required=False)
+    line_count = serializers.IntegerField(required=False)
+    status = serializers.ChoiceField(
+        choices=["moved", "prepared", "already_prepared", "skipped", "failed"]
+    )
+    reason = serializers.CharField(required=False)
+
+
+class CenterMoveResponseSerializer(serializers.Serializer[Any]):
+    results = CenterMoveResultSerializer(many=True)
 
 
 class OrganizationSettingsSerializer(MeOrganizationSerializer):
@@ -123,6 +228,12 @@ class ProfileSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+class ProfileCopySerializer(serializers.Serializer[Any]):
+    copy_from = serializers.UUIDField()
+    label_es = serializers.CharField(max_length=100, trim_whitespace=True)
+    label_en = serializers.CharField(max_length=100, trim_whitespace=True)
+
+
 class ProfilePermissionSerializer(serializers.Serializer[Any]):
     permissions = serializers.ListField(
         child=serializers.CharField(max_length=100, validators=[validate_permission_code])
@@ -133,12 +244,14 @@ class ProfilePermissionSerializer(serializers.Serializer[Any]):
 
 class MembershipSerializer(OrgScopedModelSerializer):
     scope = MeScopeSerializer(read_only=True)
+    user_display_name = AuthorNameField("user")
 
     class Meta:
         model = Membership
         fields = [
             "id",
             "user",
+            "user_display_name",
             "profiles",
             "scope",
             "is_active",

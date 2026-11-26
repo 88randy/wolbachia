@@ -20,6 +20,7 @@ export function CountWorkspaceBody({ scope, draftKey, controller, initial }: Wor
         scope={scope}
         controller={controller}
         select={state.select}
+        hasBag={state.bag !== null}
         isLocked={state.isLocked}
       >
         <CountWorkspaceEditor
@@ -29,7 +30,6 @@ export function CountWorkspaceBody({ scope, draftKey, controller, initial }: Wor
           controller={controller}
           onLockChange={state.setLocked}
           onSaved={state.onSaved}
-          onRetry={state.retry}
         />
       </CountWorkspaceLayout>
     </>

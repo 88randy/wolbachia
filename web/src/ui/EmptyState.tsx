@@ -2,7 +2,7 @@ import { Inbox, ListFilter } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "./Button";
-import styles from "./ui.module.css";
+import { StateFrame } from "./StateFrame";
 interface EmptyStateProps {
   kind: "noData" | "noResults";
   message?: string;
@@ -12,7 +12,6 @@ interface EmptyStateProps {
 }
 export function EmptyState({ kind, message, actionLabel, onAction, action }: EmptyStateProps) {
   const { t } = useTranslation();
-  const Icon = kind === "noData" ? Inbox : ListFilter;
   const nextAction =
     action ??
     (onAction && (
@@ -21,10 +20,11 @@ export function EmptyState({ kind, message, actionLabel, onAction, action }: Emp
       </Button>
     ));
   return (
-    <div className={styles.state}>
-      <Icon aria-hidden="true" strokeWidth={1.5} className={styles.stateIcon} />
-      <p>{message ?? t(kind === "noData" ? "ui.states.noData" : "ui.states.noResults")}</p>
+    <StateFrame
+      icon={kind === "noData" ? Inbox : ListFilter}
+      message={message ?? t(kind === "noData" ? "ui.states.noData" : "ui.states.noResults")}
+    >
       {nextAction}
-    </div>
+    </StateFrame>
   );
 }

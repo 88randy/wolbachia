@@ -1,16 +1,27 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
+import type { BoundFunctions, queries } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { bumpEpoch } from "../../session/session-revision";
 import { apiError } from "../../test/fake-api";
+import type { FakeApiRoutes } from "../../test/fake-api";
 import {
   openTrainings,
+  page,
   eligibility,
   SUBJECT,
   CENTER,
   VERSION,
   TRAINING_ME,
 } from "./training-test-helpers";
+vi.mock("./certificate-evidence", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./certificate-evidence")>()),
+  uploadCertificateEvidence: (call: { onAuthorized: (id: string) => void }) => {
+    call.onAuthorized(UPLOAD);
+    return Promise.resolve({ uploadId: UPLOAD, verifiedAt: "2026-11-09T12:01:00Z" });
+  },
+}));
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-11-09T12:00:00Z"));
 });
@@ -25,22 +36,55 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
+type Dialog = BoundFunctions<typeof queries>;
+const COURSE = "00000000-0000-4000-8000-000000000060";
+const UPLOAD = "00000000-0000-4000-8000-000000000061";
+const TEXT_FIELDS = {
+  "Referencia de quien expide": "Synthetic issuer",
+  "Constancia de certificación": "Synthetic verified attendance",
+};
+/** Courses for the version picker. The image upload itself is covered by certificate-evidence.test.ts. */
+function certificateRoutes(extra: FakeApiRoutes = {}): FakeApiRoutes {
+  return {
+    "GET /api/v1/trainings/": Response.json(
+      page([{ id: COURSE, code: "C-60", name: "Synthetic course", current_version_id: VERSION }]),
+    ),
+    [`GET /api/v1/trainings/${COURSE}/versions/`]: Response.json(page([])),
+    ...extra,
+  };
+}
+function imageFile() {
+  return new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], "certificate.png", {
+    type: "image/png",
+  });
+}
+async function pickCertificateDay(user: UserEvent, dialog: Dialog, [label, iso]: [string, string]) {
+  await user.click(dialog.getByRole("button", { name: new RegExp(label) }));
+  const cell = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(`[data-day="${iso}"] button`);
+    if (!found) throw new Error(`day ${iso} not shown`);
+    return found;
+  });
+  await user.click(cell);
+}
+async function fillCertificateFields(user: UserEvent, dialog: Dialog) {
+  await user.click(await dialog.findByRole("combobox", { name: "Versión del curso" }));
+  await user.click(await screen.findByRole("option", { name: /Synthetic course/ }));
+  await pickCertificateDay(user, dialog, ["Inicio incluido", "2026-11-09"]);
+  await pickCertificateDay(user, dialog, ["Fin excluido", "2026-11-10"]);
+  await user.upload(dialog.getByLabelText("Imagen de la certificación"), imageFile());
+  await user.click(dialog.getByRole("button", { name: "Cargar y verificar imagen" }));
+  await dialog.findByText(/Imagen verificada/);
+  for (const [label, value] of Object.entries(TEXT_FIELDS)) {
+    await user.click(dialog.getByRole("textbox", { name: label }));
+    await user.paste(value);
+  }
+}
 async function fillCertificate() {
   const user = userEvent.setup({ delay: null });
   await user.click(await screen.findByRole("button", { name: "Registrar certificación" }));
   const dialog = within(screen.getByRole("dialog"));
-  const fields = {
-    "Versión del curso (UUID)": VERSION,
-    "Inicio incluido": "2026-11-09T12:00:00Z",
-    "Fin excluido": "2026-11-10T12:00:00Z",
-    "UUID de evidencias verificadas": "00000000-0000-4000-8000-000000000040",
-    "Referencia de quien expide": "Synthetic issuer",
-    "Constancia de certificación": "Synthetic verified attendance",
-  };
-  for (const [label, value] of Object.entries(fields)) {
-    await user.click(dialog.getByRole("textbox", { name: label }));
-    await user.paste(value);
-  }
+  await fillCertificateFields(user, dialog);
   return { user, dialog };
 }
 function savedReceipt() {
@@ -56,14 +100,14 @@ function savedReceipt() {
 test("a confirmed certificate is terminal and sequential Enter cannot create a second record", async () => {
   const { api } = await openTrainings({
     path: `/people/trainings?subject=${SUBJECT}&center=${CENTER}`,
-    routes: {
+    routes: certificateRoutes({
       [`POST /api/v1/users/${SUBJECT}/trainings/`]: Response.json(savedReceipt(), { status: 201 }),
-    },
+    }),
   });
   const { user, dialog } = await fillCertificate();
   const submit = dialog.getByRole("button", { name: "Registrar certificación" });
   await user.click(submit);
-  await dialog.findByText("Registro confirmado por el servidor.");
+  await dialog.findByText("Registro guardado.");
   submit.focus();
   await user.keyboard("{Enter}{Enter}");
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
@@ -73,7 +117,9 @@ test("a certificate response from an earlier session revision keeps the draft an
   const reply = deferred<Response>();
   const { api } = await openTrainings({
     path: `/people/trainings?subject=${SUBJECT}&center=${CENTER}`,
-    routes: { [`POST /api/v1/users/${SUBJECT}/trainings/`]: () => reply.promise },
+    routes: certificateRoutes({
+      [`POST /api/v1/users/${SUBJECT}/trainings/`]: () => reply.promise,
+    }),
   });
   const { user, dialog } = await fillCertificate();
   const submit = dialog.getByRole("button", { name: "Registrar certificación" });
@@ -88,7 +134,7 @@ test("a certificate response from an earlier session revision keeps the draft an
     reply.resolve(Response.json(savedReceipt(), { status: 201 }));
   });
   await dialog.findByRole("button", { name: "Revisé el historial; permitir otro intento" });
-  expect(dialog.queryByText("Registro confirmado por el servidor.")).toBeNull();
+  expect(dialog.queryByText("Registro guardado.")).toBeNull();
   expect(
     dialog.getByRole<HTMLInputElement>("textbox", { name: "Referencia de quien expide" }).value,
   ).toBe("Synthetic issuer");
@@ -135,7 +181,9 @@ test("server eligibility remains faithful on both sides of the exclusive expiry 
 test("a certificate's keyboard validation and server failure retain all entered fields", async () => {
   const app = await openTrainings({
     path: `/people/trainings?subject=${SUBJECT}&center=${CENTER}`,
-    routes: { [`POST /api/v1/users/${SUBJECT}/trainings/`]: apiError(400, "validation_error") },
+    routes: certificateRoutes({
+      [`POST /api/v1/users/${SUBJECT}/trainings/`]: apiError(400, "validation_error"),
+    }),
   });
   const user = userEvent.setup({ delay: null });
   await user.click(await screen.findByRole("button", { name: "Registrar certificación" }));
@@ -143,28 +191,20 @@ test("a certificate's keyboard validation and server failure retain all entered 
   await user.click(dialog.getByRole("button", { name: "Registrar certificación" }));
   expect(dialog.getByText("Revisa los campos indicados.")).toBeDefined();
   expect(app.api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
-  const fields = {
-    "Versión del curso (UUID)": VERSION,
-    "Inicio incluido": "2026-11-09T12:00:00Z",
-    "Fin excluido": "2026-11-10T12:00:00Z",
-    "UUID de evidencias verificadas": "00000000-0000-4000-8000-000000000040",
-    "Referencia de quien expide": "Synthetic issuer",
-    "Constancia de certificación": "Synthetic verified attendance",
-  };
-  for (const [label, value] of Object.entries(fields)) {
-    await user.click(dialog.getByRole("textbox", { name: label }));
-    await user.paste(value);
-  }
+  await fillCertificateFields(user, dialog);
   await user.click(dialog.getByRole("button", { name: "Registrar certificación" }));
   expect(await dialog.findByText(/No pudimos confirmar el registro/)).toBeDefined();
-  for (const [label, value] of Object.entries(fields))
+  for (const [label, value] of Object.entries(TEXT_FIELDS))
     expect(dialog.getByRole<HTMLInputElement>("textbox", { name: label }).value).toBe(value);
+  expect(dialog.getByRole("combobox", { name: "Versión del curso" }).textContent).toContain(
+    "Synthetic course",
+  );
   expect(app.api.requests.filter((request) => request.method === "POST")[0]?.body).toMatchObject({
     center: CENTER,
     quadrant: null,
     training_version: VERSION,
-    valid_from: fields["Inicio incluido"],
-    valid_to: fields["Fin excluido"],
+    valid_from: "2026-11-09T06:00:00.000Z",
+    valid_to: "2026-11-11T05:59:00.000Z",
   });
 });
 
@@ -182,7 +222,7 @@ test("an out-of-scope personal deep link never starts a private read or certific
   expect(await screen.findByText(/El registro no está disponible en tu alcance/)).toBeDefined();
   expect(screen.queryByRole("button", { name: "Registrar certificación" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Nuevo curso" })).toBeNull();
-  expect(api.requests.some((request) => request.path.includes("/users/"))).toBe(false);
+  expect(api.requests.some((request) => request.path.includes(`/users/${SUBJECT}`))).toBe(false);
 });
 
 test.each(["UNKNOWN-COURSE", "FOREIGN-COURSE"])(
@@ -224,7 +264,9 @@ test("a permitted context keeps its private draft across scope changes while lat
   const reply = deferred<Response>();
   const { api, queryClient } = await openTrainings({
     path: `/people/trainings?subject=${SUBJECT}&center=${CENTER}`,
-    routes: { [`POST /api/v1/users/${SUBJECT}/trainings/`]: () => reply.promise },
+    routes: certificateRoutes({
+      [`POST /api/v1/users/${SUBJECT}/trainings/`]: () => reply.promise,
+    }),
   });
   const { user, dialog } = await fillCertificate();
   await user.click(dialog.getByRole("button", { name: "Registrar certificación" }));
@@ -248,7 +290,7 @@ test("a permitted context keeps its private draft across scope changes while lat
   expect(
     dialog.getByRole<HTMLInputElement>("textbox", { name: "Referencia de quien expide" }).value,
   ).toBe("Synthetic issuer");
-  expect(dialog.queryByText("Registro confirmado por el servidor.")).toBeNull();
+  expect(dialog.queryByText("Registro guardado.")).toBeNull();
   await user.click(dialog.getByRole("button", { name: "Registrar certificación" }));
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
 });

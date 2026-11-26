@@ -35,7 +35,6 @@ export const orgAdmin = {
   "orgAdmin.scope.remove": "Remove reference",
   "orgAdmin.scope.unavailable":
     "Code unavailable in your scope. Check the code or ask an administrator for access.",
-  "orgAdmin.revision.current": "Current revision: ",
   "orgAdmin.revision.refresh": "Read current revision",
   "orgAdmin.revision.compare":
     "Compare the current configuration with your edits before continuing. Your edits are retained.",
@@ -51,10 +50,11 @@ export const orgAdmin = {
   "orgAdmin.error.offline": "Offline. Reconnect before saving; your edits remain on this screen.",
   "orgAdmin.action.saving": "Saving…",
   "orgAdmin.action.saved": "Changes saved",
+  "orgAdmin.center.hint": "Shows the information of one work center of your organization",
   "orgAdmin.center.empty": "No centers are available in your scope.",
-  "orgAdmin.center.filter": "Center filter",
-  "orgAdmin.center.all": "All authorized centers",
-  "orgAdmin.center.choose": "Choose an authorized center",
+  "orgAdmin.center.filter": "Center",
+  "orgAdmin.center.all": "All centers",
+  "orgAdmin.center.choose": "Choose a center",
   "orgAdmin.organization.title": "Organization",
   "orgAdmin.organization.name": "Name",
   "orgAdmin.organization.country": "Country",

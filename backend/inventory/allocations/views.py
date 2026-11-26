@@ -52,6 +52,7 @@ from inventory.allocations.selectors import (
 )
 from inventory.allocations.serializers import (
     AssignmentOutcomeSerializer,
+    AssignmentQuerySerializer,
     CancellationOutcomeSerializer,
     CreateAssignmentSerializer,
     ExecuteInventoryIntentSerializer,
@@ -133,6 +134,7 @@ class SupplyViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet[Any]):
 class SupplyAssignmentViewSet(SupplyViewSet):
     queryset = SupplyAssignment.objects.none()
     serializer_class = SupplyAssignmentReadSerializer
+    query_serializer = AssignmentQuerySerializer
     http_method_names = ["get", "post", "patch", "head", "options"]
     supply_actions = {
         "list": (ALLOCATE, RECONCILE, RECEIVE_OWN, RECONCILE_OWN),
@@ -145,7 +147,7 @@ class SupplyAssignmentViewSet(SupplyViewSet):
     }
 
     @extend_schema(
-        parameters=[SupplyQuerySerializer], responses=SupplyAssignmentReadSerializer(many=True)
+        parameters=[AssignmentQuerySerializer], responses=SupplyAssignmentReadSerializer(many=True)
     )
     def list(self, request: Request) -> Response:
         return self._list_rows(

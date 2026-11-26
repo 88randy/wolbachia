@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { inventorySupply, inventoryProtocol, inventoryPage } from "../../test/inventory-fixtures";
 import { inventoryMe, openInventory } from "../../test/inventory-api";
 import { apiError } from "../../test/fake-api";
+import "../../test/slow-app-flows";
 function fillField(name: string, value: string) {
   fireEvent.change(screen.getByRole("textbox", { name }), { target: { value } });
 }
@@ -45,7 +46,7 @@ test("retirement confirms the opened revision and requires a new explicit confir
   await user.click(
     within(screen.getByRole("dialog")).getByRole("button", { name: "Desactivar insumo" }),
   );
-  await screen.findByText("Desactivado");
+  expect((await screen.findAllByText("Desactivado")).length).toBeGreaterThan(0);
   expect(retire.hasAttribute("disabled")).toBe(true);
   expect(
     api.requests.filter((request) => request.method === "POST").map((request) => request.body),
@@ -57,7 +58,7 @@ test("W8 presents the real scoped supply and hides configuration writes without 
     path: "/inventory/supplies",
     me: inventoryMe({ permissions: ["supply_type.read"] }),
   });
-  expect(await screen.findByRole("heading", { name: "Catálogo de insumos" })).toBeDefined();
+  expect(await screen.findByRole("heading", { name: "Insumos" })).toBeDefined();
   expect(await screen.findByRole("link", { name: "SUP-01" })).toBeDefined();
   expect(screen.queryByRole("button", { name: "Nuevo insumo" })).toBeNull();
 });
@@ -109,7 +110,7 @@ test("a conflict refresh with unreadable protocol blocks rewriting it and permit
     "Retained identity change",
   );
   await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   const requests = api.requests.filter((request) => request.method === "PATCH");
   expect(requests).toHaveLength(2);
   expect(requests[1]?.body).toMatchObject({
@@ -177,7 +178,7 @@ test("W8 saves named configuration without inventing biological or nullable safe
     expect(reconcile.hasAttribute("disabled")).toBe(false);
   });
   await user.click(reconcile);
-  await screen.findByText("Guardado en el servidor");
+  await screen.findByText("Guardado");
   expect(api.requests.find((request) => request.method === "POST")?.body).toMatchObject({
     code: "SUP-NEW",
     unit: "container",

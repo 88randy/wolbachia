@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { IDLE_SYNC_GAP_MS } from "../src/sync/idle-gap.ts";
 import { test } from "node:test";
 import { createHash } from "node:crypto";
 import { createApiClient } from "@wolbachia/api-client";
@@ -609,4 +610,25 @@ void test("a fresh username/Me without original session provenance cannot claim 
       deviceId: "33333333-3333-4333-8333-333333333333",
     }),
   );
+});
+
+void test("a file that is only waiting asks for a pass after the idle gap, never right now", async (test) => {
+  const h = await attachmentHarness(test);
+  await new EvidenceCapture(h).capture(
+    { capture: () => Promise.resolve({ id: EVIDENCE_ID, fileRef: h.source }) },
+    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  );
+  const photo = makeEnvelope({
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    payload: { evidence_ids: [EVIDENCE_ID] },
+  });
+  await h.outbox.enqueue(
+    photo,
+    h.store.bindingStatements({
+      eventId: photo.id,
+      evidenceIds: [EVIDENCE_ID],
+      fence: await h.session.capture(),
+    }),
+  );
+  assert.equal(await h.store.nextRetryDelayMs(NOW.getTime()), IDLE_SYNC_GAP_MS);
 });

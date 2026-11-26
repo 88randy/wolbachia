@@ -11,7 +11,6 @@ function EvidenceList({ draft }: { draft: FleetDraft }) {
         <li key={file.clientId}>
           {file.file.name} ·{" "}
           {t(file.verifiedAt ? "fleet.evidence.verified" : "fleet.evidence.pending")}
-          {file.verifiedAt && <p>{file.uploadId}</p>}
         </li>
       ))}
     </ul>

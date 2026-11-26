@@ -92,14 +92,14 @@ canonical #186 behavior are unchanged.
 
 ## Criterion → owning test
 
-| Behavior | Existing owner |
-| --- | --- |
-| Scoped list, actual ordering/facets/paging, permission denial | `W20Page.test.tsx`, `centers/center-query.test.ts` |
-| Code→UUID detail, independent history pages, voided controls, unknown tab preservation, real provenance and comparable/insufficient data | `W21Page.test.tsx` |
-| Exact service/clearance/void payloads, B04 original bytes and verification, 409 explicit review, remaining blockers, missing grants | `fleet-actions.test.tsx` |
-| Deferred center ABA/current bodies, actor/org changes, revocation/regrant, late verification, expired/unknown writes without replay | `fleet-session.test.tsx` |
-| Existing create contract | `CreateMotorcycleDialog.test.tsx` |
-| Actual browser wiring, native focus, axe, 320 px and +30% text in the existing four locale/theme cells; one service/B04/clearance wire journey | `e2e/fleet.spec.ts` |
+| Behavior                                                                                                                                       | Existing owner                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Scoped list, actual ordering/facets/paging, permission denial                                                                                  | `W20Page.test.tsx`, `centers/center-query.test.ts` |
+| Code→UUID detail, independent history pages, voided controls, unknown tab preservation, real provenance and comparable/insufficient data       | `W21Page.test.tsx`                                 |
+| Exact service/clearance/void payloads, B04 original bytes and verification, 409 explicit review, remaining blockers, missing grants            | `fleet-actions.test.tsx`                           |
+| Deferred center ABA/current bodies, actor/org changes, revocation/regrant, late verification, expired/unknown writes without replay            | `fleet-session.test.tsx`                           |
+| Existing create contract                                                                                                                       | `CreateMotorcycleDialog.test.tsx`                  |
+| Actual browser wiring, native focus, axe, 320 px and +30% text in the existing four locale/theme cells; one service/B04/clearance wire journey | `e2e/fleet.spec.ts`                                |
 
 Unit fixtures use synthetic attested responses, not backend qualification. Browser
 contrast/native focus/reflow, actual PostgreSQL contracts and physical inspection

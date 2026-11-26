@@ -4,6 +4,8 @@ export interface AuthRules {
   readonly pinMaxAttempts: number;
   readonly sessionIdleMinutes: number;
   readonly clockSkewReviewSeconds: number;
+  /** Time the app may stay in the background (camera, dialogs) before it asks for the PIN. */
+  readonly backgroundLockGraceSeconds: number;
 }
 
 /** Only this issue's three rules; no catalog synchronization. */
@@ -23,10 +25,17 @@ export function readAuthRules(snapshot: Schemas["RulesSnapshot"] | null): AuthRu
       min: 30,
       max: 3600,
     }),
+    backgroundLockGraceSeconds: readRule(parameters, {
+      key: "background_lock_grace_seconds",
+      fallback: 120,
+      min: 10,
+      max: 900,
+    }),
   };
 }
 
-function readRule(
+/** One snapshot parameter clamped to its bounds; missing or malformed uses the documented default. */
+export function readRule(
   parameters: Schemas["SnapshotParameter"][],
   rule: { key: string; fallback: number; min: number; max: number },
 ): number {

@@ -28,16 +28,16 @@ export function Pager({ paging, controller, labelKey = "table.pager.label" }: Pa
   return (
     <nav className={styles.pager} aria-label={t(labelKey)}>
       <PagerButton
+        direction="previous"
         label={t("table.pager.previous")}
         isDisabled={previous === null}
         onPress={() => {
           if (previous !== null) follow(previous, controller);
         }}
       />
-      {position !== null && (
-        <span className={styles.position}>{t("table.pager.position", position)}</span>
-      )}
+      {position !== null && <span className="sr-only">{t("table.pager.position", position)}</span>}
       <PagerButton
+        direction="next"
         label={t("table.pager.next")}
         isDisabled={next === null}
         onPress={() => {

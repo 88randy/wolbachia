@@ -48,6 +48,7 @@ def sample_rows(actor: UploadActor, permission: str) -> QuerySet[WolbachiaSample
             "lot",
             "release__permit_version__permit",
             "reading__event",
+            "reading__bag",
             "reading__ovitrap__event",
         )
     )
@@ -108,6 +109,13 @@ def filter_samples(
     )
     if not values.get("include_voided", False):
         rows = rows.filter(event__voided_at__isnull=True)
+    if values.get("pending_result", False):
+        latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by(
+            "-revision"
+        )
+        rows = rows.annotate(latest_status=Subquery(latest.values("status")[:1])).filter(
+            Q(latest_status__isnull=True) | ~Q(latest_status="valid")
+        )
     return rows
 
 
@@ -136,6 +144,23 @@ def receipt_snapshot(receipt: SampleReceipt) -> dict[str, Any]:
     }
 
 
+def valid_results(rows: QuerySet[WolbachiaSample]) -> QuerySet[WolbachiaSample]:
+    """Additive read for the dashboards: same valid-result rule as `prevalence_inputs`.
+
+    Effective samples whose latest attempt is valid, annotated with `selected_result`.
+    """
+    latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by("-revision")
+    return cast(
+        "QuerySet[WolbachiaSample]",
+        effective_effects(rows, "event")
+        .annotate(
+            selected_status=Subquery(latest.values("status")[:1]),
+            selected_result=Subquery(latest.values("result")[:1]),
+        )
+        .filter(selected_status="valid", selected_result__in=["positive", "negative"]),
+    )
+
+
 def prevalence_inputs(rows: QuerySet[WolbachiaSample]) -> dict[str, int | float | None]:
     """Return the valid-positive / valid-tested fraction; an empty denominator is unknown."""
     latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by("-revision")
@@ -157,6 +182,12 @@ def prevalence_inputs(rows: QuerySet[WolbachiaSample]) -> dict[str, int | float 
     }
 
 
+def bag_code_of(sample: WolbachiaSample) -> str | None:
+    """The bag a reading sample came from; lot and release samples have none."""
+    bag = getattr(sample.reading, "bag", None)
+    return None if bag is None else bag.code
+
+
 def sample_snapshot(sample: WolbachiaSample) -> dict[str, Any]:
     """An invalid, disputed, absent or voided result contributes neither numerator nor denominator."""
     attempts = [attempt_snapshot(attempt) for attempt in sample.attempts.all()]
@@ -176,6 +207,7 @@ def sample_snapshot(sample: WolbachiaSample) -> dict[str, Any]:
         "center_id": str(sample.center_id),
         "quadrant_id": None if sample.quadrant_id is None else str(sample.quadrant_id),
         "reading_id": None if sample.reading_id is None else str(sample.reading_id),
+        "bag_code": bag_code_of(sample),
         "lot_id": None if sample.lot_id is None else str(sample.lot_id),
         "release_id": None if sample.release_id is None else str(sample.release_id),
         "method_version_id": str(sample.method_version_id),

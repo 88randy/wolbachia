@@ -10,15 +10,17 @@ from django.http import Http404
 from core.snapshots import snapshot_hash
 from core.void_reason import validate_void_reason
 from field_sync.models import FieldEvent
+from organizations.scope import EffectiveScope
 from reviews.effect_receipts import is_effective
 from reviews.exceptions import ReviewBlockedError, ReviewConflictError
-from reviews.inspection import original_source_envelope
 from reviews.models import ReviewDecision, ReviewEffectReceipt, ReviewItem, ShiftDecision
 from reviews.safety import has_pending_severe
-from reviews.scope import subject_facts, vector_allows
+from reviews.scope import unresolved_scope_allows, vector_allows
+from reviews.subject_batches import source_subject_facts
 from reviews.transactions import review_transaction
 from shifts.models import Motorcycle, Shift
 from shifts.permissions import SHIFT_VALIDATE
+from tracks.codes import TRACK_SEGMENT_EVENT_TYPE
 from uploads.access import UploadActor, current_scope
 
 
@@ -30,9 +32,15 @@ class ShiftDecisionRequest:
 
 
 def shift_sources(shift: Shift) -> QuerySet[FieldEvent]:
-    return FieldEvent.objects.filter(
-        organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
-    ).order_by("pk")
+    """The work events of the shift. Courier track segments (#370) are observations, not work:
+    they neither scope, block nor change the fingerprint of a shift decision."""
+    return (
+        FieldEvent.objects.filter(
+            organization=shift.organization, created_by=shift.courier, shift_id=shift.pk
+        )
+        .exclude(type=TRACK_SEGMENT_EVENT_TYPE)
+        .order_by("pk")
+    )
 
 
 def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:
@@ -45,12 +53,10 @@ def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:
         }
     ]
     resolved = True
-    for source in shift_sources(shift):
-        try:
-            facts = subject_facts(shift.organization, original_source_envelope(source))
-        except ValueError:
-            resolved = False
-            continue
+    sources = list(shift_sources(shift))
+    subjects = source_subject_facts(shift.organization, sources)
+    for source in sources:
+        facts = subjects[source.pk]
         resolved &= facts.resolved
         for context in facts.contexts:
             if context not in contexts:
@@ -147,17 +153,54 @@ def validation_fingerprint(shift: Shift) -> str:
     )
 
 
-def require_shift_scope(actor: UploadActor, shift: Shift, permission: str) -> None:
-    contexts, resolved = shift_subjects(shift)
-    if not vector_allows(current_scope(actor), permission, contexts, resolved):
-        raise Http404
+def shift_scope_allows(scope: EffectiveScope, shift: Shift, permission: str) -> bool:
+    """The exact per-shift subject vector check, with an already-loaded scope."""
     from inventory.allocations.reconciliation import shift_assignment_rows
     from inventory.allocations.scope import allows_supply_vector
 
-    if shift_assignment_rows(shift).exists() and not allows_supply_vector(
-        current_scope(actor), permission, contexts
-    ):
+    contexts, resolved = shift_subjects(shift)
+    if not vector_allows(scope, permission, contexts, resolved):
+        return False
+    return not shift_assignment_rows(shift).exists() or allows_supply_vector(
+        scope, permission, contexts
+    )
+
+
+def require_shift_scope(actor: UploadActor, shift: Shift, permission: str) -> None:
+    if not shift_scope_allows(current_scope(actor), shift, permission):
         raise Http404
+
+
+def readable_shifts(
+    actor: UploadActor, shifts: QuerySet[Shift], permission: str
+) -> QuerySet[Shift]:
+    """The shifts of `shifts` the actor may read, keeping its ordering and prefetches.
+
+    An organization-wide grant (all centers and all quadrants) reads every shift, as it reads an
+    unresolved review subject (`reviews.actions`). A scoped reader keeps the exact per-row subject
+    vector, but SQL first drops the shifts whose motorcycle center no grant contains: that center
+    is always part of the vector, so the exact check only runs on rows that can pass.
+    """
+    scope = current_scope(actor)
+    if unresolved_scope_allows(scope, permission):
+        return shifts
+    grants = [grant for codes, grant in scope.grants if permission in codes]
+    if not grants:
+        return shifts.none()
+    if all(grant["centers"]["mode"] != "all" for grant in grants):
+        centers = {
+            identifier
+            for grant in grants
+            if grant["centers"]["mode"] == "selected"
+            for identifier in grant["centers"]["ids"]
+        }
+        shifts = shifts.filter(motorcycle__center_id__in=centers)
+    visible = [
+        shift.pk
+        for shift in shifts.select_related("motorcycle", "organization")
+        if shift_scope_allows(scope, shift, permission)
+    ]
+    return shifts.filter(pk__in=visible)
 
 
 def decide_shift(

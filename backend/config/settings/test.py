@@ -18,6 +18,8 @@ from .base import *  # noqa: E402, F403
 
 SECRET_KEY = "test-only-key-not-a-secret"  # noqa: S105
 ALLOWED_HOSTS = ["testserver", "localhost"]
+# Tests open and close connections per thread: never keep one alive past its request.
+DATABASES["default"]["CONN_MAX_AGE"] = 0  # noqa: F405
 
 # Test-only app with a voidable, org-scoped model to exercise the shared base classes.
 INSTALLED_APPS = [*INSTALLED_APPS, "tests.testapp"]  # noqa: F405

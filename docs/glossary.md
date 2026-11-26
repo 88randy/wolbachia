@@ -2,10 +2,32 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## Manual egg annotation (W35)
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| anotación de huevos | egg annotation (`EggAnnotation`) | Immutable verified egg paddle image and marks linked to the single `EggCountAttempt` they produced. Correction appends a new annotation through void + replacement. |
+| marca | mark (`marks`) | One manually identified egg in image pixels, origin top-left. The total number of boxes and points is the official count. |
+| recuadro | box (`kind: "box"`) | Integer `x`, `y`, `w`, `h`; positive width/height and a rectangle fully inside the verified oriented image. |
+| punto | point (`kind: "point"`) | Integer `x`, `y` inside the verified oriented image. A quick-count mark, retained alongside boxes. |
+| exportación de datos de entrenamiento | training dataset export (`EggAnnotationExport`) | Immutable organization-scoped request and fixed annotation/void selection, with separate status and download facts. COCO/YOLO detector boxes stay separate from pixel points; archive metadata contains no personal identifiers or location codes. API: `/lab/egg-annotation-exports/`. |
+
+## PCR tests at external laboratories
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| laboratorio externo | ExternalLab | Per-organization catalog (name, contact, address, active); deactivated, never deleted. |
+| prueba PCR | PcrBatch | Group of Wolbachia samples sent to one external lab; targets `wolbachia` and/or `dengue`. |
+| paso de la prueba | PcrBatchEvent | Immutable step (`ready`, `ship`, `receive`, `results`, `close`), `undo` of the last step or `void`. Status is derived. |
+| estados | `preparing`, `ready_to_ship`, `shipped`, `received_by_lab`, `results_received`, `closed`, `voided` | UI: En preparación, Lista para envío, Enviada, Recibida por el laboratorio, Resultados recibidos, Cerrada, Anulada. |
+| resultado PCR | PcrResult | Per sample and target: `positive`/`negative`/`invalid`, optional dengue serotype DENV-1..4 and Ct. Wolbachia results are also a `WolbachiaResultAttempt`. |
+| informe del laboratorio | PcrReport | Verified PDF upload of the external lab's report. |
+
 ## UIEB shipment and transfer eligibility (#118)
 
 | Spanish | English name in code | Notes |
 | --- | --- | --- |
+| administrador de plataforma | platform admin | PlatformAdmin, is_platform_admin | Manages organizations; no organization data without a membership. |
 | envío UIEB | UiebShipment | Immutable technical source projection with cutoff and linked supersession. |
 | fuente de envío | ShipmentSource | Genuine selected Bag, WolbachiaSample or Lot identity; not a legal Annex VI template. |
 | solicitud de material | MaterialRequest | Actual recipient, lot, storage, unit, quantity and optional piece. |
@@ -43,6 +65,8 @@ Rules:
 | cuadrante | quadrant | `/quadrants/`, `quadrant` | Organization-coded work area belonging to a Center; QuadrantVersion is append-only. Current geometry is the highest revision; captured_at resolves past geometry. |
 | resoluci?n de punto excluido | excluded point resolution | `ExcludedPointResolution`, `point_resolutions` | Authored keep/move/remove decision with evidence for every point outside a proposed quadrant geometry; remove appends a retired PointVersion. |
 | jornada | shift | `/shifts/`, `shift` | Courier's work day, from start to closing. |
+| recorrido | courier track | `TrackSegment`, `track.segment`, `/shifts/{id}/track/` | Positions recorded only while the shift is open, uploaded in segments. Never `location` (inventory) or `route` (P9). |
+| posición actual | last position | `/shifts/positions/` | Last stored position of an open shift (phone clock in `recorded_at`). |
 | lectura desfasada | lagged reading | `is_lagged` | Reading outside the expected interval (rule from rule parameters). |
 | hallazgo | finding | `finding` | Result noted when checking an ovitrap. |
 | casa cerrada | closed house | — (not defined yet) | Visit result: nobody let the courier in. |
@@ -242,6 +266,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
 | validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
 | historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| calendario del recolector | courier calendar | `CalendarService`, routes `calendar` (P33) and `calendarTrack` (P33b) | Read-only offline month view on the phone: the past 30 local days of own activity and downloaded tasks, with one day's own track per shift. Never a server query. |
 | resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
 | reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
 

@@ -8,7 +8,7 @@ from django.utils import timezone
 from uploads.models import AttachmentLink, Upload, UploadLease, UploadSource, UploadVerification
 
 
-def verified_upload(organization, user, *, device=None, public_id=None, fault=None):
+def verified_upload(organization, user, *, device=None, public_id=None, fault=None, purpose=""):
     upload = Upload.objects.create(
         organization=organization,
         created_by=user,
@@ -18,6 +18,7 @@ def verified_upload(organization, user, *, device=None, public_id=None, fault=No
         content_type="image/png",
         size_bytes=1,
         sha256="0" * 64,
+        purpose=purpose,
     )
     lease = UploadLease.objects.create(
         organization=organization,

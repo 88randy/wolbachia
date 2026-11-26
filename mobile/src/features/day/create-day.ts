@@ -8,9 +8,20 @@ import { DayBundleService } from "./bundle-service.ts";
 import { DayService } from "./service.ts";
 import { ShiftLocationSource } from "../shift-close/location.ts";
 import { androidLocation } from "./android-location.ts";
+import { SharedLocationSource } from "./shared-location.ts";
 import { inspectMapFile } from "./inspect-map-file.ts";
 import { OutboxWorkOverlay } from "./local-work.ts";
 export { createDayBundle } from "./create-day-bundle.ts";
+/** One native location watch for the whole app, whoever asks and however often they re-subscribe. */
+const sharedAndroidLocation = new SharedLocationSource({
+  source: androidLocation,
+  schedule: (run, ms) => {
+    const timer = setTimeout(run, ms);
+    return () => {
+      clearTimeout(timer);
+    };
+  },
+});
 async function hasOpenShift(db: SqlExecutor): Promise<boolean> {
   const rows =
     await db.query(`SELECT 1 FROM outbox_event opening WHERE type='shift.open' AND local_status!='rejected'
@@ -26,7 +37,7 @@ export function createDay(db: SqlExecutor, bundle: DayBundleService): DayService
     shift: new ShiftOpenStore(db),
     work: new OutboxWorkOverlay(db),
     navigation: new NavigationService({ kv, launcher: androidNavigation, now: () => new Date() }),
-    location: new ShiftLocationSource(androidLocation, () => hasOpenShift(db)),
+    location: new ShiftLocationSource(sharedAndroidLocation, () => hasOpenShift(db)),
     maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
     inspect: inspectMapFile,
     hasOpenShift: () => hasOpenShift(db),

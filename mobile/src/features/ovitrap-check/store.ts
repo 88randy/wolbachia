@@ -6,10 +6,13 @@ import {
   StaleAssignmentAuthorityError,
 } from "./snapshot-authority.ts";
 import type { AssignmentAuthority } from "./snapshot-authority.ts";
+import type { AssignmentNullReason } from "./assignment-diagnostics.ts";
 import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identity-state.ts";
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
 import { captureWeek } from "./capture-week.ts";
+import { lateScopeQuery } from "./late-scope.ts";
+import { CaptureBlockedError } from "./ports.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readInteger, readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
@@ -26,6 +29,18 @@ export interface StoredCapture {
   readonly draftVersion: string | null;
 }
 /** SQLite is the only source of saved status; local projections retain every captured version. */
+/** A placement never takes a label a saved replacement already put on its new trap. */
+function replacementLabelGuard(draft: Draft): readonly SqlStatement[] {
+  if (draft.mode !== "place") return [];
+  return [
+    {
+      sql: `INSERT INTO lifecycle_guard(slot,value) VALUES(1,CASE WHEN EXISTS(
+        SELECT 1 FROM lifecycle_capture WHERE kind='replace' AND json_extract(draft,'$.replacementId')=?)
+        THEN 0 ELSE 1 END) ON CONFLICT(slot) DO UPDATE SET value=excluded.value`,
+      params: [draft.ovitrapId],
+    },
+  ];
+}
 export class OvitrapStore {
   readonly #db: SqlExecutor;
   constructor(db: SqlExecutor) {
@@ -64,9 +79,27 @@ export class OvitrapStore {
   }
   /** A truly authoritative provider must publish using the token captured before its asynchronous work. */
   async publishSnapshots(snapshots: Snapshots, authority: AssignmentAuthority): Promise<void> {
-    const statement = assignmentPublication(snapshots, authority);
-    const rows = await this.#db.query(statement.sql, statement.params);
-    if (rows.length === 0) throw new StaleAssignmentAuthorityError();
+    try {
+      await this.#db.runAtomically(assignmentPublication(snapshots, authority));
+    } catch (error) {
+      // The revision guards abort through lifecycle_guard's CHECK; anything else is a real failure.
+      if (error instanceof Error && /CHECK constraint failed/i.test(error.message))
+        throw new StaleAssignmentAuthorityError();
+      throw error;
+    }
+  }
+  /** Why a guarded publication wrote nothing; diagnostic only. */
+  async publishBlockReason(assignment: Assignment | null): Promise<AssignmentNullReason> {
+    const [cleanup] = await this.#db.query(
+      `SELECT 1 AS found WHERE NOT ${CAPTURE_SCOPE_AVAILABLE}`,
+    );
+    if (cleanup) return "cleanup_pending";
+    const [removed] = await this.#db.query(
+      `SELECT 1 AS found FROM json_each(?,'$.points') point
+        JOIN day_sampling_point current ON current.id=json_extract(point.value,'$.id') WHERE current.removed=1`,
+      [JSON.stringify(assignment ?? { points: [] })],
+    );
+    return removed ? "point_removed" : "publish_stale";
   }
   async begin(draft: Draft): Promise<void> {
     await this.#db.runAtomically([
@@ -80,6 +113,19 @@ export class OvitrapStore {
         sql: `INSERT INTO ovitrap_draft(slot, draft) VALUES (1, ?) ON CONFLICT(slot) DO UPDATE SET draft = excluded.draft, event_id = NULL
           WHERE ovitrap_draft.event_id IS NOT NULL OR json_extract(ovitrap_draft.draft, '$.shiftId') <> json_extract(excluded.draft, '$.shiftId') OR ${RETIRED_CAPTURE_DRAFT}`,
         params: [JSON.stringify(draft)],
+      },
+    ]);
+  }
+  /** Drops the unsent local draft and the photos reserved for it that no event owns yet. */
+  async discardDraft(eventId: string): Promise<void> {
+    await this.#db.runAtomically([
+      {
+        sql: "DELETE FROM attachment_file WHERE draft_id=? AND NOT EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=attachment_file.id)",
+        params: [eventId],
+      },
+      {
+        sql: "DELETE FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft, '$.eventId')=?",
+        params: [eventId],
       },
     ]);
   }
@@ -154,6 +200,14 @@ export class OvitrapStore {
     );
     return row ? (JSON.parse(readText(row, "draft")) as Draft) : null;
   }
+  /** Placing: a label the open replacement draft already bound is not free. */
+  async isReplacementLabel(id: string): Promise<boolean> {
+    const rows = await this.#db.query(
+      "SELECT 1 FROM lifecycle_draft WHERE event_id IS NULL AND json_extract(draft,'$.replacementId')=? LIMIT 1",
+      [id],
+    );
+    return rows.length > 0;
+  }
   async lifecycleSource(id: string, point: Draft["point"] = null) {
     const physical = await physicalOvitrap(this.#db, id);
     const [row] = await this.#db.query(
@@ -166,6 +220,12 @@ export class OvitrapStore {
     const state =
       physical ?? (await readPhysicalIdentityState(this.#db, { id, pointId: point?.id ?? null }));
     return { physical, evidence: lifecycle?.evidence ?? [], isRetired: state.isRetired };
+  }
+  /** Would the save trigger let this old draft through as a late capture? */
+  async isLateScopeAvailable(draft: Draft): Promise<boolean> {
+    if (draft.point === null) return true; // No point chosen yet: the point page decides.
+    const [row] = await this.#db.query(lateScopeQuery(), [JSON.stringify(draft)]);
+    return row ? readInteger(row, "ok") === 1 : false;
   }
   async lifecycleTargetId(id: string): Promise<string | null> {
     const visited = new Set<string>();
@@ -209,9 +269,10 @@ export class OvitrapStore {
   }
   commitStatements(draft: Draft, expectedVersion: string | null): readonly SqlStatement[] {
     const week = captureWeek(draft);
-    if (!week) throw new Error("Capture blocked: weekContext");
+    if (!week) throw new CaptureBlockedError("weekContext");
     return [
       ...this.#lineage(draft),
+      ...replacementLabelGuard(draft),
       {
         sql: `INSERT INTO ovitrap_capture(event_id, ovitrap_id, mode, epi_week, draft)
           VALUES (?, (SELECT ? FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND draft=?), ?, ?, ?)`,

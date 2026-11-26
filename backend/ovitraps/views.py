@@ -1,6 +1,7 @@
 """Read-only default-deny resources; session cookie/CSRF and pinned bearer are inherited."""
 
 from typing import Any, cast
+from uuid import UUID
 
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -15,6 +16,7 @@ from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
 from lab.facade import BagLabActions, ReadingLabActions
 from lab.permissions import BAG_RECEIVE, COUNT_CREATE, RECOUNT_CREATE, REJECTION_CREATE
+from lab.trace_view import BagTraceAction
 from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
 from ovitraps.models import Bag, Ovitrap, OvitrapReading
 from ovitraps.permissions import OVITRAP_READ, READING_READ
@@ -23,6 +25,7 @@ from ovitraps.serializers import (
     BagQuerySerializer,
     BagSerializer,
     IdentityQuerySerializer,
+    OvitrapQuerySerializer,
     OvitrapSerializer,
     ReadingSerializer,
 )
@@ -49,10 +52,10 @@ class RecordViewSet(
         queryset = super().get_queryset()
         query = self.query_serializer_class(data=self.request.query_params)
         query.is_valid(raise_exception=True)
-        if self.query_serializer_class is IdentityQuerySerializer and (
+        if issubclass(self.query_serializer_class, IdentityQuerySerializer) and (
             code := query.validated_data.get("code")
         ):
-            queryset = queryset.filter(**{self.lookup_field: code})
+            queryset = queryset.filter(**self.code_filter(code))
             query.validated_data.setdefault("status", "all")
         if self.action != "list":
             query.validated_data.setdefault("status", "all")
@@ -62,6 +65,9 @@ class RecordViewSet(
             self.request.membership,  # type: ignore[attr-defined]
             self.required_permissions[self.action],
         )  # type: ignore[attr-defined]
+
+    def code_filter(self, code: Any) -> dict[str, Any]:  # noqa: ANN401 -- validated query value
+        return {self.lookup_field: code}
 
     @extend_schema(parameters=[IdentityQuerySerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -76,6 +82,15 @@ class OvitrapViewSet(RecordViewSet):
     )
     serializer_class = OvitrapSerializer
     required_permissions = {"list": OVITRAP_READ, "retrieve": OVITRAP_READ, "history": OVITRAP_READ}
+    query_serializer_class = OvitrapQuerySerializer
+
+    def code_filter(self, code: Any) -> dict[str, Any]:  # noqa: ANN401 -- validated query value
+        """`?code=` takes the short code (`OVT-0001`) or the identity UUID of the QR."""
+        return {"client_uuid": code} if isinstance(code, UUID) else {"code": code}
+
+    @extend_schema(parameters=[OvitrapQuerySerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(responses=OvitrapHistorySerializer)
     @action(detail=True, methods=["get"])
@@ -89,22 +104,23 @@ class OvitrapViewSet(RecordViewSet):
 class ReadingViewSet(ReadingLabActions, RecordViewSet):
     http_method_names = ["get", "post", "head", "options"]
     queryset = OvitrapReading.objects.select_related(
-        "event", "ovitrap__sampling_point__block__quadrant", "bag"
+        "event", "ovitrap__sampling_point__block__quadrant", "bag", "lab_receipt__bag"
     )
     serializer_class = ReadingSerializer
     required_permissions = {"list": READING_READ, "retrieve": READING_READ, "receive": BAG_RECEIVE}
 
 
 @extend_schema_view(list=extend_schema(parameters=[BagQuerySerializer]))
-class BagViewSet(BagLabActions, RecordViewSet):
+class BagViewSet(BagTraceAction, BagLabActions, RecordViewSet):
     http_method_names = ["get", "post", "head", "options"]
     queryset = Bag.objects.select_related(
-        "event", "reading__ovitrap__sampling_point__block__quadrant"
+        "event", "reading__ovitrap__sampling_point__block__quadrant", "lab_receipt"
     )
     serializer_class = BagSerializer
     required_permissions = {
         "list": READING_READ,
         "retrieve": READING_READ,
+        "trace": READING_READ,
         "receive": BAG_RECEIVE,
         "mark_missing": BAG_RECEIVE,
         "counts": COUNT_CREATE,

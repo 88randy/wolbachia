@@ -10,7 +10,7 @@ export function useAuthLifecycle() {
   const snapshot = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   const [isWarning, setIsWarning] = useState(false);
   const idle = useIdleLock(auth, setIsWarning);
-  useAuthSignals(idle);
+  useAuthSignals(idle, snapshot.rules.backgroundLockGraceSeconds);
   useEffect(() => {
     if (shouldRunIdleTimer(snapshot.phase)) idle.start(snapshot.rules.sessionIdleMinutes);
     else idle.stop();
@@ -29,15 +29,17 @@ export function useAuthLifecycle() {
   };
 }
 
-function useAuthSignals(idle: IdleLock): void {
+function useAuthSignals(idle: IdleLock, graceSeconds: number): void {
   useEffect(() => {
+    const graceMs = graceSeconds * 1000;
     const app = AppState.addEventListener("change", (state) => {
-      if (state === "background") idle.background();
+      if (state === "background") idle.leaveForeground(Date.now(), graceMs);
+      else if (state === "active") idle.returnToForeground(Date.now(), graceMs);
     });
     return () => {
       app.remove();
     };
-  }, [idle]);
+  }, [idle, graceSeconds]);
 }
 
 function useIdleLock(

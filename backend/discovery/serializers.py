@@ -4,6 +4,7 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
 from discovery.sources import RECORD_TYPES
 
 SEARCH_MAX_LENGTH = 50
@@ -95,7 +96,7 @@ class RelatedRefSerializer(serializers.Serializer[Any]):
     code = serializers.CharField()
 
 
-class TimelineEntrySerializer(serializers.Serializer[Any]):
+class TimelineEntrySerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     source_type = serializers.CharField()
     source_id = serializers.UUIDField()
     occurred_at = serializers.DateTimeField()

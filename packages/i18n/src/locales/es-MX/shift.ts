@@ -8,6 +8,7 @@ export const shift = {
   "shift.page.timeline": "Línea de tiempo disponible",
   "shift.page.history": "Historial de validación",
   "shift.field.reference": "Referencia de jornada",
+  "shift.field.code": "Jornada",
   "shift.field.courier": "Referencia del repartidor",
   "shift.field.motorcycle": "Motocicleta",
   "shift.field.lifecycle": "Estado",
@@ -38,6 +39,19 @@ export const shift = {
     "El resumen de puntos, lecturas, papeleta presente y huevos Sí/No, incidentes, distancia y alertas con umbral y versión todavía no está disponible. Revisa la información de campo antes de decidir.",
   "shift.gap.track":
     "Recorrido GPS no disponible. La jornada no incluye coordenadas ni eventos de visita para mostrar el mapa. Esta lista contiene únicamente la apertura y el cierre disponibles.",
+  "shift.filter.courier": "Repartidor",
+  "shift.filter.dateFrom": "Abierta desde",
+  "shift.filter.dateTo": "Abierta hasta",
+  "shift.track.title": "Recorrido de la jornada",
+  "shift.track.start": "Inicio",
+  "shift.track.end": "Fin",
+  "shift.track.table": "Tramos del recorrido (hora del teléfono)",
+  "shift.track.segmentStart": "Inicio del tramo",
+  "shift.track.segmentEnd": "Fin del tramo",
+  "shift.track.positions": "Posiciones",
+  "shift.track.empty": "La jornada todavía no tiene posiciones recibidas.",
+  "shift.track.inReview":
+    "Tramos en revisión: {count}. No se dibujan hasta que supervisión resuelva su revisión.",
   "shift.gap.points":
     "El historial de los puntos (W4) todavía no está disponible en esta aplicación. Aquí se muestran las decisiones guardadas de la jornada.",
   "shift.history.empty":
@@ -56,14 +70,14 @@ export const shift = {
   "shift.blocker.scope":
     "No se pudo comprobar el alcance completo de la jornada. Administración debe revisar los permisos y supervisión debe actualizar la jornada.",
   "shift.blocker.unknown":
-    "La jornada tiene un bloqueo del servidor. Supervisión debe revisar sus pendientes antes de aprobar.",
+    "La jornada tiene un bloqueo. Supervisión debe revisar sus pendientes antes de aprobar.",
   "shift.blocker.refresh":
     "Actualiza y revisa la jornada antes de enviar una decisión. Supervisión necesita una lectura vigente sin errores.",
   "shift.error.tooShort": "Escribe un motivo con la longitud mínima indicada.",
   "shift.error.tooLong": "El motivo supera la longitud máxima indicada.",
   "shift.error.invalidCharacters":
     "Quita los caracteres de control del motivo e inténtalo de nuevo.",
-  "shift.error.invalid": "El servidor no aceptó el motivo. Revísalo e inténtalo de nuevo.",
+  "shift.error.invalid": "No se aceptó el motivo. Revísalo e inténtalo de nuevo.",
   "shift.error.conflict":
     "La jornada cambió. Conservamos tu motivo. Cierra este diálogo, actualiza y revisa el historial antes de volver a abrir la acción.",
   "shift.error.uncertain":

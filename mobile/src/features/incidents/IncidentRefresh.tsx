@@ -1,28 +1,28 @@
-import { View } from "react-native";
+import { RotateCw } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Notice } from "../../ui/Notice.tsx";
-import { Button } from "../../ui/Button.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { M12Model } from "./use-m-12.ts";
 
 export function IncidentRefresh({ model }: { readonly model: M12Model }) {
   const t = useT();
+  if (!model.readError && !model.isRefreshing) return null;
   return (
-    <View>
+    <>
       {model.readError ? (
-        <Notice tone="warning" icon="noSignal" message={t("mobile.incidents.readFailed")} />
+        <InfoNotice tone="warning" message={t("mobile.incidents.readFailed")} />
       ) : null}
       {model.isRefreshing ? (
-        <AppText accessibilityLiveRegion="polite">{t("mobile.incidents.refreshing")}</AppText>
+        <InfoNotice tone="info" message={t("mobile.incidents.refreshing")} />
       ) : null}
-      <Button
-        variant="outline"
-        label={t(model.readError ? "common.actions.retry" : "mobile.incidents.refresh")}
+      <SecondaryButton
+        icon={RotateCw}
+        label={t("common.actions.retry")}
         disabled={model.isRefreshing}
         onPress={() => {
           void model.refreshRemote();
         }}
       />
-    </View>
+    </>
   );
 }

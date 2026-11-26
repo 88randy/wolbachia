@@ -35,7 +35,6 @@ export const orgAdmin = {
   "orgAdmin.scope.remove": "Quitar referencia",
   "orgAdmin.scope.unavailable":
     "Código no disponible en tu alcance. Revisa el código o pide acceso a una persona administradora.",
-  "orgAdmin.revision.current": "Revisión vigente: ",
   "orgAdmin.revision.refresh": "Consultar revisión vigente",
   "orgAdmin.revision.compare":
     "Compara la configuración vigente con tus cambios antes de continuar. Tus cambios se conservan.",
@@ -52,10 +51,11 @@ export const orgAdmin = {
     "Sin conexión. Vuelve a conectarte para guardar; tus cambios permanecen en esta pantalla.",
   "orgAdmin.action.saving": "Guardando…",
   "orgAdmin.action.saved": "Cambios guardados",
+  "orgAdmin.center.hint": "Muestra la información de un centro de trabajo de tu organización",
   "orgAdmin.center.empty": "No hay centros disponibles en tu alcance.",
-  "orgAdmin.center.filter": "Filtro de centro",
-  "orgAdmin.center.all": "Todos los centros autorizados",
-  "orgAdmin.center.choose": "Elige un centro autorizado",
+  "orgAdmin.center.filter": "Centro",
+  "orgAdmin.center.all": "Todos los centros",
+  "orgAdmin.center.choose": "Elige un centro",
   "orgAdmin.organization.title": "Organización",
   "orgAdmin.organization.name": "Nombre",
   "orgAdmin.organization.country": "País",

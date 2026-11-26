@@ -2,13 +2,12 @@ import { useState } from "react";
 import { View } from "react-native";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { TextField } from "../../ui/TextField.tsx";
 import { validateFuelField } from "./domain.ts";
 import { FuelError } from "./domain.ts";
 import { fuelErrorKey } from "./fuel-error-key.ts";
-import { createFuelStyles } from "./styles.ts";
 
 interface Props {
   readonly field: "litres" | "amount" | "odometer";
@@ -21,13 +20,12 @@ interface Props {
 /** Validate on blur, then on change; invalid raw input stays editable. */
 export function FuelField(props: Props) {
   const t = useT();
-  const styles = useStyles(createFuelStyles);
   const [hasBlurred, setBlurred] = useState(false);
   const code = hasBlurred || props.isSubmitted ? validateFuelField(props.field, props.value) : null;
   const errorKey = code === null ? null : fuelErrorKey(new FuelError(code));
   return (
-    <View style={styles.group}>
-      <AppText>{t(props.labelKey)}</AppText>
+    <View className="gap-1">
+      <AppText variant="bodyStrong">{t(props.labelKey)}</AppText>
       <TextField
         label={t(props.labelKey)}
         value={props.value}
@@ -40,7 +38,7 @@ export function FuelField(props: Props) {
           setBlurred(true);
         }}
       />
-      {errorKey === null ? null : <AppText accessibilityLiveRegion="polite">{t(errorKey)}</AppText>}
+      {errorKey === null ? null : <InfoNotice tone="danger" message={t(errorKey)} />}
     </View>
   );
 }

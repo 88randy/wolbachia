@@ -19,22 +19,28 @@ from inventory.allocations.selectors import (
     projection_assignments,
     reconciliation_projection,
 )
+from inventory.models import SupplyTypeVersion
 from uploads.access import UploadActor
 
 
 def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
     assignment = prepared_projection(assignment)
     base = assignment_projection(assignment)
+    _name_lines(base)
     releases = []
     versions = cast(list[SupplyAssignmentVersion], assignment._supply_plan_versions)  # type: ignore[attr-defined]
     for release in reversed(versions):
         proofs = cast(list[OriginReleaseProof], release._supply_release_proofs)  # type: ignore[attr-defined]
         for proof in proofs:
+            if proof.cancellations.all():
+                # A cancelled release backs no quantity: the phone must not offer it to receive.
+                continue
             releases.append(
                 {
                     "id": str(proof.pk),
                     "plan_revision": release.revision,
                     "manifest_hash": proof.manifest_hash,
+                    "warehouse_signed": bool((proof.proof or {}).get("signature")),
                     "lines": [
                         {
                             "id": str(line.pk),
@@ -58,7 +64,9 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
                 "event_id": str(event.pk),
                 "source_event_id": str(event.source_link.source_event_id),
                 "release_id": str(receipt.release_id),
-                "signature_upload_id": str(receipt.signature.public_id),
+                "signature_upload_id": None
+                if receipt.signature is None
+                else str(receipt.signature.public_id),
                 "voided": hasattr(event, "void_audit"),
                 "lines": [
                     {
@@ -81,6 +89,21 @@ def supply_projection(assignment: SupplyAssignment) -> dict[str, Any]:
         "releases": releases,
         "receipts": receipts,
     }
+
+
+def _name_lines(base: dict[str, Any]) -> None:
+    """Additive: each line carries the label of its supply version (read-only)."""
+    lines = base["lines"]
+    labels = {
+        str(pk): label
+        for pk, label in SupplyTypeVersion.objects.filter(
+            pk__in={line["unit_version_id"] for line in lines}
+        ).values_list("pk", "label")
+    }
+    for line in lines:
+        label = labels.get(str(line["unit_version_id"]))
+        if label:
+            line["name"] = label
 
 
 def build_supplies(ctx: ProducerContext) -> list[dict[str, Any]]:

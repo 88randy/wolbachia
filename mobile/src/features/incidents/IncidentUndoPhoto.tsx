@@ -1,14 +1,16 @@
+import { Undo2 } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Button } from "../../ui/Button.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { M12Model } from "./use-m-12.ts";
+
 export function IncidentUndoPhoto({ model }: { readonly model: M12Model }) {
-  const t = useT(),
-    state = model.state;
+  const t = useT();
+  const state = model.state;
   if (!state?.draft?.evidence.length || state.event) return null;
   const id = state.draft.eventId;
   return (
-    <Button
-      variant="text"
+    <SecondaryButton
+      icon={Undo2}
       label={t("mobile.camera.undo")}
       disabled={model.isBusy || !state.ready}
       onPress={() => {

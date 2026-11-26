@@ -8,10 +8,6 @@ export function EvaluationReceipt({ form }: { form: EvaluationFormModel }) {
   return (
     <div role="status">
       <p>{t("evaluations.result.saved")}</p>
-      <p>
-        {t("evaluations.rubric.version")}
-        {result.rubric_version_id}
-      </p>
       <EvaluationResult result={result} />
     </div>
   );

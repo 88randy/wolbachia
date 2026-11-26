@@ -1,45 +1,69 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCameraPermissions } from "expo-camera";
-import { Linking, Vibration } from "react-native";
+import { AppState, Linking, Vibration } from "react-native";
 import { useServices } from "../../app/services-context.ts";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
 import { useM08 } from "../ovitrap-check/use-m-08.ts";
 import type { QrKind } from "../ovitrap-check/types.ts";
-import type { ScannerError } from "./domain.ts";
+import type { ScannerError, ScannerInput } from "./domain.ts";
 import { useScannerLifecycle } from "./use-scanner-lifecycle.ts";
-import { ReceiptScannerSession } from "../supply-receipt/scanner-session.ts";
+import { ensureCameraAccess } from "./camera-access.ts";
 import type { ScannerDestination } from "./service.ts";
 import type { Route } from "../../navigation/routes.ts";
 
 const SCAN_FEEDBACK_MS = 30;
 
+type CameraError = "denied" | "blocked" | "cameraFailed";
+
+/**
+ * Opens the camera by itself: asks for the permission when it is missing and always lands on a
+ * visible result (preview, or a message with a button). The system prompt sends the app to the
+ * background, so its answer is never discarded because of that; the camera only shows while the
+ * app is unlocked and in front, and it comes back by itself when the app returns.
+ */
 function useCameraStart(lifecycle: ReturnType<typeof useScannerLifecycle>) {
-  const session = useRef(new ReceiptScannerSession()).current;
   const [permission, requestPermission] = useCameraPermissions();
-  const [cameraError, setCameraError] = useState<"denied" | "cameraFailed" | null>(null);
+  const [cameraError, setCameraError] = useState<CameraError | null>(null);
   const [isRequesting, setRequesting] = useState(false);
+  const isRunning = useRef(false);
+  const mustRerun = useRef(false);
   const start = async () => {
-    if (session.isRequesting) return;
-    lifecycle.stop();
-    const isCurrent = lifecycle.lease();
+    if (isRunning.current) return;
+    isRunning.current = true;
     setRequesting(true);
     setCameraError(null);
+    let isGranted = false;
     try {
-      const result = await session.start({
-        current: lifecycle.permissionContext,
-        permission,
-        requestPermission,
-      });
-      if (!isCurrent()) return;
-      lifecycle.setCamera(result.kind === "ready");
-      if (result.kind === "denied") setCameraError("denied");
-      else if (result.kind !== "ready") setCameraError("cameraFailed");
+      const access = await ensureCameraAccess(permission, requestPermission);
+      isGranted = access === "granted";
+      if (access !== "granted") setCameraError(access);
+      else if (lifecycle.canShowCamera()) lifecycle.setCamera(true);
     } catch {
-      if (isCurrent()) setCameraError("cameraFailed");
+      setCameraError("cameraFailed");
     } finally {
+      isRunning.current = false;
       setRequesting(false);
     }
+    const rerun = mustRerun.current;
+    mustRerun.current = false;
+    // The app came back to the front while asking; show the camera now if it was allowed.
+    if (rerun && isGranted) {
+      await start();
+    }
   };
+  // One listener for the life of the screen; it reads the latest values through a ref.
+  const latest = useRef({ isHidden: !lifecycle.isCameraVisible, start });
+  latest.current = { isHidden: !lifecycle.isCameraVisible, start };
+  useEffect(() => {
+    const app = AppState.addEventListener("change", (state) => {
+      if (state !== "active" || !latest.current.isHidden) return;
+      if (isRunning.current) mustRerun.current = true;
+      else void latest.current.start();
+    });
+    return () => {
+      app.remove();
+    };
+  }, []);
   return { start, isRequesting, cameraError, setCameraError };
 }
 function useScanOrigin(eventId: string | null | undefined) {
@@ -60,15 +84,21 @@ function useScanOrigin(eventId: string | null | undefined) {
   };
 }
 function useScanCommand(
-  expected: QrKind | undefined,
+  options: { readonly expected?: QrKind; readonly bindsLabel?: ScannerInput["bindsLabel"] },
   lifecycle: ReturnType<typeof useScannerLifecycle>,
   eventId: string | null | undefined,
 ) {
+  const { expected, bindsLabel } = options;
   const { scanner } = useServices();
   const origin = useScanOrigin(eventId);
   const push = useScannerNavigation();
-  const [error, setError] = useState<ScannerError | null>(null);
+  const [error, setErrorState] = useState<ScannerError | null>(null);
+  const [errorPoint, setErrorPoint] = useState<string | null>(null);
   const [isBusy, setBusy] = useState(false);
+  const setError = (next: ScannerError | null, pointCode: string | null = null) => {
+    setErrorState(next);
+    setErrorPoint(pointCode);
+  };
   const shared = {
     scanner,
     lifecycle,
@@ -78,28 +108,34 @@ function useScanCommand(
     eventId: origin.eventId,
   };
   const read = (value: string, isManual = false) =>
-    performScan({ ...shared, input: { value, isManual, expected } });
+    performScan({ ...shared, input: { value, isManual, expected, bindsLabel } });
   return {
     read,
     error: error ?? origin.error,
+    errorPoint,
     isBusy: isBusy || !origin.isReady,
     isLoading: origin.isLoading,
     setError,
     retryOrigin: origin.retry,
   };
 }
+/** `null` returns to the screen that opened the scanner. */
 function useScannerNavigation() {
   const { push, goBack } = useNavigation();
-  return (route: Route) => {
+  return (route: Route | null) => {
     goBack();
-    push(route);
+    if (route) push(route);
   };
 }
 /** Manual input and origin capture survive camera failures and scanner retries. */
-export function useM07(expected?: QrKind, eventId?: string | null) {
+export function useM07(
+  expected?: QrKind,
+  eventId?: string | null,
+  bindsLabel?: ScannerInput["bindsLabel"],
+) {
   const lifecycle = useScannerLifecycle();
   const camera = useCameraStart(lifecycle);
-  const command = useScanCommand(expected, lifecycle, eventId);
+  const command = useScanCommand({ expected, bindsLabel }, lifecycle, eventId);
   const [code, setCode] = useState("");
   const [isTorchOn, setTorch] = useState(false);
   const retry = () => {
@@ -143,8 +179,8 @@ function cameraRecovery(
 interface ScanCommand {
   readonly scanner: ReturnType<typeof useServices>["scanner"];
   readonly lifecycle: ReturnType<typeof useScannerLifecycle>;
-  readonly push: (route: Route) => void;
-  readonly setError: (error: ScannerError | null) => void;
+  readonly push: (route: Route | null) => void;
+  readonly setError: (error: ScannerError | null, pointCode?: string | null) => void;
   readonly setBusy: (isBusy: boolean) => void;
   readonly input: import("./domain.ts").ScannerInput;
   readonly eventId: string | null;
@@ -152,7 +188,6 @@ interface ScanCommand {
 async function performScan(command: ScanCommand): Promise<void> {
   const { lifecycle, input, scanner } = command;
   const current = lifecycle.lease();
-  command.setError(null);
   command.setBusy(true);
   try {
     const result = await lifecycle.session.run(
@@ -172,15 +207,14 @@ async function performScan(command: ScanCommand): Promise<void> {
   }
 }
 function finishScan(command: ScanCommand, result: ScannerDestination | "duplicate"): void {
-  if (result === "duplicate") {
-    command.setError("duplicate");
-    return;
-  }
+  // The camera keeps seeing the same code: that is not a new problem, and it must not replace the
+  // real message (for example "already placed at point X") with a dedupe notice.
+  if (result === "duplicate") return;
   if ("error" in result) {
-    command.setError(result.error);
+    command.setError(result.error, result.pointCode ?? null);
     return;
   }
   command.lifecycle.stop();
   Vibration.vibrate(SCAN_FEEDBACK_MS);
-  command.push(result.route);
+  command.push("route" in result ? result.route : null);
 }

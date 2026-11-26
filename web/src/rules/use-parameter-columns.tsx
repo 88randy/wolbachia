@@ -5,15 +5,14 @@ import { useFormatDate, useFormatNumber } from "../format/use-formatters";
 import { NotConfiguredBadge } from "./NotConfiguredBadge";
 import { useParameterLabels } from "./parameter-labels";
 import type { RuleParameter } from "./rules-query";
-import styles from "./rules.module.css";
 
 type Column = DataTableColumn<RuleParameter>;
 
 /** What the cells write: names and units, numbers, and dates ("None" when there is no date). */
 interface Writers {
   name: (key: string) => string;
-  unit: (unit: string) => string;
-  number: (value: number) => string;
+  unit: (parameter: RuleParameter) => string;
+  number: (parameter: RuleParameter, value: number) => string;
   dateOrNone: (iso: string | null) => string;
 }
 
@@ -30,12 +29,7 @@ function identityColumns(write: Writers): Column[] {
       cell: (parameter) => write.name(parameter.key),
       link: pageOf,
     },
-    {
-      id: "key",
-      headerKey: "rules.column.key",
-      cell: (parameter) => <code className={styles.code}>{parameter.key}</code>,
-    },
-    { id: "unit", headerKey: "rules.column.unit", cell: (p) => write.unit(p.unit) },
+    { id: "unit", headerKey: "rules.column.unit", cell: (p) => write.unit(p) },
   ];
 }
 
@@ -46,7 +40,12 @@ function valueColumns(write: Writers): Column[] {
       headerKey: "rules.column.value",
       align: "end",
       link: pageOf,
-      cell: ({ value }) => (value === null ? <NotConfiguredBadge /> : write.number(value)),
+      cell: (parameter) =>
+        parameter.value === null ? (
+          <NotConfiguredBadge />
+        ) : (
+          write.number(parameter, parameter.value)
+        ),
     },
     {
       id: "effective_from",
@@ -74,8 +73,11 @@ export function useParameterColumns(): readonly Column[] {
   return useMemo(() => {
     const write: Writers = {
       name: labels.name,
-      unit: labels.unit,
-      number: formatNumber,
+      unit: (p) => labels.unit(p.unit, p.key),
+      number: (p, value) =>
+        labels.options(p.key) === undefined
+          ? formatNumber(value)
+          : labels.valueText(p, value, formatNumber),
       dateOrNone: (iso) => (iso === null ? t("rules.cell.none") : formatDate(iso)),
     };
     return [...identityColumns(write), ...valueColumns(write)];

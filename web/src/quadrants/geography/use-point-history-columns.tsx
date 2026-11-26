@@ -16,7 +16,7 @@ export function usePointHistoryColumns() {
     column(
       "created_by",
       "geography.field.author",
-      (row) => row.created_by ?? t("geography.status.unknown"),
+      (row) => row.created_by_name ?? t("geography.status.unknown"),
     ),
     column("is_retired", "geography.field.status", (row) =>
       t(row.is_retired ? "geography.status.retired" : "geography.status.active"),

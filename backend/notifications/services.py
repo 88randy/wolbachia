@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from django.db import transaction
+from django.db import connection, transaction
 from django.http import Http404
 
 from core.exceptions import FieldValidationError
@@ -57,6 +57,28 @@ def lock_inbox_member(member: Membership) -> Membership:
     if not locked.is_active or not locked.user.is_active or not locked.organization.is_active:
         raise Http404
     return locked
+
+
+def wait_for_pending_inbox_writers(member: Membership) -> Membership:
+    """Block a first-page read until writers holding the recipient row commit (FOR SHARE).
+
+    A reader needs the same guarantee as `lock_inbox_member` (its cutoff never precedes a
+    receipt or notification still in flight) but never writes, so concurrent polls do not queue
+    behind each other. Django has no FOR SHARE option, hence the fixed, parametrized statement.
+    """
+    quote = connection.ops.quote_name
+    table = quote(Membership._meta.db_table)
+    pk = quote("id")
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT 1 FROM {table} WHERE {pk} = %s FOR SHARE", [member.pk])  # noqa: S608
+    # Authorization may have changed while waiting. Reload without the request scope cache,
+    # just as the old exclusive inbox lock did before constructing the first-page cutoff.
+    current = Membership.objects.select_related("organization", "user").get(
+        pk=member.pk, user_id=member.user_id, organization_id=member.organization_id
+    )
+    if not current.is_active or not current.user.is_active or not current.organization.is_active:
+        raise Http404
+    return current
 
 
 def _append_read(member: Membership, row: Notification) -> None:

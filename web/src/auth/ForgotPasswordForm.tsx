@@ -34,6 +34,7 @@ export function ForgotPasswordForm() {
         {...form.register("email")}
       />
       <SubmitButton
+        block
         label={t("auth.forgot.submit")}
         busyLabel={t("auth.login.submitting")}
         isBusy={form.formState.isSubmitting}

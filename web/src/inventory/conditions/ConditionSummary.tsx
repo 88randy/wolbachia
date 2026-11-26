@@ -1,5 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { useTranslation } from "react-i18next";
+import { Disclosure } from "../../ui/Disclosure";
 import { Card } from "../../ui/Card";
 import { StatusPill } from "../../ui/StatusPill";
 import { InlineNotice } from "../../ui/InlineNotice";
@@ -25,10 +26,9 @@ export function ConditionSummary({ status }: { status: Schemas["ConditionStatus"
         )}
         <ConditionSlots slots={status.slots} />
         <ConditionBlockers status={status} />
-        <details>
-          <summary>{t("conditions.section.protocol")}</summary>
+        <Disclosure title={t("conditions.section.protocol")}>
           <ProtocolFacts protocol={status.protocol} />
-        </details>
+        </Disclosure>
       </div>
     </Card>
   );

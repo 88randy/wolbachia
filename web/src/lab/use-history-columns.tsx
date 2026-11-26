@@ -2,17 +2,20 @@ import styles from "./lab.module.css";
 import { useTranslation } from "react-i18next";
 import { useFormatDateTime } from "../format/use-format-date-time";
 import { useLanguage } from "../i18n/use-language";
-import { useCan } from "../session/use-can";
 import { StatusPill } from "../ui/StatusPill";
 import type { DataTableColumn } from "../data-table/table-types";
 import type { Count, LabScope } from "./lab-query";
-import { CorrectCountDialog } from "./CorrectCountDialog";
-function observationColumns(
-  format: ReturnType<typeof useFormatDateTime>,
-  language: string,
-): DataTableColumn<Count>[] {
+import { nameOrDash } from "../lookups/use-reference-names";
+import { EmptyValue } from "../ui/EmptyValue";
+import { BagCodeLink } from "./trace/BagCodeLink";
+import { CountHistoryActions } from "./CountHistoryActions";
+function observationColumns(language: string): DataTableColumn<Count>[] {
   return [
-    { id: "bag_id", headerKey: "lab.history.bag", cell: (count) => count.bag_id },
+    {
+      id: "bag_id",
+      headerKey: "lab.history.bag",
+      cell: (count) => (count.bag_code ? <BagCodeLink code={count.bag_code} /> : <EmptyValue />),
+    },
     {
       id: "value",
       headerKey: "lab.count.value",
@@ -23,7 +26,15 @@ function observationColumns(
         </span>
       ),
     },
-    { id: "created_by", headerKey: "lab.history.author", cell: (count) => count.created_by },
+  ];
+}
+function whoWhenColumns(format: ReturnType<typeof useFormatDateTime>): DataTableColumn<Count>[] {
+  return [
+    {
+      id: "created_by",
+      headerKey: "lab.history.author",
+      cell: (count) => nameOrDash(count.created_by_name),
+    },
     {
       id: "created_at",
       headerKey: "lab.history.time",
@@ -41,9 +52,9 @@ export function useHistoryColumns(scope: LabScope, draftKey: string): DataTableC
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const { language } = useLanguage();
-  const canCorrect = useCan()("egg_count.void");
   return [
-    ...observationColumns(format, language),
+    ...observationColumns(language),
+    ...whoWhenColumns(format),
     {
       id: "status",
       headerKey: "lab.queue.status",
@@ -56,10 +67,7 @@ export function useHistoryColumns(scope: LabScope, draftKey: string): DataTableC
     {
       id: "actions",
       headerKey: "lab.history.actions",
-      cell: (count) =>
-        canCorrect && count.is_current && !count.voided ? (
-          <CorrectCountDialog scope={scope} count={count} draftKey={draftKey} />
-        ) : null,
+      cell: (count) => <CountHistoryActions count={count} scope={scope} draftKey={draftKey} />,
     },
   ];
 }

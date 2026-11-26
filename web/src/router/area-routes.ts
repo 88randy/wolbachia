@@ -1,0 +1,45 @@
+/**
+ * The one list of area route modules. Convention: each area owns `web/src/<area>/routes.tsx`,
+ * which exports `<area>Routes`, an array of routes whose parent is `authenticatedRoute`
+ * (`router/base-routes.tsx`). Adding a screen touches only its area module; adding a new area
+ * adds one line here and its entry in `router/areas.ts`.
+ */
+import { communityRoutes } from "../community/routes";
+import { dashboardsRoutes } from "../dashboards/routes";
+import { discoveryRoutes } from "../discovery/routes";
+import { fleetRoutes } from "../fleet/routes";
+import { homeRoutes } from "../home/routes";
+import { incidentRoutes } from "../incidents/routes";
+import { inventoryAreaRoutes } from "../inventory/routes";
+import { labRoutes } from "../lab/routes";
+import { notificationRoutes } from "../notifications/routes";
+import { operationRoutes } from "../operations/routes";
+import { peopleRoutes } from "../people/routes";
+import { platformRoutes } from "../platform/routes";
+import { quadrantRoutes } from "../quadrants/routes";
+import { regulatoryRoutes } from "../regulatory/routes";
+import { releaseRoutes } from "../releases/routes";
+import { schedulingRoutes } from "../scheduling/routes";
+import { settingsRoutes } from "../settings/routes";
+import { placeholderRoutes } from "../states/placeholder-routes";
+
+export const areaRouteModules = [
+  ...homeRoutes,
+  ...discoveryRoutes,
+  ...notificationRoutes,
+  ...incidentRoutes,
+  ...operationRoutes,
+  ...schedulingRoutes,
+  ...quadrantRoutes,
+  ...releaseRoutes,
+  ...communityRoutes,
+  ...inventoryAreaRoutes,
+  ...fleetRoutes,
+  ...labRoutes,
+  ...peopleRoutes,
+  ...dashboardsRoutes,
+  ...regulatoryRoutes,
+  ...settingsRoutes,
+  ...platformRoutes,
+  ...placeholderRoutes,
+];

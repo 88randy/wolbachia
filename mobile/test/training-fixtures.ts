@@ -44,6 +44,7 @@ export function trainingEvaluation(): Schemas["EvaluationRead"] {
     center_id: CONTRACT_IDS.center,
     quadrant_id: CONTRACT_IDS.quadrant,
     rubric_version_id: CONTRACT_IDS.source,
+    rubric_version_number: 1,
     revision: 2,
     created_at: "2026-11-01T00:00:00Z",
     is_voided: true,
