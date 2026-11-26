@@ -85,7 +85,9 @@ test("a rejected release retains original evidence and never offers acceptance p
   );
   expect(screen.getByRole("button", { name: "Aceptar" }).hasAttribute("disabled")).toBe(true);
   await userEvent.click(screen.getByText("Captura, evidencia y procedencia originales"));
-  expect(screen.getByText(/P-160/)).toBeDefined();
+  // Raw payload values are no longer printed: the original facts are plain-language labels.
+  expect(screen.getByText("Captura manual")).toBeDefined();
+  expect(screen.queryByText(/P-160/)).toBeNull();
   expect(screen.getByText(/permit_expired/, { selector: "li" })).toBeDefined();
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
 });
@@ -193,13 +195,13 @@ test("forbidden decisions are hidden and unknown or foreign reviews show the sam
 
 test("a definitive list denial hides previously accepted rows during refresh", async () => {
   const { api, app } = await open();
-  await screen.findByRole("link", { name: /^Revisar evento / });
+  await screen.findByRole("link", { name: "Requiere revisión" });
   api.setRoute(LIST, apiError(403, "permission_denied"));
   await act(async () => {
     await invalidateOrgScoped(app.queryClient, "reviews");
   });
   await screen.findByRole("alert");
-  expect(screen.queryByRole("link", { name: /^Revisar evento / })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Requiere revisión" })).toBeNull();
 });
 
 test.each([503, 403, 404])(
@@ -249,11 +251,11 @@ test.each([503, 403, 404])(
     await screen.findByRole("alert");
     if (status === 503) {
       expect(screen.getByText(receipt.reason)).toBeDefined();
-      await userEvent.click(screen.getByText("Recibo del efecto confirmado"));
-      expect(screen.getByText(/test-hash/)).toBeDefined();
+      // The receipt shows who confirmed the effect; the hash is no longer printed.
+      expect(screen.getByText(/^Efecto confirmado por/)).toBeDefined();
     } else {
       expect(screen.queryByText(receipt.reason)).toBeNull();
-      expect(screen.queryByText("Recibo del efecto confirmado")).toBeNull();
+      expect(screen.queryByText(/^Efecto confirmado por/)).toBeNull();
       expect(screen.queryByLabelText("Motivo de la decisión")).toBeNull();
     }
     expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
