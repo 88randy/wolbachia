@@ -53,7 +53,6 @@ import { errors } from "./errors.ts";
 import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
 import { field } from "./field.ts";
-import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { platform } from "./platform.ts";
@@ -120,7 +119,6 @@ export const esMX = {
   ...mobile,
   ...courier,
   ...field,
-  ...courierFlow,
   ...shell,
   ...states,
   ...auth,

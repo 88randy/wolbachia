@@ -51,7 +51,6 @@ import { errors } from "./errors.ts";
 import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
 import { field } from "./field.ts";
-import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { platform } from "./platform.ts";
@@ -118,7 +117,6 @@ export const en: Record<MessageKey, string> = {
   ...mobile,
   ...courier,
   ...field,
-  ...courierFlow,
   ...shell,
   ...states,
   ...auth,
