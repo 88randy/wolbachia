@@ -56,6 +56,10 @@ jobs:
             timeout: 25
           - shard: migrations-review
             timeout: 25
+          - shard: migrations-lab
+            timeout: 25
+          - shard: regular
+            timeout: 25
     defaults:
       run:
         working-directory: backend
