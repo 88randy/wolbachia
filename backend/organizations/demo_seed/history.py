@@ -13,10 +13,11 @@ import random
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from accounts.models import Device
@@ -107,7 +108,7 @@ def _courier_by_quadrant() -> dict[str, str]:
 
 def _rule_snapshot(organization: Organization) -> tuple[dict[str, Any], dict[str, str]]:
     rows = list(
-        list_parameters_with_current(organization, timezone.now()).values(
+        cast(QuerySet[Any], list_parameters_with_current(organization, timezone.now())).values(
             "key", "value_type", "current_value", "current_version_id"
         )
     )
@@ -239,7 +240,7 @@ class _Fleet:
 def _fuel_thresholds(organization: Organization) -> tuple[Decimal | None, Decimal | None]:
     rows = {
         row["key"]: row["current_value"]
-        for row in list_parameters_with_current(organization, timezone.now())
+        for row in cast(QuerySet[Any], list_parameters_with_current(organization, timezone.now()))
         .filter(key__in=["fuel_efficiency_min_km_l", "fuel_efficiency_max_km_l"])
         .values("key", "current_value")
     }
@@ -349,7 +350,7 @@ def _reading_rows(
         rule_version_ids=writer.rule_versions,
     )
     writer.readings.append(reading)
-    if has_paddle:
+    if bag_code is not None:  # set exactly when the paddle is present
         writer.bags.append(
             Bag(
                 organization=organization,

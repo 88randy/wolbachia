@@ -15,6 +15,8 @@ from typing import Any
 from uuid import UUID
 from xml.sax.saxutils import escape
 
+from django.db.models import QuerySet
+
 from accounts.models import Personnel
 from accounts.rfc_crypto import RfcEnvelope, decrypt_rfc
 from core.exceptions import FieldValidationError
@@ -55,7 +57,7 @@ def _span(bounds: tuple[datetime, datetime], field: str) -> dict[str, Any]:
 
 
 def _releases(actor: UploadActor, date_from: date, date_to: date) -> list[dict[str, Any]]:
-    rows = Release.objects.filter(
+    rows: QuerySet[Any] = Release.objects.filter(
         organization=actor.organization, **_span(_bounds(actor, date_from, date_to), "device_time")
     )
     rows = filter_by_effective_scope(rows, _membership(actor), EXPORT_RUN)
@@ -82,7 +84,7 @@ def _releases(actor: UploadActor, date_from: date, date_to: date) -> list[dict[s
 
 
 def _readings(actor: UploadActor, date_from: date, date_to: date) -> list[dict[str, Any]]:
-    rows = OvitrapReading.objects.filter(
+    rows: QuerySet[Any] = OvitrapReading.objects.filter(
         organization=actor.organization, **_span(_bounds(actor, date_from, date_to), "created_at")
     )
     rows = filter_by_effective_scope(rows, _membership(actor), EXPORT_RUN)
@@ -291,7 +293,8 @@ def _column(index: int) -> str:
 def to_xlsx(header: Iterable[str], table: list[list[object]]) -> bytes:
     """Minimal SpreadsheetML workbook (stdlib only, no new dependency)."""
     rows_xml = []
-    for number, row in enumerate([list(header), *table], start=1):
+    all_rows: list[list[object]] = [list(header), *table]
+    for number, row in enumerate(all_rows, start=1):
         cells = "".join(_cell(f"{_column(i)}{number}", v) for i, v in enumerate(row))
         rows_xml.append(f'<row r="{number}">{cells}</row>')
     sheet = (

@@ -30,6 +30,7 @@ from accounts.request_context import requested_organization_slug
 from core.authentication import ApiSessionAuthentication
 from core.exceptions import DomainError
 from core.session_identity import remember_active_organization
+from organizations.centers import CenterSpec
 from organizations.logo import validate_logo
 from organizations.models import Organization
 from organizations.selectors import resolve_active_membership
@@ -166,7 +167,7 @@ class PlatformOrganizationViewSet(
                     languages=tuple(values["languages"]),
                     epi_week=values["epi_week"],
                 ),
-                centers=[services.CenterSpec(**center) for center in values["centers"]],
+                centers=[CenterSpec(**center) for center in values["centers"]],
                 admin=_admin_spec(values),
             ),
         )
@@ -186,7 +187,7 @@ class PlatformOrganizationViewSet(
         payload = CenterInputSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         center = services.add_center(
-            _actor(request), self._organization(), services.CenterSpec(**payload.validated_data)
+            _actor(request), self._organization(), CenterSpec(**payload.validated_data)
         )
         return Response(PlatformCenterSerializer(center).data, status=status.HTTP_201_CREATED)
 

@@ -250,14 +250,14 @@ def _custody(
 ) -> Any:
     """Plan, warehouse release and the courier's signed receipt for one lot."""
     number, tag = ids
-    version = lot.supply.versions.order_by("-revision").first()
+    version = _latest_version(lot.supply.versions)
     planned = write_assignment(
         AssignmentWrite(
             facts.admin,
             {
                 "command_id": demo_id(f"chain:plan:{tag}"),
                 "courier_id": facts.members[courier].user_id,
-                "origin_id": lot.versions.order_by("-revision").first().initial_location_id,
+                "origin_id": _latest_version(lot.versions).initial_location_id,
                 "date": clock.now.astimezone(facts.zone).date(),
                 "shift_id": shift_id,
                 "lines": [
@@ -308,6 +308,13 @@ def _custody(
     result = _send(facts, courier, clock, (f"receive:{tag}", "supplies.receive", payload), shift_id)
     _require(result, "accepted")
     return result
+
+
+def _latest_version(versions: Any) -> Any:
+    version = versions.order_by("-revision").first()
+    if version is None:
+        raise RuntimeError("Demo custody step found a record without versions")
+    return version
 
 
 def _require(result: Any, code: str) -> None:

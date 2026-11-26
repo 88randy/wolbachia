@@ -54,9 +54,11 @@ def assignment_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[Supp
     scope = current_scope(actor)
     for permission in (ALLOCATE, RECONCILE, RECEIVE_OWN, RECONCILE_OWN):
         allowed |= Q(pk__in=scoped_assignments(actor, permission, scope).values("pk"))
-    rows = SupplyAssignment.objects.filter(organization=actor.organization).filter(allowed)
+    rows: QuerySet[SupplyAssignment] = SupplyAssignment.objects.filter(
+        organization=actor.organization
+    ).filter(allowed)
     if values.get("status") is not None:
-        rows = _with_status(rows).filter(_status=values["status"])
+        rows = _with_status(rows).filter(**{"_status": values["status"]})
     facets = {
         "date": "date",
         "courier": "courier_id",

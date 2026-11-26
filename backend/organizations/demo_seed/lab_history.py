@@ -5,6 +5,7 @@ bags to receive and count in the demo. Command ids come from the bag code, so re
 """
 
 import random
+from functools import partial
 from uuid import uuid5
 
 from lab.access import LabTarget
@@ -77,7 +78,7 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
         # The command ids are fixed per bag: a bag received by an interrupted run replays its
         # reception and only the missing count is written.
         receive = LabCommandInput("receive", target, _command_id("receive", bag), {})
-        retrying(lambda receive=receive: execute_lab_command(entomologist, receive))
+        retrying(partial(execute_lab_command, entomologist, receive))
         if weeks_ago == 1 and taken >= BAGS_PER_WEEK - PENDING_COUNTS:
             continue
         values = {
@@ -86,6 +87,6 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
             "confirmed_implausible": False,
         }
         count = LabCommandInput("count", target, _command_id("count", bag), values)
-        retrying(lambda count=count: execute_lab_command(entomologist, count))
+        retrying(partial(execute_lab_command, entomologist, count))
         counted += 1
     return counted

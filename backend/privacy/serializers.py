@@ -71,7 +71,8 @@ class TransferAuthorizationCreateSerializer(serializers.Serializer[Any]):
     valid_from = serializers.DateTimeField()
     valid_until = serializers.DateTimeField()
     reference = serializers.CharField(max_length=1000)
-    fields = serializers.ListField(
+    # The API field is named `fields`, which shadows `Serializer.fields` for the type checker only.
+    fields = serializers.ListField(  # type: ignore[assignment]
         child=serializers.CharField(max_length=32), default=lambda: ["rfc"], max_length=5
     )
 

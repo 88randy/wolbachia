@@ -47,7 +47,7 @@ class AnalyticsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         # The comparison is gated by the indicator asked for, not by one fixed code.
         if getattr(self, "action", None) == "comparison":
             return [IsAuthenticated(), ComparisonPermission()]
-        return super().get_permissions()
+        return list(super().get_permissions())
 
     def _run(
         self,

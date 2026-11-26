@@ -275,7 +275,7 @@ def lock_organization_configuration(organization_id: UUID) -> Iterator[Organizat
         raise
 
 
-def _lock_user(user_id: object) -> None:
+def _lock_user(user_id: UUID | str) -> None:
     """Serialize with account-wide changes (temporary password); contention is a 429."""
     try:
         User.objects.select_for_update(nowait=True, no_key=True).get(pk=user_id)
