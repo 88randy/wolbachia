@@ -7,13 +7,15 @@ export function ClosureBlockerItem({ blocker }: { blocker: Readiness["blockers"]
   const { t } = useTranslation();
   const { code, link } = blocker;
   const reference = code ? t("closure.blocker.reference", { reference: code }) : null;
+  // Only the incident cause has a record route; any other link is ignored, never misrouted.
+  const isIncidentLink = Boolean(link) && blocker.reason === "incident_quadrant_closure";
   return (
     <li>
       <InlineNotice tone="warning">
         <strong>{t(blockerKey(blocker.reason), { reason: blocker.reason })}</strong>
         {code && (
-          <p>
-            {link ? (
+          <p className="font-mono tabular-nums">
+            {isIncidentLink ? (
               <Link to="/incidents/$code" params={{ code }}>
                 {reference}
               </Link>

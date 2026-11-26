@@ -313,6 +313,22 @@ def test_every_blocker_reason_carries_the_ovitrap_code_and_hidden_ones_do_not(fi
     }
 
 
+def test_review_pending_ovitrap_code_needs_ovitrap_read_besides_review_read(field):
+    assert ingest(field, envelope(field)).status == "accepted"
+    field.batch = replace(field.batch, is_final_upload=True)
+    assert ingest(field, lifecycle(field, "remove")).status == "in_review"
+    field.profile.permission_codes.remove("ovitrap.read")
+    field.profile.save()
+    pending = [
+        row
+        for row in readiness(field.actor, field.quadrant)["blockers"]
+        if row["reason"] == "removal_review_pending"
+    ]
+    assert pending
+    assert all("id" in row and "code" not in row for row in pending)
+    assert all("code_permission" not in row for row in pending)
+
+
 def test_pending_relocation_carries_the_ovitrap_code_only_for_its_reader(field):
     from ovitraps.models import Ovitrap
 

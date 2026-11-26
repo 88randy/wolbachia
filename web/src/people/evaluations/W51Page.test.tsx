@@ -123,7 +123,9 @@ test("history retains old rubric identity, raw critical observation and truthful
   const history = await screen.findByRole("region", { name: "Historial de evaluaciones" });
   expect(await within(history).findByText("Consultar intentos")).toBeDefined();
   expect(within(history).getByText(/Synthetic retained void reason/)).toBeDefined();
-  expect(within(history).getByRole("img", { name: "Versión de rúbrica 2" }).textContent).toBe("v2");
+  // The badge reads "v2" on screen and "Versión de rúbrica 2" to assistive technology.
+  expect(within(history).getByText("v2").getAttribute("aria-hidden")).toBe("true");
+  expect(within(history).getByText("Versión de rúbrica 2").className).toContain("sr-only");
   const attempts = await screen.findByRole("region", { name: "Intentos conservados" });
   expect(await within(attempts).findByText("72.1234")).toBeDefined();
   expect(within(attempts).getByText("Falla crítica de seguridad")).toBeDefined();
@@ -260,7 +262,13 @@ test("scope broadening keeps permitted RAM input while fencing the previous auth
   await act(async () => {
     await app.queryClient.refetchQueries({ queryKey: ["me"] });
   });
-  expect(form.getByRole("combobox", { name: "Persona" }).textContent).toContain("Synthetic person");
+  // The person options reload under the broadened authorization; the kept selection is named
+  // again once they arrive.
+  await waitFor(() => {
+    expect(form.getByRole("combobox", { name: "Persona" }).textContent).toContain(
+      "Synthetic person",
+    );
+  });
   await act(async () => {
     release(Response.json(receipt("pass", "100"), { status: 201 }));
     await pending;

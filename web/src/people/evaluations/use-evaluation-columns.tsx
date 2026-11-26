@@ -6,6 +6,7 @@ import type { DataTableColumn } from "../../data-table/table-types";
 import { OUTCOME_KEYS } from "./evaluation-labels";
 import { useTrainingLabels } from "../trainings/use-training-labels";
 import type { Evaluation } from "./evaluation-query";
+import { Badge } from "@/components/ui/badge";
 function identityColumn(t: TFunction): DataTableColumn<Evaluation> {
   return {
     id: "id",
@@ -29,14 +30,14 @@ function scoreColumn(t: TFunction): DataTableColumn<Evaluation> {
     cell: (row) => (
       <>
         {row.current?.score ?? t("evaluations.field.unanswered")}{" "}
-        <span
-          role="img"
-          aria-label={t("evaluations.history.rubricVersion", {
-            version: row.rubric_version_number,
-          })}
-        >
-          {t("evaluations.history.rubricVersionBadge", { version: row.rubric_version_number })}
-        </span>
+        <Badge variant="outline" className="font-mono tabular-nums">
+          <span aria-hidden="true">
+            {t("evaluations.history.rubricVersionBadge", { version: row.rubric_version_number })}
+          </span>
+          <span className="sr-only">
+            {t("evaluations.history.rubricVersion", { version: row.rubric_version_number })}
+          </span>
+        </Badge>
       </>
     ),
   };

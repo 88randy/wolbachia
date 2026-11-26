@@ -47,6 +47,10 @@ def blocker(scope: EffectiveScope, quadrant: Quadrant, facts: dict[str, Any]) ->
     """Opaque hidden causes coalesce; a closure reader gains no unrelated read grant."""
     facts = dict(facts)
     permission = facts.pop("read_permission")
+    code_permission = facts.pop("code_permission", None)
     if allows(scope, permission, quadrant):
+        # A human code from another resource needs that resource's own read grant too.
+        if code_permission is not None and not allows(scope, code_permission, quadrant):
+            facts.pop("code", None)
         return facts
     return {"reason": facts["reason"], "permission": facts["permission"], "link": ""}

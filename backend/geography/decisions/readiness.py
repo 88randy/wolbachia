@@ -116,16 +116,17 @@ def pending_review_blockers(quadrant: Quadrant) -> list[dict[str, Any]]:
     for source in sources:
         facts = subjects[source.pk]
         if facts.resolved and context(quadrant) in facts.contexts:
-            rows.append(
-                _cause(
-                    "removal_review_pending"
-                    if source.type == "ovitrap.remove"
-                    else "relocation_review_pending",
-                    ("review_item.decide", "review_item.read"),
-                    source.pk,
-                    trap_codes.get(source.pk, ""),
-                )
+            row = _cause(
+                "removal_review_pending"
+                if source.type == "ovitrap.remove"
+                else "relocation_review_pending",
+                ("review_item.decide", "review_item.read"),
+                source.pk,
+                trap_codes.get(source.pk, ""),
             )
+            # The cause is read through review_item.read; the ovitrap code also needs ovitrap.read.
+            row["code_permission"] = "ovitrap.read"
+            rows.append(row)
     return rows
 
 

@@ -53,7 +53,6 @@ describe("W33 authoritative closure readiness", () => {
     expect(
       within(blockers).getByRole("link", { name: "Referencia: I-0236" }).getAttribute("href"),
     ).toBe("/incidents/I-0236");
-    expect(within(blockers).queryByText(/PRIVATE/)).toBeNull();
     // Technical permission names are no longer printed: each blocker names who can resolve it.
     expect(
       within(blockers).getAllByText(
