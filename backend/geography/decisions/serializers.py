@@ -75,6 +75,7 @@ class ClosureBlockerSerializer(serializers.Serializer[Any]):
     reason = serializers.CharField()
     permission = serializers.CharField()
     id = serializers.CharField(required=False)
+    code = serializers.CharField(required=False)
     link = serializers.CharField(allow_blank=True)
 
 

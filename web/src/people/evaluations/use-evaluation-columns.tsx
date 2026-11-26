@@ -26,7 +26,19 @@ function scoreColumn(t: TFunction): DataTableColumn<Evaluation> {
       to: "/people/evaluations",
       search: (previous) => ({ ...previous, item: row.id }),
     }),
-    cell: (row) => row.current?.score ?? t("evaluations.field.unanswered"),
+    cell: (row) => (
+      <>
+        {row.current?.score ?? t("evaluations.field.unanswered")}{" "}
+        <span
+          role="img"
+          aria-label={t("evaluations.history.rubricVersion", {
+            version: row.rubric_version_number,
+          })}
+        >
+          {t("evaluations.history.rubricVersionBadge", { version: row.rubric_version_number })}
+        </span>
+      </>
+    ),
   };
 }
 export function useEvaluationColumns(): DataTableColumn<Evaluation>[] {

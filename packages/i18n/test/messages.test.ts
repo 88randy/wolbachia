@@ -112,6 +112,8 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["discrepancies.record.subtitle", ["transfer"]],
   ["errors.api.blocked", ["role"]],
   ["errors.upload.tooLarge", ["max"]],
+  ["evaluations.history.rubricVersion", ["version"]],
+  ["evaluations.history.rubricVersionBadge", ["version"]],
   ["field.capture.photoThumb", ["number"]],
   ["field.capture.reusePaddle", ["count"]],
   ["field.capture.review.gpsApprox", ["meters"]],

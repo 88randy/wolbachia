@@ -78,6 +78,8 @@ export const evaluations = {
   "evaluations.history.recorded": "Registrada",
   "evaluations.history.reason": "Motivo de corrección o anulación",
   "evaluations.history.voided": "Anulada",
+  "evaluations.history.rubricVersionBadge": "v{version}",
+  "evaluations.history.rubricVersion": "Versión de rúbrica {version}",
   "evaluations.history.raw": "Observaciones originales",
   "evaluations.history.unavailable": "No disponible en esta respuesta",
   "evaluations.history.correction": "Corregir o anular",

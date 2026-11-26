@@ -42,6 +42,7 @@ export const EVALUATION: Schemas["EvaluationRead"] = {
   id: ID,
   subject_id: PERSON,
   rubric_version_id: OLD_VERSION,
+  rubric_version_number: 2,
   center_id: ID,
   quadrant_id: null,
   created_at: OBSERVED,

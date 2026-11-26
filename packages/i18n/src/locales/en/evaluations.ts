@@ -78,6 +78,8 @@ export const evaluations: Record<keyof typeof source, string> = {
   "evaluations.history.recorded": "Recorded",
   "evaluations.history.reason": "Correction or void reason",
   "evaluations.history.voided": "Voided",
+  "evaluations.history.rubricVersionBadge": "v{version}",
+  "evaluations.history.rubricVersion": "Rubric version {version}",
   "evaluations.history.raw": "Original observations",
   "evaluations.history.unavailable": "Unavailable in this response",
   "evaluations.history.correction": "Correct or void",
