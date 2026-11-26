@@ -1,0 +1,1147 @@
+{
+  "mobile/src/features/community/CommunityChoiceList.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/community/CommunityForm.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/community/CommunityScreen.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/community/use-community.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/day/P9Screen.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/day/RouteCard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/day/subscribe-location.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/diagnostics/diagnostic-log.ts": {
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/field-ui/ChoiceRow.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/fuel/FuelRefillChoice.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/history/HistoryGroupCard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/incidents/IncidentCapture.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/incidents/IncidentHistoryRow.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/incidents/IncidentTypePicker.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/incidents/LockedCallAction.tsx": {
+    "react-native/no-inline-styles": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/BagPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CaptureDone.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CapturePageBody.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CapturePhoto.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CaptureStart.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CaptureSummary.tsx": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/CaptureWizard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/ConditionsPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/DiscardCaptureBanner.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/FindingPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/OvitrapScreen.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/PreparePage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/RepeatBlock.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/ReviewBlock.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/StaleDraftChoice.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/availability.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/review-policy.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/service.ts": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-check/use-capture-flow.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecycleBlocked.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecycleConfirmPage.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecycleCorrection.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecycleDone.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecyclePhotoPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/LifecycleWizard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/PointLifecycleEntry.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/ovitrap-lifecycle/RemoveSheet.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/safety/GlobalStateList.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/safety/use-m-16.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/scanner/CameraControls.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/scanner/ScannerControls.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/scanner/use-m-07.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "mobile/src/features/shift-close/CloseOdometerStep.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-close/ClosePendingStep.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-close/CloseSuppliesStep.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "mobile/src/features/shift-close/P27Screen.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/MotorcycleScanner.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "react-native/no-inline-styles": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/OpenedShift.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/P4Screen.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/P5Screen.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/P6Screen.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/P7Screen.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/SafetyItem.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/ShiftAction.tsx": {
+    "react-native/no-inline-styles": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/shift-open/use-motorcycle-scan.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/ReceiptProblemStep.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/ReceiptScanButton.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/ReleasePicker.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/new-draft.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/use-pending-deliveries.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/features/supply-receipt/use-receipt-scanner.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/maps/MapFooter.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/maps/use-field-zones.ts": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "mobile/src/navigation/ScreenRouter.tsx": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "mobile/src/screens/auth/PasswordField.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/theme/typography.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "mobile/src/ui/InfoNotice.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "mobile/src/ui/PrimaryButton.tsx": {
+    "react-native/no-inline-styles": {
+      "count": 1
+    }
+  },
+  "mobile/test/late-scope.test.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "mobile/test/m-05-ui.test.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "mobile/test/ovitrap-place-label.test.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    }
+  },
+  "mobile/test/reopen-shift.test.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "mobile/test/stale-draft.test.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "mobile/test/support/m-09-render.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/community/ActivitiesTable.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/community/ActivityFields.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/community/ActivityForm.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/community/ActivityVoidDialog.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/community/use-activity-form.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/components/templates/DetailPage.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "web/src/data-table/DataTableRow.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/data-table/filter-dates.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "web/src/fleet/fleet-history-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/fleet/fleet-test-helpers.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 2
+    }
+  },
+  "web/src/fleet/use-create-motorcycle.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/forms/OptionPicker.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/incidents/IncidentEvidenceDownload.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/incidents/IncidentEvidenceList.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/InventoryForm.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/InventoryOptionSelect.tsx": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/InventoryTextField.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/LocationCombobox.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/ProtocolFacts.tsx": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/AssignmentActions.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/AssignmentDelivery.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/AssignmentPanel.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "web/src/inventory/allocation/CancelDeliveryDialog.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/CourierPicker.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/DeliveryList.tsx": {
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "web/src/inventory/allocation/DeliveryTimeline.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/LotAdder.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/ReconciliationList.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/ReconciliationTable.tsx": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/inventory/allocation/SuggestionNotice.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/WriteOffLotFields.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/WriteOffTargetSummary.tsx": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/allocation-intent.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/use-assignment-panel.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/use-reconciliation-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/allocation/use-write-off-form.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/hub/InventoryStepCard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/hub/use-hub-steps.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/hub/use-inventory-hub.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/line-items/LineItemEditor.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/inventory/lots/LotSafetySummary.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/lots/LotScanFill.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/lots/lot-scan-fill.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "web/src/inventory/lots/use-lot-scan-fill.ts": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/ReceptionLine.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/TransferDispatch.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/TransferReceiptSignature.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/TransferReception.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/TransferRecord.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/TransferSignature.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/new/NewTransferPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/new/use-new-transfer.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/inventory/transfers/new/use-origin-stock.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/lab/pcr/LabDialog.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/lab/pcr/PcrDetailPage.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 8
+    }
+  },
+  "web/src/lab/pcr/PcrDialogs.tsx": {
+    "max-lines-per-function": {
+      "count": 4
+    }
+  },
+  "web/src/lab/pcr/PcrLabsPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/lab/pcr/PcrListPage.tsx": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/lab/pcr/PcrNewPage.tsx": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "web/src/lab/pcr/PcrResultsPage.tsx": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 6
+    }
+  },
+  "web/src/lab/pcr/use-pcr-command.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/operations/ShiftRecord.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/live/use-live-shifts.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/relocations/RelocationWorkspace.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/relocations/use-relocation-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/reviews/ReviewFacts.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/reviews/W30Page.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/reviews/use-review-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/shift-summary-facts.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "web/src/operations/use-pending-counts.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/operations/use-shift-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/people/trainings/TrainingActionsField.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "web/src/people/trainings/TrainingVersionsField.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/people/trainings/W50Page.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/people/trainings/training-lookups.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/quadrants/geography/BlockTools.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/releases/devices/DeviceStatusForm.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/releases/permits/ZoneField.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/releases/permits/zone-from-quadrants.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "web/src/releases/records/use-release-columns.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scan/CameraScanDialog.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scan/ScanField.test.tsx": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 1
+    }
+  },
+  "web/src/scan/ScanField.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scan/camera.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "web/src/scan/gs1.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    }
+  },
+  "web/src/scan/use-camera-scanner.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/BlockPicker.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/ConfirmApply.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/CourierColumn.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/CycleStepCard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/ImportStepper.tsx": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/scheduling/InterventionForm.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/LoadMeter.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/QuadrantCard.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/ReassignCard.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/RiskImportDone.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/RiskImportFileStep.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/RiskImportPage.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/RiskImportPreviewStep.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/RiskImportSourceStep.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/ScheduleDayList.tsx": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/scheduling/ScheduleMatrix.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "web/src/scheduling/W25Page.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/W26Page.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/W27Page.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/W32Page.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/WeekSwitcher.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/group-tasks.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/scheduling-queries.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 3
+    }
+  },
+  "web/src/scheduling/use-assignment-board.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "web/src/scheduling/use-cycle-cards.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/use-cycle-status.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/use-plan.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/scheduling/use-risk-import.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/settings/organization/PermissionCells.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/settings/organization/PermissionFields.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/test/fake-api.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/ui/Combobox.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "jsx-a11y/role-has-required-aria-props": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/ui/DateField.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "jsx-a11y/role-supports-aria-props": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "web/src/ui/SignaturePad.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  }
+}

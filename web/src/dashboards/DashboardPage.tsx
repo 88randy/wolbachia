@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a dashboard widget; splitting it into one-use fragments would hurt readability. */
+/* eslint-disable max-lines-per-function -- presentational JSX of a dashboard widget; splitting it into one-use fragments would hurt readability. */
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
