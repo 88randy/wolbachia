@@ -172,6 +172,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["hub.inventory.step.move.count", ["toReceive", "toSend"]],
   ["hub.inventory.step.receive.count", ["count"]],
   ["hub.inventory.step.stock.count", ["count"]],
+  ["hub.inventoryLots.count", ["count"]],
   ["incidents.evidence.download", ["id"]],
   ["incidents.workspace.eventState", ["owner", "revision", "severity", "state"]],
   ["incidents.workspace.eventStateNamed", ["owner", "severity", "state"]],

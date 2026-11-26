@@ -60,6 +60,10 @@ export const hub: Record<keyof typeof source, string> = {
     "The kinds of supply you handle: paddles, bags, eggs and their usage rules.",
   "hub.inventory.setup.supplies.empty": "There are no supplies. Add the first one.",
   "hub.inventory.setup.supplies.count": "Registered: {count}",
+  "hub.inventoryLots.title": "Lots",
+  "hub.inventoryLots.text": "Every lot received, with its expiry, status and safety data.",
+  "hub.inventoryLots.empty": "There are no lots yet.",
+  "hub.inventoryLots.count": "Registered: {count}",
 
   "hub.operations.description": "Shifts, reviews and relocations of field work.",
   "hub.operations.reviews": "Records that need a decision.",

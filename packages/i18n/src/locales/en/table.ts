@@ -24,6 +24,7 @@ export const table: Record<keyof typeof source, string> = {
   "table.filters.all": "All",
   "table.filters.apply": "Apply",
   "table.filters.clear": "Clear filters",
+  "table.filters.clearSearch": "Clear search",
   "table.filters.remove": "Remove filter {filter}: {value}",
   "table.filters.includeVoided": "Include voided",
   "table.filters.button": "Filters",

@@ -13,7 +13,7 @@ import { MapAttribution } from "../../quadrants/geography/MapAttribution";
 import { EntityName } from "../../lookups/EntityName";
 import { LocationPin } from "./LocationPin";
 import { LocationPopupContent } from "./LocationPopupContent";
-import { clusterLocations, initialView } from "./location-pins";
+import { clusterLocations, initialView, shouldRefitOnResize } from "./location-pins";
 import type { Location, LocationCluster } from "./location-pins";
 import { usePinSelection } from "./use-pin-selection";
 import styles from "../inventory.module.css";
@@ -52,9 +52,12 @@ export function LocationMapCanvas({
   const { t } = useTranslation();
   const [zoom, setZoom] = useState<number | null>(null);
   const mapRef = useRef<MapRef>(null);
+  // Set by the user's own pan/zoom or a pin opening; the automatic fit does not set it.
+  const userMoved = useRef(false);
   const { selectedKey, open, close } = usePinSelection();
   const openPin = (cluster: LocationCluster, element: HTMLElement) => {
     open(cluster.key, element);
+    userMoved.current = true;
     const map = mapRef.current;
     // Park the pin low in the frame so its popup has room above it.
     map?.easeTo({
@@ -86,6 +89,19 @@ export function LocationMapCanvas({
       onError={onFailure}
       onLoad={(event) => {
         setZoom(bucket(event.target.getZoom()));
+      }}
+      onMoveStart={(event) => {
+        // Only gestures carry an originalEvent; the automatic fit and easeTo do not.
+        if (event.originalEvent) userMoved.current = true;
+      }}
+      onResize={() => {
+        if (mapRef.current && "bounds" in view && shouldRefitOnResize(view, userMoved.current)) {
+          mapRef.current.fitBounds(view.bounds, {
+            padding: fitPadding,
+            maxZoom: view.maxZoom,
+            animate: false,
+          });
+        }
       }}
       onZoomEnd={(event) => {
         setZoom(bucket(event.target.getZoom()));
