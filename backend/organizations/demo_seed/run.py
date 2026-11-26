@@ -101,6 +101,9 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
             organization, members, quadrants, catalog["version"], device
         )
     )
+    # The training release points (`Q-MER-NN-REL-P1`) exist only now: plan them in this run, or a
+    # rerun would append their place tasks and break "a rerun creates nothing twice".
+    retrying(lambda: operations.ensure_schedule(organization, admin))
     retrying(lambda: _ensure_flows(organization, members, device))
     retrying(lambda: samples_history.ensure_samples(organization, members, device, catalog))
     retrying(lambda: incidents_history.ensure_incidents(organization, members, quadrants))
