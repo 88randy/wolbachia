@@ -298,8 +298,15 @@ def assert_partition_workflow():
     assert jobs["tests"]["strategy"]["fail-fast"] is False
     assert jobs["tests"]["timeout-minutes"] == "${{ matrix.timeout || 15 }}"
     assert jobs["tests"]["strategy"]["matrix"]["include"] == [
-        {"shard": "migrations-field", "timeout": 25},
-        {"shard": "migrations-review", "timeout": 25},
+        {"shard": shard, "timeout": 25}
+        for shard in (
+            "migrations-field",
+            "migrations-review",
+            "migrations-lab",
+            "regular",
+            "migrations-material",
+            "migrations-session-audit",
+        )
     ]
     assert jobs["checks"]["timeout-minutes"] == 15
     rollup = jobs["migration_status"]

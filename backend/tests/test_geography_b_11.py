@@ -492,12 +492,16 @@ def test_point_publish_response_retains_its_version_and_warnings_after_interleav
     from datetime import UTC, datetime
     from types import SimpleNamespace
 
-    from geography.models import PointVersion, SamplingPoint
+    from geography.models import Block, PointVersion, SamplingPoint
     from geography.views import SamplingPointViewSet
 
     instant = datetime(2026, 11, 5, tzinfo=UTC)
+    # The serializer reads `block.code` (display label): keep the block in memory, no query.
     point = SamplingPoint(
-        organization_id=uuid4(), block_id=uuid4(), code="P-race", created_at=instant
+        organization_id=uuid4(),
+        block=Block(id=uuid4(), code="B-race"),
+        code="P-race",
+        created_at=instant,
     )
     versions = [
         PointVersion(

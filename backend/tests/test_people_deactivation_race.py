@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import pytest
 from django.db import connection, transaction
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 from accounts.models import DeviceSession, User
 from accounts.services import DeviceInfo, start_device_session
@@ -35,11 +36,15 @@ def test_concurrent_people_deactivation_and_role_removal_retain_last_administrat
     members = [MembershipFactory(organization=organization, scope=all_scope()) for _ in range(2)]
     for member in members:
         member.profiles.add(profile)
+    # Administrators never remove themselves and only an equal can act on an administrator, so
+    # the two administrators remove each other concurrently: exactly one must remain.
+    other = {members[0].pk: members[1].user, members[1].pk: members[0].user}
     barrier = threading.Barrier(2, timeout=10)
     committed = threading.Event()
 
     def remove(item):
         member_id, deactivate = item
+        actor = other[member_id]
         try:
             member = Membership.objects.select_related("user").get(pk=member_id)
             barrier.wait()
@@ -48,11 +53,11 @@ def test_concurrent_people_deactivation_and_role_removal_retain_last_administrat
                 if deactivate:
                     with transaction.atomic():
                         User.objects.select_for_update(no_key=True).get(pk=member.user_id)
-                        deactivate_personnel_membership(member, member.user, member.revision)
+                        deactivate_personnel_membership(member, actor, member.revision)
                     return
                 update_membership(
                     member,
-                    MembershipChange(member.user, member.revision, [], default_scope(), False),
+                    MembershipChange(actor, member.revision, [], default_scope(), False),
                 )
 
             try:
@@ -60,8 +65,9 @@ def test_concurrent_people_deactivation_and_role_removal_retain_last_administrat
             except AdministrationBusyError:
                 assert committed.wait(10)
                 apply()
-        except LastAdministratorError as error:
-            return error.code
+        except (LastAdministratorError, PermissionDenied, NotFound):
+            # Either the guard refused, or the winner already removed this actor's authority.
+            return "refused"
         else:
             committed.set()
             return "removed"
@@ -71,7 +77,7 @@ def test_concurrent_people_deactivation_and_role_removal_retain_last_administrat
     with ThreadPoolExecutor(max_workers=2) as executor:
         outcomes = list(executor.map(remove, [(members[0].pk, True), (members[1].pk, False)]))
 
-    assert sorted(outcomes) == ["last_administrator", "removed"]
+    assert sorted(outcomes) == ["refused", "removed"]
     assert Membership.objects.filter(organization=organization, is_active=True).count() == 1
 
 
