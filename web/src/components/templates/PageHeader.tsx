@@ -28,7 +28,7 @@ export function PageHeader({ title, description, status, actions, eyebrow }: Pag
           <p className="m-0 max-w-[75ch] text-sm leading-5 text-ink-2">{description}</p>
         )}
       </div>
-      <div className="flex flex-none flex-wrap items-center gap-2 empty:hidden">
+      <div className="flex max-w-full flex-none flex-wrap items-center gap-2 empty:hidden">
         {actions}
         <HowToButton />
       </div>
