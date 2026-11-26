@@ -36,7 +36,7 @@ export function PermissionCells({ profile, codes, onEdit }: Props) {
         </span>
       ))}
       {canEdit ? (
-        <Button variant="ghost" size="sm" onClick={onEdit}>
+        <Button id={`edit-permissions-${profile.id}`} variant="ghost" size="sm" onClick={onEdit}>
           {t("perm.matrix.edit")}
         </Button>
       ) : (
