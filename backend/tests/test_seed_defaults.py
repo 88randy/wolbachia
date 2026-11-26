@@ -9,6 +9,7 @@ from django.utils import timezone
 from accounts.permissions import (
     ADMIN_AUTH_PERMISSION_CODES,
     ADMIN_PERSONNEL_PERMISSION_CODES,
+    USER_LOOKUP,
     USER_OPERATIONAL_READ,
 )
 from catalogs import permissions as catalog_codes
@@ -16,6 +17,7 @@ from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
+from geography.permissions import QUADRANT_LOOKUP
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
     seed_default_permission_codes,
@@ -418,8 +420,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "reading.read",
         "schedule.read",
         "risk_import.apply",
-        USER_OPERATIONAL_READ,
-        "quadrant.read",
+        # Names and codes only (least privilege), not the operational reads.
+        USER_LOOKUP,
+        QUADRANT_LOOKUP,
         "analytics.entomology.read",
         "analytics.wolbachia.read",
         "shipment.read",
@@ -490,7 +493,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "permit.manage",
         "permit.suspend",
         "release.read",
-        "quadrant.read",
+        QUADRANT_LOOKUP,  # the permit dialog picks quadrants: codes and outlines only
         "access_log.read",
         "arco_request.read",
         "arco_request.manage",
@@ -514,6 +517,13 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "transfer_authorization.manage",
         "export.run",
         "portal.manage",
+        # API keys (admin only), the egg annotation export and the narrow lookups an admin
+        # must hold to delegate every profile.
+        "api_key.read",
+        "api_key.manage",
+        "egg_annotation.export",
+        USER_LOOKUP,
+        QUADRANT_LOOKUP,
         "center.create",
         "center.update",
         "center.deactivate",
