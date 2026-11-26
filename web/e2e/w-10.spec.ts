@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { messages } from "@wolbachia/i18n";
 import { test, expect } from "./fixtures/test";
 import {
   installTransferApi,
@@ -15,20 +16,33 @@ import {
   expectNoHorizontalScroll,
 } from "./fixtures/a11y";
 
+type Language = (typeof LANGUAGES)[number];
 const PHONE = { width: 320, height: 700 };
 const IMAGE = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7V8AAAAASUVORK5CYII=",
   "base64",
 );
 
+/** A photo is saved by itself as soon as it is chosen. */
 async function verifyEvidence(page: Page, label: string | RegExp) {
   const input = page.getByLabel(label);
   await input.setInputFiles({ name: "synthetic-proof.png", mimeType: "image/png", buffer: IMAGE });
   const section = input.locator("xpath=ancestor::fieldset[1]");
-  await section.getByRole("button", { name: "Verificar imagen", exact: true }).click();
-  await expect(
-    section.getByText("Imagen verificada por el servidor", { exact: true }),
-  ).toBeVisible();
+  await expect(section.getByText("Foto guardada", { exact: true })).toBeVisible();
+}
+
+/** Draws on the signature pad with the pointer; the image is saved by itself when long enough. */
+async function drawSignature(page: Page) {
+  const pad = page.getByRole("img", { name: /^Firma:/ });
+  await pad.scrollIntoViewIfNeeded();
+  const box = await pad.boundingBox();
+  if (!box) throw new Error("The signature pad has no box");
+  await page.mouse.move(box.x + 20, box.y + 60);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 120, box.y + 100, { steps: 8 });
+  await page.mouse.move(box.x + 60, box.y + 40, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByText("Firma lista", { exact: true })).toBeVisible();
 }
 
 test("R1 W12–W14: signed dispatch, missing receipt evidence, scanner focus and discrepancy resolution", async ({
@@ -40,40 +54,34 @@ test("R1 W12–W14: signed dispatch, missing receipt evidence, scanner focus and
   await page.getByRole("link", { name: TRANSFER_CODE, exact: true }).click();
   const dispatch = page.getByRole("button", { name: "Firmar y despachar", exact: true });
   await expect(dispatch).toBeDisabled();
-  await verifyEvidence(page, "Firma de quien entrega");
+  await drawSignature(page);
   await dispatch.focus();
   await page.keyboard.press("Enter");
+  // The saved dispatch moves the record on to the reception step.
   await expect(
-    page.getByText("Guardado en el servidor · revisión 2", { exact: true }),
+    page.getByRole("region", { name: "Confirmar recepción", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Transferencias", exact: true }).click();
+  await page.getByRole("link", { name: "Volver a la lista", exact: true }).click();
   await page.getByRole("link", { name: TRANSFER_CODE, exact: true }).click();
-  const scanner = page.getByRole("textbox", {
-    name: "Escanear identidad del manifiesto",
-    exact: true,
-  });
-  await expect(scanner).toBeVisible();
-  const commit = page.getByRole("button", { name: "Firmar recepción", exact: true });
-  await expect(commit).toBeDisabled();
-  await page.getByRole("textbox", { name: "Cantidad escaneada", exact: true }).fill("1");
-  await scanner.fill(TRANSFER_LINE);
-  await scanner.press("Enter");
-  await expect(scanner).toBeFocused();
-  await verifyEvidence(page, /^Foto del faltante:/);
-  await verifyEvidence(page, "Firma de recibido");
+  // Every line starts as arrived in full; the person only fixes what differs.
+  const received = page.getByRole("textbox", { name: "Llegaron", exact: true });
+  await expect(received).toHaveValue("2");
+  const commit = page.getByRole("button", { name: "Confirmar recepción", exact: true });
+  await expect(commit).toHaveAttribute("aria-disabled", "true");
+  await received.fill("1");
+  await verifyEvidence(page, /^Foto de lo que faltó:/);
+  await drawSignature(page);
   await page.locator("main").evaluate((main) => {
     main.scrollTo(0, 0);
   });
   const screenshot = test.info().outputPath("152-reception-light.png");
   await page.screenshot({ path: screenshot, fullPage: true });
   await test.info().attach("152-reception-light", { path: screenshot, contentType: "image/png" });
-  await expect(commit).toBeEnabled();
+  await expect(commit).not.toHaveAttribute("aria-disabled", "true");
   await commit.focus();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByText("Guardado en el servidor · revisión 3", { exact: true }),
-  ).toBeVisible();
-  await expect(scanner).toBeFocused();
+  // The saved reception turns the record into "Con diferencia" and links to the difference.
+  await expect(page.getByRole("link", { name: "Ver la diferencia", exact: true })).toBeVisible();
   const receipt = server.writes.filter((write) => write.path.endsWith("/receive/"));
   expect(receipt).toHaveLength(1);
   expect(receipt[0]).toMatchObject({
@@ -109,7 +117,7 @@ test("R1 W12–W14: signed dispatch, missing receipt evidence, scanner focus and
       },
     }),
   ]);
-  await page.getByRole("link", { name: "Ver discrepancias", exact: true }).click();
+  await page.getByRole("link", { name: "Ver la diferencia", exact: true }).click();
   await expect(page).toHaveURL(
     (url) =>
       url.pathname === "/inventory/discrepancies" &&
@@ -117,19 +125,16 @@ test("R1 W12–W14: signed dispatch, missing receipt evidence, scanner focus and
   );
   await page.getByRole("link", { name: DISCREPANCY_CODE, exact: true }).click();
   await expect(page.getByRole("heading", { name: DISCREPANCY_CODE, exact: true })).toBeVisible();
-  await page
-    .getByRole("combobox", { name: "Cómo se resolvió esta línea", exact: true })
-    .selectOption("ack_missing");
+  await page.getByRole("combobox", { name: "¿Cómo se resolvió?", exact: true }).click();
+  await page.getByRole("option", { name: "Dar por perdido", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Motivo de la resolución", exact: true })
     .fill("Synthetic warehouse confirmation of missing material");
-  await page.getByRole("button", { name: "Revisar y cerrar discrepancia", exact: true }).click();
+  await page.getByRole("button", { name: "Resolver", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
-  await dialog.getByRole("button", { name: "Confirmar resolución", exact: true }).click();
-  await expect(
-    page.getByText("Resolución registrada en el servidor", { exact: true }),
-  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Sí, resolver", exact: true }).click();
+  await expect(page.getByText("Resolución registrada", { exact: true })).toBeVisible();
   await expect(page.getByText("Cerrada", { exact: true })).toBeVisible();
   await expect(page.getByText(/Bloqueo resuelto por esta discrepancia/)).toBeVisible();
   const close = server.writes.filter((write) => write.path.endsWith("/close/"));
@@ -210,7 +215,14 @@ function contrast(first: string, second: string) {
   const right = luminance(second);
   return (Math.max(left, right) + 0.05) / (Math.min(left, right) + 0.05);
 }
-async function expectScannerKeyboard(page: Page, language: string) {
+async function expectScannerKeyboard(page: Page, language: Language) {
+  // The scanner is for pieces that were not on the list, so it sits in a disclosure.
+  const extras = page.getByRole("button", {
+    name: messages[language]["transfers.receive.extras"],
+    exact: true,
+  });
+  await extras.focus();
+  await page.keyboard.press("Enter");
   const scanner = page.getByRole("textbox", {
     name: language === "en" ? "Scan manifest identity" : "Escanear identidad del manifiesto",
     exact: true,
@@ -233,23 +245,31 @@ async function expectScannerKeyboard(page: Page, language: string) {
   expect(colors.ringWidth).toBeGreaterThan(0);
   expect(contrast(colors.foreground, colors.surface)).toBeGreaterThanOrEqual(4.5);
   expect(contrast(colors.ring, colors.surface)).toBeGreaterThanOrEqual(3);
-  await page.keyboard.press("Tab");
+  // The camera button (only on devices with a camera) sits between the field and the quantity.
+  const camera = page.getByRole("button", { name: messages[language]["scan.camera.open"] });
+  const skipCamera = async (key: "Tab" | "Shift+Tab") => {
+    await page.keyboard.press(key);
+    const isOnCamera =
+      (await camera.count()) > 0 && (await camera.evaluate((el) => el === document.activeElement));
+    if (isOnCamera) await page.keyboard.press(key);
+  };
+  await skipCamera("Tab");
   await expect(
-    page.getByRole("textbox", {
-      name: language === "en" ? "Scanned quantity" : "Cantidad escaneada",
-      exact: true,
-    }),
+    page.getByRole("textbox", { name: messages[language]["transfers.scan.quantity"], exact: true }),
   ).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
+  await skipCamera("Shift+Tab");
   await expect(scanner).toBeFocused();
 }
-async function expectResolutionKeyboard(page: Page, language: string) {
+async function expectResolutionKeyboard(page: Page, language: Language) {
   await page
-    .getByRole("combobox", {
-      name: language === "en" ? "How this line was resolved" : "Cómo se resolvió esta línea",
+    .getByRole("combobox", { name: messages[language]["discrepancies.close.outcome"], exact: true })
+    .click();
+  await page
+    .getByRole("option", {
+      name: messages[language]["discrepancies.outcome.ackMissing"],
       exact: true,
     })
-    .selectOption("ack_missing");
+    .click();
   await page
     .getByRole("textbox", {
       name: language === "en" ? "Resolution reason" : "Motivo de la resolución",
@@ -257,7 +277,7 @@ async function expectResolutionKeyboard(page: Page, language: string) {
     })
     .fill("Synthetic documented warehouse discrepancy resolution");
   const trigger = page.getByRole("button", {
-    name: language === "en" ? "Review and close discrepancy" : "Revisar y cerrar discrepancia",
+    name: messages[language]["discrepancies.close.action"],
     exact: true,
   });
   await trigger.focus();
@@ -275,7 +295,7 @@ async function expectResolutionKeyboard(page: Page, language: string) {
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
 }
-async function auditPage(page: Page, context: { path: string; language: string; theme: string }) {
+async function auditPage(page: Page, context: { path: string; language: Language; theme: string }) {
   await page.goto(context.path);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expectNoHorizontalScroll(page);
