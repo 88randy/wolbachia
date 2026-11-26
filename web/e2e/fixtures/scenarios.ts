@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { makeMe } from "../../src/test/fake-api";
+import { pickDate } from "./date-field";
 import { makePhone } from "./devices-mock";
 import { E2E_PASSWORD } from "./mock-api";
 import { makeRuleParameter, makeRuleVersion } from "./rules-mock";
@@ -33,6 +34,7 @@ const RULES_ME = makeMe({
     "rule_parameter_version.void",
   ],
 });
+const RETRY_TIMEOUT_MS = 15_000;
 const SPEED = "/settings/rule-parameters/speed_lock_kmh";
 const RULES = [
   {
@@ -228,7 +230,8 @@ export const scenarios: Scenario[] = [
     reach: async (page, api) => {
       api.devices.setFailing(true);
       await page.goto("/settings/phones");
-      await expect(page.getByRole("alert")).toBeVisible();
+      // The query retries a 5xx with backoff before it shows the alert.
+      await expect(page.getByRole("alert")).toBeVisible({ timeout: RETRY_TIMEOUT_MS });
     },
   },
   {
@@ -236,7 +239,10 @@ export const scenarios: Scenario[] = [
     api: { me: RULES_ME, rules: RULES },
     reach: async (page) => {
       await page.goto("/settings/rule-parameters");
-      await expect(page.getByRole("row", { name: /speed_lock_kmh/ })).toBeVisible();
+      // The row shows the translated parameter name, so it is found by the link to its key.
+      await expect(
+        page.getByRole("row").filter({ has: page.locator('a[href$="/speed_lock_kmh"]') }),
+      ).toBeVisible();
     },
   },
   {
@@ -254,7 +260,7 @@ export const scenarios: Scenario[] = [
     reach: async (page) => {
       await page.goto(SPEED);
       await page.locator("#rule-version-value").fill("8");
-      await page.locator("#rule-version-date").fill("2026-12-20");
+      await pickDate(page, page.locator("#rule-version-date"), "2026-12-20");
       await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
       await page
         .locator("form")

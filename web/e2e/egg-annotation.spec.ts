@@ -646,6 +646,8 @@ test("W35 body photo drop opens the canvas and right mouse drag pans without del
   ).toBeVisible();
   await dropPhotoOnBody(page);
   await page.getByRole("button", { name: text("labAnnotation.tips.skip"), exact: true }).click();
+  // The closing tips dialog still catches clicks while it fades out.
+  await expect(page.getByRole("dialog", { name: text("labAnnotation.tips.title") })).toHaveCount(0);
   const canvas = page.getByRole("application").locator("canvas[tabindex='0']");
   await expect(canvas).toBeVisible();
   await expect(page.getByText(text("labAnnotation.canvas.loading"), { exact: true })).toHaveCount(
@@ -810,6 +812,7 @@ for (const theme of ["light", "dark"] as const) {
     test(`W35 photo annotation keyboard and reflow: ${theme}, ${language}`, async ({
       page,
     }, testInfo) => {
+      test.slow(); // three viewports with screenshots and audits per cell
       const text = (key: MessageKey) => messages[language][key];
       await rememberPreferences(page, theme, language);
       const commands = await mockAnnotation(page);
