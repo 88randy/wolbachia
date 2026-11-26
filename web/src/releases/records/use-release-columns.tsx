@@ -21,7 +21,11 @@ export function useReleaseColumns(): readonly DataTableColumn<Release>[] {
           search: true,
         }),
       },
-      { id: "created_at", headerKey: "releases.column.when", cell: (row) => format(row.device_time) },
+      {
+        id: "created_at",
+        headerKey: "releases.column.when",
+        cell: (row) => format(row.device_time),
+      },
       { id: "permit", headerKey: "releases.column.permit", cell: (row) => row.permit_code },
       { id: "lot", headerKey: "releases.column.lot", cell: (row) => row.lot_code },
       { id: "device", headerKey: "releases.column.device", cell: (row) => row.release_device_code },
