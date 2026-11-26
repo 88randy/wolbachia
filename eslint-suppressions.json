@@ -478,17 +478,6 @@
       "count": 1
     }
   },
-  "web/src/fleet/fleet-test-helpers.ts": {
-    "@typescript-eslint/no-unsafe-argument": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unsafe-call": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unsafe-member-access": {
-      "count": 2
-    }
-  },
   "web/src/fleet/use-create-motorcycle.ts": {
     "max-lines-per-function": {
       "count": 1
