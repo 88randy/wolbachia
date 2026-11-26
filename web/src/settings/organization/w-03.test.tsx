@@ -15,6 +15,7 @@ import { fakePassword } from "../../test/fake-credentials";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../../test/fake-api";
 import type { RecordedRequest } from "../../test/fake-api";
 import { renderApp } from "../../test/render-app";
+import { CENTER_PICKER, chooseCenter } from "../../test/center-picker";
 const SCOPE = {
   centers: { mode: "all" as const, ids: [] },
   quadrants: { mode: "all" as const, ids: [] },
@@ -79,6 +80,22 @@ async function open(path = "/settings/roles", me = ME, profiles: Profile[] = PRO
   });
   return { api, app: await renderApp({ path, fetch: api.fetch }), user: userEvent.setup() };
 }
+type User = ReturnType<typeof userEvent.setup>;
+/** The row of a profile or membership, found by the text of its first cell. */
+async function rowOf(label: string) {
+  const cell = await screen.findByRole("cell", { name: label });
+  const row = cell.closest("tr");
+  if (!row) throw new Error(`No row for ${label}`);
+  return within(row);
+}
+/** The "Editar permisos" button of a profile row. */
+async function editButton(label = "Equipo") {
+  return (await rowOf(label)).getByRole("button", { name: "Editar permisos" });
+}
+async function openRoleEditor(user: User, label = "Equipo") {
+  await user.click(await editButton(label));
+  return screen.getByRole("dialog");
+}
 beforeEach(() => {
   endSessionExpiry();
   writeCenter(centerStorageKey(ME), "");
@@ -101,22 +118,15 @@ describe("W-03", () => {
       })),
     ];
     const { api, user } = await open("/settings/roles", ME, profiles);
-    const cell = await screen.findByRole("button", { name: /^Equipo: role.update / });
-    const denied = screen.getByRole("button", { name: "Equipo: center.read Sin permiso" });
-    for (const button of [cell, denied])
-      expect(button.getAttribute("aria-label")).toContain(button.textContent.trim());
+    const cell = await editButton();
     cell.focus();
-    await user.keyboard("{ArrowDown}");
-    expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: /^Equipo dos: role.update / }),
-    );
-    await user.keyboard("{ArrowUp}{Enter}");
+    await user.keyboard("{Enter}");
     const dialog = screen.getByRole("dialog");
-    within(dialog).getByRole("checkbox", { name: "role.update" }).focus();
+    within(dialog).getByRole("checkbox", { name: "Editar perfiles" }).focus();
     await user.keyboard(" ");
-    const centerMode = within(
-      within(dialog).getByRole("group", { name: "Centros" }),
-    ).getByRole<HTMLSelectElement>("combobox");
+    const centerMode = within(within(dialog).getByRole("group", { name: "Centros" })).getByRole(
+      "combobox",
+    );
     await user.selectOptions(centerMode, "none");
     await user.click(within(dialog).getByRole("button", { name: "Guardar" }));
     await screen.findByText(/Debe permanecer al menos una persona administradora/);
@@ -126,18 +136,13 @@ describe("W-03", () => {
       expected_revision: 3,
     });
     expect(
-      within(dialog).getByRole<HTMLInputElement>("checkbox", { name: "role.update" }).checked,
+      within(dialog).getByRole<HTMLInputElement>("checkbox", { name: "Editar perfiles" }).checked,
     ).toBe(false);
-    expect(within(dialog).getByText(/Revisión vigente: 3/)).toBeDefined();
-    expect(centerMode.value).toBe("none");
-    expect(cell.getAttribute("aria-pressed")).toBe("true");
-    expect(cell.isConnected).toBe(false);
+    expect(api.requests.filter((request) => request.method === "PUT")).toHaveLength(1);
+    expect(centerMode.textContent).toContain(messages["es-MX"]["orgAdmin.scope.none"]);
     fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
-    expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: /^Equipo: role.update / }),
-    );
+    expect(document.activeElement).toBe(await editButton());
     expect(document.activeElement?.isConnected).toBe(true);
-    expect(screen.queryByRole("button", { name: /^Consulta: role.update / })).toBeNull();
   });
   test("settings timezone/epi week roundtrip and invalid logo", async () => {
     const { api, user, app } = await open("/settings/organization");
@@ -174,9 +179,8 @@ test("a refused write is never replayed after reauthentication, and the retained
   api.setRoute("POST /api/v1/auth/login/", () =>
     Response.json({ me: ME, server_time: "2026-11-05T12:00:00Z" }),
   );
-  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
-  const editor = screen.getByRole("dialog");
-  await user.click(within(editor).getByRole("checkbox", { name: "role.update" }));
+  const editor = await openRoleEditor(user);
+  await user.click(within(editor).getByRole("checkbox", { name: "Editar perfiles" }));
   await user.click(within(editor).getByRole("button", { name: "Guardar" }));
   const reauth = await screen.findByRole("dialog", { name: "Tu sesión terminó" });
   await user.click(within(reauth).getByLabelText("Contraseña"));
@@ -194,7 +198,7 @@ test("a refused write is never replayed after reauthentication, and the retained
   });
   expect(api.requests.filter((request) => request.method === "PUT")).toHaveLength(1);
   expect(
-    within(editor).getByRole<HTMLInputElement>("checkbox", { name: "role.update" }).checked,
+    within(editor).getByRole<HTMLInputElement>("checkbox", { name: "Editar perfiles" }).checked,
   ).toBe(false);
 });
 
@@ -206,9 +210,8 @@ test("concurrent permission edits require an explicit refresh and review without
   api.setRoute("GET /api/v1/roles/00000000-0000-4000-8000-000000000001/", () =>
     Response.json({ ...ROLE, revision: 7 }),
   );
-  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
-  const dialog = screen.getByRole("dialog");
-  await user.click(within(dialog).getByRole("checkbox", { name: "role.update" }));
+  const dialog = await openRoleEditor(user);
+  await user.click(within(dialog).getByRole("checkbox", { name: "Editar perfiles" }));
   await user.click(within(dialog).getByRole("button", { name: "Guardar" }));
   await screen.findByText(/La configuración cambió/);
   expect(
@@ -234,9 +237,9 @@ test("concurrent permission edits require an explicit refresh and review without
     Response.json({ ...ROLE, revision: 7 }),
   );
   await user.click(within(dialog).getByRole("button", { name: "Consultar revisión vigente" }));
-  await screen.findByText("Revisión vigente: 7");
+  await within(dialog).findByRole("button", { name: "Ya revisé: usar esta revisión" });
   expect(
-    within(dialog).getByRole<HTMLInputElement>("checkbox", { name: "role.update" }).checked,
+    within(dialog).getByRole<HTMLInputElement>("checkbox", { name: "Editar perfiles" }).checked,
   ).toBe(false);
   expect(
     within(dialog)
@@ -249,10 +252,17 @@ test("concurrent permission edits require an explicit refresh and review without
       .getByRole<HTMLButtonElement>("button", { name: "Guardar" })
       .getAttribute("aria-disabled"),
   ).toBe("false");
+  await user.click(within(dialog).getByRole("button", { name: "Guardar" }));
+  await waitFor(() => {
+    expect(api.requests.filter((request) => request.method === "PUT")).toHaveLength(2);
+  });
+  expect(api.requests.filter((request) => request.method === "PUT")[1]?.body).toMatchObject({
+    expected_revision: 7,
+  });
 });
 
 test("membership scope resolves unknown and foreign center codes identically and sends selected ids only", async () => {
-  const { api, user } = await open();
+  const { api, user, app } = await open();
   const member = {
     id: "member",
     user: ME.user.id,
@@ -277,7 +287,7 @@ test("membership scope resolves unknown and foreign center codes identically and
     Response.json({ id: "00000000-0000-4000-8000-000000000011", code: "C-01", name: "Centro" }),
   );
   api.setRoute("POST /api/v1/memberships/member/change-scope/", () => Response.json(member));
-  await user.selectOptions(await screen.findByRole("combobox", { name: "Vista" }), "memberships");
+  await app.router.navigate({ to: "/settings/roles", search: { view: "memberships" } });
   await user.click(await screen.findByRole("button", { name: "Editar alcance" }));
   const centers = within(screen.getByRole("group", { name: "Centros" }));
   await user.selectOptions(centers.getByRole("combobox"), "selected");
@@ -311,7 +321,7 @@ test("membership scope resolves unknown and foreign center codes identically and
 
 test("a center-scope change clears old configuration results and reloads the permitted global route", async () => {
   const { api, app } = await open();
-  await screen.findByRole("button", { name: /^Equipo: role.update / });
+  await editButton();
   const [previous] = app.queryClient.getQueriesData({
     predicate: (query) => query.queryKey[4] === "roles",
   });
@@ -326,8 +336,8 @@ test("a center-scope change clears old configuration results and reloads the per
   await act(async () => {
     await app.queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
   });
-  await screen.findByRole("button", { name: /^Equipo vigente: role.update / });
-  expect(screen.queryByRole("button", { name: /^Equipo: role.update / })).toBeNull();
+  await editButton("Equipo vigente");
+  expect(screen.queryByRole("cell", { name: "Equipo" })).toBeNull();
   expect(app.queryClient.getQueryData(oldKey)).toBeUndefined();
   expect(screen.queryByRole("heading", { name: "No tienes acceso a esta sección" })).toBeNull();
 });
@@ -343,16 +353,16 @@ test("draft fields remain locked until the saved change finishes session verific
     Response.json(ROLE),
   );
   api.setRoute("GET /api/v1/me/", () => pending);
-  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
-  const editor = screen.getByRole("dialog");
+  const editor = await openRoleEditor(user);
   await user.click(within(editor).getByRole("button", { name: "Guardar" }));
   await waitFor(() => {
     expect(api.requests.filter((request) => request.path === "/api/v1/me/")).toHaveLength(2);
   });
   expect(
-    within(editor).getByRole<HTMLInputElement>("checkbox", { name: "role.update" }).disabled ||
-      within(editor).getByRole("checkbox", { name: "role.update" }).closest("fieldset:disabled") !==
-        null,
+    within(editor).getByRole<HTMLInputElement>("checkbox", { name: "Editar perfiles" }).disabled ||
+      within(editor)
+        .getByRole("checkbox", { name: "Editar perfiles" })
+        .closest("fieldset:disabled") !== null,
   ).toBe(true);
   await act(async () => {
     release(Response.json(ME));
@@ -377,7 +387,10 @@ test("organization drafts survive same-user reauthentication without replaying t
   await screen.findByRole("textbox", { name: "Zona horaria" });
   api.setRoute("GET /api/v1/centers/", () =>
     Response.json(
-      page([{ id: "00000000-0000-4000-8000-000000000011", code: "C-01", name: "Centro" }]),
+      page([
+        { id: "00000000-0000-4000-8000-000000000011", code: "C-01", name: "Centro" },
+        { id: "00000000-0000-4000-8000-000000000012", code: "C-02", name: "Centro dos" },
+      ]),
     ),
   );
   api.setRoute("PATCH /api/v1/organization/", () => apiError(401, "not_authenticated"));
@@ -399,11 +412,7 @@ test("organization drafts survive same-user reauthentication without replaying t
     screen.getByRole<HTMLInputElement>("textbox", { name: "Teléfono en etiquetas de ovitrampa" })
       .value,
   ).toBe("1234");
-  await screen.findByRole("option", { name: "C-01 · Centro" });
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: "Filtro de centro" }),
-    "00000000-0000-4000-8000-000000000011",
-  );
+  await chooseCenter("Centro dos");
   await waitFor(() => {
     expect(app.queryClient.isFetching()).toBe(0);
   });
@@ -437,7 +446,7 @@ async function openScopeSearch(center = CENTER_B) {
   );
   for (const center of [CENTER_A, CENTER_B])
     context.api.setRoute(`GET /api/v1/centers/${center.id}/`, () => Response.json(center));
-  await context.user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
+  await openRoleEditor(context.user);
   const centers = within(screen.getByRole("group", { name: "Centros" }));
   await centers.findByRole("button", { name: /Quitar referencia: C-A/ });
   await context.user.click(centers.getByRole("textbox"));
@@ -510,9 +519,8 @@ test("a delegated administrator can revoke a checked permission they cannot gran
   const { api, user } = await open("/settings/roles", ME, [
     { ...ROLE, permissions: [...ROLE.permissions, "motorcycle.unblock"] },
   ]);
-  await user.click(await screen.findByRole("button", { name: /^Equipo: motorcycle.unblock / }));
-  const dialog = within(screen.getByRole("dialog"));
-  const checkbox = dialog.getByRole<HTMLInputElement>("checkbox", { name: "motorcycle.unblock" });
+  const dialog = within(await openRoleEditor(user));
+  const checkbox = dialog.getByRole<HTMLInputElement>("checkbox", { name: "Desbloquear motos" });
   expect(checkbox.disabled).toBe(false);
   checkbox.focus();
   await user.keyboard(" ");
@@ -554,7 +562,6 @@ test("a successful settings patch publishes its revision before navigation and t
   expect(
     (await screen.findByRole<HTMLInputElement>("textbox", { name: "Zona horaria" })).value,
   ).toBe("UTC");
-  expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
   await waitFor(() => {
     expect(startRefresh).toHaveBeenCalledTimes(1);
   });
@@ -598,7 +605,6 @@ test("a successful settings patch publishes its revision before navigation and t
     refresh.resolve(Response.json(ORGANIZATION));
     await refresh.promise;
   });
-  expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
   expect(startCurrentRefresh.mock.calls[0]?.[0].signal.aborted).toBe(false);
   await act(async () => {
     currentRefresh.resolve(
@@ -620,7 +626,7 @@ test.each(["none", "selected"] as const)(
     };
     const { app, user, api } = await open("/settings/organization", me);
     await screen.findByRole("textbox", { name: "Zona horaria" });
-    expect(screen.queryByRole("combobox", { name: "Filtro de centro" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: CENTER_PICKER })).toBeNull();
     expect(api.requests.some((request) => request.path.startsWith("/api/v1/centers/"))).toBe(false);
     expect(screen.queryByRole("button", { name: "Guardar" })).toBeNull();
     await act(async () => {
@@ -629,10 +635,14 @@ test.each(["none", "selected"] as const)(
     expect(screen.getAllByRole("link", { name: "Configuración" }).length).toBeGreaterThan(0);
     const settings = within(screen.getByRole("main"));
     expect(
-      settings.getByRole("link", { name: messages["es-MX"]["orgAdmin.organization.title"] }),
+      settings.getByRole("link", {
+        name: new RegExp(`^${messages["es-MX"]["orgAdmin.organization.title"]}`),
+      }),
     ).toBeDefined();
     await user.click(
-      settings.getByRole("link", { name: messages["es-MX"]["orgAdmin.roles.title"] }),
+      settings.getByRole("link", {
+        name: new RegExp(`^${messages["es-MX"]["orgAdmin.roles.title"]}`),
+      }),
     );
     await screen.findByText("Equipo", { exact: true });
     expect(screen.queryByRole("heading", { name: "No tienes acceso a esta sección" })).toBeNull();
@@ -667,7 +677,7 @@ test.each([
     });
     expect(
       within(screen.getByRole("main")).queryByRole("link", {
-        name: messages["es-MX"][scenario.title],
+        name: new RegExp(`^${messages["es-MX"][scenario.title]}`),
       }),
     ).toBeNull();
   },
@@ -687,13 +697,9 @@ async function openPendingAdminWrite(kind: "role" | "membership" | "organization
   };
   if (kind === "membership") {
     setup.api.setRoute("GET /api/v1/memberships/", () => Response.json(page([member])));
-    await setup.user.selectOptions(
-      await screen.findByRole("combobox", { name: "Vista" }),
-      "memberships",
-    );
+    await setup.app.router.navigate({ to: "/settings/roles", search: { view: "memberships" } });
     await setup.user.click(await screen.findByRole("button", { name: "Editar alcance" }));
-  } else if (kind === "role")
-    await setup.user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
+  } else if (kind === "role") await openRoleEditor(setup.user);
   else await screen.findByRole("textbox", { name: "Zona horaria" });
   const write = deferredResponse();
   const method = kind === "organization" ? "PATCH" : kind === "role" ? "PUT" : "POST";
