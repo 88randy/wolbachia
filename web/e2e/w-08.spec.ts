@@ -13,6 +13,7 @@ import {
 } from "./fixtures/a11y";
 import type { NotificationPage, Preferences } from "../src/notifications/notification-query";
 
+type Language = (typeof LANGUAGES)[number];
 const ID = "00000000-0000-4000-8000-000000000150";
 const member = makeMe({
   permissions: ["notification.read", "notification_preference.update"],
@@ -64,7 +65,7 @@ async function installInbox(page: Page) {
   );
 }
 
-async function expectKeyboardReadAll(page: Page, language: (typeof LANGUAGES)[number]) {
+async function expectKeyboardReadAll(page: Page, language: Language) {
   const isSpanish = language === "es-MX";
   const receipt = page.waitForResponse(
     (response) =>
@@ -82,6 +83,42 @@ async function expectKeyboardReadAll(page: Page, language: (typeof LANGUAGES)[nu
       name: isSpanish ? "Notificaciones · Sin leer: 0" : "Notifications · Unread: 0",
     }),
   ).toBeVisible();
+}
+
+const TABS = {
+  "es-MX": { notices: "Avisos", preferences: "Preferencias" },
+  en: { notices: "Notices", preferences: "Preferences" },
+} as const;
+
+/** Opens a tab by name; it may already carry the +30% filler text, so only the start must match. */
+async function openTab(page: Page, language: Language, tab: "notices" | "preferences") {
+  await page.getByRole("tab", { name: new RegExp(`^${TABS[language][tab]}`) }).click();
+}
+
+async function expectCriticalEmailLocked(page: Page, language: Language) {
+  const isSpanish = language === "es-MX";
+  const critical = page.getByRole("group", {
+    name: isSpanish ? "Críticos" : "Critical",
+    exact: true,
+  });
+  await expect(
+    critical.getByRole("switch", { name: isSpanish ? "Correo electrónico" : "Email", exact: true }),
+  ).toBeDisabled();
+}
+
+/** +30% text in the main content must not create a horizontal scroll. */
+async function expectExpandedTextReflow(page: Page) {
+  await page.evaluate(() => {
+    document
+      .querySelectorAll("main button, main h1, main p, main legend, main label")
+      .forEach((element) => {
+        element.childNodes.forEach((child) => {
+          if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim())
+            child.textContent += ` ${child.textContent.slice(0, Math.ceil(child.textContent.length * 0.3))}`;
+        });
+      });
+  });
+  await expectNoHorizontalScroll(page);
 }
 
 for (const theme of THEMES) {
@@ -114,16 +151,6 @@ for (const theme of THEMES) {
       await expect(bell).toBeFocused();
       const focus = await bell.evaluate((element) => getComputedStyle(element).outlineStyle);
       expect(focus).not.toBe("none");
-      const critical = page.getByRole("group", {
-        name: isSpanish ? "Críticos" : "Critical",
-        exact: true,
-      });
-      await expect(
-        critical.getByRole("switch", {
-          name: isSpanish ? "Correo electrónico" : "Email",
-          exact: true,
-        }),
-      ).toBeDisabled();
       if ((theme === "light" && isSpanish) || (theme === "dark" && !isSpanish)) {
         await page.screenshot({
           path: fileURLToPath(
@@ -132,19 +159,16 @@ for (const theme of THEMES) {
           fullPage: true,
         });
       }
+      // Preferences are their own tab; the critical channel cannot be switched off.
+      await openTab(page, language, "preferences");
+      await expectCriticalEmailLocked(page, language);
+      await openTab(page, language, "notices");
       await expectKeyboardReadAll(page, language);
       await page.setViewportSize({ width: 320, height: 800 });
-      await page.evaluate(() => {
-        document
-          .querySelectorAll("main button, main h1, main p, main legend")
-          .forEach((element) => {
-            element.childNodes.forEach((child) => {
-              if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim())
-                child.textContent += ` ${child.textContent.slice(0, Math.ceil(child.textContent.length * 0.3))}`;
-            });
-          });
-      });
-      await expectNoHorizontalScroll(page);
+      await expectExpandedTextReflow(page);
+      await expectNoAxeViolations(page);
+      await openTab(page, language, "preferences");
+      await expectExpandedTextReflow(page);
       await expectNoAxeViolations(page);
     });
   }

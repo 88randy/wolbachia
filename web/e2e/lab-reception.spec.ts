@@ -12,6 +12,7 @@ import {
 } from "./fixtures/a11y";
 import { mockApi } from "./fixtures/mock-api";
 import { makeMe } from "../src/test/fake-api";
+import { makeTrace } from "../src/lab/trace/trace-fixtures";
 
 const BAG_ID = "30000000-0000-4000-8000-000000000001";
 const READING_ID = "30000000-0000-4000-8000-000000000002";
@@ -111,6 +112,9 @@ async function mockReception(page: Page) {
     }
     const path = new URL(request.url()).pathname;
     if (path === `/api/v1/bags/${BAG_ID}/`) return route.fulfill({ json: BAG });
+    // The expanded receipt shows the bag's origin card, read from the bag's trace.
+    if (path === `/api/v1/bags/${CODE}/trace/`)
+      return route.fulfill({ json: makeTrace({ bag: { id: BAG_ID, code: CODE } }) });
     return route.fulfill({ json: pageOf([], isReceived ? 0 : 1) });
   });
   await page.route("**/api/v1/lab-receptions/**", (route) =>
@@ -130,7 +134,10 @@ for (const theme of THEMES) {
       const commands = await mockReception(page);
       await page.setViewportSize(MOBILE_VIEWPORT);
       await page.goto("/lab");
-      await page.getByRole("link", { name: text("labReception.page.title"), exact: true }).focus();
+      // The lab hub card's name carries its description, so match on its title.
+      await page
+        .getByRole("link", { name: new RegExp("^" + text("labReception.page.title")) })
+        .focus();
       await page.keyboard.press("Enter");
       await expect(
         page.getByRole("heading", { level: 1, name: text("labReception.page.title") }),

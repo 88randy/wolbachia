@@ -62,14 +62,32 @@ function TransferItems({ transfer }: { transfer: Transfer }) {
     </DetailSection>
   );
 }
+/** The shipment's differences: the list filtered to this shipment, never the whole list. */
+function DifferenceLink({ transferId }: { transferId: string }) {
+  const { t } = useTranslation();
+  return (
+    <Link
+      to="/inventory/discrepancies"
+      search={{ transfer: transferId }}
+      className={buttonVariants({ variant: "primary" })}
+    >
+      {t("transfers.record.seeDifference")}
+    </Link>
+  );
+}
+/** The step to show follows the shipment's state; a stale command never keeps an old step open. */
+function stepOf(
+  state: Transfer["state"],
+  can: (code: string) => boolean,
+): "dispatch" | "receive" | null {
+  const step = state === "prepared" ? "dispatch" : state === "dispatched" ? "receive" : null;
+  return step !== null && can(`transfer.${step}`) ? step : null;
+}
 export function TransferRecord(props: TransferRecordProps) {
   const can = useCan();
   const nameOf = useLocationNames();
   const { transfer } = props;
   const { t } = useTranslation();
-  // The step to show follows the shipment's state; a stale command never keeps an old step open.
-  const action: "dispatch" | "receive" | null =
-    transfer.state === "prepared" ? "dispatch" : transfer.state === "dispatched" ? "receive" : null;
   const unknown = t("inventory.state.unconfigured");
   return (
     <DetailPage
@@ -82,14 +100,12 @@ export function TransferRecord(props: TransferRecordProps) {
       back={{ label: t("inventory.action.back"), link: { to: "/inventory/transfers" } }}
       actions={
         transfer.state === "discrepancy" && can("discrepancy.read") ? (
-          <Link to="/inventory/discrepancies" className={buttonVariants({ variant: "primary" })}>
-            {t("transfers.record.seeDifference")}
-          </Link>
+          <DifferenceLink transferId={transfer.id} />
         ) : undefined
       }
     >
       <TransferSteps state={transfer.state} />
-      <TransferAction {...props} action={can(`transfer.${action ?? "none"}`) ? action : null} />
+      <TransferAction {...props} action={stepOf(transfer.state, can)} />
       <TransferItems transfer={transfer} />
       <Card title={t("transfers.history.title")}>
         <TransferHistory transfer={transfer} />

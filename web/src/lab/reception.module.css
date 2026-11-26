@@ -75,6 +75,9 @@
 .noPaddle summary {
   cursor: pointer;
   overflow-wrap: anywhere;
+  /* WCAG 2.5.8: the whole line is the target, never shorter than a small control. */
+  min-height: var(--web-control-sm);
+  padding-block: var(--space-1);
 }
 .page a,
 .page td {

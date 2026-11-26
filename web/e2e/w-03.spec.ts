@@ -38,7 +38,14 @@ async function setupOrganizationApi(page: Page) {
   });
   await page.route("**/api/v1/centers/**", (route) =>
     route.fulfill({
-      json: { results: [{ id: "center", code: "C-01", name: "Center" }], count: 1, next: null },
+      json: {
+        results: [
+          { id: "center", code: "C-01", name: "Center" },
+          { id: "center-2", code: "C-02", name: "Annex" },
+        ],
+        count: 2,
+        next: null,
+      },
     }),
   );
   await page.route("**/api/v1/roles/**", (route) =>
@@ -67,9 +74,10 @@ for (const language of LANGUAGES) {
       await setupOrganizationApi(page);
       await page.setViewportSize({ width: 320, height: 800 });
       await page.goto("/settings/roles");
-      const cell = page.getByRole("button", {
-        name: new RegExp(`^${language === "en" ? "Team" : "Equipo"}: role.update `),
-      });
+      const cell = page
+        .getByRole("row")
+        .filter({ hasText: language === "en" ? "Team" : "Equipo" })
+        .getByRole("button", { name: language === "en" ? "Edit permissions" : "Editar permisos" });
       await expect(cell).toBeVisible();
       await expectNoAxeViolations(page);
       await cell.focus();
@@ -80,12 +88,15 @@ for (const language of LANGUAGES) {
       await expectNoAxeViolations(page);
       await page.keyboard.press("Escape");
       await expect(cell).toBeFocused();
-      await page
-        .getByRole("combobox", { name: language === "en" ? "Center filter" : "Filtro de centro" })
-        .selectOption("center");
-      await expect(
-        page.locator("header [role=status]").filter({ hasText: /^Center$/ }),
-      ).toContainText("Center");
+      // The header picker is a keyboard-operable listbox that only shows with 2+ centers.
+      const picker = page.getByRole("combobox", {
+        name: language === "en" ? "Center" : "Centro",
+      });
+      await picker.focus();
+      await page.keyboard.press("Enter");
+      await page.getByRole("option", { name: "Center", exact: true }).click();
+      await expect(picker).toContainText("Center");
+      await expect(picker).toBeFocused();
       await page.goto("/settings/organization");
       await expect(
         page.getByRole("textbox", { name: language === "en" ? "Time zone" : "Zona horaria" }),
