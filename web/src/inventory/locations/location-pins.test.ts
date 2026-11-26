@@ -1,6 +1,19 @@
 import { expect, test } from "vitest";
 import { inventoryLocation } from "../../test/inventory-fixtures";
-import { clusterLocations, initialView, SINGLE_POINT_ZOOM } from "./location-pins";
+import {
+  clusterLocations,
+  initialView,
+  shouldRefitOnResize,
+  SINGLE_POINT_ZOOM,
+} from "./location-pins";
+
+test("a resize refits a bounds view only while the user has not moved the map", () => {
+  const spread = initialView([at("a", -89.6, 20.9), at("b", -99.1, 19.4)]);
+  const single = initialView([at("a", -89.6, 20.9)]);
+  expect(shouldRefitOnResize(spread, false)).toBe(true);
+  expect(shouldRefitOnResize(spread, true)).toBe(false);
+  expect(shouldRefitOnResize(single, false)).toBe(false);
+});
 
 const at = (id: string, lng: number, lat: number) =>
   inventoryLocation({ id, geometry: { type: "Point", coordinates: [lng, lat] } });

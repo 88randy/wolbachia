@@ -104,6 +104,11 @@ export function initialView(locations: readonly Location[]): InitialView {
   };
 }
 
+/** Refit the pins on a container resize only while the user has not moved the map since the last fit. */
+export function shouldRefitOnResize(view: InitialView, userMoved: boolean): boolean {
+  return "bounds" in view && !userMoved;
+}
+
 export type PinShape = "circle" | "square" | "diamond";
 
 /** Shape plus icon (not color alone) tell the location types apart. */
