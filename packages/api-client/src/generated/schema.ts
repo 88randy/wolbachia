@@ -8920,6 +8920,7 @@ export interface components {
             reason: string;
             permission: string;
             id?: string;
+            code?: string;
             link: string;
         };
         /**
@@ -9831,6 +9832,7 @@ export interface components {
             readonly subject_id: string;
             /** Format: uuid */
             readonly rubric_version_id: string;
+            readonly rubric_version_number: number;
             /** Format: uuid */
             readonly center_id: string;
             /** Format: uuid */

@@ -22922,6 +22922,8 @@ components:
           type: string
         id:
           type: string
+        code:
+          type: string
         link:
           type: string
       required:
@@ -25028,6 +25030,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        rubric_version_number:
+          type: integer
+          readOnly: true
         center_id:
           type: string
           format: uuid
@@ -25066,6 +25071,7 @@ components:
       - quadrant_id
       - revision
       - rubric_version_id
+      - rubric_version_number
       - subject_id
       - void
     EvaluationResult:
