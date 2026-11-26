@@ -8,30 +8,30 @@ import {
   expectNoAxeViolations,
   expectNoHorizontalScroll,
 } from "./fixtures/a11y";
+import { chooseOption } from "./fixtures/combobox";
 import { interceptSyntheticTiles } from "./fixtures/map-runtime";
 import { observeMapWorkers, readMapWorkers } from "./fixtures/map-worker-observation";
-import {
-  INVENTORY_CENTER,
-  INVENTORY_LOCATION,
-  INVENTORY_OPERATION,
-  INVENTORY_ADMISSION,
-  inventoryLocation,
-} from "../src/test/inventory-fixtures";
+import { INVENTORY_LOCATION, inventoryLocation } from "../src/test/inventory-fixtures";
 import type { Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 const small = { width: 320, height: 700 };
-async function selectInventorySort(page: Page, path: string, ordering: string) {
+// Sorting is done on the column headers: each click moves the order on by one step.
+async function sortInventoryBy(
+  page: Page,
+  sort: { path: string; column: string; ordering: string; clicks: number },
+) {
   const read = page.waitForRequest((request) => {
     const url = new URL(request.url());
     return (
       request.method() === "GET" &&
-      url.pathname === path &&
-      url.searchParams.get("ordering") === ordering
+      url.pathname === sort.path &&
+      url.searchParams.get("ordering") === sort.ordering
     );
   });
-  await page.getByRole("combobox", { name: "Ordenar por", exact: true }).selectOption(ordering);
+  const header = page.getByRole("button", { name: sort.column, exact: true });
+  for (let click = 0; click < sort.clicks; click += 1) await header.click();
   await read;
-  await expect(page).toHaveURL(new RegExp("ordering=" + ordering));
+  await expect(page).toHaveURL(new RegExp("ordering=" + sort.ordering));
 }
 async function expectInventoryFooter(page: Page, language: string, kind: string) {
   const dialog = page.getByRole("dialog");
@@ -108,23 +108,28 @@ async function expectAdoptionKeyboard(page: Page, language: string) {
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
 }
+// Polls: the map fits and projects its pins a moment after it loads.
 async function expectContainedMarker(page: Page) {
-  const contained = await page.locator(".maplibregl-marker a").evaluateAll(
-    (markers) =>
-      markers.length > 0 &&
-      markers.every((marker) => {
-        const map = marker.closest(".maplibregl-map")?.getBoundingClientRect();
-        const box = marker.getBoundingClientRect();
-        return (
-          map &&
-          box.left >= map.left &&
-          box.right <= map.right &&
-          box.top >= map.top &&
-          box.bottom <= map.bottom
-        );
-      }),
-  );
-  expect(contained).toBe(true);
+  const markers = page.locator(".maplibregl-marker a, .maplibregl-marker button");
+  await expect
+    .poll(() =>
+      markers.evaluateAll(
+        (items) =>
+          items.length > 0 &&
+          items.every((marker) => {
+            const map = marker.closest(".maplibregl-map")?.getBoundingClientRect();
+            const box = marker.getBoundingClientRect();
+            return (
+              map &&
+              box.left >= map.left &&
+              box.right <= map.right &&
+              box.top >= map.top &&
+              box.bottom <= map.bottom
+            );
+          }),
+      ),
+    )
+    .toBe(true);
 }
 async function expectReadonlyCustody(page: Page, language: string) {
   await expect(
@@ -150,16 +155,20 @@ async function expectReadonlyCustody(page: Page, language: string) {
   await expectStatusContained(page, language);
 }
 async function expectStatusContained(page: Page, language: string) {
+  // The status shows in the page header and again in the lot card: both must stay inside main.
   const contained = await page
     .getByText(language === "en" ? "Draft · not dispatchable" : "Borrador · no despachable", {
       exact: true,
     })
-    .evaluate((status) => {
-      const main = status.closest("main")?.getBoundingClientRect();
-      const box = status.getBoundingClientRect();
-      return main !== undefined && box.left >= main.left && box.right <= main.right;
-    });
-  expect(contained).toBe(true);
+    .evaluateAll((statuses) =>
+      statuses.map((status) => {
+        const main = status.closest("main")?.getBoundingClientRect();
+        const box = status.getBoundingClientRect();
+        return main !== undefined && box.left >= main.left && box.right <= main.right;
+      }),
+    );
+  expect(contained.length).toBeGreaterThan(0);
+  expect(contained.every(Boolean)).toBe(true);
 }
 async function expectPageKeyboard(page: Page, context: { path: string; language: string }) {
   if (context.path === "/inventory/lots/LOT-01") {
@@ -187,12 +196,18 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   page,
   baseURL,
 }) => {
+  test.slow(); // a long journey across five screens and a real map worker
   const server = await installInventoryApi(page);
   const tiles = await interceptSyntheticTiles(page, baseURL ?? "http://127.0.0.1:4173");
   await observeMapWorkers(page);
   await page.goto("/inventory");
-  await page.getByRole("link", { name: "Catálogo de insumos", exact: true }).click();
-  await selectInventorySort(page, "/api/v1/supply-types/", "-created_at");
+  await page.getByRole("link", { name: /^Catálogo de insumos/ }).click();
+  await sortInventoryBy(page, {
+    path: "/api/v1/supply-types/",
+    column: "Código",
+    ordering: "-code",
+    clicks: 1,
+  });
   const availability = page.getByRole("group", { name: "Estado", exact: true });
   await availability.getByRole("button", { name: "Desactivado", exact: true }).click();
   await expect
@@ -212,7 +227,12 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     "Synthetic protocol",
   );
   await page.goto("/inventory/lots");
-  await selectInventorySort(page, "/api/v1/lots/", "-expiry");
+  await sortInventoryBy(page, {
+    path: "/api/v1/lots/",
+    column: "Caducidad",
+    ordering: "-expiry",
+    clicks: 2,
+  });
   await page.getByRole("button", { name: "Nuevo lote" }).click();
   await expect(
     page
@@ -220,21 +240,29 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
       .getByText("Nuevo lote", { exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await page.getByRole("textbox", { name: "Código", exact: true }).fill("LOT-NEW");
-  await page
-    .getByRole("combobox", { name: "Insumo", exact: true })
-    .selectOption({ label: "Synthetic supply" });
-  await page.getByRole("combobox", { name: "Centro", exact: true }).selectOption(INVENTORY_CENTER);
-  await page
-    .getByRole("combobox", { name: "Ubicación inicial", exact: true })
-    .selectOption(INVENTORY_LOCATION);
+  await chooseOption(
+    page,
+    page.getByRole("combobox", { name: "Insumo", exact: true }),
+    /Synthetic supply/,
+  );
+  await chooseOption(
+    page,
+    page.getByRole("combobox", { name: "Centro", exact: true }),
+    /Synthetic center/,
+  );
+  await chooseOption(
+    page,
+    page.getByRole("combobox", { name: "Ubicación inicial", exact: true }),
+    /Synthetic store/,
+  );
   await page.getByRole("textbox", { name: "Cantidad inicial", exact: true }).fill("2");
   await page.getByRole("button", { name: "Guardar borrador" }).click();
   await expect(page.getByRole("heading", { name: "LOT-NEW", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Ver requisitos de despacho" }).click();
-  await expect(page.getByText("Borrador · no despachable", { exact: true })).toBeVisible();
+  await expect(page.getByText("Borrador · no despachable", { exact: true }).first()).toBeVisible();
   await page.getByRole("textbox", { name: "Especie", exact: true }).fill("Authored species");
   await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
-  await expect(page.getByText("Guardado en el servidor", { exact: true })).toBeVisible();
+  await expect(page.getByText("Guardado", { exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Cantidad inicial", exact: true })).toBeDisabled();
   await page.getByRole("link", { name: "Volver a la lista", exact: true }).click();
   await page.getByRole("link", { name: "2", exact: true }).click();
@@ -247,24 +275,39 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   const stockTab = page.getByRole("tab", { name: "Existencias", exact: true });
   await stockTab.click();
   await expect(stockTab).toHaveAttribute("aria-selected", "true");
-  await selectInventorySort(page, `/api/v1/locations/${INVENTORY_LOCATION}/stock/`, "-piece_id");
-  await page.getByRole("link", { name: INVENTORY_OPERATION, exact: true }).click();
-  await expect(page.getByText(INVENTORY_ADMISSION, { exact: true })).toBeVisible();
-  await selectInventorySort(
-    page,
-    `/api/v1/locations/${INVENTORY_LOCATION}/movements/`,
-    "-quantity",
+  await sortInventoryBy(page, {
+    path: `/api/v1/locations/${INVENTORY_LOCATION}/stock/`,
+    column: "Código",
+    ordering: "-lot__code",
+    clicks: 1,
+  });
+  // The stock quantity links to the ledger of that lot, piece and unit (operation ids are not shown).
+  await page
+    .getByRole("tabpanel", { name: "Existencias", exact: true })
+    .getByRole("link", { name: "2", exact: true })
+    .click();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get("view") === "movements" &&
+      url.searchParams.get("lot") === server.lot.id &&
+      url.searchParams.get("unit") === "piece",
   );
+  await sortInventoryBy(page, {
+    path: `/api/v1/locations/${INVENTORY_LOCATION}/movements/`,
+    column: "Cantidad del movimiento",
+    ordering: "-quantity",
+    clicks: 2,
+  });
   await expect
     .poll(() =>
       server.reads.some(
-        (url) => new URL(url).searchParams.get("operation") === INVENTORY_OPERATION,
+        (url) =>
+          new URL(url).pathname === `/api/v1/locations/${INVENTORY_LOCATION}/movements/` &&
+          new URL(url).searchParams.get("lot") === server.lot.id &&
+          new URL(url).searchParams.get("unit") === "piece",
       ),
     )
     .toBe(true);
-  expect(
-    server.reads.some((url) => new URL(url).searchParams.get("operation") === INVENTORY_ADMISSION),
-  ).toBe(false);
   expect(server.writes.map((write) => [write.method, write.csrf, write.organization])).toEqual([
     ["POST", "e2e-csrf", "norte"],
     ["PATCH", "e2e-csrf", "norte"],
@@ -280,7 +323,7 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     .getByRole("textbox", { name: "Observaciones", exact: true })
     .fill("Private admission browser draft");
   await page.locator('a[href="/inventory"]').first().click();
-  await page.getByRole("link", { name: "Ubicaciones", exact: true }).click();
+  await page.getByRole("link", { name: /^Almacenes/ }).click();
   await page.getByRole("link", { name: custody.code, exact: true }).click();
   await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`custody_location=${custody.id}`));
@@ -289,22 +332,25 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveCount(0);
   await expectNoAxeViolations(page);
-  await page.locator('a[href="/inventory"]').first().click();
-  await page.getByRole("link", { name: "Lotes", exact: true }).click();
+  // The hub no longer links to the lots list; the breadcrumb does.
+  await page
+    .getByRole("navigation", { name: "Ruta de navegación" })
+    .getByRole("link", { name: "Lotes", exact: true })
+    .click();
   await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveValue(
     "Private admission browser draft",
   );
   server.emptyStockLocations.add(custody.id);
   await page.locator('a[href="/inventory"]').first().click();
-  await page.getByRole("link", { name: "Ubicaciones", exact: true }).click();
+  await page.getByRole("link", { name: /^Almacenes/ }).click();
   await page.getByRole("link", { name: custody.code, exact: true }).click();
   const beforeHistory = server.reads.length;
   await page.getByRole("tab", { name: "Movimientos", exact: true }).click();
   const historyCode = page
     .getByRole("tabpanel", { name: "Movimientos", exact: true })
     .getByRole("region", { name: "Filtros", exact: true })
-    .getByRole("textbox", { name: "Código", exact: true });
+    .getByRole("searchbox", { name: "Código", exact: true });
   await historyCode.fill("LOT-NEW");
   await historyCode.press("Enter");
   await expect
@@ -320,7 +366,7 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     .toBe(true);
   await expect(
     page.getByRole("region", { name: "Movimientos", exact: true }).getByRole("cell", {
-      name: "Recepción de transferencia cd000000-0000-0000-0000-000000000099",
+      name: "Recepción de transferencia",
       exact: true,
     }),
   ).toBeVisible();
@@ -337,9 +383,17 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await expect(historyCode).toHaveValue("LOT-NEW");
   expect(server.writes).toHaveLength(2);
   await page.goto("/inventory/locations");
-  await selectInventorySort(page, "/api/v1/locations/", "-created_at");
+  await sortInventoryBy(page, {
+    path: "/api/v1/locations/",
+    column: "Código",
+    ordering: "-code",
+    clicks: 1,
+  });
   await expect(page.getByRole("group", { name: "Estado", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Synthetic store", exact: false })).toBeVisible();
+  // Pins are links or, when several locations share a spot, one button that opens their list.
+  await expect(
+    page.locator(".maplibregl-marker a, .maplibregl-marker button").first(),
+  ).toBeVisible();
   await expect.poll(async () => (await readMapWorkers(page)).messages).toBeGreaterThan(0);
   expect((await readMapWorkers(page)).errors).toEqual([]);
   expect(tiles.unexpectedOrigins).toEqual([]);
@@ -352,6 +406,7 @@ for (const language of LANGUAGES) {
       page,
       baseURL,
     }) => {
+      test.slow(); // dozens of screenshots and audits per cell
       await rememberPreferences(page, theme, language);
       const server = await installInventoryApi(page);
       await interceptSyntheticTiles(page, baseURL ?? "http://127.0.0.1:4173");
@@ -441,23 +496,18 @@ for (const language of LANGUAGES) {
         await expectNoHorizontalScroll(page);
         await attachInventoryScreenshot(page, `151-${language}-${theme}-${String(width)}`, true);
       }
-      const mapMarker = page.getByRole("link", { name: "Synthetic store", exact: false });
-      const otherMarker = page.getByRole("link", { name: "Other store", exact: false });
+      // Nearby locations share one pin (a button that offers their list); at a wider map they
+      // stay separate pins. Either way the first pin is a keyboard stop.
+      const mapMarker = page.locator(".maplibregl-marker a, .maplibregl-marker button").first();
       for (const width of [1440, 320]) {
         await page.setViewportSize({ width, height: 800 });
+        // The map fits its pins when it loads and keeps its view on resize: reload at each width.
+        await page.reload();
         await mapMarker.scrollIntoViewIfNeeded();
         await expectContainedMarker(page);
         await mapMarker.focus();
         await expect(mapMarker).toBeFocused();
-        await attachInventoryScreenshot(
-          page,
-          `151-${language}-${theme}-${String(width)}-map-first`,
-        );
-        await page.keyboard.press("Tab");
-        await expect(otherMarker).toBeFocused();
         await attachInventoryScreenshot(page, `151-${language}-${theme}-${String(width)}-map`);
-        await page.keyboard.press("Shift+Tab");
-        await expect(mapMarker).toBeFocused();
       }
     });
   }

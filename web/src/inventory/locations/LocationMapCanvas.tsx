@@ -18,9 +18,10 @@ import type { Location, LocationCluster } from "./location-pins";
 import { usePinSelection } from "./use-pin-selection";
 import styles from "../inventory.module.css";
 
+// Side padding must leave room on a 160 px wide map (320 px screens), or the fit pushes the pins out.
 const fitPadding = {
-  left: spacing[6] * 2,
-  right: spacing[6] * 2,
+  left: spacing[6],
+  right: spacing[6],
   top: spacing[6] * 2,
   bottom: spacing[6] * 2,
 };

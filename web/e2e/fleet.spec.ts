@@ -4,6 +4,8 @@ import type { Locator, Page, Route } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { makeMe } from "../src/test/fake-api";
 import { STORAGE_KEYS } from "../src/storage/safe-storage";
+import { chooseOption } from "./fixtures/combobox";
+import { pickDate } from "./fixtures/date-field";
 import { mockApi } from "./fixtures/mock-api";
 import {
   LANGUAGES,
@@ -243,11 +245,11 @@ async function expectRecordReflow(page: Page, language: LocaleCell["language"]) 
   });
   expect(bounds.scroll).toBeLessThanOrEqual(bounds.client);
   const heading = main.getByRole("heading", { level: 1, name: RECORD.code, exact: true });
-  const refresh = main.getByRole("button", {
-    name: language === "en" ? "Refresh record" : "Actualizar ficha",
+  const more = main.getByRole("button", {
+    name: language === "en" ? "More options" : "Más opciones",
     exact: true,
   });
-  for (const control of [heading, refresh]) {
+  for (const control of [heading, more]) {
     await expect(control).toBeVisible();
     const shape = await control.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -262,6 +264,15 @@ async function expectRecordReflow(page: Page, language: LocaleCell["language"]) 
     expect(shape.right).toBeLessThanOrEqual(Math.ceil(bounds.right));
     if (control === heading) expect(shape.height).toBeLessThanOrEqual(Math.ceil(shape.lineHeight));
   }
+}
+/** "Refresh record" is an item of the record's "More options" menu. */
+async function refreshRecord(page: Page, language: LocaleCell["language"]) {
+  await page
+    .getByRole("button", { name: language === "en" ? "More options" : "Más opciones" })
+    .click();
+  await page
+    .getByRole("menuitem", { name: language === "en" ? "Refresh record" : "Actualizar ficha" })
+    .click();
 }
 function recordTab(page: Page, name: string) {
   return page
@@ -293,8 +304,12 @@ async function exerciseService(page: Page, cell: LocaleCell, fleet: FleetMock) {
   await expect(button).toBeFocused();
   if (!writesIn(cell)) return;
   await page.keyboard.press("Enter");
-  await dialog.getByRole("combobox").selectOption("inspection");
-  await dialog.getByLabel(en ? "Performed on" : "Fecha del servicio").fill(SERVICE.performed_at);
+  await chooseOption(page, dialog.getByRole("combobox"), en ? "Inspection" : "Inspección");
+  await pickDate(
+    page,
+    dialog.getByRole("button", { name: en ? "Performed on" : "Fecha del servicio" }),
+    SERVICE.performed_at,
+  );
   await dialog
     .getByRole("spinbutton", { name: en ? "Odometer (km)" : "Odómetro (km)", exact: true })
     .fill("12600");
@@ -317,7 +332,6 @@ function clearanceLabels(language: LocaleCell["language"]) {
         files: "JPEG/PNG evidence",
         upload: "Upload and verify evidence",
         verified: /Verified evidence/,
-        refresh: "Refresh record",
         overdue: /Service overdue/,
         proof: "Immutable clearance proof",
         download: "Download authorized evidence",
@@ -330,7 +344,6 @@ function clearanceLabels(language: LocaleCell["language"]) {
         files: "Evidencia JPEG/PNG",
         upload: "Cargar y verificar evidencia",
         verified: /Evidencia verificada/,
-        refresh: "Actualizar ficha",
         overdue: /Servicio vencido/,
         proof: "Prueba inmutable de liberación",
         download: "Descargar evidencia autorizada",
@@ -387,7 +400,10 @@ async function exerciseClearance(page: Page, cell: LocaleCell, fleet: FleetMock)
   await expect(dialog.getByText(labels.verified)).toBeVisible();
   await dialog.getByRole("button", { name: labels.clear }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: labels.refresh })).toBeFocused();
+  // The cleared fault was the opener and is gone: the record heading takes focus.
+  await expect(
+    page.getByRole("heading", { level: 1, name: RECORD.code, exact: true }),
+  ).toBeFocused();
   await expect(page.getByText(labels.overdue)).toBeVisible();
   expect(fleet.record.is_blocked).toBe(true);
   expect(fleet.writes.filter((path) => path.endsWith("/clear-fault/"))).toHaveLength(1);
@@ -459,14 +475,24 @@ for (const language of LANGUAGES) {
       await expectNoAxeViolations(page);
       await code.focus();
       await page.keyboard.press("Enter");
-      const unblock = page.getByRole("button", {
+      // Unblock lives in the record's "More options" menu; closing the dialog returns focus to it.
+      const more = page.getByRole("button", {
+        name: language === "en" ? "More options" : "Más opciones",
+      });
+      const unblock = page.getByRole("menuitem", {
         name: language === "en" ? "Unblock" : "Desbloquear",
       });
-      await expect(unblock).toBeVisible();
+      const openUnblock = async () => {
+        await more.focus();
+        await page.keyboard.press("Enter");
+        await expect(unblock).toBeVisible();
+        await unblock.focus();
+        await page.keyboard.press("Enter");
+      };
+      await expect(more).toBeVisible();
       await expectNoHorizontalScroll(page);
       await expectNoAxeViolations(page);
-      await unblock.focus();
-      await page.keyboard.press("Enter");
+      await openUnblock();
       const dialog = page.getByRole("dialog");
       const cancel = dialog.getByRole("button", {
         name: language === "en" ? "Cancel" : "Cancelar",
@@ -502,8 +528,8 @@ for (const language of LANGUAGES) {
       await expect(reason).toBeFocused();
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);
-      await expect(unblock).toBeFocused();
-      await page.keyboard.press("Enter");
+      await expect(more).toBeFocused();
+      await openUnblock();
       await expect(cancel).toBeFocused();
       await expectNoAxeViolations(page);
       await page.keyboard.press("Shift+Tab");
@@ -519,7 +545,7 @@ for (const language of LANGUAGES) {
       await expect(
         page.getByText(language === "en" ? "Available" : "Disponible", { exact: true }),
       ).toBeVisible();
-      await expect(unblock).toBeFocused();
+      await expect(more).toBeFocused();
       await expectNoHorizontalScroll(page);
       await recordTab(page, language === "en" ? "Fuel" : "Combustible").click();
       await expect(
@@ -550,9 +576,7 @@ for (const language of LANGUAGES) {
         blocked_reason: "severe_check",
         revision: 2,
       };
-      await page
-        .getByRole("button", { name: language === "en" ? "Refresh record" : "Actualizar ficha" })
-        .click();
+      await refreshRecord(page, language);
       await exerciseRecordWrites(page, { language, theme }, fleet);
     });
   }

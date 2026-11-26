@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures/test";
 import { makeMe } from "../src/test/fake-api";
+import { pickDate } from "./fixtures/date-field";
 import { mockApi } from "./fixtures/mock-api";
 import { makeRuleParameter, makeRuleVersion } from "./fixtures/rules-mock";
 
@@ -43,7 +44,8 @@ test.describe("rule parameters (W62), journey R9", () => {
     await expect(page).toHaveURL(new RegExp(`${PARAMETER}$`));
     await expect(page.getByRole("region", { name: "Valor vigente" })).toContainText("7 días");
     await page.getByLabel(/Valor nuevo/).fill("6");
-    await page.getByLabel(/Vigente desde \(obligatorio\)/).fill("2026-11-10");
+    const effective = page.getByRole("button", { name: "Vigente desde (obligatorio)" });
+    await pickDate(page, effective, "2026-11-10");
     await page.getByLabel(/Motivo del cambio/).fill(REASON);
     const comparison = page.getByRole("region", { name: "Antes y después" });
     await expect(comparison).toContainText("7 días");
