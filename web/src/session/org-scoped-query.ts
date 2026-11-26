@@ -45,13 +45,17 @@ interface PreviousQuery {
   meta?: Readonly<Record<string, unknown>> | undefined;
 }
 
-function isSameScope(identity: SessionIdentity, previous: PreviousQuery | undefined): boolean {
+function isSameScope(
+  identity: SessionIdentity,
+  previous: PreviousQuery | undefined,
+  acrossCenters: boolean,
+): boolean {
   const key: QueryKey = previous?.queryKey ?? [];
   const isSameKey = scopeOf(identity).every((part, index) => key[index] === part);
   return (
     isSameKey &&
     previous?.meta?.["revision"] === identity.revision &&
-    previous.meta["center"] === identity.activeCenter &&
+    (acrossCenters || previous.meta["center"] === identity.activeCenter) &&
     previous.meta["authorization"] === identity.authorization
   );
 }
@@ -60,6 +64,12 @@ interface OrgScopedOptions<TData> {
   /** The rest of the key: resource and parameters (`["devices", "list", page]`). */
   key: readonly unknown[];
   queryFn: QueryFunction<TData>;
+  /**
+   * The answer does not depend on the active center (the list of centers itself): keep the
+   * previous answer as placeholder when only the center changed, so a picker does not unmount
+   * and drop focus. Identity, revision and authorization still have to match.
+   */
+  placeholderAcrossCenters?: boolean;
 }
 
 /**
@@ -96,7 +106,7 @@ function guardedQuery<T>(identity: SessionIdentity, request: QueryFunction<T>): 
 }
 export function orgScopedQueryOptions<TData>(
   identity: SessionIdentity,
-  { key, queryFn }: OrgScopedOptions<TData>,
+  { key, queryFn, placeholderAcrossCenters = false }: OrgScopedOptions<TData>,
 ) {
   return queryOptions<TData>({
     queryKey: [
@@ -116,7 +126,7 @@ export function orgScopedQueryOptions<TData>(
     enabled: identity.isSettled,
     queryFn: guardedQuery(identity, queryFn),
     placeholderData: (previous, previousQuery) =>
-      isSameScope(identity, previousQuery) ? previous : undefined,
+      isSameScope(identity, previousQuery, placeholderAcrossCenters) ? previous : undefined,
   });
 }
 

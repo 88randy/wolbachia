@@ -50,6 +50,31 @@ describe("orgScopedQueryOptions", () => {
     expect(placeholderFrom(NORTE, current)).toBeUndefined();
   });
 
+  test("only a center-independent list keeps its placeholder across a center change", () => {
+    const client = new QueryClient();
+    const loadedAs: SessionIdentity = { ...NORTE, authorization: "a1", activeCenter: "c1" };
+    const options = (identity: SessionIdentity, placeholderAcrossCenters: boolean) =>
+      orgScopedQueryOptions(identity, {
+        key: ["centers"],
+        queryFn: () => Promise.resolve(1),
+        placeholderAcrossCenters,
+      });
+    const previousQuery = client.getQueryCache().build<number>(client, {
+      queryKey: [...options(loadedAs, true).queryKey],
+      meta: { revision: 0, center: "c1", authorization: "a1" },
+    });
+    const placeholderFor = (identity: SessionIdentity, across: boolean) => {
+      const { placeholderData } = options(identity, across);
+      if (typeof placeholderData !== "function") throw new TypeError("expected a function");
+      return placeholderData(7, previousQuery);
+    };
+    const otherCenter: SessionIdentity = { ...loadedAs, activeCenter: "c2" };
+    expect(placeholderFor(otherCenter, true)).toBe(7);
+    expect(placeholderFor(otherCenter, false)).toBeUndefined();
+    expect(placeholderFor({ ...otherCenter, authorization: "a2" }, true)).toBeUndefined();
+    expect(placeholderFor({ ...otherCenter, organizationSlug: "sur" }, true)).toBeUndefined();
+  });
+
   test("drops an answer that arrives after the session revision changed", async () => {
     let answer: (value: number) => void = () => undefined;
     const late = new Promise<number>((resolve) => {
