@@ -100,7 +100,7 @@ export function LocationMapCanvas({
           anchor="center"
           longitude={cluster.longitude}
           latitude={cluster.latitude}
-          style={selected?.key === cluster.key ? { zIndex: 3 } : undefined}
+          className={selected?.key === cluster.key ? "z-[3]" : undefined}
         >
           <LocationPin
             cluster={cluster}

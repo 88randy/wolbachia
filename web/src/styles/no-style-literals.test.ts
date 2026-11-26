@@ -20,6 +20,8 @@ const BLOCK_COMMENT = /\/\*[\s\S]*?\*\//g;
  */
 const KNOWN_LITERALS: readonly string[] = [
   "dashboards/ChartTooltipBody.tsx: inline style prop",
+  "lab/AnnotationColorSwatch.tsx: inline style prop",
+  "lab/AnnotationSizeSlider.tsx: inline style prop",
   "lab/lab.module.css: px font size",
   "portal/PortalMapCanvas.tsx: inline style prop",
   "portal/PortalMapLegend.tsx: inline style prop",
