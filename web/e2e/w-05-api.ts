@@ -104,6 +104,7 @@ const oldEvaluation: Schemas["EvaluationRead"] = {
   id: OLD_EVALUATION_ID,
   subject_id: SUBJECT_ID,
   rubric_version_id: OLD_RUBRIC_VERSION,
+  rubric_version_number: 1,
   center_id: CENTER_ID,
   quadrant_id: null,
   created_at: "2026-10-20T18:00:00Z",

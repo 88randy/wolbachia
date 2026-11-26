@@ -24,6 +24,7 @@ describe("W33 authoritative closure readiness", () => {
                 reason: "removal_unrecovered",
                 permission: "removal.resolve",
                 id: "unrecovered-physical-1",
+                code: "OVT-0123",
                 link: "",
               },
               {
@@ -32,7 +33,12 @@ describe("W33 authoritative closure readiness", () => {
                 id: "physical-2",
                 link: "",
               },
-              { reason: "incident_quadrant_closure", permission: "incident.close", link: "" },
+              {
+                reason: "incident_quadrant_closure",
+                permission: "incident.close",
+                code: "I-0236",
+                link: "/incidents/I-0236",
+              },
             ],
           }),
         ),
@@ -42,6 +48,12 @@ describe("W33 authoritative closure readiness", () => {
     expect(within(blockers).getByText("Ovitrampa no recuperada")).toBeDefined();
     expect(within(blockers).getByText("Retiro sin confirmar")).toBeDefined();
     expect(within(blockers).getByText("Incidente que bloquea el cierre")).toBeDefined();
+    expect(within(blockers).getByText("Referencia: OVT-0123")).toBeDefined();
+    expect(within(blockers).queryByRole("link", { name: "Referencia: OVT-0123" })).toBeNull();
+    expect(
+      within(blockers).getByRole("link", { name: "Referencia: I-0236" }).getAttribute("href"),
+    ).toBe("/incidents/I-0236");
+    expect(within(blockers).queryByText(/PRIVATE/)).toBeNull();
     // Technical permission names are no longer printed: each blocker names who can resolve it.
     expect(
       within(blockers).getAllByText(

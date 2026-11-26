@@ -123,6 +123,7 @@ test("history retains old rubric identity, raw critical observation and truthful
   const history = await screen.findByRole("region", { name: "Historial de evaluaciones" });
   expect(await within(history).findByText("Consultar intentos")).toBeDefined();
   expect(within(history).getByText(/Synthetic retained void reason/)).toBeDefined();
+  expect(within(history).getByRole("img", { name: "Versión de rúbrica 2" }).textContent).toBe("v2");
   const attempts = await screen.findByRole("region", { name: "Intentos conservados" });
   expect(await within(attempts).findByText("72.1234")).toBeDefined();
   expect(within(attempts).getByText("Falla crítica de seguridad")).toBeDefined();
