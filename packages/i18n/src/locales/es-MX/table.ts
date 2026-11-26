@@ -24,6 +24,7 @@ export const table = {
   "table.filters.all": "Todos",
   "table.filters.apply": "Aplicar",
   "table.filters.clear": "Limpiar filtros",
+  "table.filters.clearSearch": "Borrar búsqueda",
   "table.filters.remove": "Quitar filtro {filter}: {value}",
   "table.filters.includeVoided": "Incluir anulados",
   "table.filters.button": "Filtros",

@@ -26,7 +26,7 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
   );
   const availability = page.getByRole("group", { name: "Estado" });
   // The search box has its own X button with the same accessible name; this is the chips action.
-  await page.getByText("Limpiar filtros", { exact: true }).click();
+  await page.getByRole("button", { name: "Limpiar filtros" }).click();
   await expect(availability.getByRole("button", { name: "Todos", exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",

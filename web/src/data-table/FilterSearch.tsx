@@ -37,7 +37,7 @@ export function FilterSearch({ filter, value, onChange }: FilterSearchProps) {
       {draft !== "" && (
         <button
           type="button"
-          aria-label={t("table.filters.clear")}
+          aria-label={t("table.filters.clearSearch")}
           className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-md text-ink-3 hover:bg-surface-muted hover:text-ink"
           onClick={() => {
             setDraft("");

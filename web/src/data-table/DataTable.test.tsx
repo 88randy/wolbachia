@@ -257,13 +257,24 @@ describe("filters in the URL", () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf(), { path: "/?status=open&q=abc&ordering=code" });
 
-    // The search box has its own clear button with the same name; the chips' one shows its text.
-    await user.click(screen.getByText("Limpiar filtros"));
+    // The search box X has its own name, so the chips action is unambiguous.
+    await user.click(screen.getByRole("button", { name: "Limpiar filtros" }));
 
     await waitFor(() => {
       expect(search(app)).toEqual({ ordering: "code" });
     });
     expect(screen.queryByRole("list", { name: "Filtros activos" })).toBeNull();
+  });
+
+  test("the search box X clears only the search", async () => {
+    const user = userEvent.setup();
+    const app = await renderTable(propsOf(), { path: "/?status=open&q=abc" });
+
+    await user.click(screen.getByRole("button", { name: "Borrar búsqueda" }));
+
+    await waitFor(() => {
+      expect(search(app)).toEqual({ status: "open" });
+    });
   });
 
   test("the back button restores the previous filter", async () => {
