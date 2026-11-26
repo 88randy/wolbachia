@@ -42,8 +42,9 @@ for (const theme of THEMES) {
       const server = await mockReviewJourney(page);
       await page.setViewportSize(PHONE);
       await page.goto("/operations/reviews");
+      // The inbox row links by its review reason, not by the event id.
       const reviewLink = page.getByRole("link", {
-        name: copy["reviews.workspace.open"].replace("{id}", REVIEW_ID),
+        name: copy["reviews.reason.clockSkew"],
         exact: true,
       });
       await reviewLink.focus();
